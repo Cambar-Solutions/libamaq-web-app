@@ -25,7 +25,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-6">
-          <Button className="bg-white text-blue-600 hover:bg-gray-200 p-4">
+        <Button className="bg-white text-blue-600 hover:bg-gray-200 p-4">
             Explorar Tienda
           </Button>
         </div>

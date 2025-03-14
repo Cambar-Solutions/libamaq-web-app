@@ -5,7 +5,8 @@ import './index.css';
 import App from './App.jsx';
 import Dashboard from './app/dashboard/page.jsx'; 
 import Login from './app/normal/Login';
-import DetalleHerramienta from './app/e-commerce/DetalleHerramienta'; // Importar componente DetalleHerramienta
+import DetalleHerramienta from './app/e-commerce/DetalleHerramienta'; 
+import BrandPage from './components/brand-page';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -14,9 +15,8 @@ createRoot(document.getElementById('root')).render(
         <Route path="/" element={<App />} />
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        
-        {/* Configuración de la ruta para DetalleHerramienta */}
-        <Route path="/detalle/:nombre" element={<DetalleHerramienta />} /> {/* Esta ruta debe coincidir */}
+        <Route path="/detalle/:nombre" element={<DetalleHerramienta />} />
+        <Route path="/marcas/:brandName" element={<BrandPage />} />
       </Routes>
     </Router>
   </StrictMode>

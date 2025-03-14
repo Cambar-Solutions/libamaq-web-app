@@ -15,4 +15,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    allowedHosts: ["shore-questionnaire-response-hu.trycloudflare.com"]
+  }
 })
