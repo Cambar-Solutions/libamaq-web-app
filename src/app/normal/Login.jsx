@@ -21,9 +21,9 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900 ">
-      <Card className="w-full max-w-sm shadow-lg p-12">
+      <Card className="w-full max-w-sm shadow-lg p-12 hover:scale-105 transition-all">
         <CardHeader>
-            <img src="/Tipografia_LIBAMAQ.png" alt="" />
+            <img src="/Tipografia_LIBAMAQ.png" alt="" className="hover:scale-105 transition-all" />
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

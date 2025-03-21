@@ -9,24 +9,31 @@ import BrandCards from "./components/ui/brand-cards";
 import CardSection from "./components/card-section";
 import Footer from "./components/footer";
 import MisionVision from "./components/vision-mision";
+import IconoWhats from "./app/normal/IconoWhats";
+import { FaStore } from "react-icons/fa";
+import "./App.css";
+import Nav from "./components/Nav";
 
-const images = ["/boschcarusel.png", "/MAKITA.webp", "/bosch-power.jpg", "/public/HUSQ.jpg", "/service.jpg"];
+const images = [
+  "/boschcarusel.png",
+  "/MAKITA.webp",
+  "/bosch-power.jpg",
+  "/HUSQ.jpg",
+  "/service.jpg",
+];
 
 const items = [
   {
     image: "/card-section/16-28.webp",
     title: "GSH 16-28 Professional",
-    
   },
   {
     image: "/card-section/8-45DV.webp",
     title: "GBH 8-45 DV Professional",
-    
   },
   {
     image: "/card-section/27VC.webp",
     title: "GSH 27 VC Professional",
-   
   },
   {
     image: "/card-section/2-26DRE.webp",
@@ -52,22 +59,23 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       {/* Navbar */}
-      <nav className="bg-white/95 dark:bg-gray-800 shadow-lg py-4 px-12 flex justify-between items-center fixed top-0 w-full z-10">
-        <div className="flex items-center">
-          <img src="/Tipografia_LIBAMAQ.png" alt="logo" className="max-h-12" />
-        </div>
-
-        <Button asChild>
-          <Link to="/login">Iniciar Sesión</Link>
-        </Button>
-      </nav>
+      <Nav/>
+    
 
       {/* Hero Section */}
       <header className="text-center py-6 bg-gradient-to-l from-gray-100 to-blue-300 text-black mt-[7em]">
-        <h1 className="text-4xl font-bold">Las mejores herramientas para cualquier persona</h1>
-        <p className="mt-4 text-xl">Encuentra herramientas de calidad al mejor precio.</p>
+        <h1 className="text-4xl font-bold">
+          Las mejores herramientas para cualquier persona
+        </h1>
+        <p className="mt-4 text-xl">
+          Encuentra herramientas de calidad al mejor precio.
+        </p>
+
         <Button className="bg-white border-1 border-blue-700 text-blue-600 rounded-full hover:bg-gray-200 hover:scale-110 p-4 mt-4 text-1xl ">
-            Explorar Tienda
+        <Link to="/tienda" className="flex items-center justify-center space-x-2">
+    <span>Explorar Tienda</span>
+    <FaStore />
+  </Link>
           </Button>
       </header>
 
@@ -80,9 +88,12 @@ export default function App() {
           transition={{ duration: 0.5 }}
           className="max-w-3xl mx-auto text-center"
         >
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Nuestro Objetivo</h2>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Nuestro Objetivo
+          </h2>
           <p className="mt-4 text-2xl text-gray-700 dark:text-gray-300">
-            Venta, renta, servicio y reparación de herramientas eléctricas y maquinaria para construcción.
+            Venta, renta, servicio y reparación de herramientas eléctricas y
+            maquinaria para construcción.
           </p>
         </motion.div>
       </section>
@@ -101,18 +112,22 @@ export default function App() {
           transition={{ duration: 0.5 }}
           className="max-w-3xl mx-auto"
         >
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white text-center">Nuestros Valores</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center">
+            Nuestros Valores
+          </h2>
           <ValoresAccordion />
         </motion.div>
       </section>
 
-      <div id="productos-destacados">
+      <div id="productos-destacados" >
         <CardSection
           title="Modelos representativos"
           description="Una selección de nuestras mejores herramientas"
           items={items}
         />
       </div>
+
+      <IconoWhats />
 
       <Footer />
     </div>

@@ -138,7 +138,7 @@ const DetalleHerramienta = () => {
       model: "GBH 8-45 DV",
       description: "1500 W de potencia con bajo nivel de vibraciones.",
       features: [
-        "Si el operador adquiere un GBH 8-45 DV, se llevará varios accesorios gratis.",
+        
         "Rendimiento máximo de perforación y cincelado.",
         "Sistema Vibration Control de tres etapas con función Turbo Power.",
       ],
@@ -348,7 +348,7 @@ const DetalleHerramienta = () => {
   
     {/* Refacciones */}
     <div className="mt-12">
-      <h2 className="text-xl sm:text-2xl font-bold">Refacciones compatibles</h2>
+      <h2 className="text-xl sm:text-2xl font-bold">Accesarios compatibles</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
         {herramienta.accessories.map((acc, index) => (
           <div key={index} className="border p-4 rounded-md bg-gray-100">

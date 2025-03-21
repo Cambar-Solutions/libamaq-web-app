@@ -7,6 +7,7 @@ import Dashboard from './app/dashboard/page.jsx';
 import Login from './app/normal/Login';
 import DetalleHerramienta from './app/e-commerce/DetalleHerramienta'; 
 import BrandPage from './components/brand-page';
+import ProductList from './app/e-commerce/ProductList';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -17,6 +18,9 @@ createRoot(document.getElementById('root')).render(
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/detalle/:nombre" element={<DetalleHerramienta />} />
         <Route path="/marcas/:brandName" element={<BrandPage />} />
+        <Route path="/tienda" element={<ProductList />} />
+
+
       </Routes>
     </Router>
   </StrictMode>

@@ -1,0 +1,37 @@
+@keyframes borderMove {
+    0% {
+      border-top-width: 2px;
+      border-right-width: 2px;
+      border-bottom-width: 2px;
+      border-left-width: 2px;
+    }
+    25% {
+      border-top-width: 5px;
+      border-right-width: 2px;
+      border-bottom-width: 2px;
+      border-left-width: 2px;
+    }
+    50% {
+      border-top-width: 5px;
+      border-right-width: 5px;
+      border-bottom-width: 2px;
+      border-left-width: 2px;
+    }
+    75% {
+      border-top-width: 5px;
+      border-right-width: 5px;
+      border-bottom-width: 5px;
+      border-left-width: 2px;
+    }
+    100% {
+      border-top-width: 5px;
+      border-right-width: 5px;
+      border-bottom-width: 5px;
+      border-left-width: 5px;
+    }
+  }
+  
+  .animate-border-move {
+    animation: borderMove 1s linear infinite;
+  }
+  

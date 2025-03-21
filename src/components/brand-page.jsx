@@ -6,13 +6,13 @@
     bosch: {
       name: "Bosch",
       description: "Líder mundial en herramientas eléctricas profesionales y accesorios. Bosch ofrece soluciones innovadoras y de alta calidad para todo tipo de aplicaciones.",
-      products: ["Rotomartillos", "Taladros", "Amoladoras", "Sierras", "Herramientas de medición"],
+      products: ["Rotomartillos y taladros", "Amoladoras", "Equipo para madera", "Herramientas de medición", "Equipo inalámbrico "],
       image: "/logo_bosch.png",
     },
     makita: {
       name: "Makita",
       description: "Reconocida por su durabilidad y rendimiento excepcional. Makita ofrece una amplia gama de herramientas eléctricas y accesorios para profesionales.",
-      products: ["Taladros inalámbricos", "Sierras circulares", "Lijadoras", "Aspiradoras", "Herramientas de jardín"],
+      products: ["Taladros inalámbricos", "Sierras circulares", "Lijadoras", "Aspiradoras", "Herramientas de jardín", "Equipo inalámbrico "],
       image: "/makita.png",
     },
     husqvarna: {
@@ -115,7 +115,7 @@
                 </li>
               ))}
             </ul>
-            <div className="flex justify-end me-[2em]" >
+            <div className="flex justify-end me-[2em] mt-[2em]" >
             <Button>Ver productos</Button>
 
             </div>
