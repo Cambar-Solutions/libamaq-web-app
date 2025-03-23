@@ -8,7 +8,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 const cardData = [
   { id: 1, title: "Taladro reversible", description: "GBM 1600 RE", img: "/hG3Liriw.png" },
   { id: 2, title: "Sierra Ingleteadora", description: "GCM 254",  img: "/E9mJXFeQ.png"},
-  { id: 3, title: "Taladro reversible", description: "GBM 16-2 RE_TEST_AUTOMATIZADO", img: "/taladroo.png" },
+  { id: 3, title: "Taladro reversible", description: "GBM 16-2 RE", img: "/taladroo.png" },
 ];
 
 const CardComponent = ({ title, description,  img }) => (
