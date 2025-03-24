@@ -6,12 +6,12 @@ import { useEffect, useState } from "react";
 
 const brands = [
   { name: "Bosch", slogan: "Innovación para tu vida.", logo: "/logo_bosch.png" },
-  { name: "Makita", slogan: "Herramientas eléctricas para el largo plazo.", logo: "/makita.png" },
+  { name: "Makita", slogan: "Herramientas electricas.", logo: "/makita.png" },
   { name: "Husqvarna", slogan: "Productos de construcción.", logo: "/husq.png" },
   { name: "Honda", slogan: "Productos de fuerza.", logo: "/honda-fuerza.png" },
-  { name: "Marshalltown", slogan: "Herramientas para concretos", logo: "/marshalltown.png" },
+  { name: "Marshalltown", slogan: "Herramientas para concreto", logo: "/marshalltown.png" },
   { name: "Mpower", slogan: "Productos de máxima calidad.", logo: "/m-power.webp" },
-  { name: "Cipsa", slogan: "Construimos más que obras... ¡Construimos lazos inquebrantables!", logo: "/cipsa.avif" },
+  { name: "Cipsa", slogan: "Construimos más que obras...", logo: "/cipsa.avif" },
 ];
 
 const BrandCards = () => {

@@ -23,34 +23,35 @@ const Nav = () => {
         </button>
       </div>
 
-      {/* Menú lateral en pantallas pequeñas (desplegándose desde la derecha) */}
-      <div
-        className={`fixed top-0 right-0 bg-white dark:bg-gray-800 shadow-lg p-4 h-full w-64 transform transition-all duration-300 ease-in-out ${
-          menuOpen ? "translate-x-0" : "translate-x-full"
-        } md:hidden`}
-      >
-        {/* Botón de cerrar */}
-        <button onClick={toggleMenu} className="absolute top-4 right-4 text-2xl text-blue-600">
-          <FaTimes />
-        </button>
+     {/* Menú lateral en pantallas pequeñas */}
+<div
+  className={`fixed top-0 right-0 bg-white dark:bg-gray-500 shadow-lg p-4 h-full w-64 transform transition-all duration-300 ease-in-out ${
+    menuOpen ? "translate-x-0" : "translate-x-full"
+  } md:hidden`}
+>
+  <button onClick={toggleMenu} className="absolute top-4 right-4 text-2xl text-blue-600">
+    <FaTimes />
+  </button>
 
-        <div className="flex flex-col items-center space-y-4 mt-12">
-          {/* Botón "Explorar Tienda" */}
-          <Button asChild className="w-full">
-            <Link to="/tienda" className="flex items-center justify-center w-full bg-white border-2 border-blue-700 text-blue-700 hover:bg-gray-100">
-              Tienda
-              <FaStore className="mr-2 text-blue-700" />
-            </Link>
-          </Button>
+  <div className="flex flex-col items-center space-y-4 mt-12">
+    {/* Botón "Tienda" (igual que en desktop) */}
+    <Button
+      asChild
+      className="flex items-center justify-center bg-white border-2 border-blue-700 text-blue-700 hover:bg-gray-100 w-full"
+    >
+      <Link to="/tienda">
+        <FaStore className="mr-2" />
+        Tienda
+      </Link>
+    </Button>
 
-          {/* Botón "Iniciar Sesión" */}
-          <Button asChild className="w-full">
-            <Link to="/login" className="w-full text-center">
-              Iniciar sesión
-            </Link>
-          </Button>
-        </div>
-      </div>
+    {/* Botón "Iniciar sesión" (igual que en desktop) */}
+    <Button asChild className="w-full">
+      <Link to="/login">Iniciar sesión</Link>
+    </Button>
+  </div>
+</div>
+
 
       {/* Menú principal (solo en pantallas grandes) */}
       <div className="flex items-center space-x-4 hidden md:flex">

@@ -240,7 +240,104 @@ const DetalleHerramienta = () => {
         { title: "Manual de usuario", url: "https://www.bosch-professional.com/binary/manualsmedia/o458514v21_160992A9A9_202404.pdf", size: "2 MB" },
         { title: "Ficha técnica del producto", url: "https://www.bosch-professional.com/mx/es/pdf/productdata/gbh-2-26-dre-sheet.pdf", size: "1.5 MB" },
       ],
+    },
+    {
+      title: "Revolvedora para concreto Máxi 10",
+      model: "MAXI-1010P",
+      description: "Equipo de fácil operación y bajo mantenimiento con gran capacidad de producción de concreto. Se pueden montar motores de 9, 13, 14 y 15 H.P.",
+      features: [
+        "Capacidad total de 350 litros (12.4 pies³)",
+        "Capacidad de carga de 300 litros (10.6 pies³)",
+        "Bastidor robusto con patín de arrastre para mayor estabilidad",
+        "Corona y piñón de acero para mayor durabilidad",
+        "Tolva de lámina con refuerzo interior"
+      ],
+      multimedia: [
+        "/card-section/cipsa-10.jpg",
+        "/product-des/MAX/lateral.jpg"
+      ],
+      selection: "Disponible con base de patín y llantas neumáticas de 13\"",
+      additionalInfo: {
+        highlights: "La revolvedora para concreto Máxi 10 es ideal para trabajos de alto rendimiento. Su diseño reforzado y gran capacidad de carga permiten una mezcla eficiente y continua. Compatible con motores de gasolina desde 9 hasta 15 H.P., brinda gran versatilidad en obra.",
+        application: "Usada para mezclar concreto en obras de construcción, adaptable a distintos motores de combustión."
+      },
+      spareParts: [
+        { icon: "/icons/step1.png", text: "Seleccione un repuesto" },
+        { icon: "/icons/step2.png", text: "Haga el pedido en línea" },
+        { icon: "/icons/step3.png", text: "Pague" },
+        { icon: "/icons/step4.png", text: "Reciba su pedido" }
+      ],
+      
+      downloads: [
+        {
+          title: "Ficha técnica del producto",
+          url: "/public/Revolvedora_compressed.pdf",
+          size: "2.1 MB"
+        },
+        {
+          title: "Manual de partes",
+          url: "/public/MAXI-10ND.pdf",
+          size: "2.1 MB"
+        }
+      ]
+    },
+    {
+      title: "Rotomartillo electro neumático HR2475",
+      model: "HR2475",
+      description: "Rotomartillo electro neumático de tres funciones: taladro, rotomartillo y cincelador. Sistema de encastre SDS Plus. Cuenta con un potente motor y un peso ideal para realizar cualquier tipo de trabajo.",
+      features: [
+        "3 modos de operación: rotación, rotación con percusión y solo percusión",
+        "Encastre SDS Plus para cambio rápido de brocas",
+        "Velocidad variable con gatillo sensible al tacto",
+        "Empuñadura ergonómica con goma antideslizante para mejor control",
+        "Limitador de profundidad ajustable"
+      ],
+  
+      multimedia: [
+        "/card-section/rotomartillo.png",
+        "/product-des/HR2475/work.png"
+      ],
+      selection: "Incluye empuñadura lateral y tope de profundidad",
+      additionalInfo: {
+        highlights: "El rotomartillo HR2475 de Makita combina versatilidad, potencia y durabilidad. Es ideal para trabajos de perforación y demolición ligera gracias a sus 3 funciones seleccionables. Su diseño ergonómico y el sistema SDS Plus lo convierten en una herramienta confiable para el profesional de la construcción.",
+        application: "Diseñado para taladrar, perforar con impacto y cincelar en concreto, ladrillo o piedra. Ideal para instaladores, electricistas y personal de mantenimiento."
+      },
+      spareParts: [
+        { icon: "/icons/step1.png", text: "Seleccione un repuesto" },
+        { icon: "/icons/step2.png", text: "Haga el pedido en línea" },
+        { icon: "/icons/step3.png", text: "Pague" },
+        { icon: "/icons/step4.png", text: "Reciba su pedido" }
+      ],
+      // accessories: [
+      //   {
+      //     image: "/product-des/HR2475/broca.jpg",
+      //     title: "Broca SDS Plus para metal",
+      //     description: "Broca de alta resistencia para perforación precisa en concreto",
+      //     material: "Acero de alta velocidad (HSS)"
+      //   },
+      //   {
+      //     image: "/product-des/HR2475/brocas.jpg",
+      //     title: "Juego de brocas de acero",
+      //     description: "Brocas de acero de alta velocidad-G",
+      //     material: "Acero templado"
+      //   }
+      // ],
+      downloads: [
+        {
+          title: "Manual del usuario",
+          url: "https://www.makita.com.mx/wp-content/uploads/2023/04/Manual_HR2475.pdf",
+          size: "3.2 MB"
+        },
+        {
+          title: "Ficha técnica del producto",
+          url: "https://www.makita.com.mx/wp-content/uploads/2023/04/Ficha_HR2475.pdf",
+          size: "1.1 MB"
+        }
+      ]
     }
+    
+    
+    
     
     
   ];
@@ -254,131 +351,144 @@ const DetalleHerramienta = () => {
   }
 
   return (
-  <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
- {/* Botón de regreso funcional */}
- <div className="mb-6">
- <Button className="bg-blue-500 rounded-b-2xl hover:bg-blue-700 mb-3" onClick={handleBack}>
-              Regresar a productos destacados
-            </Button>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      {/* Botón de regreso funcional */}
+      <div className="mb-6">
+        <Button className="bg-blue-500 rounded-b-2xl hover:bg-blue-700 mb-3" onClick={handleBack}>
+          Regresar a productos destacados
+        </Button>
       </div>
-    <div className="flex flex-col lg:flex-row gap-8">
-      {/* Galería de imágenes */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center">
-        <div className="w-full max-w-md h-80 flex justify-center items-center ">
-          <img
-            src={mainImage}
-            alt={herramienta.title}
-            className="w-full h-full object-contain"
-          />
-        </div>
-        <div className="flex mt-4 space-x-2 overflow-x-auto">
-          {herramienta.multimedia.map((img, index) => (
+  
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Galería de imágenes */}
+        <div className="w-full lg:w-1/2 flex flex-col items-center">
+          <div className="w-full max-w-md h-80 flex justify-center items-center">
             <img
-              key={index}
-              src={img}
-              alt={`${herramienta.title} - ${index}`}
-              className={`w-16 h-16 object-contain border p-1 cursor-pointer ${
-                mainImage === img ? "border-blue-600" : "border-gray-300"
-              }`}
-              onClick={() => setMainImage(img)}
+              src={mainImage}
+              alt={herramienta.title}
+              className="w-full h-full object-contain"
             />
-          ))}
-        </div>
-      </div>
-  
-      {/* Información de la herramienta */}
-      <div className="w-full lg:w-1/2">
-        <h1 className="text-2xl sm:text-3xl font-bold text-blue-950">{herramienta.title}</h1>
-        <p className="text-md sm:text-lg text-gray-700 font-bold my-2 ">{herramienta.model}</p>
-        <p className="text-gray-600 text-md sm:text-lg font-semibold">{herramienta.description}</p>
-  
-        {/* Características */}
-        <h3 className="text-lg sm:text-xl font-semibold mt-6">Características principales</h3>
-        <ul className="list-disc pl-6 space-y-1 text-gray-700">
-          {herramienta.features.map((feature, index) => (
-            <li key={index}>{feature}</li>
-          ))}
-        </ul>
-  
-        {/* Funciones y características con íconos */}
-        <h3 className="text-lg sm:text-xl font-semibold mt-6">Funciones y características</h3>
-        <div className="flex flex-wrap gap-4 mt-2">
-          {herramienta.advantages.map((adv, index) => (
-            <div key={index} className="flex flex-col items-center w-16">
-              <img src={adv.icon} alt={adv.text} className="w-12 h-12" />
-              <p className="text-xs text-gray-700 mt-1 text-center">{adv.text}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  
-    {/* Información Adicional */}
-    <div className="mt-12">
-      <h2 className="text-xl sm:text-2xl font-bold mb-3 text-blue-950 ">Aspectos destacados del producto</h2>
-      <p className="text-gray-700">{herramienta.additionalInfo.highlights}</p>
-  
-      <h2 className="text-xl sm:text-2xl font-bold mt-6 mb-3 text-blue-950">Equipos y aplicaciones</h2>
-      <p className="text-gray-700">{herramienta.additionalInfo.application}</p>
-    </div>
-  
-    {/* Sección de repuestos */}
-    <div className="mt-12 bg-blue-900 text-white p-6 text-center rounded-md">
-  <h2 className="text-xl sm:text-2xl font-bold">¿NECESITA ALGÚN REPUESTO?</h2>
-  <p className="mt-2">
-    Aquí encontrará rápida y fácilmente los repuestos indicados para su herramienta profesional de Bosch.
-  </p>
-  
-  {/* Lista de pasos ordenados */}
-  <ol className="mt-4 space-y-4 flex flex-col items-center max-w-lg mx-auto">
-    {herramienta.spareParts.map((step, index) => (
-      <li key={index} className="flex items-center gap-4 w-full sm:w-3/4 lg:w-2/3">
-        {/* Número de paso en círculo */}
-        <span className="text-lg font-bold bg-white text-blue-900 px-4 py-2 rounded-full flex justify-center items-center w-10 h-10">
-          {index + 1}
-        </span>
-        
-        {/* Texto del paso */}
-        <p className="text-sm sm:text-base text-left">{step.text}</p>
-      </li>
-    ))}
-  </ol>
-</div>
-
-  
-    {/* Refacciones */}
-    <div className="mt-12">
-      <h2 className="text-xl sm:text-2xl font-bold">Accesarios compatibles</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-        {herramienta.accessories.map((acc, index) => (
-          <div key={index} className="border p-4 rounded-md bg-gray-100">
-            <img src={acc.image} alt={acc.title} className="w-full h-32 object-contain mb-4" />
-            <h3 className="text-md sm:text-lg font-bold">{acc.title}</h3>
-            <p className="text-gray-700">{acc.description}</p>
-            <p className="text-sm font-semibold mt-2">Material: {acc.material}</p>
           </div>
-        ))}
-      </div>
-    </div>
+          <div className="flex mt-4 space-x-2 overflow-x-auto">
+            {herramienta.multimedia?.map((img, index) => (
+              <img
+                key={index}
+                src={img}
+                alt={`${herramienta.title} - ${index}`}
+                className={`w-16 h-16 object-contain border p-1 cursor-pointer ${
+                  mainImage === img ? "border-blue-600" : "border-gray-300"
+                }`}
+                onClick={() => setMainImage(img)}
+              />
+            ))}
+          </div>
+        </div>
   
-    {/* Descargas */}
-    <div className="mt-12">
-      <h2 className="text-xl sm:text-2xl font-bold font-sans text-blue-950 mb-2">DESCARGAS</h2>
-      <div className="w-80">
-      <hr />
-
-      </div>
-      <ul className="mt-4">
-        {herramienta.downloads.map((doc, index) => (
-          <li key={index} className="text-blue-600 hover:underline">
-            <a href={doc.url} target="_blank" rel="noopener noreferrer">{doc.title} ({doc.size})</a>
-          </li>
-        ))}
-      </ul>
-    </div>
-  </div>
+        {/* Información de la herramienta */}
+        <div className="w-full lg:w-1/2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-blue-950">{herramienta.title}</h1>
+          <p className="text-md sm:text-lg text-gray-700 font-bold my-2">{herramienta.model}</p>
+          <p className="text-gray-600 text-md sm:text-lg font-semibold">{herramienta.description}</p>
   
+          {/* Características */}
+          {herramienta.features?.length > 0 && (
+            <>
+              <h3 className="text-lg sm:text-xl font-semibold mt-6">Características principales</h3>
+              <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                {herramienta.features.map((feature, index) => (
+                  <li key={index}>{feature}</li>
+                ))}
+              </ul>
+            </>
+          )}
+  
+          {/* Funciones y características con íconos */}
+          {herramienta.advantages?.length > 0 && (
+            <>
+              <h3 className="text-lg sm:text-xl font-semibold mt-6">Funciones y características</h3>
+              <div className="flex flex-wrap gap-4 mt-2">
+                {herramienta.advantages.map((adv, index) => (
+                  <div key={index} className="flex flex-col items-center w-16">
+                    {adv.icon && (
+                      <img src={adv.icon} alt={adv.text} className="w-12 h-12" />
+                    )}
+                    <p className="text-xs text-gray-700 mt-1 text-center">{adv.text}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+  
+      {/* Información Adicional */}
+      <div className="mt-12">
+        <h2 className="text-xl sm:text-2xl font-bold mb-3 text-blue-950">Aspectos destacados del producto</h2>
+        <p className="text-gray-700">{herramienta.additionalInfo?.highlights}</p>
+  
+        <h2 className="text-xl sm:text-2xl font-bold mt-6 mb-3 text-blue-950">Equipos y aplicaciones</h2>
+        <p className="text-gray-700">{herramienta.additionalInfo?.application}</p>
+      </div>
+  
+      {/* Sección de repuestos */}
+      {herramienta.spareParts?.length > 0 && (
+        <div className="mt-12 bg-blue-900 text-white p-6 text-center rounded-md">
+          <h2 className="text-xl sm:text-2xl font-bold">¿NECESITA ALGÚN REPUESTO?</h2>
+          <p className="mt-2">
+            Aquí encontrará rápida y fácilmente los repuestos indicados para su herramienta profesional de Bosch.
+          </p>
+  
+          <ol className="mt-4 space-y-4 flex flex-col items-center max-w-lg mx-auto">
+            {herramienta.spareParts.map((step, index) => (
+              <li key={index} className="flex items-center gap-4 w-full sm:w-3/4 lg:w-2/3">
+                <span className="text-lg font-bold bg-white text-blue-900 px-4 py-2 rounded-full flex justify-center items-center w-10 h-10">
+                  {index + 1}
+                </span>
+                <p className="text-sm sm:text-base text-left">{step.text}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+  
+      {/* Accesorios */}
+      {herramienta.accessories?.length > 0 && (
+        <div className="mt-12">
+          <h2 className="text-xl sm:text-2xl font-bold">Accesorios compatibles</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+            {herramienta.accessories.map((acc, index) => (
+              <div key={index} className="border p-4 rounded-md bg-gray-100">
+                <img src={acc.image} alt={acc.title} className="w-full h-32 object-contain mb-4" />
+                <h3 className="text-md sm:text-lg font-bold">{acc.title}</h3>
+                <p className="text-gray-700">{acc.description}</p>
+                <p className="text-sm font-semibold mt-2">Material: {acc.material}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+  
+      {/* Descargas */}
+      {herramienta.downloads?.length > 0 && (
+        <div className="mt-12">
+          <h2 className="text-xl sm:text-2xl font-bold font-sans text-blue-950 mb-2">DESCARGAS</h2>
+          <div className="w-80">
+            <hr />
+          </div>
+          <ul className="mt-4">
+            {herramienta.downloads.map((doc, index) => (
+              <li key={index} className="text-blue-600 hover:underline">
+                <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                  {doc.title} ({doc.size})
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
+  
 };
 
 export default DetalleHerramienta;

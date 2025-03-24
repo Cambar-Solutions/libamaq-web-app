@@ -4,7 +4,7 @@ import { FaStore } from "react-icons/fa";
 
 export default function Footer() {
   return (
-    <footer className="bg-gradient-to-l from-gray-100 to-blue-200 text-black py-10 px-6 mt-4">
+    <footer className="bg-gradient-to-l from-gray-100 to-blue-300 text-black py-10 px-6 mt-4">
       <div className="max-w-6xl mx-auto text-center">
         {/* Título principal */}
         <h3 className="text-2xl font-extrabold text-gray-900 dark:text-white">

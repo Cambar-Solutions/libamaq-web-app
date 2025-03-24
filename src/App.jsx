@@ -39,6 +39,15 @@ const items = [
     image: "/card-section/2-26DRE.webp",
     title: "GBH 2-26 DRE Professional",
   },
+
+  {
+    image:"/card-section/cipsa-10.jpg",
+    title:"Revolvedora para concreto Máxi 10"
+  },
+  {
+    image:"/card-section/rotomartillo.png",
+    title:"Rotomartillo electro neumático HR2475"
+  }
 ];
 
 export default function App() {

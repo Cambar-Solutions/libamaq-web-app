@@ -9,15 +9,15 @@ const Nav = () => {
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
   return (
-    <nav className="bg-white border-gray-400 border-b-2 py-4 px-6 flex justify-between items-center fixed top-0 w-full z-20">
+    <nav className="bg-blue-950  border-b-2 py-4 px-6 flex justify-between items-center fixed top-0 w-full z-20 shadow">
       {/* Logo */}
-      <div className="flex items-center">
-        <img src="/Tipografia_LIBAMAQ.png" alt="logo" className="max-h-12" />
+      <div className="flex items-center mx-4">
+        <img src="/Tipografia_LIBAMAQ_legulab_color_hor.png" alt="logo" className="max-h-12 " />
       </div>
 
       {/* Menú hamburguesa (solo en pantallas pequeñas) */}
       <div className="md:hidden flex items-center">
-        <button onClick={toggleMenu} className="text-blue-600">
+        <button onClick={toggleMenu} className="text-yellow-500">
           {menuOpen ? (
             <FaTimes size={24} />
           ) : (
@@ -43,9 +43,9 @@ const Nav = () => {
       </div>
 
       {/* Menú principal (solo en pantallas grandes) */}
-      <div className="flex items-center space-x-6 hidden md:flex">
+      <div className="flex items-center space-x-6 hidden md:flex mx-4">
         {/* Ícono de carrito */}
-        <Link to="/cart" className="text-blue-600">
+        <Link to="/cart" className="text-yellow-500">
           <FaShoppingCart size={24} />
         </Link>
       </div>

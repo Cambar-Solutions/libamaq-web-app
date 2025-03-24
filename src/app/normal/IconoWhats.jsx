@@ -13,7 +13,7 @@ const IconoWhats = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const whatsappNumber = "7771118924"; // Reemplaza este número por el tuyo
+  const whatsappNumber = "7351023279"; // Reemplaza este número por el tuyo
 
   return (
     <div className="fixed bottom-5 right-5 flex items-center space-x-2 cursor-pointer">
@@ -28,7 +28,7 @@ const IconoWhats = () => {
         rel="noopener noreferrer"
         className="bg-green-500 text-white p-3 rounded-full shadow-lg hover:bg-green-600 transition duration-300"
       >
-        <FaWhatsapp size={24} className="transform transition duration-300 ease-in-out hover:rotate-360" />
+        <FaWhatsapp size={28} className="transform transition duration-300 ease-in-out hover:rotate-360" />
       </a>
     </div>
   );
