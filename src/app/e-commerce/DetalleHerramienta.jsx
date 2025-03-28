@@ -271,7 +271,7 @@ const DetalleHerramienta = () => {
       downloads: [
         {
           title: "Ficha técnica del producto",
-          url: "/public/Revolvedora_compressed.pdf",
+          url: "https://www.cipsa.com.mx/bo/file.php?id=13729&cmd=download",
           size: "2.1 MB"
         },
         {

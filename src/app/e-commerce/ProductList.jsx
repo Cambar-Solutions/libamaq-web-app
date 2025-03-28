@@ -14,7 +14,7 @@ const ProductList = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          <div className="w-3/4 lg:w-full  flex flex-col justify-center mx-auto">
+          <div className="w-3/4 lg:w-full  flex flex-col justify-center mx-auto mt-6">
           <h1 className="font-semibold  text-2xl md:uppercase lg:uppercase md:font-bold lg:font-bold mb-3">
             Explora nuestras marcas disponibles
           </h1>

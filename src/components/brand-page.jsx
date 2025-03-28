@@ -2,6 +2,7 @@
   import { useEffect } from "react";
   import { Button } from "@/components/ui/button";
 
+
   const brandDetails = {
     bosch: {
       name: "Bosch",
@@ -59,6 +60,11 @@
     console.log("Available brands:", Object.keys(brandDetails));
     console.log("Formatted brand name:", formattedBrandName);
     console.log("Brand found:", brand);
+
+    useEffect(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, []);
+    
 
     // Función para regresar a `BrandCards`
     const handleBack = () => {

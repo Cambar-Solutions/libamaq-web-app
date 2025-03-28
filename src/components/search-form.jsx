@@ -11,7 +11,8 @@ import {
 
 export function SearchForm({ ...props }) {
   return (
-    <form {...props} className="flex flex-col sm:flex-row gap-4 items-center pl-14">
+    <form {...props} 
+    className="flex flex-col sm:flex-row gap-4 items-center justify-between px-4 sm:px-0">
       {/* Input de búsqueda */}
       <div className="relative w-full sm:max-w-[250px] ">
         <Label htmlFor="search" className="sr-only">

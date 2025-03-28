@@ -13,7 +13,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@data": path.resolve(__dirname, "./src/data"),
+      "@components": path.resolve(__dirname, "./src/components"),
     },
+    
   },
   server: {
     allowedHosts: ["shore-questionnaire-response-hu.trycloudflare.com"]

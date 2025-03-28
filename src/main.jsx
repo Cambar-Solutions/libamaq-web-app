@@ -8,6 +8,10 @@ import Login from './app/normal/Login';
 import DetalleHerramienta from './app/e-commerce/DetalleHerramienta'; 
 import BrandPage from './components/brand-page';
 import ProductList from './app/e-commerce/ProductList';
+import CategoryPage from './app/e-commerce/CategoryPage';
+import NuevoProducto from './app/dashboard/NuevoProducto';
+import ProductoDetalle from './app/dashboard/ProductoDetalle';
+
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -19,6 +23,12 @@ createRoot(document.getElementById('root')).render(
         <Route path="/detalle/:nombre" element={<DetalleHerramienta />} />
         <Route path="/marcas/:brandName" element={<BrandPage />} />
         <Route path="/tienda" element={<ProductList />} />
+        <Route path="/productos/:brand/:category" element={<CategoryPage />} />
+        <Route path="/nuevo-producto" element={<NuevoProducto />} />
+        <Route path="/producto-detalle" element={<ProductoDetalle />} />
+
+
+
 
 
       </Routes>
