@@ -1,7 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { useEffect } from "react";
-
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import Nav from "./Nav";
@@ -13,22 +11,28 @@ export default function CategoryPage() {
   const { brand, category } = useParams();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState(category); // Estado para el select
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
-  
 
   const handleBack = () => navigate(-1);
 
   const simulatedItems =
-    simulatedProductsByBrand[brand?.toLowerCase()]?.[category] || [];
+    simulatedProductsByBrand[brand?.toLowerCase()]?.[selectedCategory] || [];
 
   const filteredItems = simulatedItems.filter(
     (item) =>
       item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.text.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleCategoryChange = (e) => {
+    setSelectedCategory(e.target.value);
+    // Redirigir a la nueva categoría seleccionada
+    navigate(`/productos/${brand}/${e.target.value}`);
+  };
 
   return (
     <>
@@ -39,7 +43,7 @@ export default function CategoryPage() {
           {/* Encabezado fijo */}
           <div className="sticky top-0 z-10 bg-white pb-4 pt-2">
             {/* Volver */}
-            <div className="mb-2">
+            <div className=" flex justify-between mb-2">
               <button
                 onClick={handleBack}
                 className="flex items-center text-blue-600 hover:underline hover:opacity-80 transition mt-8"
@@ -47,13 +51,31 @@ export default function CategoryPage() {
                 <ArrowLeft className="w-5 h-5 mr-2" />
                 Volver a ver marcas
               </button>
+
+               {/* Select para elegir categoría */}
+            <div className="flex justify-center mt-8">
+              <select
+                value={selectedCategory}
+                onChange={handleCategoryChange}
+                className="bg-slate-200 text-black rounded-md px-4 py-2 max-w-xs w-full"
+              >
+                <option value="generadores">Generadores</option>
+                <option value="motobombas">Motobombas</option>
+                <option value="motores-estacionarios">Motores estacionarios</option>
+                <option value="podadoras">Podadoras</option>
+                <option value="equipos-de-jardin">Equipos de jardín</option>
+                {/* Puedes agregar más categorías según lo necesites */}
+              </select>
+            </div>
+
             </div>
 
             {/* Título */}
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3 text-center">
-              {brand} - {category}
+              {brand} - {selectedCategory}
             </h1>
 
+           
             {/* Búsqueda */}
             <div className="flex justify-center">
               <input
@@ -79,7 +101,7 @@ export default function CategoryPage() {
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
                   className="bg-white flex flex-col justify-between min-h-[240px] rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.03] transition-transform duration-300 ease-in-out overflow-hidden w-full max-w-[90%] sm:max-w-full mx-auto"
-                  >
+                >
                   <div className="p-4">
                     <h3 className="text-lg font-semibold text-gray-800">{item.title}</h3>
                     <p className="text-sm text-gray-500">{item.text}</p>
