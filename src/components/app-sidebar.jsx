@@ -27,44 +27,36 @@ const data = {
     email: "libamaq@gmail.com",
     avatar: "/avatars/shadcn.jpg",
   },
-  navMain: [
-   
-    
-    
-  ],
   optionsMenu: [
     {
       name: "Productos",
-      url: "#",
+      id: "productos",
       icon: Package, 
     },
     {
       name: "Pedidos",
-      url: "#",
+      id: "pedidos",
       icon: ShoppingCart, 
     },
     {
       name: "Clientes",
-      url: "#",
+      id: "clientes",
       icon: Users, 
     },
     {
       name: "Empleados",
-      url: "#",
+      id: "empleados",
       icon: Briefcase, 
     },
     {
       name: "Estadísticas",
-      url: "#",
+      id: "estadisticas",
       icon: BarChart3, 
     },
   ],
-  
 }
 
-export function AppSidebar({
-  ...props
-}) {
+export function AppSidebar({ onViewChange, currentView, ...props }) {
   return (
     <Sidebar
       className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
@@ -86,7 +78,19 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavProjects optionsMenu={data.optionsMenu} />
+        <SidebarMenu>
+          {data.optionsMenu.map((item) => (
+            <SidebarMenuItem key={item.id}>
+              <SidebarMenuButton
+                onClick={() => onViewChange(item.id)}
+                isActive={currentView === item.id}
+              >
+                <item.icon className="mr-2" />
+                <span>{item.name}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

@@ -13,6 +13,7 @@ import IconoWhats from "./app/normal/IconoWhats";
 import { FaStore } from "react-icons/fa";
 import "./App.css";
 import Nav from "./components/Nav";
+import { Toaster } from "sonner";
 
 const images = [
   "/boschcarusel.png",
@@ -139,6 +140,7 @@ export default function App() {
       <IconoWhats />
 
       <Footer />
+      <Toaster richColors position="top-right" />
     </div>
   );
 }
