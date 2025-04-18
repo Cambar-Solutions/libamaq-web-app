@@ -23,7 +23,7 @@ const images = [
   "/service.jpg",
 ];
 
-const items = [
+export const items = [
   {
     image: "/card-section/16-28.webp",
     title: "GSH 16-28 Professional",
@@ -75,10 +75,10 @@ export default function App() {
       {/* Hero Section */}
       <header className="text-center py-6 bg-gradient-to-l from-gray-100 to-blue-300 text-black mt-[7em]">
         <h1 className="text-4xl font-bold">
-          Las mejores herramientas para cualquier persona
+           Las mejores herramientas para cualquier persona
         </h1>
         <p className="mt-4 text-xl">
-          Encuentra herramientas de calidad al mejor precio.
+        Encuentra herramientas de calidad al mejor precio en LIBAMAQ.
         </p>
 
         <Button className="bg-white border-1 border-blue-700 text-blue-600 rounded-full hover:bg-gray-200 hover:scale-110 p-4 mt-4 text-1xl ">

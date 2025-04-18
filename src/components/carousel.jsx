@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
 import "swiper/css";
@@ -18,10 +18,28 @@ export default function Carousel({ images }) {
         className="rounded-lg shadow-lg"
       >
         {images.map((img, index) => (
-          <SwiperSlide key={index} className="flex justify-center items-center">
+          <SwiperSlide
+            key={index}
+            className="flex justify-center items-center"
+          >
             <img
               src={img}
-              alt={`Slide ${index + 1}`}
+              alt={
+                img === "/boschcarusel.png"
+                  ? "LIBAMAQ herramientas Bosch"
+                  : img === "/MAKITA.webp"
+                  ? "LIBAMAQ herramientas Makita"
+                  : img === "/bosch-power.jpg"
+                  ? "LIBAMAQ herramientas eléctricas Bosch"
+                  : img === "/HUSQ.jpg"
+                  ? "LIBAMAQ herramientas Husqvarna"
+                  : img === "/service.jpg"
+                  ? "LIBAMAQ servicio y reparación de herramientas"
+                  : img === "/CIPSA.png"
+                  ? "LIBAMAQ herramientas Cipsa"
+                  : `Imagen ${index + 1}`
+              }
+
               className="w-full h-96 object-cover rounded-lg"
             />
           </SwiperSlide>

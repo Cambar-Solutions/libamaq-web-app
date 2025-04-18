@@ -15,10 +15,10 @@ const MisionVision = () => {
                 Misión
               </h3>
               <p className="mt-4 text-center text-gray-600 text-md">
-                Somos una empresa comprometida a ofrecer venta, renta y servicio
-                de herramientas eléctricas, maquinaria de construcción y agrícola,
-                trabajando de la mano con las marcas líderes del mercado, apoyando
-                el desarrollo social y económico de nuestro entorno.
+                En LIBAMAQ somos una empresa comprometida a ofrecer venta,
+                renta y servicio de herramientas, maquinaria de construcción y
+                agrícola, trabajando de la mano con las marcas líderes del
+                mercado, apoyando el desarrollo social y económico de nuestro entorno.
               </p>
             </CardContent>
           </Card>
@@ -28,7 +28,7 @@ const MisionVision = () => {
         <div className="w-full md:w-1/2">
           <img
             src="/trabajadores.avif" 
-            alt="Misión"
+            alt="Trabajadores de LIBAMAQ"
             className="w-3/4 h-auto object-cover rounded-lg mx-auto" 
           />
         </div>
@@ -39,7 +39,7 @@ const MisionVision = () => {
         <div className="w-full md:w-1/2">
           <img
             src="/cons.jpg" 
-            alt="Visión"
+            alt="Maquinaria en LIBAMAQ"
             className="w-3/4 h-auto object-cover rounded-lg mx-auto" 
           />
         </div>
@@ -52,9 +52,9 @@ const MisionVision = () => {
         Visión
       </h3>
       <p className="mt-4 text-center text-gray-600 text-md">
-        Ser la empresa líder en la prestación de nuestros servicios,
-        ofreciendo al cliente la mejor calidad y atención para poder crear
-        un vínculo a largo plazo.
+        En LIBAMAQ queremos ser la empresa líder en la prestación de nuestros
+        servicios, ofreciendo al cliente la mejor calidad y atención en
+        herramientas y maquinaria para poder crear un vínculo a largo plazo.
       </p>
     </CardContent>
   </Card>

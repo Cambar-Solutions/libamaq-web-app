@@ -1,4 +1,5 @@
-  import { useParams, useNavigate } from "react-router-dom";
+  import { Link, useParams, useNavigate } from "react-router-dom";
+
   import { useEffect } from "react";
   import { Button } from "@/components/ui/button";
 
@@ -63,6 +64,7 @@
 
     useEffect(() => {
       window.scrollTo({ top: 0, behavior: "smooth" });
+      document.title = `LIBAMAQ - ${brand.name}`;
     }, []);
     
 
@@ -100,10 +102,11 @@
         <Button className="bg-blue-500 rounded-b-2xl hover:bg-blue-700 mb-3" onClick={handleBack}>
               Regresar a Marcas
             </Button>
+            <h1 className="text-3xl font-bold mb-4">{brand.name}</h1>
           {/* Información de la marca */}
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
             <div className="flex flex-col md:flex-row items-center gap-8">
-              <img src={brand.image} alt={`${brand.name} logo`} className="w-48 h-auto object-contain" />
+              <img src={brand.image} alt={`Logo de herramientas ${brand.name} en LIBAMAQ`} className="w-48 h-auto object-contain" />
               <div>
                 <p className="text-gray-600 text-lg">{brand.description}</p>
               </div>
@@ -122,7 +125,9 @@
               ))}
             </ul>
             <div className="flex justify-end me-[2em] mt-[2em]" >
-            <Button>Ver productos</Button>
+            <Link to="/tienda">
+            <Button >Ver productos</Button>
+            </Link>
 
             </div>
           </div>
