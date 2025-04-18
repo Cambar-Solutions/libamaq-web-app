@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
-import { createClient, getClients, updateClient } from "@/services/clientService";
+import { getCustomerUsers, createUser, updateUser } from "@/services/admin/userService";
 import { toast } from "sonner";
 import { Pencil } from "lucide-react";
 
@@ -21,8 +21,8 @@ export function ClientsView() {
     email: "",
     telefono: "",
     password: "",
-    code: "",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    role: "GENERAL_CUSTOMER"
   });
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export function ClientsView() {
 
   const fetchClients = async () => {
     try {
-      const data = await getClients();
+      const data = await getCustomerUsers();
       setClients(data);
     } catch (error) {
       toast.error("Error al cargar clientes");
@@ -51,6 +51,13 @@ export function ClientsView() {
     setNewClient(prev => ({
       ...prev,
       status: value
+    }));
+  };
+
+  const handleRoleChange = (value) => {
+    setNewClient(prev => ({
+      ...prev,
+      role: value
     }));
   };
 
@@ -74,7 +81,7 @@ export function ClientsView() {
       telefono: client.phoneNumber,
       password: "",
       status: client.status,
-      code: client.code
+      role: client.role
     });
     setIsModalOpen(true);
   };
@@ -87,8 +94,8 @@ export function ClientsView() {
       email: "",
       telefono: "",
       password: "",
-      code: "",
-      status: "ACTIVE"
+      status: "ACTIVE",
+      role: "GENERAL_CUSTOMER"
     });
     setIsEditing(false);
   };
@@ -102,11 +109,18 @@ export function ClientsView() {
     e.preventDefault();
     setIsLoading(true);
     try {
+      const userData = {
+        ...newClient,
+        name: newClient.nombre,
+        lastName: newClient.apellido,
+        phoneNumber: newClient.telefono
+      };
+
       if (isEditing) {
-        await updateClient(newClient);
+        await updateUser(userData);
         toast.success("Cliente actualizado exitosamente");
       } else {
-        await createClient(newClient);
+        await createUser(userData);
         toast.success("Cliente registrado exitosamente");
       }
       setIsModalOpen(false);
@@ -137,6 +151,7 @@ export function ClientsView() {
               <TableHead>Nombre</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Teléfono</TableHead>
+              <TableHead>Rol</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Fecha de registro</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
@@ -150,6 +165,17 @@ export function ClientsView() {
                 </TableCell>
                 <TableCell>{client.email}</TableCell>
                 <TableCell>{client.phoneNumber}</TableCell>
+                <TableCell>
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    client.role === "GENERAL_CUSTOMER" 
+                      ? "bg-blue-100 text-blue-800" 
+                      : "bg-purple-100 text-purple-800"
+                  }`}>
+                    {client.role === "GENERAL_CUSTOMER" ? "Cliente General" : 
+                     client.role === "FREQUENT_CUSTOMER" ? "Cliente Frecuente" : 
+                     client.role}
+                  </span>
+                </TableCell>
                 <TableCell>
                   <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                     client.status === 'ACTIVE' 
@@ -242,6 +268,23 @@ export function ClientsView() {
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="role" className="text-right">
+                  Rol
+                </Label>
+                <Select
+                  value={newClient.role}
+                  onValueChange={handleRoleChange}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Seleccionar rol" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="GENERAL_CUSTOMER">Cliente General</SelectItem>
+                    <SelectItem value="FREQUENT_CUSTOMER">Cliente Frecuente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="password" className="text-right">
                   Contraseña
                 </Label>
@@ -256,21 +299,6 @@ export function ClientsView() {
                   placeholder={isEditing ? "Dejar vacío para mantener la actual" : ""}
                 />
               </div>
-              {!isEditing && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="code" className="text-right">
-                    Código
-                  </Label>
-                  <Input
-                    id="code"
-                    name="code"
-                    value={newClient.code}
-                    onChange={handleInputChange}
-                    className="col-span-3"
-                    required
-                  />
-                </div>
-              )}
               {isEditing && (
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="status" className="text-right">

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
-import { createEmployee, getEmployees, updateEmployee } from "@/services/employeeService";
+import { getStaffUsers, createUser, updateUser } from "@/services/admin/userService";
 import { toast } from "sonner";
 import { Pencil } from "lucide-react";
 
@@ -21,8 +21,8 @@ export function EmployeesView() {
     email: "",
     telefono: "",
     password: "",
-    code: "",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    role: "EMPLOYEE"
   });
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export function EmployeesView() {
 
   const fetchEmployees = async () => {
     try {
-      const data = await getEmployees();
+      const data = await getStaffUsers();
       setEmployees(data);
     } catch (error) {
       toast.error("Error al cargar empleados");
@@ -72,9 +72,9 @@ export function EmployeesView() {
       apellido: employee.lastName,
       email: employee.email,
       telefono: employee.phoneNumber,
-      password: "", // Campo vacío para la contraseña en edición
+      password: "",
       status: employee.status,
-      code: employee.code
+      role: "EMPLOYEE"
     });
     setIsModalOpen(true);
   };
@@ -87,8 +87,8 @@ export function EmployeesView() {
       email: "",
       telefono: "",
       password: "",
-      code: "",
-      status: "ACTIVE"
+      status: "ACTIVE",
+      role: "EMPLOYEE"
     });
     setIsEditing(false);
   };
@@ -102,11 +102,19 @@ export function EmployeesView() {
     e.preventDefault();
     setIsLoading(true);
     try {
+      const userData = {
+        ...newEmployee,
+        name: newEmployee.nombre,
+        lastName: newEmployee.apellido,
+        phoneNumber: newEmployee.telefono,
+        role: "EMPLOYEE"
+      };
+
       if (isEditing) {
-        await updateEmployee(newEmployee);
+        await updateUser(userData);
         toast.success("Empleado actualizado exitosamente");
       } else {
-        await createEmployee(newEmployee);
+        await createUser(userData);
         toast.success("Empleado registrado exitosamente");
       }
       setIsModalOpen(false);
@@ -256,21 +264,6 @@ export function EmployeesView() {
                   placeholder={isEditing ? "Dejar vacío para mantener la actual" : ""}
                 />
               </div>
-              {!isEditing && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="code" className="text-right">
-                    Código
-                  </Label>
-                  <Input
-                    id="code"
-                    name="code"
-                    value={newEmployee.code}
-                    onChange={handleInputChange}
-                    className="col-span-3"
-                    required
-                  />
-                </div>
-              )}
               {isEditing && (
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="status" className="text-right">
