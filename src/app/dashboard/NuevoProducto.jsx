@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { createProduct } from "@/services/admin/productService";
 import { getAllBrands } from "@/services/admin/brandService";
 import { getAllCategories } from "@/services/admin/categoryService";
-import { uploadMultimedia } from "@/services/admin/multimediaService";
+import { createMultimedia } from "@/services/admin/multimediaService";
 
 export default function NuevoProducto() {
   const navigate = useNavigate();
@@ -51,7 +51,8 @@ export default function NuevoProducto() {
     status: "ACTIVE",
     brandId: "",
     productCategories: [],
-    productMultimediaDto: []
+    productMultimediaDto: [],
+    multimedia: []
   });
 
   useEffect(() => {
@@ -140,30 +141,46 @@ export default function NuevoProducto() {
     setIsLoading(true);
 
     try {
-      const uploadPromises = files.map(file => uploadMultimedia(file));
+      // Subir cada imagen inmediatamente
+      const uploadPromises = files.map(async (file) => {
+        try {
+          const result = await createMultimedia(file);
+          if (!result || !result.id) {
+            throw new Error(`Error al subir la imagen ${file.name}`);
+          }
+          return result;
+        } catch (error) {
+          console.error(`Error al subir ${file.name}:`, error);
+          throw error;
+        }
+      });
+
       const uploadedResults = await Promise.all(uploadPromises);
       
-      console.log('Resultados de la subida de imágenes:', uploadedResults);
-      
+      // Actualizar el estado con las imágenes subidas
       setUploadedImages(prev => [...prev, ...uploadedResults]);
+      
+      // Actualizar el estado del producto con la estructura correcta
       setProducto(prev => {
-        const newMultimedia = [...prev.productMultimediaDto, ...uploadedResults.map((img, index) => ({
+        const currentMultimediaCount = prev.productMultimediaDto.length;
+        const newMultimediaItems = uploadedResults.map((img, index) => ({
           id: 0,
-          displayOrder: prev.productMultimediaDto.length + index + 1,
+          displayOrder: currentMultimediaCount + index + 1,
           productId: 0,
           multimediaId: img.id
-        }))];
-        console.log('Nuevo estado de multimedia:', newMultimedia);
+        }));
+
         return {
           ...prev,
-          productMultimediaDto: newMultimedia
+          productMultimediaDto: [...prev.productMultimediaDto, ...newMultimediaItems],
+          multimedia: [...prev.multimedia, ...uploadedResults]
         };
       });
       
       toast.success(`Se subieron ${files.length} imágenes exitosamente`);
     } catch (error) {
-      toast.error("Error al subir las imágenes");
-      console.error(error);
+      console.error('Error en handleImageUpload:', error);
+      toast.error(error.message || "Error al subir las imágenes");
     } finally {
       setIsLoading(false);
     }
@@ -173,7 +190,8 @@ export default function NuevoProducto() {
     setUploadedImages(prev => prev.filter((_, i) => i !== index));
     setProducto(prev => ({
       ...prev,
-      productMultimediaDto: prev.productMultimediaDto.filter((_, i) => i !== index)
+      productMultimediaDto: prev.productMultimediaDto.filter((_, i) => i !== index),
+      multimedia: prev.multimedia.filter((_, i) => i !== index)
     }));
   };
 
@@ -199,9 +217,7 @@ export default function NuevoProducto() {
     setIsLoading(true);
 
     try {
-      console.log('Estado actual del producto:', producto);
-      
-      // Formatear el body según el requerimiento de la API
+      // El producto ya tiene las imágenes subidas, solo necesitamos crear el producto
       const productToSubmit = {
         id: 0,
         externalId: producto.externalId,
@@ -230,10 +246,7 @@ export default function NuevoProducto() {
         })),
         productMultimediaDto: producto.productMultimediaDto,
         productCategories: [],
-        multimedia: uploadedImages.map(img => ({
-          id: img.id,
-          url: img.url
-        })),
+        multimedia: producto.multimedia,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         deletedAt: null
@@ -246,7 +259,7 @@ export default function NuevoProducto() {
       toast.success("Producto creado exitosamente");
       navigate("/dashboard");
     } catch (error) {
-      toast.error("Error al crear el producto");
+      toast.error(error.message || "Error al crear el producto");
       console.error('Error completo:', error);
       console.error('Mensaje de error:', error.message);
       console.error('Respuesta del servidor:', error.response?.data);
@@ -571,13 +584,18 @@ export default function NuevoProducto() {
                         alt={`Preview ${index + 1}`}
                         className="w-full h-32 object-contain border rounded"
                       />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(index)}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        ×
-                      </button>
+                      <div className="absolute top-1 right-1 flex space-x-1">
+                        <span className="bg-gray-800 text-white text-xs px-2 py-1 rounded">
+                          Orden: {index + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(index)}
+                          className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          ×
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
