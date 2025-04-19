@@ -51,7 +51,7 @@ export default function NuevoProducto() {
     status: "ACTIVE",
     brandId: "",
     productCategories: [],
-    multimedia: []
+    productMultimediaDto: []
   });
 
   useEffect(() => {
@@ -147,14 +147,16 @@ export default function NuevoProducto() {
       
       setUploadedImages(prev => [...prev, ...uploadedResults]);
       setProducto(prev => {
-        const newMultimedia = [...prev.multimedia, ...uploadedResults.map(img => ({
-          id: img.id,
-          url: img.url
+        const newMultimedia = [...prev.productMultimediaDto, ...uploadedResults.map((img, index) => ({
+          id: 0,
+          displayOrder: prev.productMultimediaDto.length + index + 1,
+          productId: 0,
+          multimediaId: img.id
         }))];
         console.log('Nuevo estado de multimedia:', newMultimedia);
         return {
           ...prev,
-          multimedia: newMultimedia
+          productMultimediaDto: newMultimedia
         };
       });
       
@@ -165,6 +167,14 @@ export default function NuevoProducto() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRemoveImage = (index) => {
+    setUploadedImages(prev => prev.filter((_, i) => i !== index));
+    setProducto(prev => ({
+      ...prev,
+      productMultimediaDto: prev.productMultimediaDto.filter((_, i) => i !== index)
+    }));
   };
 
   const handleDescriptionChange = (e) => {
@@ -218,14 +228,9 @@ export default function NuevoProducto() {
           productId: 0,
           categoryId: cat.categoryId
         })),
-        productMultimediaDto: producto.multimedia.map(img => ({
-          id: 0,
-          displayOrder: 1,
-          productId: 0,
-          multimediaId: img.id
-        })),
+        productMultimediaDto: producto.productMultimediaDto,
         productCategories: [],
-        multimedia: producto.multimedia.map(img => ({
+        multimedia: uploadedImages.map(img => ({
           id: img.id,
           url: img.url
         })),
@@ -568,13 +573,7 @@ export default function NuevoProducto() {
                       />
                       <button
                         type="button"
-                        onClick={() => {
-                          setUploadedImages(prev => prev.filter((_, i) => i !== index));
-                          setProducto(prev => ({
-                            ...prev,
-                            multimedia: prev.multimedia.filter((_, i) => i !== index)
-                          }));
-                        }}
+                        onClick={() => handleRemoveImage(index)}
                         className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         ×
