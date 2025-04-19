@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const baseURL = "http://localhost:5001/service-libamaq";
+const baseURL = "https://libamaq.com/api";
 
 const apiClient = axios.create({
   baseURL,
