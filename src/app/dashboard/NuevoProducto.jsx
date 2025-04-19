@@ -19,8 +19,13 @@ export default function NuevoProducto() {
     name: "",
     color: "",
     shortDescription: "",
-    description: "",
-    descriptionMap: {},
+    description: JSON.stringify({
+      caracteristicas: "",
+      details: "",
+      aplicaciones: "",
+      destacados: ""
+    }),
+    descriptionMap: null,
     type: "",
     productUsage: "",
     cost: 0,
@@ -28,9 +33,21 @@ export default function NuevoProducto() {
     discount: 0,
     stock: 0,
     garanty: 0,
-    technicalData: {},
-    functionalities: {},
-    downloads: {},
+    technicalData: {
+      potencia: "",
+      peso: "",
+      impactos: "",
+      velocidad: ""
+    },
+    functionalities: {
+      modos: "",
+      control: "",
+      encastre: ""
+    },
+    downloads: {
+      manual: "",
+      ficha_tecnica: ""
+    },
     status: "ACTIVE",
     brandId: "",
     productCategories: [],
@@ -95,6 +112,17 @@ export default function NuevoProducto() {
     }));
   };
 
+  const handleDownloadsChange = (e) => {
+    const { name, value } = e.target;
+    setProducto(prev => ({
+      ...prev,
+      downloads: {
+        ...prev.downloads,
+        [name]: value
+      }
+    }));
+  };
+
   const handleCategoryChange = (e) => {
     const selectedCategories = Array.from(e.target.selectedOptions, option => ({
       id: parseInt(option.value),
@@ -139,6 +167,23 @@ export default function NuevoProducto() {
     }
   };
 
+  const handleDescriptionChange = (e) => {
+    const { name, value } = e.target;
+    try {
+      const currentDescription = JSON.parse(producto.description);
+      const newDescription = {
+        ...currentDescription,
+        [name]: value
+      };
+      setProducto(prev => ({
+        ...prev,
+        description: JSON.stringify(newDescription)
+      }));
+    } catch (error) {
+      console.error("Error al actualizar la descripción:", error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -148,25 +193,25 @@ export default function NuevoProducto() {
       
       // Formatear el body según el requerimiento de la API
       const productToSubmit = {
-        id: 0, // El backend asignará el ID
+        id: 0,
         externalId: producto.externalId,
         name: producto.name,
         color: producto.color,
         shortDescription: producto.shortDescription,
         description: producto.description,
-        descriptionMap: producto.descriptionMap,
+        descriptionMap: null,
         type: producto.type,
         productUsage: producto.productUsage,
-        cost: producto.cost,
-        price: producto.price,
-        discount: producto.discount,
-        stock: producto.stock,
-        garanty: producto.garanty,
+        cost: parseFloat(producto.cost),
+        price: parseFloat(producto.price),
+        discount: parseFloat(producto.discount),
+        stock: parseInt(producto.stock),
+        garanty: parseInt(producto.garanty),
         technicalData: producto.technicalData,
         functionalities: producto.functionalities,
         downloads: producto.downloads,
         status: producto.status,
-        brandId: producto.brandId,
+        brandId: parseInt(producto.brandId),
         brandDto: brands.find(brand => brand.id === parseInt(producto.brandId)),
         productCategoryDto: producto.productCategories.map(cat => ({
           id: 0,
@@ -178,6 +223,11 @@ export default function NuevoProducto() {
           displayOrder: 1,
           productId: 0,
           multimediaId: img.id
+        })),
+        productCategories: [],
+        multimedia: producto.multimedia.map(img => ({
+          id: img.id,
+          url: img.url
         })),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -199,6 +249,91 @@ export default function NuevoProducto() {
       setIsLoading(false);
     }
   };
+
+  const handleAddField = (section) => {
+    setProducto(prev => {
+      const newKey = `nueva_clave_${Date.now()}`;
+      return {
+        ...prev,
+        [section]: {
+          ...prev[section],
+          [newKey]: ""
+        }
+      };
+    });
+  };
+
+  const handleRemoveField = (section, key) => {
+    setProducto(prev => {
+      const newSection = { ...prev[section] };
+      delete newSection[key];
+      return {
+        ...prev,
+        [section]: newSection
+      };
+    });
+  };
+
+  const handleJsonFieldChange = (section, key, value) => {
+    setProducto(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [key]: value
+      }
+    }));
+  };
+
+  const renderJsonFields = (section, title) => (
+    <div className="mt-6">
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="text-lg font-medium text-gray-700">{title}</h3>
+        <button
+          type="button"
+          onClick={() => handleAddField(section)}
+          className="text-blue-600 hover:text-blue-800"
+        >
+          + Agregar campo
+        </button>
+      </div>
+      <div className="space-y-4">
+        {Object.entries(producto[section]).map(([key, value]) => (
+          <div key={key} className="flex gap-2 items-start">
+            <div className="flex-1">
+              <input
+                type="text"
+                value={key}
+                onChange={(e) => {
+                  const newKey = e.target.value;
+                  const newValue = producto[section][key];
+                  handleRemoveField(section, key);
+                  handleJsonFieldChange(section, newKey, newValue);
+                }}
+                className="w-full border p-2 rounded"
+                placeholder="Clave"
+              />
+            </div>
+            <div className="flex-1">
+              <textarea
+                value={value}
+                onChange={(e) => handleJsonFieldChange(section, key, e.target.value)}
+                className="w-full border p-2 rounded"
+                rows="2"
+                placeholder="Valor"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => handleRemoveField(section, key)}
+              className="text-red-600 hover:text-red-800 p-2"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-4">
@@ -351,16 +486,36 @@ export default function NuevoProducto() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Descripción completa</label>
-            <textarea
-              name="description"
-              value={producto.description}
-              onChange={handleChange}
-              className="w-full border p-2 rounded mt-1"
-              rows="4"
-              required
-            />
+          {renderJsonFields('technicalData', 'Datos técnicos')}
+          {renderJsonFields('functionalities', 'Funcionalidades')}
+          {renderJsonFields('downloads', 'Descargas')}
+
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Descripción completa
+            </label>
+            <div className="space-y-4">
+              {Object.entries(JSON.parse(producto.description)).map(([key, value]) => (
+                <div key={key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {key.charAt(0).toUpperCase() + key.slice(1)}
+                  </label>
+                  <textarea
+                    value={value}
+                    onChange={(e) => {
+                      const newDescription = JSON.parse(producto.description);
+                      newDescription[key] = e.target.value;
+                      setProducto(prev => ({
+                        ...prev,
+                        description: JSON.stringify(newDescription)
+                      }));
+                    }}
+                    className="w-full border p-2 rounded mt-1"
+                    rows="3"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
           <div>
@@ -378,48 +533,6 @@ export default function NuevoProducto() {
                 </option>
               ))}
             </select>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-lg font-medium text-gray-700 mb-2">Datos técnicos</h3>
-              <div className="space-y-2">
-                <input
-                  name="procesador"
-                  placeholder="Procesador"
-                  value={producto.technicalData.procesador || ""}
-                  onChange={handleTechnicalDataChange}
-                  className="w-full border p-2 rounded"
-                />
-                <input
-                  name="ram"
-                  placeholder="RAM"
-                  value={producto.technicalData.ram || ""}
-                  onChange={handleTechnicalDataChange}
-                  className="w-full border p-2 rounded"
-                />
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-medium text-gray-700 mb-2">Funcionalidades</h3>
-              <div className="space-y-2">
-                <input
-                  name="conectividad"
-                  placeholder="Conectividad"
-                  value={producto.functionalities.conectividad || ""}
-                  onChange={handleFunctionalitiesChange}
-                  className="w-full border p-2 rounded"
-                />
-                <input
-                  name="puertos"
-                  placeholder="Puertos"
-                  value={producto.functionalities.puertos || ""}
-                  onChange={handleFunctionalitiesChange}
-                  className="w-full border p-2 rounded"
-                />
-              </div>
-            </div>
           </div>
 
           <div className="mt-6">
