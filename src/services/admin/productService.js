@@ -9,6 +9,15 @@ export const getAllProducts = async () => {
   }
 };
 
+export const getProductPreviews = async () => {
+  try {
+    const { data } = await apiClient.get("/admin/product/preview/all");
+    return data.result || [];
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};
+
 export const getProductById = async (id) => {
   try {
     const { data } = await apiClient.get(`/admin/product/${id}`);
