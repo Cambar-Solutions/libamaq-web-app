@@ -23,10 +23,10 @@ export default function ProductoDetalle() {
 
   const fetchProduct = async (id) => {
     try {
-      const data = await getProductById(id);
-      if (data.type === "SUCCESS" && data.result) {
-        setProducto(data.result);
-        setMainImage(data.result.multimedia[0]?.url || data.result.brandDto.logoUrl);
+      const response = await getProductById(id);
+      if (response.type === "SUCCESS" && response.result) {
+        setProducto(response.result);
+        setMainImage(response.result.multimedia[0]?.url);
       } else {
         toast.error("Producto no encontrado");
         navigate("/dashboard");
@@ -100,42 +100,32 @@ export default function ProductoDetalle() {
           {producto.description && (
             <div className="mt-6">
               <h3 className="text-lg sm:text-xl font-semibold mb-3">Descripción completa</h3>
-              {(() => {
-                try {
-                  const description = JSON.parse(producto.description);
-                  return (
-                    <div className="space-y-4">
-                      {description.caracteristicas && (
-                        <div>
-                          <h4 className="font-semibold text-gray-800">Características</h4>
-                          <p className="text-gray-700 whitespace-pre-line">{description.caracteristicas}</p>
-                        </div>
-                      )}
-                      {description.details && (
-                        <div>
-                          <h4 className="font-semibold text-gray-800">Detalles</h4>
-                          <p className="text-gray-700 whitespace-pre-line">{description.details}</p>
-                        </div>
-                      )}
-                      {description.aplicaciones && (
-                        <div>
-                          <h4 className="font-semibold text-gray-800">Aplicaciones</h4>
-                          <p className="text-gray-700 whitespace-pre-line">{description.aplicaciones}</p>
-                        </div>
-                      )}
-                      {description.destacados && (
-                        <div>
-                          <h4 className="font-semibold text-gray-800">Destacados</h4>
-                          <p className="text-gray-700 whitespace-pre-line">{description.destacados}</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                } catch (error) {
-                  console.error("Error al parsear la descripción:", error);
-                  return <p className="text-gray-700">{producto.description}</p>;
-                }
-              })()}
+              <div className="space-y-4">
+                {producto.description.caracteristicas && (
+                  <div>
+                    <h4 className="font-semibold text-gray-800">Características</h4>
+                    <p className="text-gray-700 whitespace-pre-line">{producto.description.caracteristicas}</p>
+                  </div>
+                )}
+                {producto.description.details && (
+                  <div>
+                    <h4 className="font-semibold text-gray-800">Detalles</h4>
+                    <p className="text-gray-700 whitespace-pre-line">{producto.description.details}</p>
+                  </div>
+                )}
+                {producto.description.aplicaciones && (
+                  <div>
+                    <h4 className="font-semibold text-gray-800">Aplicaciones</h4>
+                    <p className="text-gray-700 whitespace-pre-line">{producto.description.aplicaciones}</p>
+                  </div>
+                )}
+                {producto.description.destacados && (
+                  <div>
+                    <h4 className="font-semibold text-gray-800">Destacados</h4>
+                    <p className="text-gray-700 whitespace-pre-line">{producto.description.destacados}</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -178,8 +168,8 @@ export default function ProductoDetalle() {
           <div>
             <p className="text-gray-700"><span className="font-semibold">Stock:</span> {producto.stock} unidades</p>
             <p className="text-gray-700"><span className="font-semibold">Garantía:</span> {producto.garanty} años</p>
-            <p className="text-gray-700"><span className="font-semibold">Marca:</span> {producto.brandDto.name}</p>
-            <p className="text-gray-700"><span className="font-semibold">Categorías:</span> {producto.productCategories.map(cat => cat.name).join(", ")}</p>
+            <p className="text-gray-700"><span className="font-semibold">Marca ID:</span> {producto.brandId}</p>
+            <p className="text-gray-700"><span className="font-semibold">Categoría ID:</span> {producto.categoryId}</p>
           </div>
         </div>
       </div>
@@ -188,44 +178,36 @@ export default function ProductoDetalle() {
       <div 
         className="mt-12 p-6 text-center rounded-md"
         style={{ 
-          backgroundColor: producto.color || producto.brandDto.color || '#1C398E',
+          backgroundColor: producto.color || '#1C398E',
           color: 'white'
         }}
       >
         <h2 className="text-xl sm:text-2xl font-bold mb-4">INFORMACIÓN DESTACADA</h2>
-        {producto.description && (() => {
-          try {
-            const description = JSON.parse(producto.description);
-            return (
-              <div className="space-y-4 text-left">
-                {description.destacados && (
-                  <div className="text-lg">
-                    {description.destacados}
-                  </div>
-                )}
-                {description.caracteristicas && (
-                  <div className="mt-4">
-                    <h3 className="text-lg font-semibold mb-2">Características principales</h3>
-                    <ul className="list-disc list-inside space-y-1">
-                      {description.caracteristicas.split('\n').map((item, index) => (
-                        <li key={index}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {description.aplicaciones && (
-                  <div className="mt-4">
-                    <h3 className="text-lg font-semibold mb-2">Aplicaciones</h3>
-                    <p>{description.aplicaciones}</p>
-                  </div>
-                )}
+        {producto.description && (
+          <div className="space-y-4 text-left">
+            {producto.description.destacados && (
+              <div className="text-lg">
+                {producto.description.destacados}
               </div>
-            );
-          } catch (error) {
-            console.error("Error al parsear la descripción:", error);
-            return <p>{producto.description}</p>;
-          }
-        })()}
+            )}
+            {producto.description.caracteristicas && (
+              <div className="mt-4">
+                <h3 className="text-lg font-semibold mb-2">Características principales</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  {producto.description.caracteristicas.split('\n').map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {producto.description.aplicaciones && (
+              <div className="mt-4">
+                <h3 className="text-lg font-semibold mb-2">Aplicaciones</h3>
+                <p>{producto.description.aplicaciones}</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Especificaciones técnicas */}

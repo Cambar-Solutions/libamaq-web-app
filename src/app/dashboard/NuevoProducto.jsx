@@ -224,8 +224,7 @@ export default function NuevoProducto() {
         name: producto.name,
         color: producto.color,
         shortDescription: producto.shortDescription,
-        description: producto.description,
-        descriptionMap: null,
+        description: JSON.parse(producto.description),
         type: producto.type,
         productUsage: producto.productUsage,
         cost: parseFloat(producto.cost),
@@ -238,15 +237,13 @@ export default function NuevoProducto() {
         downloads: producto.downloads,
         status: producto.status,
         brandId: parseInt(producto.brandId),
-        brandDto: brands.find(brand => brand.id === parseInt(producto.brandId)),
-        productCategoryDto: producto.productCategories.map(cat => ({
+        categoryId: producto.productCategories[0]?.categoryId || 0,
+        productMultimediaDto: producto.productMultimediaDto.map((item, index) => ({
           id: 0,
+          displayOrder: index + 1,
           productId: 0,
-          categoryId: cat.categoryId
+          multimediaId: item.multimediaId
         })),
-        productMultimediaDto: producto.productMultimediaDto,
-        productCategories: [],
-        multimedia: producto.multimedia,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         deletedAt: null
