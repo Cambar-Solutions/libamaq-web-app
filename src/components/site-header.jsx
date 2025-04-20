@@ -44,7 +44,6 @@ export function SiteHeader() {
                 </div>
               </a>
         </Breadcrumb>
-        <SearchForm className="w-full sm:m-auto sm:w-1/3" />
       </div>
     </header>
   );
