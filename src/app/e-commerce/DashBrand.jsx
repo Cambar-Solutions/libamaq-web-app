@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination } from 'swiper';
+import { Navigation, Pagination, Autoplay } from 'swiper';
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
+import "swiper/css/autoplay";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
@@ -23,63 +24,79 @@ const brandDetails = {
   bosch: {
     name: "Bosch",
     products: [
-      { name: "Rotomartillos y taladros", image: "/public/categorias/bosch/roto.png" },
-      { name: "Amoladoras", image: "/public/categorias/bosch/amoladora.png" },
-      { name: "Equipo para madera", image: "/public/categorias/bosch/madera.png" },
-      { name: "Herramientas de medición", image: "/public/categorias/bosch/medicion.png" },
-      { name: "Equipo inalámbrico", image: "/public/categorias/bosch/inalambrico.png" },
+      { name: "Rotomartillos y taladros", image: "/categorias/bosch/roto.png" },
+      { name: "Amoladoras", image: "/categorias/bosch/amoladora.png" },
+      { name: "Herramienta para madera", image: "/categorias/bosch/madera.png" },
+      { name: "Herramientas de medición", image: "/categorias/bosch/medicion.png" },
+      { name: "Herramienta a Bateria 12V y 18V", image: "/categorias/bosch/inalambrico.png" },
+      { name: "Limpieza y jardineria", image: "/categorias/bosch/jardin.png" },
     ],
   },
   makita: {
     name: "Makita",
     products: [
-      { name: "Taladros inalámbricos", image: "/public/categorias/makita/inalambrico.png" },
-      { name: "Sierras circulares", image: "/public/categorias/makita/sierra.png" },
-      { name: "Lijadoras", image: "/public/categorias/makita/lijadora.png" },
-      { name: "Equipo inalámbrico", image: "/public/categorias/makita/bateria.png" },
+      { name: "Taladros inalámbricos", image: "/categorias/makita/inalambrico.png" },
+      { name: "Amoladoras", image: "/categorias/makita/amoladora.png" },
+      { name: "Herramienta para madera", image: "/categorias/makita/madera.png" },
+      { name: "Herramientas de medición", image: "/categorias/makita/medicion.png" },
+      { name: "Herramienta a Bateria 12V y 18V", image: "/categorias/makita/bateria.png" },
+      { name: "Limpieza y jardineria", image: "/categorias/makita/jardin.png" },
     ],
   },
   honda: {
     name: "Honda",
     products: [
-      { name: "Generadores", image: "/path-to-your-images/generadores.jpg" },
-      { name: "Motobombas", image: "/path-to-your-images/motobombas.jpg" },
-      { name: "Motores estacionarios", image: "/path-to-your-images/motores.jpg" },
-      { name: "Podadoras", image: "/path-to-your-images/podadoras.jpg" },
-      { name: "Equipos de jardín", image: "/path-to-your-images/equipos-jardin.jpg" },
+      { name: "Generadores", image: "/categorias/honda/generadores.jpg" },
+      { name: "Motobombas 2 y 3 pulgadas", image: "/categorias/honda/motobombas.jpg" },
+      { name: "Motores de 6.5hp, 9hp y 14hp", image: "/categorias/honda/motores.jpg" },
     ],
   },
   cipsa: {
     name: "Cipsa",
     products: [
-      { name: "Materiales para construcción", image: "/path-to-your-images/construccion.jpg" },
-      { name: "Herramientas especializadas", image: "/path-to-your-images/herramientas.jpg" },
-      { name: "Productos para acabados", image: "/path-to-your-images/acabados.jpg" },
+      { name: "Revolvedoras para concreto de 1 y 2 sacos", image: "/categorias/cipsa/revolvedoras.jpg" },
+      { name: "Vibradores a gasolina para concreto", image: "/categorias/cipsa/vibradores.jpg" },
+      { name: "Rodillos Vibratorios", image: "/categorias/cipsa/rodillos.jpg" },
+      { name: "Apisonadores o bailarinas", image: "/categorias/cipsa/apisonadores.jpg" },
+      { name: "Torres de ilumiación", image: "/categorias/cipsa/torres.jpg" },
+      { name: "Soldadoras", image: "/categorias/cipsa/soldadoras.jpg" },
+      { name: "Bombas para concreto", image: "/categorias/cipsa/bombas.jpg" },
     ],
   },
   marshalltown: {
     name: "Marshalltown",
     products: [
-      { name: "Espátulas", image: "/public/categorias/marshalltown/espatula.png" },
-      { name: "Herramientas para concreto", image: "/public/categorias/marshalltown/concreto.png" },
-      { name: "Niveles", image: "/public/categorias/marshalltown/nivel.png" },
+      { name: "Llanas tipo avión", image: "/categorias/marshalltown/llanas-avion.png" },
+      { name: "Llanas tipo fresno", image: "/categorias/marshalltown/llanas-fresno.png" },
+      { name: "Texturizadores 1/2, 3/4 y 1 pulgada", image: "/categorias/marshalltown/texturizadores.png" },
+      { name: "Regla Vibratoria", image: "/categorias/marshalltown/regla.png" },
+      { name: "Llanas Manuales", image: "/categorias/marshalltown/llanas-manuales.png" },
+      { name: "Orilladores", image: "/categorias/marshalltown/orilladores.png" },
+      { name: "Barredoras de concreto", image: "/categorias/marshalltown/barredoras.png" },
+      { name: "Cortadores de concreto", image: "/categorias/marshalltown/cortadores.png" },
     ],
   },
   mpower: {
     name: "Mpower",
     products: [
-      { name: "Taladros", image: "/path-to-your-images/taladros-mpower.jpg" },
-      { name: "Esmeriladoras", image: "/path-to-your-images/esmeriladoras.jpg" },
-      { name: "Sierras eléctricas", image: "/path-to-your-images/sierras-electricas.jpg" },
-      { name: "Herramientas inalámbricas", image: "/path-to-your-images/herramientas-inalambricas.jpg" },
-      { name: "Accesorios", image: "/path-to-your-images/accesorios-mpower.jpg" },
+      { name: "Motores a gasolina 6.5, 9, 15hp.", image: "/categorias/mpower/motores.jpg" },
+      { name: "Motobombas 2 y 3 pulgadas.", image: "/categorias/mpower/motobombas.jpg" },
+      { name: "Gemeradores de luz de 3,500w a 8000w.", image: "/categorias/mpower/generadores.jpg" },
+      { name: "Soldadora 200 A.", image: "/categorias/mpower/soldadora.jpg" },
+      { name: "Discos de 14 in para corte de concreto", image: "/categorias/mpower/discos.jpg" },
+      { name: "Accesorios", image: "/categorias/mpower/accesorios.jpg" },
     ],
   },
   husqvarna: {
     name: "Husqvarna",
     products: [
-      { name: "Cortadoras de concreto", image: "/path-to-your-images/cortadoras.jpg" },
-      { name: "Equipos de demolición", image: "/path-to-your-images/demolicion.jpg" },
+      { name: "Cortadoras de concreto", image: "/categorias/husqvarna/cortadoras.jpg" },
+      { name: "Apisonadoras o bailarinas", image: "/categorias/husqvarna/apisonadoras.jpg" },
+      { name: "Placas Vibratorias", image: "/categorias/husqvarna/placas.jpg" },
+      { name: "Rodillos Vibratorios", image: "/categorias/husqvarna/rodillos.jpg" },
+      { name: "Desbaste y pulido de concreto", image: "/categorias/husqvarna/desbaste.jpg" },
+      { name: "Barrenadores", image: "/categorias/husqvarna/barrenadores.jpg" },
+      { name: "Accesorios y Herramientas de diamante", image: "/categorias/husqvarna/accesorios.jpg" },
     ],
   },
 };

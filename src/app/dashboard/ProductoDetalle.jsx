@@ -48,32 +48,91 @@ export default function ProductoDetalle() {
   };
 
   const handleEdit = () => {
-    setIsEditing(!isEditing);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditedProduct((prevProduct) => ({
-      ...prevProduct,
-      [name]: value,
-    }));
+    setIsEditing(true);
+    setEditedProduct({...producto});
   };
 
   const handleSave = async () => {
     try {
-      const response = await updateProduct(editedProduct);
+      setIsLoading(true);
+      
+      // Asegurarse de que el status sea un string válido
+      const productData = {
+        ...editedProduct,
+        status: editedProduct.status || 'ACTIVE',
+        // Asegurarse de que los campos JSON estén en el formato correcto
+        description: editedProduct.description || '',
+        technicalData: editedProduct.technicalData || '',
+        functionalities: editedProduct.functionalities || '',
+        downloads: editedProduct.downloads || '',
+        // Asegurarse de que los IDs sean números
+        brandId: Number(editedProduct.brandId),
+        categoryId: Number(editedProduct.categoryId),
+        // Mapear la multimedia correctamente
+        productMultimediaDto: editedProduct.multimedia?.map((m, index) => ({
+          multimediaId: m.id,
+          displayOrder: index + 1
+        })) || []
+      };
+
+      const response = await updateProduct(productData);
+      
       if (response.type === "SUCCESS") {
-        toast.success("Producto actualizado exitosamente");
+        toast.success("Producto actualizado correctamente");
+        setProducto(response.result);
         setIsEditing(false);
-        setProducto(editedProduct);
       } else {
-        toast.error("Error al actualizar el producto");
+        toast.error(response.message || "Error al actualizar el producto");
       }
     } catch (error) {
-      toast.error("Error al actualizar el producto");
-      console.error(error);
+      toast.error("Error al actualizar el producto: " + (error.message || 'Error desconocido'));
+      console.error('Error updating product:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  const handleCancel = () => {
+    setEditedProduct({...producto});
+    setIsEditing(false);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, type } = e.target;
+    setEditedProduct((prevProduct) => ({
+      ...prevProduct,
+      [name]: type === 'number' ? Number(value) : value,
+    }));
+  };
+
+  const handleJsonInputChange = (name, value) => {
+    try {
+      // Intentar parsear como JSON si es una cadena
+      const jsonValue = typeof value === 'string' ? JSON.parse(value) : value;
+      setEditedProduct(prev => ({
+        ...prev,
+        [name]: jsonValue
+      }));
+    } catch (error) {
+      // Si no es JSON válido, guardar como string
+      setEditedProduct(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleMultimediaChange = (multimedia) => {
+    setEditedProduct(prev => ({
+      ...prev,
+      multimedia: multimedia.map((m, index) => ({
+        ...m,
+        displayOrder: index + 1
+      }))
+    }));
+  };
+
+
 
   if (isLoading) {
     return (
@@ -88,15 +147,37 @@ export default function ProductoDetalle() {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
       <div className="mb-6">
-        <Button className="bg-blue-500 rounded-b-2xl hover:bg-blue-700 mb-3" onClick={handleBack}>
+        <Button
+          className="bg-blue-500 rounded-b-2xl hover:bg-blue-700 mb-3"
+          onClick={handleBack}
+          disabled={isLoading}
+        >
           Regresar al Dashboard
         </Button>
-        <Button className="bg-green-500 rounded-b-2xl hover:bg-green-700 mb-3 ml-2" onClick={handleEdit}>
-          {isEditing ? "Cancelar" : "Editar"}
-        </Button>
-        {isEditing && (
-          <Button className="bg-blue-500 rounded-b-2xl hover:bg-blue-700 mb-3 ml-2" onClick={handleSave}>
-            Guardar
+        {isEditing ? (
+          <>
+            <Button
+              className="bg-red-500 rounded-b-2xl hover:bg-red-700 mb-3 ml-2"
+              onClick={handleCancel}
+              disabled={isLoading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="bg-green-500 rounded-b-2xl hover:bg-green-700 mb-3 ml-2"
+              onClick={handleSave}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Guardando...' : 'Guardar'}
+            </Button>
+          </>
+        ) : (
+          <Button
+            className="bg-blue-500 rounded-b-2xl hover:bg-blue-700 mb-3 ml-2"
+            onClick={handleEdit}
+            disabled={isLoading}
+          >
+            Editar
           </Button>
         )}
       </div>
@@ -330,102 +411,231 @@ export default function ProductoDetalle() {
         </div>
       </div>
 
-      {/* Información Adicional */}
-      <div className="mt-12">
-        <h2 className="text-xl sm:text-2xl font-bold mb-3 text-blue-950">Información del producto</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            {isEditing ? (
+      {/* Información del Producto */}
+      <div className="mt-12 bg-white p-6 rounded-lg shadow">
+        <h2 className="text-xl sm:text-2xl font-bold mb-6 text-blue-950">Información del producto</h2>
+        <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Información básica */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Nombre</label>
+              <input
+                type="text"
+                name="name"
+                value={editedProduct?.name || ""}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                disabled={!isEditing}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Descripción Corta</label>
+              <input
+                type="text"
+                name="shortDescription"
+                value={editedProduct?.shortDescription || ""}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                disabled={!isEditing}
+              />
+            </div>
+
+            {/* Detalles del producto */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Tipo</label>
               <input
                 type="text"
                 name="type"
-                value={editedProduct.type}
+                value={editedProduct?.type || ""}
                 onChange={handleInputChange}
-                className="w-full border p-2 mb-2"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                disabled={!isEditing}
               />
-            ) : (
-              <p className="text-gray-700"><span className="font-semibold">Tipo:</span> {producto.type}</p>
-            )}
-            {isEditing ? (
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Uso del Producto</label>
               <input
                 type="text"
                 name="productUsage"
-                value={editedProduct.productUsage}
+                value={editedProduct?.productUsage || ""}
                 onChange={handleInputChange}
-                className="w-full border p-2 mb-2"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                disabled={!isEditing}
               />
-            ) : (
-              <p className="text-gray-700"><span className="font-semibold">Uso:</span> {producto.productUsage}</p>
-            )}
-            {isEditing ? (
+            </div>
+
+            {/* Información de precios */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Precio</label>
               <input
                 type="number"
                 name="price"
-                value={editedProduct.price}
+                value={editedProduct?.price || ""}
                 onChange={handleInputChange}
-                className="w-full border p-2 mb-2"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                disabled={!isEditing}
+                min="0"
+                step="0.01"
               />
-            ) : (
-              <p className="text-gray-700"><span className="font-semibold">Precio:</span> ${producto.price}</p>
-            )}
-            {isEditing ? (
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Costo</label>
               <input
                 type="number"
-                name="discount"
-                value={editedProduct.discount}
+                name="cost"
+                value={editedProduct?.cost || ""}
                 onChange={handleInputChange}
-                className="w-full border p-2 mb-2"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                disabled={!isEditing}
+                min="0"
+                step="0.01"
               />
-            ) : (
-              <p className="text-gray-700"><span className="font-semibold">Descuento:</span> {producto.discount}%</p>
-            )}
-          </div>
-          <div>
-            {isEditing ? (
+            </div>
+
+            {/* Stock y descuento */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Stock</label>
               <input
                 type="number"
                 name="stock"
-                value={editedProduct.stock}
+                value={editedProduct?.stock || ""}
                 onChange={handleInputChange}
-                className="w-full border p-2 mb-2"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                disabled={!isEditing}
+                min="0"
               />
-            ) : (
-              <p className="text-gray-700"><span className="font-semibold">Stock:</span> {producto.stock} unidades</p>
-            )}
-            {isEditing ? (
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Descuento (%)</label>
               <input
                 type="number"
+                name="discount"
+                value={editedProduct?.discount || ""}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                disabled={!isEditing}
+                min="0"
+                max="100"
+              />
+            </div>
+
+            {/* Características adicionales */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Garantía</label>
+              <input
+                type="text"
                 name="garanty"
-                value={editedProduct.garanty}
+                value={editedProduct?.garanty || ""}
                 onChange={handleInputChange}
-                className="w-full border p-2 mb-2"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                disabled={!isEditing}
               />
-            ) : (
-              <p className="text-gray-700"><span className="font-semibold">Garantía:</span> {producto.garanty} años</p>
-            )}
-            {isEditing ? (
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Color</label>
               <input
-                type="number"
-                name="brandId"
-                value={editedProduct.brandId}
+                type="text"
+                name="color"
+                value={editedProduct?.color || ""}
                 onChange={handleInputChange}
-                className="w-full border p-2 mb-2"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                disabled={!isEditing}
               />
-            ) : (
-              <p className="text-gray-700"><span className="font-semibold">Marca ID:</span> {producto.brandId}</p>
-            )}
-            {isEditing ? (
-              <input
-                type="number"
-                name="categoryId"
-                value={editedProduct.categoryId}
+            </div>
+
+            {/* Estado */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Estado</label>
+              <select
+                name="status"
+                value={editedProduct?.status || "ACTIVE"}
                 onChange={handleInputChange}
-                className="w-full border p-2 mb-2"
-              />
-            ) : (
-              <p className="text-gray-700"><span className="font-semibold">Categoría ID:</span> {producto.categoryId}</p>
-            )}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                disabled={!isEditing}
+              >
+                <option value="ACTIVE">Activo</option>
+                <option value="INACTIVE">Inactivo</option>
+              </select>
+            </div>
           </div>
+
+          {/* Campos de texto largo */}
+          <div className="space-y-6 mt-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Descripción Completa</label>
+              <textarea
+                name="description"
+                value={typeof editedProduct?.description === 'object' ? JSON.stringify(editedProduct.description, null, 2) : editedProduct?.description || ""}
+                onChange={(e) => handleJsonInputChange('description', e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                disabled={!isEditing}
+                rows={4}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Datos Técnicos</label>
+              <textarea
+                name="technicalData"
+                value={typeof editedProduct?.technicalData === 'object' ? JSON.stringify(editedProduct.technicalData, null, 2) : editedProduct?.technicalData || ""}
+                onChange={(e) => handleJsonInputChange('technicalData', e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                disabled={!isEditing}
+                rows={4}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Funcionalidades</label>
+              <textarea
+                name="functionalities"
+                value={typeof editedProduct?.functionalities === 'object' ? JSON.stringify(editedProduct.functionalities, null, 2) : editedProduct?.functionalities || ""}
+                onChange={(e) => handleJsonInputChange('functionalities', e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                disabled={!isEditing}
+                rows={4}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Descargas</label>
+              <textarea
+                name="downloads"
+                value={typeof editedProduct?.downloads === 'object' ? JSON.stringify(editedProduct.downloads, null, 2) : editedProduct?.downloads || ""}
+                onChange={(e) => handleJsonInputChange('downloads', e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                disabled={!isEditing}
+                rows={4}
+              />
+            </div>
+          </div>
+        </form>
+        {/* Botones de acción */}
+        <div className="mt-6 flex justify-end space-x-4">
+          {isEditing ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isLoading}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </>
+          ) : (
+            <Button
+              onClick={handleEdit}
+              disabled={isLoading}
+            >
+              Editar
+            </Button>
+          )}
         </div>
       </div>
 

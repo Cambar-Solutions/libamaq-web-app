@@ -18,15 +18,12 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Router>
       <Routes>
-        //PRINCIPAL
+        {/* PRINCIPAL */}
         <Route path="/" element={<App />} />
         <Route path="/login" element={<Login />} />
         <Route path="/nosotros" element={<Nosotros/>} />
 
-
-
-
-        //ECOMERCEE
+        {/* E-COMMERCE */}
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/detalle/:nombre" element={<DetalleHerramienta />} />
         <Route path="/marcas/:brandName" element={<BrandPage />} />
@@ -34,10 +31,6 @@ createRoot(document.getElementById('root')).render(
         <Route path="/productos/:brand/:category" element={<CategoryPage />} />
         <Route path="/nuevo-producto" element={<NuevoProducto />} />
         <Route path="/producto-detalle" element={<ProductoDetalle />} />
-
-
-
-
 
       </Routes>
     </Router>
