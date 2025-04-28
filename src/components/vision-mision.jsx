@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 const MisionVision = () => {
   return (
-    <section className="py-10 px-6 w-full max-w-screen-lg mx-auto">
+    <section className="py-10 px-6 w-full max-w-screen-lg mx-auto mb-10">
       <div className="flex flex-col md:flex-row justify-center items-center space-y-10 md:space-y-0 md:space-x-10">
 
 

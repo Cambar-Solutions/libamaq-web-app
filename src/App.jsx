@@ -14,12 +14,17 @@ import { FaStore } from "react-icons/fa";
 import "./App.css";
 import Nav from "./components/Nav";
 import { Toaster } from "sonner";
+import BentoGrid from "./components/ui/BentoGrid";
+import TikTokGallery from "./components/ui/TikTokGallery";
 
 const images = [
   "/boschcarusel.png",
+  //"/bosch_start.jpg",
   "/MAKITA.webp",
   "/bosch-power.jpg",
+  //"/muelle.jpg",
   "/HUSQ.jpg",
+  //"/cortadora.jpg",
   "/service.jpg",
 ];
 
@@ -49,6 +54,13 @@ export const items = [
     image:"/card-section/rotomartillo.png",
     title:"Rotomartillo electro neumático HR2475"
   }
+];
+
+const destacados = [
+  'https://www.tiktok.com/@libamaqherramientas/video/7388193969009626373',
+  'https://www.tiktok.com/@libamaqherramientas/video/7200102863421394182',
+  'https://www.tiktok.com/@libamaqherramientas/video/7263189002147187973'
+  
 ];
 
 export default function App() {
@@ -89,14 +101,14 @@ export default function App() {
           </Button>
       </header>
 
-      <Carousel images={images} />
+      <Carousel images={images} className="mb-6"/>
 
-      <section className="py-10 px-6">
+      <section className="py-10 px-6 mb-8">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="max-w-3xl mx-auto text-center"
+          className="max-w-3xl mx-auto text-center "
         >
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
             Nuestro Objetivo
@@ -110,10 +122,22 @@ export default function App() {
 
       <MisionVision />
 
+      <TikTokGallery videoUrls={destacados} />
+
+
+
+
+
+
       {/* Sección de Marcas */}
       <div id="brand-cards">
         <BrandCards />
       </div>
+
+      <BentoGrid />
+
+
+
 
       <section className="py-10 px-6 border-1 m-auto">
         <motion.div

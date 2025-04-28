@@ -8,43 +8,43 @@
     bosch: {
       name: "Bosch",
       description: "Líder mundial en herramientas eléctricas profesionales y accesorios. Bosch ofrece soluciones innovadoras y de alta calidad para todo tipo de aplicaciones.",
-      products: ["Rotomartillos y taladros", "Amoladoras", "Equipo para madera", "Herramientas de medición", "Equipo inalámbrico "],
+      products: ["Rotomartillos y taladros", "Amoladoras", "Herramienta para madera", "Herramientas de medición", "Herramienta a Bateria 12V y 18V", "Limpieza y jardineria"],
       image: "/logo_bosch.png",
     },
     makita: {
       name: "Makita",
       description: "Reconocida por su durabilidad y rendimiento excepcional. Makita ofrece una amplia gama de herramientas eléctricas y accesorios para profesionales.",
-      products: ["Taladros inalámbricos", "Sierras circulares", "Lijadoras", "Aspiradoras", "Herramientas de jardín", "Equipo inalámbrico "],
+      products: ["Taladros inalámbricos", "Amoladoras", "Herramienta para madera", "Herramientas de medición", "Herramienta a Bateria 12V y 18V ", "Limpieza y jardineria"],
       image: "/makita.png",
     },
     husqvarna: {
       name: "Husqvarna",
       description: "Especialistas en equipos para exteriores y construcción. Husqvarna combina potencia y precisión en cada una de sus herramientas.",
-      products: ["Motosierras", "Cortadoras de concreto", "Equipos de demolición", "Robots cortacésped", "Equipos forestales"],
+      products: [ "Cortadoras de concreto", "Apisonadoras o bailarinas", "Placas Vibratorias", "Rodillos Vibratorios", "Desbaste y pulido de concreto", "Barrenadores", "Accesorios y Herramientas de diamante"],
       image: "/husq.png",
     },
     honda: {
       name: "Honda",
       description: "Líder en motores y equipos de fuerza. Honda ofrece productos confiables y eficientes para diversas aplicaciones.",
-      products: ["Generadores", "Motobombas", "Motores estacionarios", "Podadoras", "Equipos de jardín"],
+      products: ["Generadores", "Motobombas 2 y 3 pulgadas ", "Motores de 6.5hp, 9hp y 14hp"],
       image: "/honda-fuerza.png",
     },
     marshalltown: {
       name: "Marshalltown",
       description: "Expertos en herramientas manuales para construcción. Marshalltown es sinónimo de calidad y precisión en el acabado.",
-      products: ["Llanas", "Espátulas", "Herramientas para concreto", "Niveles", "Accesorios de albañilería"],
+      products: ["Llanas tipo avión", "Llanas tipo fresno" , "Texturizadores 1/2, 3/4 y 1 pulgada", "Regla Vibratoria", "Llanas Manuales", "Orilladores", "Barredoras de concreto", "Cortadores de concreto"],
       image: "/marshalltown.png",
     },
     mpower: {
       name: "Mpower",
       description: "Innovación y calidad en herramientas eléctricas. Mpower ofrece soluciones efectivas para profesionales y entusiastas.",
-      products: ["Taladros", "Esmeriladoras", "Sierras eléctricas", "Herramientas inalámbricas", "Accesorios"],
+      products: ["Motores a gasolina 6.5, 9, 15hp.", "Motobombas 2 y 3 pulgadas.", "Gemeradores de luz de 3,500w a 8000w.", "Soldadora 200 A.", "Discos de 14 in para corte de concreto", "Accesorios"],
       image: "/m-power.webp",
     },
     cipsa: {
       name: "Cipsa",
-      description: "Especialistas en materiales y soluciones para la construcción. Cipsa ofrece productos de alta calidad para proyectos exitosos.",
-      products: ["Materiales para construcción", "Herramientas especializadas", "Productos para acabados", "Equipos de seguridad", "Accesorios"],
+      description: " Cipsa es especialistas en herramientas y maquinaria para construcción.",
+      products: ["Revolvedoras para concreto de 1 y 2 sacos", "Vibradores a gasolina para concreto", "Rodillos Vibratorios", "Apisonadores o bailarinas", "Torres de ilumiación", "Soldadoras", "Bombas para concreto"],
       image: "/cipsa.avif",
     },
   };
@@ -102,7 +102,6 @@
         <Button className="bg-blue-500 rounded-b-2xl hover:bg-blue-700 mb-3" onClick={handleBack}>
               Regresar a Marcas
             </Button>
-            <h1 className="text-3xl font-bold mb-4">{brand.name}</h1>
           {/* Información de la marca */}
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
             <div className="flex flex-col md:flex-row items-center gap-8">
@@ -114,7 +113,7 @@
           </div>
 
           {/* Lista de productos */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="bg-white rounded-lg shadow-lg p-6 text-lg">
             <h2 className="text-2xl font-semibold text-gray-900 mb-6">Productos principales</h2>
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {brand.products.map((product, index) => (

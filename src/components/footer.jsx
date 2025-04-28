@@ -34,12 +34,12 @@ export default function Footer() {
               <div className="flex items-center gap-3 justify-center lg:justify-start">
                 <MapPin className="h-5 w-5 text-blue-600 flex-shrink-0" />
                 <p className="text-gray-600">
-                  Blvd. Cuahunahuac Km. 3.5 S/N, Col. Puente Blanco, Jiutepec., Centro, 62555 Morelos
+                  Blvd. Cuahunahuac Km. 3.5 S/N, Col. Puente Blanco, Jiutepec., Centro, 62577 Morelos
                 </p>
               </div>
               <div className="flex items-center gap-3 justify-center lg:justify-start">
                 <Phone className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                <p className="text-gray-600">+52 777 123 4567</p>
+                <p className="text-gray-600">+52 735 102 3279</p>
               </div>
               <div className="flex items-center gap-3 justify-center lg:justify-start">
                 <Mail className="h-5 w-5 text-blue-600 flex-shrink-0" />

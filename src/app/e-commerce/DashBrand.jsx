@@ -139,7 +139,7 @@ export default function Dashbrand() {
             <SwiperSlide
               key={index}
               onClick={() => setSelectedBrand(logo.key)}
-              className="flex justify-center items-center h-44 p-3 border bg-white rounded-xl shadow-md hover:bg-gray-100 transition-transform duration-300 cursor-pointer"
+              className="flex justify-center items-center h-44 p-3  bg-white rounded-xl  hover:bg-gray-100 transition-transform duration-300 cursor-pointer"
             >
               <img
                 src={logo.src}
@@ -153,7 +153,7 @@ export default function Dashbrand() {
 
       {/* Bento Grid de categorías */}
       {selectedBrand && brandDetails[selectedBrand] && (
-        <div className="w-full max-w-6xl bg-white rounded-xl shadow-lg p-6 mt-4">
+        <div className="w-full max-w-6xl bg-white rounded-xl  p-6 mt-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
             Categorías: {brandDetails[selectedBrand].name}
           </h2>

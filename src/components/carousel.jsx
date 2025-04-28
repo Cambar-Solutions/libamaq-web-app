@@ -7,7 +7,7 @@ import "swiper/css/pagination";
 
 export default function Carousel({ images }) {
   return (
-    <div className="w-full max-w-4xl  mx-auto py-8">
+    <div className="w-full max-w-5xl  mx-auto py-8">
       <Swiper
         modules={[Navigation, Pagination, Autoplay]}
         spaceBetween={20}
@@ -15,7 +15,7 @@ export default function Carousel({ images }) {
         navigation
         pagination={{ clickable: true }}
         autoplay={{ delay: 3000, disableOnInteraction: false }}
-        className="rounded-lg shadow-lg"
+        className="rounded-lg "
       >
         {images.map((img, index) => (
           <SwiperSlide

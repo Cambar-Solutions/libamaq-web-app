@@ -45,7 +45,7 @@ const Nav = () => {
       </div>
 
       {/* Menú principal (solo en pantallas grandes) */}
-      <div className="flex items-center space-x-6 hidden md:flex mx-4">
+      <div className="flex items-center space-x-6  md:flex mx-4">
         {/* Ícono de carrito */}
         <Link to="/cart" className="text-yellow-500">
           <FaShoppingCart size={24} />

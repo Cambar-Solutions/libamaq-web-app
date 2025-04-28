@@ -11,14 +11,22 @@ import ProductList from './app/e-commerce/ProductList';
 import CategoryPage from './app/e-commerce/CategoryPage';
 import NuevoProducto from './app/dashboard/NuevoProducto';
 import ProductoDetalle from './app/dashboard/ProductoDetalle';
+import Nosotros from './Nosotros.jsx';
 
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Router>
       <Routes>
+        //PRINCIPAL
         <Route path="/" element={<App />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/nosotros" element={<Nosotros/>} />
+
+
+
+
+        //ECOMERCEE
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/detalle/:nombre" element={<DetalleHerramienta />} />
         <Route path="/marcas/:brandName" element={<BrandPage />} />
