@@ -156,7 +156,7 @@ export function ProductsView() {
             <input
               type="text"
               placeholder="Buscar por nombre o ID"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
+              className="cursor-pointer w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
