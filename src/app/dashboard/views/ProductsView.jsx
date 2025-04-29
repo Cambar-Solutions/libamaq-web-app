@@ -156,7 +156,7 @@ export function ProductsView() {
             <input
               type="text"
               placeholder="Buscar por nombre o ID"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
+              className="cursor-pointer w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -166,7 +166,7 @@ export function ProductsView() {
         <div className="w-full md:w-auto">
           <button
             onClick={() => navigate("/nuevo-producto")}
-            className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+            className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition cursor-pointer"
           >
             + Agregar producto
           </button>
