@@ -37,7 +37,7 @@ export default function Nosotros() {
           className="max-w-3xl mx-auto"
         >
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center">
-            Nuestros Valores test
+            Nuestros Valores
           </h2>
           <ValoresAccordion />
         </motion.div>
