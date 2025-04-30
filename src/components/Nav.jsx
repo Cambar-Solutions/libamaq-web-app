@@ -10,10 +10,10 @@ const Nav = () => {
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
   return (
-    <nav className="bg-white/95 dark:bg-gray-800 shadow-lg py-4 px-12 flex justify-between items-center fixed top-0 w-full z-20">
+    <nav className="bg-blue-950  dark:bg-gray-800 shadow-lg py-4 px-12 flex justify-between items-center fixed top-0 w-full z-20">
       {/* Logo */}
       <div className="flex items-center">
-        <img src="/Tipografia_LIBAMAQ.png" alt="logo" className="max-h-12" />
+        <img src="/Tipografia_LIBAMAQ_legulab_color_hor.png" alt="logo" className="max-h-12" />
       </div>
 
       {/* Menú hamburguesa (solo en pantallas pequeñas) */}
@@ -37,7 +37,7 @@ const Nav = () => {
     {/* Botón "Tienda" (igual que en desktop) */}
     <Button
       asChild
-      className="flex items-center justify-center bg-white border-2 border-blue-700 text-blue-700 hover:bg-gray-100 w-full"
+      className="flex items-center justify-center bg-blue-100 border-2 border-yellow-500 text-blue-700 hover:bg-gray-100 w-full"
     >
       <Link to="/tienda">
         <FaStore className="mr-2" />

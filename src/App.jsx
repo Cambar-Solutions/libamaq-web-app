@@ -18,9 +18,9 @@ import BentoGrid from "./components/ui/BentoGrid";
 import TikTokGallery from "./components/ui/TikTokGallery";
 
 const images = [
-  "/boschcarusel.png",
+  "/gbh8-45.jpg",
   //"/bosch_start.jpg",
-  "/MAKITA.webp",
+  "/bateriaMakita.jpg",
   "/bosch-power.jpg",
   //"/muelle.jpg",
   "/HUSQ.jpg",
@@ -85,7 +85,7 @@ export default function App() {
     
 
       {/* Hero Section */}
-      <header className="text-center py-6 bg-gradient-to-l from-gray-100 to-blue-300 text-black mt-[7em]">
+      <header className="text-center py-6 bg-gradient-to-l from-gray-200 to-blue-400 text-black mt-[7em]">
         <h1 className="text-4xl font-bold">
            Las mejores herramientas para cualquier persona
         </h1>
