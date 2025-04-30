@@ -133,7 +133,7 @@ export function EmployeesView() {
       <div className="flex justify-end mb-4">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition cursor-pointer"
         >
           + Registrar empleado
         </button>
@@ -152,7 +152,7 @@ export function EmployeesView() {
           </TableHeader>
           <TableBody>
             {employees.map((employee) => (
-              <TableRow key={employee.id} className="cursor-pointer hover:bg-gray-50">
+              <TableRow key={employee.id} className="hover:bg-gray-50">
                 <TableCell className="font-medium">
                   {`${employee.name} ${employee.lastName}`}
                 </TableCell>
@@ -172,6 +172,7 @@ export function EmployeesView() {
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="cursor-pointer hover:bg-gray-200"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleEdit(employee);
@@ -273,12 +274,12 @@ export function EmployeesView() {
                     value={newEmployee.status}
                     onValueChange={handleStatusChange}
                   >
-                    <SelectTrigger className="col-span-3">
+                    <SelectTrigger className="col-span-3 cursor-pointer">
                       <SelectValue placeholder="Seleccionar estado" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ACTIVE">Activo</SelectItem>
-                      <SelectItem value="INACTIVE">Inactivo</SelectItem>
+                      <SelectItem value="ACTIVE" className="cursor-pointer">Activo</SelectItem>
+                      <SelectItem value="INACTIVE" className="cursor-pointer">Inactivo</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -288,11 +289,12 @@ export function EmployeesView() {
               <Button 
                 type="button" 
                 variant="outline" 
+                className="cursor-pointer"
                 onClick={handleCloseModal}
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading} className="cursor-pointer">
                 {isLoading ? "Guardando..." : (isEditing ? "Actualizar" : "Guardar empleado")}
               </Button>
             </DialogFooter>

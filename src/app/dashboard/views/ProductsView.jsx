@@ -138,13 +138,13 @@ export function ProductsView() {
               value={selectedBrand?.toString() || "all"}
               onValueChange={handleBrandChange}
             >
-              <SelectTrigger>
+              <SelectTrigger className="cursor-pointer">
                 <SelectValue placeholder="Todas las marcas" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas las marcas</SelectItem>
                 {brands.map((brand) => (
-                  <SelectItem key={brand.id} value={brand.id.toString()}>
+                  <SelectItem key={brand.id} value={brand.id.toString()} className="cursor-pointer">
                     {brand.name}
                   </SelectItem>
                 ))}
@@ -156,7 +156,7 @@ export function ProductsView() {
             <input
               type="text"
               placeholder="Buscar por nombre o ID"
-              className="cursor-pointer w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -164,9 +164,9 @@ export function ProductsView() {
         </div>
         {/* Botón de agregar producto */}
         <div className="w-full md:w-auto">
-          <button
+        <button
             onClick={() => navigate("/nuevo-producto")}
-            className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition cursor-pointer"
+            className="w-full md:w-auto bg-blue-600 text-white hover:bg-blue-700 hover:border-blue-600 text-sm font-semibold px-4 py-2 rounded-lg transition cursor-pointer"
           >
             + Agregar producto
           </button>

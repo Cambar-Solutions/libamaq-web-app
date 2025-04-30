@@ -49,13 +49,13 @@ export default function Footer() {
 
             {/* Enlaces */}
             <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
-              <Link to="/about" className="text-gray-600 hover:text-blue-600 transition-colors">
+              <Link to="/about" className="text-gray-600 hover:text-blue-600 hover:font-medium transition-colors">
                 Sobre Nosotros
               </Link>
-              <Link to="/contact" className="text-gray-600 hover:text-blue-600 transition-colors">
+              <Link to="/contact" className="text-gray-600 hover:text-blue-600 hover:font-medium transition-colors">
                 Contacto
               </Link>
-              <Link to="/privacy" className="text-gray-600 hover:text-blue-600 transition-colors">
+              <Link to="/privacy" className="text-gray-600 hover:text-blue-600 hover:font-medium transition-colors">
                 Política de Privacidad
               </Link>
             </div>

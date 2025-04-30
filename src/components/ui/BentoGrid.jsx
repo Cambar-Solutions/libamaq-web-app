@@ -72,7 +72,7 @@ const BentoGrid = () => {
             className="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
           />
         ) : (
-          <video controls className="w-full h-full object-cover">
+          <video controls className="w-full h-full object-cover cursor-pointer">
             <source src={item.src} type="video/mp4" />
             Tu navegador no soporta video.
           </video>
