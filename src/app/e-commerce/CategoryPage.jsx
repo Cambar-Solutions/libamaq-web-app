@@ -46,7 +46,7 @@ export default function CategoryPage() {
             <div className=" flex justify-between mb-2">
               <button
                 onClick={handleBack}
-                className="flex items-center text-blue-600 hover:underline hover:opacity-80 transition mt-8"
+                className="flex items-center text-blue-600 hover:underline hover:opacity-80 transition mt-8 cursor-pointer"
               >
                 <ArrowLeft className="w-5 h-5 mr-2" />
                 Volver a ver marcas
@@ -108,7 +108,7 @@ export default function CategoryPage() {
                   </div>
 
                   <div className="p-4">
-                    <button className="w-full mt-4 rounded-2xl bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200">
+                    <button className="w-full mt-4 p-1 rounded-2xl bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200 cursor-pointer">
                       Ver detalles
                     </button>
                   </div>

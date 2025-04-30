@@ -50,7 +50,7 @@ export function NavUser({ user }) {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer"
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.avatar} alt={user.name} />
@@ -84,7 +84,7 @@ export function NavUser({ user }) {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <Dialog>
-                <DialogTrigger asChild>
+                <DialogTrigger asChild className="cursor-pointer">
                   <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                     <BadgeCheck />
                     Editar perfil
@@ -121,18 +121,18 @@ export function NavUser({ user }) {
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button type="submit">Guardar cambios</Button>
+                    <Button type="submit" className="cursor-pointer">Guardar cambios</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
 
-              <DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
                 <Bell />
                 Notificaciones
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer">
               <LogOut />
               Cerrar sesión
             </DropdownMenuItem>

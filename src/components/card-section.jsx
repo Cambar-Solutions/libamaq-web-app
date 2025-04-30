@@ -33,7 +33,7 @@ const CardSection = ({ title, description, items }) => {
 
             <div className="p-4">
               <Link to={`/detalle/${item.title}`}>
-                <Button className="w-full mt-4 rounded-2xl bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200">
+                <Button className="w-full mt-4 rounded-2xl bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200 cursor-pointer">
                   Ver detalles
                 </Button>
               </Link>

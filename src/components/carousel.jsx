@@ -25,9 +25,9 @@ export default function Carousel({ images }) {
             <img
               src={img}
               alt={
-                img === "/boschcarusel.png"
+                img === "/bosch-taladro.jpg"
                   ? "LIBAMAQ herramientas Bosch"
-                  : img === "/MAKITA.webp"
+                  : img === "/makita-DDA460Z.jpg"
                   ? "LIBAMAQ herramientas Makita"
                   : img === "/bosch-power.jpg"
                   ? "LIBAMAQ herramientas eléctricas Bosch"

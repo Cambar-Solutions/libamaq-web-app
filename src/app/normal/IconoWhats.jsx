@@ -16,7 +16,7 @@ const IconoWhats = () => {
   const whatsappNumber = "7351023279"; // Reemplaza este número por el tuyo
 
   return (
-    <div className="fixed bottom-5 right-5 flex items-center space-x-2 cursor-pointer">
+    <div className="fixed bottom-5 right-5 flex items-center space-x-2">
       <div className="bg-white text-gray-800 px-4 py-2 rounded-full shadow-lg">
         <span className="text-sm font-medium">
           {messages[currentMessageIndex]}
