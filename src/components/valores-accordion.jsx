@@ -55,10 +55,10 @@ export default function ValoresAccordion() {
         return (
           <AccordionItem key={value} value={value}>
             <div className={`${activeClass}`}>
-              <AccordionTrigger className={`text-xl cursor-pointer p-2`}>
+              <AccordionTrigger className={`text-xl cursor-pointer p-2 hover:bg-blue-200/60 transition-colors duration-300`}>
                 {title}
               </AccordionTrigger>
-              <AccordionContent className={`text-lg px-2 transition-all duration-300 ease-in`}>
+              <AccordionContent className={`text-lg px-2 transition-transform duration-900 ease-in`}>
                 {content}
               </AccordionContent>
             </div>

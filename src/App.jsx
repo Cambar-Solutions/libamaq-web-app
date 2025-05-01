@@ -93,7 +93,7 @@ export default function App() {
         Encuentra herramientas de calidad al mejor precio en LIBAMAQ.
         </p>
 
-        <Button className="bg-white border-1 border-blue-700 text-blue-600 rounded-full hover:bg-gray-200 hover:scale-110 p-4 mt-4 text-1xl ">
+        <Button className="bg-white hover:bg-blue-500 border-1 border-blue-500 text-blue-600 hover:text-white rounded-full hover:scale-110 p-4 mt-4 text-1xl transition-transform transition-colors duration-500">
         <Link to="/tienda" className="flex items-center justify-center space-x-2">
     <span>Explorar Tienda</span>
     <FaStore />

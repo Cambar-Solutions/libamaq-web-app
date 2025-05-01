@@ -354,7 +354,7 @@ const DetalleHerramienta = () => {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
       {/* Botón de regreso funcional */}
       <div className="mb-6">
-        <Button className="bg-blue-500 rounded-b-2xl hover:bg-blue-700 mb-3" onClick={handleBack}>
+        <Button className="bg-blue-500 rounded-b-2xl hover:bg-white hover:text-blue-500 border-2 border-blue-500 mb-3 cursor-pointer transition-colors duration-500" onClick={handleBack}>
           Regresar a productos destacados
         </Button>
       </div>
@@ -376,7 +376,7 @@ const DetalleHerramienta = () => {
                 src={img}
                 alt={`${herramienta.title} - ${index}`}
                 className={`w-16 h-16 object-contain border p-1 cursor-pointer ${
-                  mainImage === img ? "border-blue-600" : "border-gray-300"
+                  mainImage === img ? "border-blue-600" : "border-gray-300 bg-black/20 hover:bg-black/10 transition-all duration-400"
                 }`}
                 onClick={() => setMainImage(img)}
               />
@@ -457,7 +457,7 @@ const DetalleHerramienta = () => {
           <h2 className="text-xl sm:text-2xl font-bold">Accesorios compatibles</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
             {herramienta.accessories.map((acc, index) => (
-              <div key={index} className="border p-4 rounded-md bg-gray-100">
+              <div key={index} className="border p-4 rounded-md bg-gray-100 hover:scale-105 hover:shadow-lg transition-all duration-300">
                 <img src={acc.image} alt={acc.title} className="w-full h-32 object-contain mb-4" />
                 <h3 className="text-md sm:text-lg font-bold">{acc.title}</h3>
                 <p className="text-gray-700">{acc.description}</p>
@@ -477,7 +477,7 @@ const DetalleHerramienta = () => {
           </div>
           <ul className="mt-4">
             {herramienta.downloads.map((doc, index) => (
-              <li key={index} className="text-blue-600 hover:underline">
+              <li key={index} className="text-blue-600 hover:underline hover:font-semibold transition-all duration-200">
                 <a href={doc.url} target="_blank" rel="noopener noreferrer">
                   {doc.title} ({doc.size})
                 </a>

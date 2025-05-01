@@ -56,15 +56,15 @@ const Nav = () => {
       {/* Menú principal (solo en pantallas grandes) */}
       <div className="flex items-center space-x-4 hidden md:flex">
         {/* Botón "Explorar Tienda" */}
-        <Button asChild className="flex items-center bg-white border-2 border-blue-700 text-blue-700 hover:bg-gray-100">
+        <Button asChild className="flex items-center bg-white border-1 border-blue-700 text-blue-700 hover:bg-blue-700 hover:text-white transition-colors duration-600">
           <Link to="/tienda" className="flex items-center">
             Tienda
-            <FaStore className="mr-2 text-blue-700" />
+            <FaStore className="mr-2" />
           </Link>
         </Button>
 
         {/* Botón "Iniciar Sesión" */}
-        <Button asChild>
+        <Button asChild className="hover:bg-gray-100 hover:text-black border-2 border-gray-900 hover:border-gray-900 transition-colors duration-600">
           <Link to="/login">Iniciar sesión</Link>
         </Button>
       </div>
