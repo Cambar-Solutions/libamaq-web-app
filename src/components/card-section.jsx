@@ -28,12 +28,12 @@ const CardSection = ({ title, description, items }) => {
             <img
               src={item.image}
               alt={item.title}
-              className="w-3/4 mx-auto h-48 object-contain transition-transform duration-300 hover:scale-105"
+              className="w-3/4 mx-auto h-48 object-contain transition-transform duration-600 hover:scale-105"
             />
 
             <div className="p-4">
               <Link to={`/detalle/${item.title}`}>
-                <Button className="w-full mt-4 rounded-2xl bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200 cursor-pointer">
+                <Button className="w-full mt-4 rounded-2xl bg-blue-500 text-white hover:bg-white hover:text-blue-500 hover:border-blue-500 border-2 transition-colors duration-600 cursor-pointer">
                   Ver detalles
                 </Button>
               </Link>

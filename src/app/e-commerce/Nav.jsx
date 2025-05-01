@@ -9,9 +9,9 @@ const Nav = () => {
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
   return (
-    <nav className="bg-blue-950  border-b-2 py-4 px-6 flex justify-between items-center fixed top-0 w-full z-20 shadow">
+    <nav className="bg-blue-950 border-b-2 py-4 px-6 flex justify-between items-center fixed top-0 w-full z-20 shadow">
       {/* Logo */}
-      <div className="flex items-center mx-4">
+      <div className="flex items-center mx-4 hover:scale-108 transition-all duration-600">
         <Link to="/">
         <img src="/Tipografia_LIBAMAQ_legulab_color_hor.png" alt="logo" className="max-h-12 " />
         </Link>
@@ -45,7 +45,7 @@ const Nav = () => {
       </div>
 
       {/* Menú principal (solo en pantallas grandes) */}
-      <div className="flex items-center space-x-6  md:flex mx-4">
+      <div className="flex items-center space-x-6  md:flex mx-4 hover:scale-123 transition-all duration-600">
         {/* Ícono de carrito */}
         <Link to="/cart" className="text-yellow-500">
           <FaShoppingCart size={24} />

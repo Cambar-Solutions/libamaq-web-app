@@ -89,7 +89,7 @@
       return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Marca no encontrada</h1>
-          <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleBack}>
+          <Button className="bg-blue-600 hover:bg-blue-700 cursor-pointer" onClick={handleBack}>
             Regresar a Marcas
           </Button>
         </div>
@@ -99,9 +99,9 @@
     return (
       <div className="min-h-screen bg-gray-100 pt-20 px-4">
         <div className="max-w-4xl mx-auto">
-        <Button className="bg-blue-500 rounded-b-2xl hover:bg-blue-700 mb-3" onClick={handleBack}>
-              Regresar a Marcas
-            </Button>
+        <Button className="bg-blue-500 rounded-b-2xl hover:bg-blue-700 mb-3 cursor-pointer" onClick={handleBack}>
+          Regresar a Marcas
+        </Button>
           {/* Información de la marca */}
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
             <div className="flex flex-col md:flex-row items-center gap-8">
@@ -125,7 +125,7 @@
             </ul>
             <div className="flex justify-end me-[2em] mt-[2em]" >
             <Link to="/tienda">
-            <Button >Ver productos</Button>
+            <Button className="cursor-pointer">Ver productos</Button>
             </Link>
 
             </div>
