@@ -58,7 +58,6 @@ export const items = [
 
 const destacados = [
   'https://www.tiktok.com/@libamaqherramientas/video/7388193969009626373',
-  'https://www.tiktok.com/@libamaqherramientas/video/7200102863421394182',
   'https://www.tiktok.com/@libamaqherramientas/video/7263189002147187973'
   
 ];
