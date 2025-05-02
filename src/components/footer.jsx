@@ -22,7 +22,7 @@ export default function Footer() {
 
           {/* Información de contacto y enlaces */}
           <div className="space-y-8 text-center lg:text-left">
-            <div>
+            <div className="select-none">
               <h3 className="text-2xl font-bold text-gray-900 mb-6">Conoce más sobre nosotros</h3>
               <p className="text-gray-600 mb-6">
                 Ofrecemos herramientas y servicios de alta calidad para profesionales.
@@ -33,17 +33,17 @@ export default function Footer() {
             <div className="space-y-4">
               <div className="flex items-center gap-3 justify-center lg:justify-start">
                 <MapPin className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                <p className="text-gray-600">
+                <p className="text-gray-600 select-all">
                   Blvd. Cuahunahuac Km. 3.5 S/N, Col. Puente Blanco, Jiutepec., Centro, 62577 Morelos
                 </p>
               </div>
               <div className="flex items-center gap-3 justify-center lg:justify-start">
                 <Phone className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                <p className="text-gray-600">+52 735 102 3279</p>
+                <p className="text-gray-600 select-all">+52 735 102 3279</p>
               </div>
               <div className="flex items-center gap-3 justify-center lg:justify-start">
                 <Mail className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                <p className="text-gray-600">soporte@libamaq.com</p>
+                <p className="text-gray-600 select-all">soporte@libamaq.com</p>
               </div>
             </div>
 
@@ -100,8 +100,8 @@ export default function Footer() {
         </div>
 
         {/* Copyright */}
-        <div className="mt-12 border-t border-gray-200 pt-8">
-          <p className="text-center text-gray-500">
+        <div className="mt-12 pt-8">
+          <p className="text-center text-gray-500 select-none">
             {new Date().getFullYear()} LIBAMAQ. Todos los derechos reservados.
           </p>
         </div>
