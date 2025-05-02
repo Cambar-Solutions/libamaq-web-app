@@ -11,6 +11,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import "../../../index.css";
+
+import { FileVideo2 } from "lucide-react";
+import TikTokEmbed from './../../../components/ui/TikTokEmbed';
+
+// Importa el icono específico
+
 import {
   Dialog,
   DialogTrigger,
@@ -21,11 +28,14 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import { Car } from "lucide-react";
 
 export function ContentView() {
   const [showPreview, setShowPreview] = useState(false);
   const [title, setTitle] = useState("Libamaq GOD");
-  const [description, setDescription] = useState("Libamaq lo mejor para ti y tu hogar o chamba");
+  const [description, setDescription] = useState(
+    "Libamaq lo mejor para ti y tu hogar o chamba"
+  );
   const [link, setLink] = useState(
     "https://www.tiktok.com/@libamaqherramientas/video/7284372866819263750?is_from_webapp=1&sender_device=pc&web_id=7498448340742260230"
   );
@@ -44,155 +54,241 @@ export function ContentView() {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-gradient-to-b from-gray-100 to-blue-200">
-      <div className="flex items-center justify-between rounded shadow p-4">
+    <div className="flex flex-col gap-4 p-4 bg-gradient-to-b from-gray-100 to-blue-300 rounded-2xl">
+      <div className="flex items-center justify-between rounded shadow p-4 bg-white">
         <div>
-          <h1 className="text-2xl font-semibold">
+          <h1 className="text-2xl font-semibold ">
             En esta sección se puede agregar contenido multimedia
           </h1>
           <p className="text-gray-700">
-            Da clic en el botón "Agregar contenido" para agregar contenido multimedia
+            Da clic en el botón "Agregar contenido" dependiendo cada seccion de
+            contenido multimedia
           </p>
         </div>
 
         <div>
-          <Button className="bg-blue-700 hover:bg-blue-900 cursor-pointer">Agregar contenido</Button>
+          <Button className="bg-blue-700 hover:bg-blue-900 cursor-pointer">
+            Ver perfil de Tik tok
+            <FileVideo2 /> {/* Personaliza el tamaño y color del icono */}
+          </Button>
         </div>
       </div>
 
-      <div className="border border-gray-200 rounded shadow p-4 mt-5 bg-gradient-to-b from-gray-100 to-blue-100 shadow-md">
+      <div className="border border-gray-200 rounded  p-4 mt-5 bg-gradient-to-b from-gray-100 to-blue-100 shadow-md">
         <Tabs defaultValue="multimedia">
-          <TabsList className="grid grid-cols-4 gap-2">
-            <TabsTrigger className="cursor-pointer hover:bg-blue-200 transition-colors data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md" value="multimedia">Multimedia</TabsTrigger>
-            <TabsTrigger className="cursor-pointer hover:bg-blue-200 transition-colors data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md" value="bannerContent">BannerContent</TabsTrigger>
-            <TabsTrigger className="cursor-pointer hover:bg-blue-200 transition-colors data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md" value="facebook">Facebook</TabsTrigger>
-            <TabsTrigger className="cursor-pointer hover:bg-blue-200 transition-colors data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md" value="twitter">Twitter</TabsTrigger>
+          <TabsList className="grid grid-cols-4 gap-2 shadow-md bg-white">
+            <TabsTrigger
+              className="cursor-pointer hover:bg-blue-200 transition-colors data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md"
+              value="multimedia"
+            >
+              Tik toks
+            </TabsTrigger>
+            <TabsTrigger
+              className="cursor-pointer hover:bg-blue-200 transition-colors data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md"
+              value="bannerContent"
+            >
+              Imagenes
+            </TabsTrigger>
+            <TabsTrigger
+              className="cursor-pointer hover:bg-blue-200 transition-colors data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md"
+              value="facebook"
+            >
+              Videos
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="multimedia">
-            <Card className="shadow-md">
-              <CardHeader>
-                <CardTitle className="text-2xl font-semibold">Multimedia</CardTitle>
-                <CardDescription>
-                  Aquí puedes agregar contenido multimedia de TikTok
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent className="space-y-2">
-                <div className="space-y-1 mt-5">
-                  <Label htmlFor="title">Titulo</Label>
-                  <Input id="title" value={title} disabled className="cursor-not-allowed" />
+            <Card>
+              <div className="flex justify-between px-10 gap-5 items-center">
+                <div className="flex gap-3 items-center">
+                  <img src="/logo_Tiktok.png" className="w-12" />
+                  <section className="border-b-2">
+                    Recueda que aqui podras gestionar tu contenido
+                  </section>
                 </div>
 
-                <div className="space-y-1 mt-5">
-                  <Label htmlFor="description">Descripción</Label>
-                  <Input id="description" value={description} disabled className="cursor-not-allowed" />
-                </div>
-
-                <div className="space-y-1 mt-5">
-                  <Label htmlFor="link">Link</Label>
-                  <Input id="link" value={link} disabled className="cursor-not-allowed" />
-                </div>
-
-                <div className="space-y-1 mt-5">
-                  <Label htmlFor="username">Previsualización del contenido</Label>
-                  <Button
-                    className="bg-indigo-500 hover:bg-indigo-800 cursor-pointer"
-                    onClick={() => setShowPreview((prev) => !prev)}
-                  >
-                    {showPreview ? "Ocultar vista previa" : "Vista previa"}
-                  </Button>
-
-                  {showPreview && (
-                    <div className="mt-1 overflow-hidden rounded border border-gray-200">
-                      <iframe
-                        src={getEmbedUrl(link)}
-                        className="w-full h-145 items-center"
-                        allow="autoplay; fullscreen"
-                        scrolling="no"
-                      />
-                    </div>
-                  )}
-                </div>
-
-              </CardContent>
-
-              <CardFooter className="flex justify-end space-x-2">
-                {/* Dialog para Editar */}
-                <Dialog
-                  open={isDialogOpen}
-                  onOpenChange={(open) => {
-                    if (open) {
-                      setModalTitle(title);
-                      setModalDescription(description);
-                      setModalLink(link);
-                    }
-                    setIsDialogOpen(open);
-                  }}
-                >
-                  <DialogTrigger asChild>
-                    <Button className="bg-gray-500 hover:bg-gray-600 mb-5 cursor-pointer">
-                      Editar
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Editar Multimedia</DialogTitle>
-                      <DialogDescription>
-                        Modifica los campos y confirma los cambios.
-                      </DialogDescription>
-                    </DialogHeader>
-
-                    {/* Campos del CardContent dentro del diálogo */}
-                    <div className="space-y-4 mt-4">
-                      <div className="space-y-1">
-                        <Label htmlFor="dialog-title">Titulo</Label>
-                        <Input
-                          id="dialog-title"
-                          value={modalTitle}
-                          onChange={(e) => setModalTitle(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="dialog-description">Descripción</Label>
-                        <Input
-                          id="dialog-description"
-                          value={modalDescription}
-                          onChange={(e) => setModalDescription(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="dialog-link">Link</Label>
-                        <Input
-                          id="dialog-link"
-                          value={modalLink}
-                          onChange={(e) => setModalLink(e.target.value)}
-                          onFocus={e => e.currentTarget.select()}
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <DialogClose asChild>
-                        <Button variant="outline" className="cursor-pointer">Cancelar</Button>
-                      </DialogClose>
-                      <Button
-                        className="cursor-pointer"
-                        onClick={() => {
-                          setTitle(modalTitle);
-                          setDescription(modalDescription);
-                          setLink(modalLink);
-                          setIsDialogOpen(false);
-                        }}
-                      >
-                        Confirmar
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                <Button className="bg-blue-500 hover:bg-blue-600 mb-5 cursor-pointer">
-                  Guardar cambios
+                <Button className="bg-black hover:bg-blue-900 cursor-pointer">
+                  Agregar tiktok
                 </Button>
-              </CardFooter>
+              </div>
+
+              <section className=" w-full h-full pb-4">
+                <div className="flex flex-wrap justify-around gap-4">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <div className="bg-gradient-to-t from-blue-800 via-blue-400 to-blue-100 p-2 rounded-2xl cursor-pointer">
+                        <Card className="p-4">
+                          <CardHeader>
+                            <CardTitle>Tik tok 1</CardTitle>
+                            <CardDescription>
+                              Es un video subiendo carga pesada
+                            </CardDescription>
+                          </CardHeader>
+                        </Card>
+                      </div>
+                    </DialogTrigger>
+
+                    <DialogContent  className="w-full max-w-[80vw] md:max-w-[1000px] mx-auto">
+                      <Tabs defaultValue="details" className="w-full mt-2">
+                        <TabsList className="grid w-full grid-cols-2">
+                          <TabsTrigger value="details">Detalles</TabsTrigger>
+                          <TabsTrigger value="edit">Editar</TabsTrigger>
+                        </TabsList>
+
+                        {/* ---------------- Detalles (vista de solo lectura) ---------------- */}
+                        <TabsContent value="details">
+        <Card className="border-0 m-2">
+          <CardHeader>
+            <CardTitle className="text-2xl font-semibold">
+              Contenido
+            </CardTitle>
+            <CardDescription>
+              Puedes visualizar tu tik tok
+            </CardDescription>
+          </CardHeader>
+
+          {/* Flex: columna en móvil, fila en md+ */}
+          <CardContent className="flex flex-col md:flex-row gap-6">
+            {/* IZQUIERDA: campos de sólo lectura */}
+            <div className="flex-1 space-y-6">
+              <div className="space-y-1">
+                <Label htmlFor="title">Título</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  disabled
+                  className="cursor-not-allowed"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="description">
+                  Descripción
+                </Label>
+                <Input
+                  id="description"
+                  value={description}
+                  disabled
+                  className="cursor-not-allowed"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="link">Link</Label>
+                <Input
+                  id="link"
+                  value={link}
+                  disabled
+                  className="cursor-not-allowed"
+                />
+              </div>
+            </div>
+
+            {/* DERECHA: embed con TikTokEmbed */}
+            <div className="md:w-1/3">
+              <TikTokEmbed
+                videoUrl={link}
+                aspectRatio="177%"  // proporción 9:16
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+                        {/* ---------------- Editar (modo edición) ---------------- */}
+                        <TabsContent value="edit">
+                          <Card className="border-0 m-2">
+                            <CardHeader>
+                              <CardTitle className="text-2xl font-semibold">
+                                Editar TikTok
+                              </CardTitle>
+                              <CardDescription>
+                                Modifica los campos y guarda los cambios.
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              <div className="space-y-1">
+                                <Label htmlFor="edit-title">Título</Label>
+                                <Input
+                                  id="edit-title"
+                                  value={modalTitle}
+                                  onChange={(e) =>
+                                    setModalTitle(e.target.value)
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label htmlFor="edit-description">
+                                  Descripción
+                                </Label>
+                                <Input
+                                  id="edit-description"
+                                  value={modalDescription}
+                                  onChange={(e) =>
+                                    setModalDescription(e.target.value)
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label htmlFor="edit-link">Link</Label>
+                                <Input
+                                  id="edit-link"
+                                  value={modalLink}
+                                  onChange={(e) => setModalLink(e.target.value)}
+                                  onFocus={(e) => e.currentTarget.select()}
+                                />
+                              </div>
+                            </CardContent>
+                            <CardFooter className="flex justify-end space-x-2">
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  // revertir cambios si cancela
+                                  setModalTitle(title);
+                                  setModalDescription(description);
+                                  setModalLink(link);
+                                }}
+                              >
+                                Cancelar
+                              </Button>
+                              <Button
+                                onClick={() => {
+                                  // aplicar y cerrar
+                                  setTitle(modalTitle);
+                                  setDescription(modalDescription);
+                                  setLink(modalLink);
+                                }}
+                              >
+                                Guardar cambios
+                              </Button>
+                            </CardFooter>
+                          </Card>
+                        </TabsContent>
+                      </Tabs>
+                    </DialogContent>
+                  </Dialog>
+
+                  <div className="bg-gradient-to-t  from-blue-800 via-blue-400 to-blue-100 p-2 rounded-2xl">
+                    <Card className=" p-4">
+                      <CardHeader>
+                        <CardTitle>Tik tok 1</CardTitle>
+                        <CardDescription>
+                          Es un video subiendo carga pesada
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                  </div>
+
+                  <div className="bg-gradient-to-t  from-blue-800 via-blue-400 to-blue-100 p-2 rounded-2xl">
+                    <Card className=" p-4">
+                      <CardHeader>
+                        <CardTitle>Tik tok 1</CardTitle>
+                        <CardDescription>
+                          Es un video subiendo carga pesada
+                        </CardDescription>
+                      </CardHeader>
+                    </Card>
+                  </div>
+                </div>
+              </section>
             </Card>
           </TabsContent>
 
