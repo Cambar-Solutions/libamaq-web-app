@@ -9,17 +9,16 @@ export default function Footer() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
           {/* Mapa de Google */}
           <div className="w-full h-[400px] rounded-xl overflow-hidden shadow-xl">
-          <iframe
-  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3775.5347090523106!2d-99.1807602!3d18.9094104!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85ce75831b9d50df%3A0x96d670fc9589dcb5!2sServicio+Y+Herramientas+Cuautla+S.A.De+C.V.+Centro+De+Servicio+Autorizado!5e0!3m2!1ses!2smx!4v1428000000000!5m2!1ses!2smx"
-  width="100%"
-  height="100%"
-  style="border: 0"
-  allowFullScreen=""
-  loading="lazy"
-  referrerPolicy="no-referrer-when-downgrade"
-></iframe>
-
-        
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3775.5347090523106!2d-99.17859732374084!3d18.875999155967237!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85ce7486dd624777%3A0x0!2sBlvd.+Cuahunahuac+Km.+3.5%2C+Jiutepec%2C+Morelos!5e0!3m2!1ses!2smx!4v1428000000000!5m2!1ses!2smx"
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              allowFullScreen=""
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+           
           </div>
 
           {/* Información de contacto y enlaces */}
