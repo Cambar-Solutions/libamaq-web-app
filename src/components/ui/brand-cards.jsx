@@ -37,7 +37,7 @@ const BrandCards = () => {
   return (
     <div id="brand-cards" className="relative w-full overflow-hidden py-10 bg-gray-50">
       {/* Título de la sección */}
-      <div className="text-center mb-6">
+      <div className="text-center mb-6 select-none">
         <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Marcas con las que trabajamos</h2>
         <p className="text-gray-600 mt-2 text-sm md:text-base">
           Da clic en cualquier marca para conocer más detalles sobre sus productos.

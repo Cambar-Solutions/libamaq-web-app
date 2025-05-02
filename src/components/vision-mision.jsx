@@ -8,7 +8,7 @@ const MisionVision = () => {
 
 
         {/* Misión - Card a la izquierda */}
-        <div className="flex flex-col items-center md:items-start w-full md:w-1/2">
+        <div className="flex flex-col items-center md:items-start w-full md:w-1/2 select-none">
           <Card className="shadow-lg w-full max-w-sm transform transition-all hover:scale-110 hover:shadow-xl bg-blue-100"> 
             <CardContent className="p-4">
               <h3 className="text-2xl font-semibold text-center text-gray-900">
@@ -45,7 +45,7 @@ const MisionVision = () => {
         </div>
 
         {/* Visión - Card a la derecha */}
-        <div className="flex flex-col items-center md:items-start w-full md:w-1/2">
+        <div className="flex flex-col items-center md:items-start w-full md:w-1/2 select-none">
   <Card className="shadow-lg w-full max-w-sm transform transition-all hover:scale-110 hover:shadow-xl bg-blue-100">
     <CardContent className="p-6">
       <h3 className="text-2xl font-semibold text-center text-gray-900">

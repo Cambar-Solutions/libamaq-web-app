@@ -85,14 +85,14 @@ export default function App() {
 
       {/* Hero Section */}
       <header className="text-center py-6 bg-gradient-to-l from-gray-100 to-blue-400 text-black mt-[7em]">
-        <h1 className="text-4xl font-bold">
+        <h1 className="text-4xl font-bold select-none">
            Las mejores herramientas para cualquier persona
         </h1>
-        <p className="mt-4 text-xl">
+        <p className="mt-4 text-xl select-none">
         Encuentra herramientas de calidad al mejor precio en LIBAMAQ.
         </p>
 
-        <Button className="bg-blue-500 hover:bg-blue-500 border-1 border-blue-500 hover:text-white rounded-full hover:scale-110 p-5 mt-4 text-1xl transition-transform transition-colors duration-500">
+        <Button className="bg-blue-500 hover:bg-blue-800 rounded-full p-5 mt-4 text-1xl transition-transform transition-colors duration-500">
         <Link to="/tienda" className="flex items-center justify-center space-x-2">
     <span>Explorar Tienda</span>
     <FaStore />
@@ -102,7 +102,7 @@ export default function App() {
 
       <Carousel images={images} className="mb-6"/>
 
-      <section className="py-10 px-6 mb-8">
+      <section className="py-10 px-6 mb-8 select-none">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -145,7 +145,7 @@ export default function App() {
           transition={{ duration: 0.5 }}
           className="max-w-3xl mx-auto"
         >
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center select-none">
             Nuestros Valores
           </h2>
           <ValoresAccordion />

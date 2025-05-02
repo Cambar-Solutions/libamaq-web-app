@@ -12,7 +12,7 @@ const TikTokGallery = ({ videoUrls }) => {
   return (
     <section className="py-12 bg-gray-50">
       <div className="max-w-6xl mx-auto px-4">
-        <h2 className="text-3xl font-bold mb-8">TikToks Destacados</h2>
+        <h2 className="text-3xl font-bold mb-8 select-none">TikToks Destacados</h2>
 
         <Swiper
           modules={[Navigation, Pagination]}    // solo navegación y paginación

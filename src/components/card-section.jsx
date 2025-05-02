@@ -5,8 +5,8 @@ import { motion } from "framer-motion";
 const CardSection = ({ title, description, items }) => {
   return (
     <section className="py-10 px-6 w-full sm:w-3/4 m-auto mb-14">
-      <h2 className="text-3xl font-bold text-center mb-4">{title}</h2>
-      <p className="text-center mb-10 text-gray-600">{description}</p>
+      <h2 className="text-3xl font-bold text-center mb-4 select-none">{title}</h2>
+      <p className="text-center mb-10 text-gray-600 select-none">{description}</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {items.map((item, index) => (
@@ -21,8 +21,8 @@ const CardSection = ({ title, description, items }) => {
       >
       
             <div className="p-4">
-              <h3 className="text-lg font-semibold text-gray-800">{item.title}</h3>
-              <p className="text-sm text-gray-500">{item.text}</p>
+              <h3 className="text-lg font-semibold text-gray-800 select-none">{item.title}</h3>
+              <p className="text-sm text-gray-500 select-none">{item.text}</p>
             </div>
 
             <img
