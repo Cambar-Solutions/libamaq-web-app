@@ -129,7 +129,7 @@ export default function NuevoProducto() {
             <Textarea
               value={val}
               onChange={(e) => handleJsonFieldChange(section, key, e.target.value)}
-              className="flex-1"
+              className="flex-1 "
               rows={2}
               placeholder="Valor"
             />

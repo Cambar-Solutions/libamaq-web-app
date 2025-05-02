@@ -4,7 +4,9 @@ import {
   ShoppingCart,  // Pedidos (Carrito de compras)
   Users,         // Clientes (Grupo de personas)
   Briefcase,     // Empleados (Portafolio)
-  BarChart3,     // Estadísticas (Gráfico de barras)
+  BarChart3,
+  Film
+     // Estadísticas (Gráfico de barras)
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -52,6 +54,11 @@ const data = {
       name: "Estadísticas",
       id: "estadisticas",
       icon: BarChart3, 
+    },
+    {
+      name: "Contenido",
+      id: "contenido",
+      icon: Film, // Icono de contenido (puedes usar un icono diferente)
     },
   ],
 }

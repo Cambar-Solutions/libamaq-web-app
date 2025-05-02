@@ -7,6 +7,7 @@ import { ProductsView } from "./views/ProductsView";
 import { OrdersView } from "./views/OrdersView";
 import { ClientsView } from "./views/ClientsView";
 import { EmployeesView } from "./views/EmployeesView";
+import { ContentView } from "./views/ContentView";
 import { StatsView } from "./views/StatsView";
 
 export default function Page() {
@@ -24,6 +25,8 @@ export default function Page() {
         return <EmployeesView />;
       case "estadisticas":
         return <StatsView />;
+      case "contenido":
+        return <ContentView />;  
       default:
         return <ProductsView />;
     }

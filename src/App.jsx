@@ -84,7 +84,7 @@ export default function App() {
     
 
       {/* Hero Section */}
-      <header className="text-center py-6 bg-gradient-to-l from-gray-200 to-blue-400 text-black mt-[7em]">
+      <header className="text-center py-6 bg-gradient-to-l from-gray-100 to-blue-400 text-black mt-[7em]">
         <h1 className="text-4xl font-bold">
            Las mejores herramientas para cualquier persona
         </h1>
@@ -92,7 +92,7 @@ export default function App() {
         Encuentra herramientas de calidad al mejor precio en LIBAMAQ.
         </p>
 
-        <Button className="bg-white hover:bg-blue-500 border-1 border-blue-500 text-blue-600 hover:text-white rounded-full hover:scale-110 p-4 mt-4 text-1xl transition-transform transition-colors duration-500">
+        <Button className="bg-blue-500 hover:bg-blue-500 border-1 border-blue-500 hover:text-white rounded-full hover:scale-110 p-5 mt-4 text-1xl transition-transform transition-colors duration-500">
         <Link to="/tienda" className="flex items-center justify-center space-x-2">
     <span>Explorar Tienda</span>
     <FaStore />
