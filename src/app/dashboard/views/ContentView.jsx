@@ -14,9 +14,8 @@ import { Button } from "@/components/ui/button";
 import "../../../index.css";
 
 import { FileVideo2 } from "lucide-react";
-import TikTokEmbed from './../../../components/ui/TikTokEmbed';
+import TikTokEmbed from "./../../../components/ui/TikTokEmbed";
 
-// Importa el icono específico
 
 import {
   Dialog,
@@ -28,7 +27,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { Car } from "lucide-react";
 
 export function ContentView() {
   const [showPreview, setShowPreview] = useState(false);
@@ -67,17 +65,15 @@ export function ContentView() {
         </div>
 
         <div>
-        <a
-        href="https://www.tiktok.com/@libamaqherramientas"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="bg-blue-700 hover:bg-blue-900 text-white font-bold py-2 px-4 rounded-2xl inline-flex items-center cursor-pointer"
-      >
-        Ver perfil de TikTok
-        <FileVideo2 className="ml-2" />
-      </a>
-
-      
+          <a
+            href="https://www.tiktok.com/@libamaqherramientas"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-blue-700 hover:bg-blue-900 text-white font-bold py-2 px-4 rounded-2xl inline-flex items-center cursor-pointer"
+          >
+            Ver perfil de TikTok
+            <FileVideo2 className="ml-2" />
+          </a>
         </div>
       </div>
 
@@ -98,7 +94,7 @@ export function ContentView() {
       transition-colors
       hover:underline hover:decoration-blue-200 hover:decoration-3
       data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:decoration-3"
-              value="bannerContent"
+              value="images"
             >
               Imagenes
             </TabsTrigger>
@@ -123,9 +119,65 @@ export function ContentView() {
                   </section>
                 </div>
 
-                <Button className="bg-black hover:bg-blue-900 cursor-pointer">
-                  Agregar tiktok
-                </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button className="bg-black hover:bg-blue-900 cursor-pointer">
+                      Agregar TikTok
+                    </Button>
+                  </DialogTrigger>
+
+                  <DialogContent className="w-full max-w-[80vw] md:max-w-[800px] mx-auto">
+                    <Card className="border-0 m-2">
+                      <CardHeader>
+                        <CardTitle className="text-2xl font-semibold">
+                          Contenido
+                        </CardTitle>
+                        <CardDescription>
+                          Llena los campos para agregar tu TikTok
+                        </CardDescription>
+                      </CardHeader>
+
+                      <CardContent className="flex flex-col md:flex-row gap-20">
+                        {/* IZQUIERDA: campos de entrada */}
+                        <div className="flex-1 space-y-6">
+                          <div className="space-y-1">
+                            <Label htmlFor="title">Título</Label>
+                            <Input
+                              id="title"
+                              placeholder="Ej. TikTok sobre herramientas"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor="description">Descripción</Label>
+                            <Input
+                              id="description"
+                              placeholder="Breve descripción del TikTok"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor="link">Link</Label>
+                            <Input
+                              id="link"
+                              placeholder="https://www.tiktok.com/..."
+                              onFocus={(e) => e.currentTarget.select()}
+                            />
+                          </div>
+                        </div>
+
+                        {/* DERECHA: vista previa de TikTok */}
+                        <div className="md:w-1/3">
+                          <TikTokEmbed videoUrl={link} aspectRatio="177%" />
+                        </div>
+                      </CardContent>
+
+                      <CardFooter className="flex justify-end space-x-2">
+                        <Button className="bg-blue-600 hover:bg-blue-700">
+                          Crear tik tok
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  </DialogContent>
+                </Dialog>
               </div>
 
               <section className=" w-full h-full pb-4">
@@ -147,18 +199,24 @@ export function ContentView() {
                     <DialogContent className="w-full max-w-[80vw] md:max-w-[800px] mx-auto">
                       <Tabs defaultValue="details" className="w-full mt-2">
                         <TabsList className="flex justify-end grid w-[20em] grid-cols-2 gap-2">
-                          <TabsTrigger value="details"
+                          <TabsTrigger
+                            value="details"
                             className="cursor-pointer
       transition-colors
       hover:underline hover:decoration-blue-200 hover:decoration-3
       data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:decoration-3"
-                          >Detalles</TabsTrigger>
-                          <TabsTrigger value="edit"
+                          >
+                            Detalles
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="edit"
                             className="cursor-pointer
       transition-colors
       hover:underline hover:decoration-blue-200 hover:decoration-3
       data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:decoration-3"
-                          >Editar</TabsTrigger>
+                          >
+                            Editar
+                          </TabsTrigger>
                         </TabsList>
 
                         {/* ---------------- Detalles (vista de solo lectura) ---------------- */}
@@ -212,7 +270,7 @@ export function ContentView() {
                               <div className="md:w-1/3">
                                 <TikTokEmbed
                                   videoUrl={link}
-                                  aspectRatio="177%"  // proporción 9:16
+                                  aspectRatio="177%" // proporción 9:16
                                 />
                               </div>
                             </CardContent>
@@ -259,7 +317,9 @@ export function ContentView() {
                                   <Input
                                     id="edit-link"
                                     value={modalLink}
-                                    onChange={(e) => setModalLink(e.target.value)}
+                                    onChange={(e) =>
+                                      setModalLink(e.target.value)
+                                    }
                                     onFocus={(e) => e.currentTarget.select()}
                                   />
                                 </div>
@@ -311,18 +371,24 @@ export function ContentView() {
                     <DialogContent className="w-full max-w-[80vw] md:max-w-[800px] mx-auto">
                       <Tabs defaultValue="details" className="w-full mt-2">
                         <TabsList className="flex justify-end grid w-[20em] grid-cols-2 gap-2">
-                          <TabsTrigger value="details"
+                          <TabsTrigger
+                            value="details"
                             className="cursor-pointer
       transition-colors
       hover:underline hover:decoration-blue-200 hover:decoration-3
       data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:decoration-3"
-                          >Detalles</TabsTrigger>
-                          <TabsTrigger value="edit"
+                          >
+                            Detalles
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="edit"
                             className="cursor-pointer
       transition-colors
       hover:underline hover:decoration-blue-200 hover:decoration-3
       data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:decoration-3"
-                          >Editar</TabsTrigger>
+                          >
+                            Editar
+                          </TabsTrigger>
                         </TabsList>
 
                         {/* ---------------- Detalles (vista de solo lectura) ---------------- */}
@@ -376,7 +442,7 @@ export function ContentView() {
                               <div className="md:w-1/3">
                                 <TikTokEmbed
                                   videoUrl={link}
-                                  aspectRatio="177%"  // proporción 9:16
+                                  aspectRatio="177%" // proporción 9:16
                                 />
                               </div>
                             </CardContent>
@@ -423,7 +489,9 @@ export function ContentView() {
                                   <Input
                                     id="edit-link"
                                     value={modalLink}
-                                    onChange={(e) => setModalLink(e.target.value)}
+                                    onChange={(e) =>
+                                      setModalLink(e.target.value)
+                                    }
                                     onFocus={(e) => e.currentTarget.select()}
                                   />
                                 </div>
@@ -475,18 +543,24 @@ export function ContentView() {
                     <DialogContent className="w-full max-w-[80vw] md:max-w-[800px] mx-auto">
                       <Tabs defaultValue="details" className="w-full mt-2">
                         <TabsList className="flex justify-end grid w-[20em] grid-cols-2 gap-2">
-                          <TabsTrigger value="details"
+                          <TabsTrigger
+                            value="details"
                             className="cursor-pointer
       transition-colors
       hover:underline hover:decoration-blue-200 hover:decoration-3
       data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:decoration-3"
-                          >Detalles</TabsTrigger>
-                          <TabsTrigger value="edit"
+                          >
+                            Detalles
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="edit"
                             className="cursor-pointer
       transition-colors
       hover:underline hover:decoration-blue-200 hover:decoration-3
       data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:decoration-3"
-                          >Editar</TabsTrigger>
+                          >
+                            Editar
+                          </TabsTrigger>
                         </TabsList>
 
                         {/* ---------------- Detalles (vista de solo lectura) ---------------- */}
@@ -540,7 +614,7 @@ export function ContentView() {
                               <div className="md:w-1/3">
                                 <TikTokEmbed
                                   videoUrl={link}
-                                  aspectRatio="177%"  // proporción 9:16
+                                  aspectRatio="177%" // proporción 9:16
                                 />
                               </div>
                             </CardContent>
@@ -587,7 +661,9 @@ export function ContentView() {
                                   <Input
                                     id="edit-link"
                                     value={modalLink}
-                                    onChange={(e) => setModalLink(e.target.value)}
+                                    onChange={(e) =>
+                                      setModalLink(e.target.value)
+                                    }
                                     onFocus={(e) => e.currentTarget.select()}
                                   />
                                 </div>
@@ -621,35 +697,27 @@ export function ContentView() {
                       </Tabs>
                     </DialogContent>
                   </Dialog>
-
-                 
-
-               
                 </div>
               </section>
             </Card>
           </TabsContent>
 
-          <TabsContent value="bannerContent">
+          <TabsContent value="images">
             <Card>
               <CardHeader>
-                <CardTitle>BannerContent</CardTitle>
+                <CardTitle>Imagenes</CardTitle>
                 <CardDescription>
-                  Change your password here. After saving, you'll be logged out.
+                  Puedes agregar imaganes que se veran en tu landing
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="space-y-1">
-                  <Label htmlFor="current">Current password</Label>
-                  <Input id="current" type="password" />
+                  <Label htmlFor="current">Busca tu imagen</Label>
+                  <Input id="current" type="file" />
                 </div>
-                <div className="space-y-1">
-                  <Label htmlFor="new">New password</Label>
-                  <Input id="new" type="password" />
-                </div>
+                
               </CardContent>
               <CardFooter>
-                <Button>Save password</Button>
               </CardFooter>
             </Card>
           </TabsContent>
