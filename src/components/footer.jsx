@@ -79,7 +79,7 @@ export default function Footer() {
               <Button
                 className="bg-white border-2 border-blue-700 text-blue-600 rounded-full hover:bg-blue-700 hover:text-white hover:scale-10 transition-colors duration-500"
               >
-                <Link to="/tienda" className="flex items-center justify-center space-x-2">
+                <Link to="/tienda" className="flex items-center justify-center space-x-1">
                   <span>Explorar Tienda</span>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
