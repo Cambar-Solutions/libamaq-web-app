@@ -13,7 +13,14 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import "../../../index.css";
 
-import { FileVideo2, Trash2, Edit, Loader2 } from "lucide-react";
+import { 
+  FileVideo2, 
+  Trash2, 
+  Edit, 
+  Loader2, 
+  SquareMousePointer 
+} from "lucide-react";
+
 import TikTokEmbed from "./../../../components/ui/TikTokEmbed";
 import { createLanding, updateLanding, deleteLanding, getAllActiveLandings, changeLandingStatus } from "@/services/admin/landingService";
 
@@ -424,12 +431,10 @@ export function ContentView() {
                           </CardHeader>
                           <Dialog>
                             <DialogTrigger asChild>
-                              <div className="cursor-pointer">
-                                <img 
-                                  src="/tiktok_preview.jpg" 
-                                  alt="TikTok Preview" 
-                                  className="w-full h-32 object-cover rounded-md mt-2" 
-                                />
+                              <div className="cursor-pointer flex justify-start items-center">
+                              <SquareMousePointer size={20} />
+
+
                               </div>
                             </DialogTrigger>
 
