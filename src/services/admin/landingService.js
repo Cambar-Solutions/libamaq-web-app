@@ -138,25 +138,21 @@ export const deleteLanding = async (id) => {
 
 /**
  * Cambiar el estado de un landing (activar/desactivar)
- * @param {string|number} id - ID del landing
- * @param {string} status - Nuevo estado ('ACTIVE', 'INACTIVE', etc)
+ * @param {Object} landingData - Datos del landing incluyendo id, title, description, url, type y status
  * @returns {Promise<Object>} - Resultado de la operación
  */
-export const changeLandingStatus = async (id, status = 'INACTIVE') => {
+export const changeLandingStatus = async (landingData) => {
   try {
-    console.log(`Cambiando estado del landing ID ${id} a ${status}`);
+    console.log(`Cambiando estado del landing ID ${landingData.id} a ${landingData.status}`);
     
     // Usar la misma URL que updateLanding: /admin/landing/update
-    // Enviamos solo los campos necesarios: id y status
-    const { data } = await apiClient.put(`/admin/landing/update`, {
-      id,
-      status
-    });
+    // Enviamos todos los campos requeridos
+    const { data } = await apiClient.put(`/admin/landing/update`, landingData);
     
     console.log('Respuesta de cambio de estado:', data);
     return data.result || data;
   } catch (error) {
-    console.error(`Error al cambiar estado del landing con ID ${id}:`, error);
+    console.error(`Error al cambiar estado del landing con ID ${landingData.id}:`, error);
     throw error.response?.data || error.message;
   }
 };
