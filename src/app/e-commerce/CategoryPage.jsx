@@ -240,87 +240,94 @@ export default function CategoryPage() {
             )}
           </div>
 
-          {/* Contenedor de productos */}
-          {filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-8">
-              {filteredProducts.map((item, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col"
-                >
-                  <div className="h-28 bg-gray-100 flex items-center justify-center p-4">
-                    <img 
-                      src="/placeholder-product.png"
-                      alt={item.title}
-                      className="max-h-full max-w-full object-contain"
-                    />
+          {/* Contenedor principal de productos */}
+          <div className="bg-gray-100 rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-[95%] mx-auto flex-grow">
+            {/* Sección de productos más vendidos - solo visible cuando no hay filtros */}
+            {!brand && !selectedCategory && !searchTerm && (
+              <>
+                <div className="mb-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-800">Los más vendidos</h2>
+                    <button className="text-blue-600 hover:text-blue-800 flex items-center">
+                      Ver todos <ChevronRight size={16} />
+                    </button>
                   </div>
-                  <div className="p-3 flex-grow flex flex-col h-[160px]">
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-800 truncate" title={item.title}>{item.title}</h3>
-                      <p className="text-sm text-gray-500 truncate" title={item.text}>{item.text}</p>
-                    </div>
-                    {item.price && (
-                      <p className="text-xl font-bold text-blue-700 mb-2">${item.price.toLocaleString()}</p>
-                    )}
-                    <div className="mt-auto">
-                      <button className="w-full py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm">
-                        Ver detalles
-                      </button>
-                    </div>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    {topSellingProducts.map((item, index) => (
+                      <motion.div
+                        key={`top-${index}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col"
+                      >
+                        <div className="h-40 bg-gray-100 flex items-center justify-center p-4 relative">
+                          <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">TOP</div>
+                          <img 
+                            src="/placeholder-product.png"
+                            alt={item.title}
+                            className="max-h-full max-w-full object-contain"
+                          />
+                        </div>
+                        <div className="p-3 flex-grow flex flex-col h-[180px]">
+                          <div>
+                            <p className="text-xs text-blue-600 uppercase font-semibold truncate" title={item.brand}>{item.brand}</p>
+                            <h3 className="text-lg font-medium text-gray-800 truncate" title={item.title}>{item.title}</h3>
+                            <p className="text-sm text-gray-500 truncate" title={item.text}>{item.text}</p>
+                          </div>
+                          <p className="text-xl font-bold text-blue-700 mb-2">${item.price.toLocaleString()}</p>
+                          <div className="mt-auto">
+                            <button className="w-full py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm">
+                              Ver detalles
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
                   </div>
-                </motion.div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-10 bg-white rounded-lg shadow-sm">
-              <p className="text-gray-500">No se encontraron productos que coincidan con tu búsqueda.</p>
-              <button 
-                onClick={() => setSearchTerm('')}
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Ver todos los productos
-              </button>
-            </div>
-          )}
+                </div>
 
-          {/* Sección de productos más vendidos (solo en la página principal) */}
-          {!brand && !selectedCategory && !searchTerm && (
-            <div className="mt-8 mb-12">
+                {/* Separador - solo visible cuando se muestran los más vendidos */}
+                <div className="border-b border-gray-300 my-8"></div>
+              </>
+            )}
+
+            {/* Sección de productos filtrados */}
+            <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-800">Los más vendidos</h2>
-                <button className="text-blue-600 hover:text-blue-800 flex items-center">
-                  Ver todos <ChevronRight size={16} />
-                </button>
+                <h2 className="text-xl font-bold text-gray-800">
+                  {brand && selectedCategory ? `${brand.charAt(0).toUpperCase() + brand.slice(1)} - ${selectedCategory.replace(/-/g, ' ')}` :
+                   brand ? `Productos ${brand.charAt(0).toUpperCase() + brand.slice(1)}` :
+                   selectedCategory ? `${selectedCategory.replace(/-/g, ' ')}` : 'Todos los productos'}
+                </h2>
               </div>
               
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {topSellingProducts.map((item, index) => (
+              {filteredProducts.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-8">
+                  {filteredProducts.map((item, index) => (
                   <motion.div
-                    key={`top-${index}`}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    key={index}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
                     className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col"
                   >
-                    <div className="h-40 bg-gray-100 flex items-center justify-center p-4 relative">
-                      <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">TOP</div>
+                    <div className="h-28 bg-gray-100 flex items-center justify-center p-4">
                       <img 
                         src="/placeholder-product.png"
                         alt={item.title}
                         className="max-h-full max-w-full object-contain"
                       />
                     </div>
-                    <div className="p-3 flex-grow flex flex-col h-[180px]">
+                    <div className="p-3 flex-grow flex flex-col h-[160px]">
                       <div>
-                        <p className="text-xs text-blue-600 uppercase font-semibold truncate" title={item.brand}>{item.brand}</p>
                         <h3 className="text-lg font-medium text-gray-800 truncate" title={item.title}>{item.title}</h3>
                         <p className="text-sm text-gray-500 truncate" title={item.text}>{item.text}</p>
                       </div>
-                      <p className="text-xl font-bold text-blue-700 mb-2">${item.price.toLocaleString()}</p>
+                      {item.price && (
+                        <p className="text-xl font-bold text-blue-700 mb-2">${item.price.toLocaleString()}</p>
+                      )}
                       <div className="mt-auto">
                         <button className="w-full py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm">
                           Ver detalles
@@ -328,10 +335,21 @@ export default function CategoryPage() {
                       </div>
                     </div>
                   </motion.div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10 bg-white rounded-lg shadow-sm">
+                  <p className="text-gray-500">No se encontraron productos que coincidan con tu búsqueda.</p>
+                  <button 
+                    onClick={() => setSearchTerm('')}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    Ver todos los productos
+                  </button>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </>
