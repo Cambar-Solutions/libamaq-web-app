@@ -12,7 +12,7 @@ import MisionVision from "./components/vision-mision";
 import IconoWhats from "./app/normal/IconoWhats";
 import { FaStore } from "react-icons/fa";
 import "./App.css";
-import Nav from "./components/Nav";
+import Nav2 from "./components/Nav2";
 import { Toaster } from "sonner";
 import BentoGrid from "./components/ui/BentoGrid";
 import TikTokGallery from "./components/ui/TikTokGallery";
@@ -62,7 +62,7 @@ const destacados = [
   
 ];
 
-export default function App() {
+export default function App2() {
   const location = useLocation();
 
   // Detectar hash en la URL y hacer scroll automático
@@ -80,7 +80,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       {/* Navbar */}
-      <Nav/>
+      <Nav2/>
       
     
 
