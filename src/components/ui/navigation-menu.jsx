@@ -32,7 +32,7 @@ export const NavigationMenuTrigger = React.forwardRef(({ children, className, ..
         className={cn(
             "group flex items-center justify-center px-3 py-1.5 text-sm font-medium leading-none select-none rounded-full transition-colors focus:shadow-md",
             "hover:bg-accent hover:text-accent-foreground",
-            "data-[state=open]:bg-white data-[state=open]:text-accent-foreground",
+            
             className
         )}
         {...props}
