@@ -28,11 +28,13 @@ const Nav2 = () => {
     <nav className="bg-blue-950 dark:bg-gray-800 shadow-lg py-4 px-12 flex justify-between items-center fixed top-0 w-full z-20">
       {/* Logo */}
       <div className="flex items-center">
-        <img
-          src="/Tipografia_LIBAMAQ_legulab_color_hor.png"
-          alt="logo"
-          className="max-h-12"
-        />
+        <Link to="/">
+          <img
+            src="/Tipografia_LIBAMAQ_legulab_color_hor.png"
+            alt="logo"
+            className="max-h-12 cursor-pointer"
+          />
+        </Link>
       </div>
 
       {/* Menú hamburguesa (pantallas pequeñas) */}
@@ -73,9 +75,9 @@ const Nav2 = () => {
 
       {/* Menú desktop */}
       <div className="flex items-center space-x-4 hidden md:flex">
-      <DrawerCategories/>
+        <DrawerCategories />
 
-        
+
         <Button
           asChild
           className="bg-white text-black hover:bg-black hover:text-white border-2 border-gray-900 transition-colors duration-600 rounded-full"
