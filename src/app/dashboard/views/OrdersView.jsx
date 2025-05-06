@@ -10,7 +10,7 @@ export function OrdersView() {
   return (
     <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
       {orderData.map((order) => (
-        <Card key={order.id} className="hover:shadow-lg transition-shadow">
+        <Card key={order.id} className="hover:shadow-lg transition-shadow pb-6">
           <CardHeader>
             <CardTitle className="text-lg">Pedido #{order.id}</CardTitle>
           </CardHeader>

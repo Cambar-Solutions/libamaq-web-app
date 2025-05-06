@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
 import Nav from "./Nav";
 import Dashbrand from "./DashBrand";
+import Nav2 from "@/components/Nav2";
 
 const ProductList = () => {
   return (
     <>
-      <Nav />
+      <Nav2 />
 
       <section className="min-h-screen flex flex-col items-center justify-center pt-24">
         <motion.div
