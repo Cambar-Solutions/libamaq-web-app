@@ -8,7 +8,7 @@ import Dashboard from './app/dashboard/page.jsx';
 import Login from './app/normal/Login';
 import DetalleHerramienta from './app/e-commerce/DetalleHerramienta'; 
 import BrandPage from './components/brand-page';
-import ProductList from './app/e-commerce/ProductList';
+import ProductList from './app/e-commerce/Ecomerce';
 import CategoryPage from './app/e-commerce/CategoryPage';
 import NuevoProducto from './app/dashboard/NuevoProducto';
 import ProductoDetalle from './app/dashboard/ProductoDetalle';

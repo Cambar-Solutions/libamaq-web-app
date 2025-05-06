@@ -3,14 +3,7 @@ import { FaStore, FaBars, FaTimes } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
-import {
-  NavigationMenu,
-  NavigationMenuList,
-  NavigationMenuItem,
-  NavigationMenuTrigger,
-  NavigationMenuContent,
-  NavigationMenuLink,
-} from "@/components/ui/navigation-menu";
+
 import DrawerCategories from "./drawerCategories";
 
 const Nav2 = () => {
@@ -32,7 +25,7 @@ const Nav2 = () => {
   ];
 
   return (
-    <nav className="bg-red-950 dark:bg-gray-800 shadow-lg py-4 px-12 flex justify-between items-center fixed top-0 w-full z-20">
+    <nav className="bg-blue-950 dark:bg-gray-800 shadow-lg py-4 px-12 flex justify-between items-center fixed top-0 w-full z-20">
       {/* Logo */}
       <div className="flex items-center">
         <img
@@ -80,15 +73,16 @@ const Nav2 = () => {
 
       {/* Menú desktop */}
       <div className="flex items-center space-x-4 hidden md:flex">
-        <p className="text-white">¡Hola! Inicia sesión para identificarte</p>
+      <DrawerCategories/>
+
+        
         <Button
           asChild
-          className="bg-white text-black hover:bg-black hover:text-white border-2 border-gray-900 transition-colors duration-600"
+          className="bg-white text-black hover:bg-black hover:text-white border-2 border-gray-900 transition-colors duration-600 rounded-full"
         >
           <Link to="/login">Iniciar sesión</Link>
         </Button>
 
-        <DrawerCategories/>
       </div>
     </nav>
   );

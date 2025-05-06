@@ -4,12 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination, Autoplay } from "swiper";
-import "swiper/css";
-import "swiper/css/navigation";
-import "swiper/css/pagination";
-import "swiper/css/autoplay";
+// Eliminamos las importaciones de Swiper
 
 import { Button } from "@/components/ui/button";
 import {
@@ -135,7 +130,12 @@ export default function DrawerCategories() {
 
   const goToCategoryPage = (brandKey, productName) => {
     const brandName = brandDetails[brandKey].name;
-    navigate(`/productos/${brandName}/${productName}`);
+    // Cerrar el drawer antes de navegar
+    setOpen(false);
+    // Pequeño retraso para que la animación de cierre sea visible
+    setTimeout(() => {
+      navigate(`/productos/${brandName}/${productName}`);
+    }, 100);
   };
 
   return (
@@ -148,25 +148,20 @@ export default function DrawerCategories() {
               Ver marcas
             </NavigationMenuTrigger>
             <NavigationMenuContent className="mt-1">
-              <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-2">
+              <ul className="grid gap-2 p-3 w-[280px] sm:w-[320px] md:w-[400px] lg:w-[480px] grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
                 {brands.map((brand) => (
-                  <li key={brand.name} className="flex items-center space-x-2">
+                  <li key={brand.name} className="flex justify-center items-center">
                     <NavigationMenuLink asChild>
                       <button
                         onClick={() => handleBrandClick(brand)}
-                        className="group flex items-center space-x-2 rounded-md p-2 no-underline outline-none transition hover:bg-muted/50 focus:bg-muted/50"
+                        className="group flex justify-center items-center rounded-md p-2 no-underline outline-none transition hover:bg-slate-100 focus:bg-slate-100 w-full h-full"
+                        title={brand.name}
                       >
                         <img
                           src={brand.logo}
                           alt={brand.name}
-                          className="h-6 w-6 object-contain rounded"
+                          className="h-10 w-auto object-contain"
                         />
-                        <div>
-                          <div className="text-sm font-medium">{brand.name}</div>
-                          <p className="text-xs text-muted-foreground line-clamp-1">
-                            {brand.slogan}
-                          </p>
-                        </div>
                       </button>
                     </NavigationMenuLink>
                   </li>
@@ -185,56 +180,86 @@ export default function DrawerCategories() {
         <DrawerContent>
           {selectedBrand && (
             <>
-              <DrawerHeader>
-                <DrawerTitle>{selectedBrand.name}</DrawerTitle>
-                <DrawerDescription>{selectedBrand.slogan}</DrawerDescription>
-              </DrawerHeader>
+              {/* Eliminamos el header con el título y descripción */}
 
-              {/* Swiper con productos de la marca */}
-              <div className="p-4">
-                <Swiper
-                  modules={[Navigation, Pagination, Autoplay]}
-                  spaceBetween={16}
-                  slidesPerView={2}
-                  breakpoints={{
-                    640: { slidesPerView: 3 },
-                    768: { slidesPerView: 4 },
-                    1024: { slidesPerView: 5 },
-                  }}
-                  navigation
-                  pagination={{ clickable: true }}
-                  autoplay={{ delay: 2500, disableOnInteraction: false }}
-                >
-                  {brandDetails[selectedBrand.name.toLowerCase()].products.map(
-                    (product, idx) => (
-                      <SwiperSlide
-                        key={idx}
-                        onClick={() =>
-                          goToCategoryPage(
-                            selectedBrand.name.toLowerCase(),
-                            product.name
-                          )
-                        }
-                        className="flex cursor-pointer flex-col items-center justify-center rounded-lg bg-white p-2 shadow-sm transition-transform hover:scale-105"
+              {/* Contenido principal - Slider adaptativo */}
+              <div className="p-2 w-full mx-auto">
+                {/* Usamos useEffect para controlar la visibilidad de los botones de navegación */}
+                {(() => {
+                  // Obtenemos los productos de la marca seleccionada
+                  const products = brandDetails[selectedBrand.name.toLowerCase()].products;
+                  const cardWidth = window.innerWidth < 640 ? 144 : window.innerWidth < 768 ? 164 : 184; // Ancho de card + margen
+                  const totalWidth = products.length * cardWidth;
+                  const containerWidth = Math.min(window.innerWidth - 40, 800); // Ancho estimado del contenedor
+                  const needsSlider = totalWidth > containerWidth;
+                  
+                  return (
+                    <div className="relative">
+                      {/* Botones de navegación - Solo visibles si se necesita slider */}
+                      {needsSlider && (
+                        <button 
+                          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-2 shadow-md"
+                          onClick={() => {
+                            const container = document.getElementById(`slider-${selectedBrand.name}`);
+                            if (container) {
+                              container.scrollBy({ left: -200, behavior: 'smooth' });
+                            }
+                          }}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M15 18l-6-6 6-6" />
+                          </svg>
+                        </button>
+                      )}
+                      
+                      {/* Contenedor - Centrado si no necesita slider */}
+                      <div 
+                        id={`slider-${selectedBrand.name}`}
+                        className={`flex ${!needsSlider ? 'justify-center flex-wrap' : 'overflow-x-auto snap-x snap-mandatory'} scrollbar-hide py-2 ${needsSlider ? 'px-6' : 'px-2'}`}
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                       >
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="h-20 w-auto object-contain mb-2"
-                        />
-                        <span className="text-sm font-medium text-center">
-                          {product.name}
-                        </span>
-                      </SwiperSlide>
-                    )
-                  )}
-                </Swiper>
+                        {/* Elementos del slider */}
+                        {products.map((product, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => goToCategoryPage(selectedBrand.name.toLowerCase(), product.name)}
+                            className={`flex-none ${needsSlider ? 'snap-center' : ''} cursor-pointer flex flex-col items-center justify-center rounded-lg bg-white p-3 shadow-sm transition-transform hover:scale-105 mx-2 min-w-[140px] max-w-[140px] sm:min-w-[160px] sm:max-w-[160px] md:min-w-[180px] md:max-w-[180px]`}
+                          >
+                            <div className="w-full aspect-square flex items-center justify-center mb-2">
+                              <img
+                                src={product.image}
+                                alt={product.name}
+                                className="max-h-[85%] max-w-[85%] object-contain"
+                              />
+                            </div>
+                            <span className="text-xs md:text-sm font-medium text-center w-full truncate">{product.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Botón siguiente - Solo visible si se necesita slider */}
+                      {needsSlider && (
+                        <button 
+                          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-2 shadow-md"
+                          onClick={() => {
+                            const container = document.getElementById(`slider-${selectedBrand.name}`);
+                            if (container) {
+                              container.scrollBy({ left: 200, behavior: 'smooth' });
+                            }
+                          }}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M9 18l6-6-6-6" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               <DrawerFooter>
-                <DrawerClose asChild>
-                  <Button variant="outline">Cerrar</Button>
-                </DrawerClose>
+               
               </DrawerFooter>
             </>
           )}
