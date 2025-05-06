@@ -728,8 +728,8 @@ export function ContentView() {
                 ) : (
                   <div className="flex flex-wrap justify-around gap-4">
                     {landings.map((landing) => (
-                      <div key={landing.id} className="bg-gradient-to-l from-red-500 to-blue-500 p-2 rounded-2xl">
-                        <Card className="p-5 relative group">
+                      <div key={landing.id} className="bg-gradient-to-l from-red-500 to-blue-500 p-2 rounded-2xl w-[300px]">
+                        <Card className="p-5 relative group h-[220px] flex flex-col">
                           <div className="absolute top-2 right-2 flex gap-2 transition-opacity">
                             <Button 
                               size="icon" 
@@ -740,9 +740,9 @@ export function ContentView() {
                               <Trash2 className="h-5 w-5" />
                             </Button>
                           </div>
-                          <CardHeader>
-                            <CardTitle>{landing.title}</CardTitle>
-                            <CardDescription>
+                          <CardHeader className="flex-1 overflow-hidden">
+                            <CardTitle className="text-lg font-bold truncate" title={landing.title}>{landing.title}</CardTitle>
+                            <CardDescription className="line-clamp-3 h-[60px] overflow-hidden" title={landing.description}>
                               {landing.description}
                             </CardDescription>
                           </CardHeader>
