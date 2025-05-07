@@ -1,0 +1,60 @@
+/* Estilos personalizados para el carrusel de productos más vendidos */
+
+/* Bullets de paginación */
+.swiper-pagination-bullet-custom {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+  border-radius: 50%;
+  background: #d1d5db;
+  opacity: 0.5;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.swiper-pagination-bullet-active-custom {
+  opacity: 1;
+  background: #3b82f6;
+  width: 24px;
+  border-radius: 4px;
+}
+
+/* Animación suave para los slides */
+.swiper-slide {
+  transition: transform 0.3s ease;
+}
+
+/* Efecto hover para las tarjetas de producto */
+.swiper-slide:hover {
+  transform: translateY(-5px);
+}
+
+/* Estilos para los botones de navegación */
+.swiper-button-prev-custom,
+.swiper-button-next-custom {
+  transition: all 0.2s ease;
+}
+
+.swiper-button-prev-custom:hover,
+.swiper-button-next-custom:hover {
+  transform: scale(1.1);
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Ajustes para dispositivos móviles */
+@media (max-width: 640px) {
+  .swiper-button-prev-custom,
+  .swiper-button-next-custom {
+    display: none;
+  }
+  
+  .swiper-pagination-bullet-custom {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .swiper-pagination-bullet-active-custom {
+    width: 18px;
+  }
+}

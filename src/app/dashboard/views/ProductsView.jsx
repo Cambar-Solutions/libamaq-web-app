@@ -25,6 +25,8 @@ const CardComponent = ({ product, onClick }) => {
         cursor-pointer
         filter grayscale-[40%] hover:grayscale-0
         transition-filter duration-500
+        flex flex-col h-full
+        shadow-md hover:shadow-lg
       "
     >
       <CardHeader>
@@ -45,7 +47,7 @@ const CardComponent = ({ product, onClick }) => {
         className="rounded-b-xl w-full px-6 py-3 text-white"
         style={{ backgroundColor: bg }}
       >
-        <CardTitle>{product.name}</CardTitle>
+        <CardTitle className="truncate whitespace-nowrap overflow-hidden text-sm md:text-base" title={product.name}>{product.name}</CardTitle>
         <CardDescription>
           <div className="flex flex-col text-white">
             <span>ID: {product.externalId}</span>

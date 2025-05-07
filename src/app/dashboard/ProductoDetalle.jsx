@@ -479,30 +479,64 @@ export default function ProductoDetalle() {
   if (!producto) return null;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 bg-gray-50">
       <div className="mb-6 flex justify-between items-center">
-        <Button className="bg-blue-500 rounded-b-2xl hover:bg-blue-700" onClick={handleBack} disabled={isLoading}>
+        <Button className="bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md transition-all duration-200 flex items-center gap-2" onClick={handleBack} disabled={isLoading}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
           Regresar al Dashboard
         </Button>
         {isEditing && (
-          <div className="flex space-x-2">
-            <Button className="bg-red-500 hover:bg-red-700" onClick={handleCancel} disabled={isLoading}>
+          <div className="flex space-x-3">
+            <Button 
+              className="bg-gray-400 hover:bg-gray-500 rounded-lg shadow-md transition-all duration-200 flex items-center gap-2" 
+              onClick={handleCancel} 
+              disabled={isLoading}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
               Cancelar
             </Button>
-            <Button className="bg-green-500 hover:bg-green-700" onClick={handleSave} disabled={isLoading}>
-              {isLoading ? 'Guardando...' : 'Guardar'}
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md transition-all duration-200 flex items-center gap-2" 
+              onClick={handleSave} 
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                  Guardar
+                </>
+              )}
             </Button>
           </div>
         )}
       </div>
 
-      <Tabs defaultValue={isEditing ? "edit" : "view"} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6 bg-white">
-          <TabsTrigger value="view" onClick={() => setIsEditing(false)}>
-            Visualización
+      <div className="relative w-full bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-3 px-6 mb-0">
+          <h2 className="text-xl font-semibold">Detalles del Producto</h2>
+        </div>
+        <div className="p-6">
+          <Tabs defaultValue={isEditing ? "edit" : "view"} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6 bg-gradient-to-r from-blue-50 to-slate-100 border border-slate-200 rounded-lg shadow-md p-1">
+          <TabsTrigger value="view" onClick={() => setIsEditing(false)} className="font-medium text-blue-800 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-500 transition-all duration-200">
+            <span className="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              Visualización
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="edit" onClick={handleEdit}>
-            Edición
+          <TabsTrigger value="edit" onClick={handleEdit} className="font-medium text-blue-800 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-500 transition-all duration-200">
+            <span className="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+              Edición
+            </span>
           </TabsTrigger>
         </TabsList>
 
@@ -1311,7 +1345,9 @@ export default function ProductoDetalle() {
             </div>
           </div>
         </TabsContent>
-      </Tabs>
+          </Tabs>
+        </div>
+      </div>
     </div>
   );
 }

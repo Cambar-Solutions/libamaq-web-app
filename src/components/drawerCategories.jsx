@@ -145,13 +145,15 @@ export default function DrawerCategories() {
   };
 
   // genera un slug-friendly para construir la ruta de la imagen
-  const getProductImage = (brandKey, productName) => {
+  const getProductImage = (brandKey, productName, extension = 'webp') => {
     const slug = productName
       .trim()
       .toLowerCase()
       .replace(/\s+/g, "-")
       .replace(/[^a-z0-9\-]/g, ""); // elimina caracteres extraños
-    return `/images/${brandKey}/${slug}.png`;
+    
+    // Devolvemos la ruta con la extensión especificada (webp por defecto)
+    return `/images/${brandKey}/${slug}.${extension}`;
   };
 
   return (
@@ -196,25 +198,31 @@ export default function DrawerCategories() {
         <DrawerTrigger asChild>
           <span />
         </DrawerTrigger>
-        <DrawerContent className="bg-slate-200">
+        <DrawerContent className="bg-slate-200 max-h-[80vh] md:max-h-[85vh] lg:max-h-[90vh]">
           {selectedBrand && (
             <>
               <div className="p-2 w-full mx-auto">
                 {(() => {
                   const brandKey = selectedBrand.name.toLowerCase();
                   const products = brandDetails[brandKey].products;
+                  // Calcular el ancho de cada tarjeta según el tamaño de pantalla
                   const cardWidth =
                     window.innerWidth < 640
-                      ? 144
+                      ? 144 // Móvil
                       : window.innerWidth < 768
-                        ? 164
-                        : 184;
-                  const totalWidth = products.length * cardWidth;
-                  const containerWidth = Math.min(
-                    window.innerWidth - 40,
-                    800
-                  );
-                  const needsSlider = totalWidth > containerWidth;
+                        ? 180 // Tablet
+                        : 220; // Desktop - Tarjetas más grandes
+                  
+                  // Calcular cuántas tarjetas caben en una fila
+                  const containerWidth = Math.min(window.innerWidth - 40, 900);
+                  const cardsPerRow = Math.floor(containerWidth / cardWidth);
+                  
+                  // Determinar si necesitamos slider
+                  // En móvil y tablet, mostrar slider si hay más de 2 tarjetas
+                  // En desktop, mostrar slider solo si hay más tarjetas que las que caben en una fila
+                  const needsSlider = window.innerWidth < 768
+                    ? products.length > 2
+                    : products.length > cardsPerRow;
 
                   return (
                     <div className="relative">
@@ -222,10 +230,13 @@ export default function DrawerCategories() {
                         <button
                           className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-2 shadow-md"
                           onClick={() => {
-                            const c = document.getElementById(
-                              `slider-${brandKey}`
-                            );
-                            c?.scrollBy({ left: -200, behavior: "smooth" });
+                            const slider = document.getElementById(`slider-${brandKey}`);
+                            if (slider) {
+                              // Calcular el ancho visible del contenedor
+                              const visibleWidth = slider.clientWidth;
+                              // Desplazar una página completa hacia la izquierda
+                              slider.scrollBy({ left: -visibleWidth, behavior: "smooth" });
+                            }
                           }}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -236,10 +247,10 @@ export default function DrawerCategories() {
                       <div
                         id={`slider-${brandKey}`}
                         className={`flex ${!needsSlider
-                          ? "justify-center flex-wrap"
+                          ? "justify-center flex-wrap gap-4" // Centrado con espacio entre tarjetas cuando no hay slider
                           : "overflow-x-auto snap-x snap-mandatory"
-                          } scrollbar-hide py-2 ${needsSlider ? "px-8" : "px-2"
-                          }`}
+                          } scrollbar-hide py-4 ${needsSlider ? "px-8" : "px-2"
+                          } max-w-[1200px] mx-auto`} // Ancho máximo y centrado horizontal
                         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                       >
                         {products.map((product, idx) => (
@@ -249,16 +260,30 @@ export default function DrawerCategories() {
                               goToCategoryPage(brandKey, product)
                             }
                             className={`flex-none ${needsSlider ? "snap-center" : ""
-                              } cursor-pointer flex flex-col items-center justify-center rounded-lg bg-white p-3 shadow-sm transition-transform hover:scale-105 mx-2 min-w-[140px] max-w-[140px] sm:min-w-[160px] sm:max-w-[160px] md:min-w-[180px] md:max-w-[180px]`}
+                              } cursor-pointer flex flex-col items-center justify-center rounded-lg bg-white p-4 shadow-md transition-transform hover:scale-105 ${needsSlider ? "mx-2" : "m-1"} min-w-[140px] max-w-[140px] sm:min-w-[180px] sm:max-w-[180px] md:min-w-[220px] md:max-w-[220px] lg:min-w-[240px] lg:max-w-[240px]`}
                           >
-                            <div className="w-full aspect-square flex items-center justify-center mb-2">
-                              <img
-                                src={getProductImage(brandKey, product)}
-                                alt={product}
-                                className="max-h-[85%] max-w-[85%] object-contain"
-                              />
+                            <div className="w-full aspect-square flex items-center justify-center mb-4 h-[120px] sm:h-[140px] md:h-[160px] lg:h-[180px] overflow-hidden">
+                              <div className="relative w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] md:w-[140px] md:h-[140px] lg:w-[160px] lg:h-[160px] flex items-center justify-center">
+                                <img
+                                  src={getProductImage(brandKey, product, 'webp')}
+                                  alt={product}
+                                  className="absolute max-h-[100px] max-w-[100px] sm:max-h-[120px] sm:max-w-[120px] md:max-h-[140px] md:max-w-[140px] lg:max-h-[160px] lg:max-w-[160px] w-auto h-auto object-contain"
+                                  onError={(e) => {
+                                    // Evitar bucle infinito
+                                    e.target.onerror = null;
+                                    // Intentar con PNG si webp falla
+                                    if (e.target.src.endsWith('.webp')) {
+                                      e.target.src = getProductImage(brandKey, product, 'png');
+                                    } else {
+                                      // Si PNG también falla, mostrar un placeholder
+                                      e.target.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22100%22%20height%3D%22100%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23f0f0f0%22%2F%3E%3C%2Fsvg%3E';
+                                    }
+                                  }}
+                                  style={{ objectFit: 'contain' }}
+                                />
+                              </div>
                             </div>
-                            <span className="text-xs md:text-sm font-medium text-center w-full truncate">
+                            <span className="text-xs sm:text-sm md:text-base lg:text-lg font-medium text-center w-full truncate">
                               {product}
                             </span>
                           </div>
@@ -268,10 +293,13 @@ export default function DrawerCategories() {
                         <button
                           className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-2 shadow-md"
                           onClick={() => {
-                            const c = document.getElementById(
-                              `slider-${brandKey}`
-                            );
-                            c?.scrollBy({ left: 200, behavior: "smooth" });
+                            const slider = document.getElementById(`slider-${brandKey}`);
+                            if (slider) {
+                              // Calcular el ancho visible del contenedor
+                              const visibleWidth = slider.clientWidth;
+                              // Desplazar una página completa hacia la derecha
+                              slider.scrollBy({ left: visibleWidth, behavior: "smooth" });
+                            }
                           }}
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
