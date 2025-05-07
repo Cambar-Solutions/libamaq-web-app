@@ -25,7 +25,50 @@ export const getProductPreviews = async () => {
 // Obtener producto por ID
 export const getProductById = async (id) => {
   try {
-    const { data } = await apiClient.get(`/admin/product/${id}`);
+    console.log(`Obteniendo producto con ID ${id} del servidor...`);
+    
+    // Añadir un parámetro de consulta con timestamp para evitar caché
+    const timestamp = new Date().getTime();
+    const { data } = await apiClient.get(`/admin/product/${id}?_t=${timestamp}`);
+    
+    console.log(`Datos del producto recibidos del servidor:`, data);
+    
+    // Verificar si los datos recibidos son válidos
+    if (data && data.result) {
+      // Asegurarse de que los campos dinámicos sean objetos
+      if (typeof data.result.technicalData === 'string') {
+        try {
+          data.result.technicalData = JSON.parse(data.result.technicalData);
+        } catch (e) {
+          data.result.technicalData = {};
+        }
+      }
+      
+      if (typeof data.result.functionalities === 'string') {
+        try {
+          data.result.functionalities = JSON.parse(data.result.functionalities);
+        } catch (e) {
+          data.result.functionalities = {};
+        }
+      }
+      
+      if (typeof data.result.downloads === 'string') {
+        try {
+          data.result.downloads = JSON.parse(data.result.downloads);
+        } catch (e) {
+          data.result.downloads = {};
+        }
+      }
+      
+      if (typeof data.result.description === 'string') {
+        try {
+          data.result.description = JSON.parse(data.result.description);
+        } catch (e) {
+          data.result.description = {};
+        }
+      }
+    }
+    
     return data;
   } catch (error) {
     console.error(`Error fetching product ${id}:`, error);
@@ -55,11 +98,34 @@ export const uploadImage = async (file) => {
 // Actualizar producto
 export const updateProduct = async (productData) => {
   try {
+    console.log('Datos recibidos para actualización:', productData);
+    
     // Procesar campos JSON
     const processJsonField = (field) => {
       if (!field) return {};
-      return typeof field === 'string' ? JSON.parse(field) : field;
+      if (typeof field === 'string') {
+        try {
+          return JSON.parse(field);
+        } catch (e) {
+          console.warn('Error al parsear campo JSON:', e);
+          return {};
+        }
+      }
+      return field;
     };
+
+    // Asegurarse de que los campos dinámicos estén presentes y sean objetos
+    const technicalData = processJsonField(productData.technicalData);
+    const functionalities = processJsonField(productData.functionalities);
+    const downloads = processJsonField(productData.downloads);
+    const description = processJsonField(productData.description);
+    
+    console.log('Campos dinámicos procesados:', {
+      technicalData,
+      functionalities,
+      downloads,
+      description
+    });
 
     const productDto = {
       id: Number(productData.id),
@@ -67,31 +133,66 @@ export const updateProduct = async (productData) => {
       name: productData.name,
       color: productData.color || '#000000',
       shortDescription: productData.shortDescription,
-      description: processJsonField(productData.description),
+      description: description,
       type: productData.type,
       productUsage: productData.productUsage,
-      cost: Number(productData.cost),
-      price: Number(productData.price),
-      discount: Number(productData.discount),
-      stock: Number(productData.stock),
-      garanty: Number(productData.garanty),
-      technicalData: processJsonField(productData.technicalData),
-      functionalities: processJsonField(productData.functionalities),
-      downloads: processJsonField(productData.downloads),
+      cost: Number(productData.cost || 0),
+      price: Number(productData.price || 0),
+      discount: Number(productData.discount || 0),
+      stock: Number(productData.stock || 0),
+      garanty: Number(productData.garanty || 0),
+      technicalData: technicalData,
+      functionalities: functionalities,
+      downloads: downloads,
       status: productData.status || 'ACTIVE',
-      brandId: Number(productData.brandId),
-      categoryId: Number(productData.categoryId),
+      brandId: Number(productData.brandId || productData.brand_id || 0),
+      categoryId: Number(productData.categoryId || productData.category_id || 0),
       productMultimediaDto: Array.isArray(productData.multimedia)
         ? productData.multimedia.map((m, index) => ({
-            id: Number(m.id),
+            id: m.id ? Number(m.id) : 0,
             displayOrder: Number(index + 1),
             productId: Number(productData.id),
-            multimediaId: Number(m.id)
+            multimediaId: m.id ? Number(m.id) : 0
           }))
         : []
     };
 
-    const { data } = await apiClient.put('/admin/product/update', productDto);
+    console.log('Datos enviados a la API:', productDto);
+    
+    // Realizar una petición directa a la API sin usar el cliente API para evitar cualquier middleware
+    // que pueda estar modificando los datos
+    const token = localStorage.getItem('token');
+    const response = await fetch('https://libamaq.com/api/admin/product/update', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(productDto)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error en la respuesta del servidor: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Respuesta de la API (fetch directo):', data);
+    
+    // Esperar un momento para asegurar que los cambios se hayan aplicado en el servidor
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Si la actualización fue exitosa, obtener el producto actualizado
+    if (data.type === 'SUCCESS') {
+      try {
+        // Usar un fetch directo para obtener el producto actualizado
+        const productResponse = await getProductById(productDto.id);
+        return productResponse;
+      } catch (fetchError) {
+        console.error('Error al obtener el producto actualizado:', fetchError);
+        return data;
+      }
+    }
+    
     return data;
   } catch (error) {
     console.error('Error updating product:', error);

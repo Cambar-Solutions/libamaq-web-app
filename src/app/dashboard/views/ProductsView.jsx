@@ -91,32 +91,71 @@ export function ProductsView() {
 
   const fetchProducts = async () => {
     try {
-      const [productsData, brandsData] = await Promise.all([
-        getProductPreviews(),
-        getAllBrands(),
-      ]);
+      // Obtener productos y marcas
+      console.log('Obteniendo productos y marcas...');
+      const productsResponse = await getProductPreviews();
+      const brandsResponse = await getAllBrands();
+      
+      console.log('Respuesta de productos:', productsResponse);
+      console.log('Respuesta de marcas:', brandsResponse);
+      
+      // Verificar que las respuestas sean válidas
+      if (!productsResponse || !brandsResponse) {
+        throw new Error('Respuestas inválidas de la API');
+      }
+      
+      // Extraer los datos de las respuestas
+      const productsData = Array.isArray(productsResponse) 
+        ? productsResponse 
+        : (productsResponse.result || []);
+        
+      const brandsData = Array.isArray(brandsResponse) 
+        ? brandsResponse 
+        : (brandsResponse.result || []);
+      
+      console.log('Datos de productos procesados:', productsData);
+      console.log('Datos de marcas procesados:', brandsData);
+      
+      // Establecer marcas
       setBrands(brandsData);
+      
+      // Combinar productos con sus marcas correspondientes
       const withBrand = productsData.map((prod) => ({
         ...prod,
-        brand: brandsData.find((b) => b.id === prod.brandId),
+        brand: brandsData.find((b) => b.id === prod.brandId || b.id === prod.brand_id),
       }));
+      
+      console.log('Productos con marcas:', withBrand);
+      
+      // Actualizar estado
       setProducts(withBrand);
       setFilteredProducts(withBrand);
     } catch (err) {
-      toast.error("Error al cargar productos o marcas");
-      console.error(err);
+      toast.error("Error al cargar productos o marcas: " + (err.message || 'Error desconocido'));
+      console.error('Error en fetchProducts:', err);
+      // Establecer productos vacíos para evitar errores de renderizado
+      setProducts([]);
+      setFilteredProducts([]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Esta función ya no es necesaria ya que fetchProducts ya obtiene las marcas
   const fetchBrands = async () => {
     try {
-      const data = await getAllBrands();
+      const response = await getAllBrands();
+      console.log('Respuesta de fetchBrands:', response);
+      
+      const data = Array.isArray(response) ? response : (response.result || []);
+      console.log('Datos de marcas procesados en fetchBrands:', data);
+      
       setBrands(data);
     } catch (err) {
-      toast.error("Error al cargar las marcas");
-      console.error(err);
+      toast.error("Error al cargar las marcas: " + (err.message || 'Error desconocido'));
+      console.error('Error en fetchBrands:', err);
+      // Establecer marcas vacías para evitar errores de renderizado
+      setBrands([]);
     }
   };
 

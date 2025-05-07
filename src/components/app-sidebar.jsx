@@ -4,9 +4,9 @@ import {
   ShoppingCart,  // Pedidos (Carrito de compras)
   Users,         // Clientes (Grupo de personas)
   Briefcase,     // Empleados (Portafolio)
-  BarChart3,
-  Film
-     // Estadísticas (Gráfico de barras)
+  BarChart3,     // Estadísticas (Gráfico de barras)
+  Film,          // Contenido (Película)
+  Tag            // Marcas (Etiqueta)
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -36,6 +36,11 @@ const data = {
       icon: Package, 
     },
     {
+      name: "Marcas",
+      id: "marcas",
+      icon: Tag, 
+    },
+    {
       name: "Pedidos",
       id: "pedidos",
       icon: ShoppingCart, 
@@ -58,7 +63,7 @@ const data = {
     {
       name: "Contenido",
       id: "contenido",
-      icon: Film, // Icono de contenido (puedes usar un icono diferente)
+      icon: Film,
     },
   ],
 }

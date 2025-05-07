@@ -22,48 +22,147 @@ export default function ProductoDetalle() {
   const [uploadedImages, setUploadedImages] = useState([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const productId = localStorage.getItem("selectedProductId");
-    if (!productId) {
-      toast.error("No se ha seleccionado ningún producto");
-      navigate("/dashboard");
-      return;
-    }
-    
-    // Cargar producto, marcas y categorías
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        const [productResponse, brandsResponse, categoriesResponse] = await Promise.all([
-          getProductById(productId),
-          getAllBrands(),
-          getAllCategories()
-        ]);
+  // Función para cargar los datos del producto
+  const loadProductData = async (id) => {
+    try {
+      setIsLoading(true);
+      
+      console.log(`Cargando datos del producto con ID ${id}...`);
+      
+      // Forzar una recarga completa desde el servidor
+      const response = await getProductById(id);
+      console.log('Respuesta completa del servidor:', response);
+      
+      if (response.type === "SUCCESS" && response.result) {
+        const product = response.result;
         
-        if (productResponse.type === "SUCCESS" && productResponse.result) {
-          setProducto(productResponse.result);
-          setEditedProduct(productResponse.result);
-          setMainImage(productResponse.result.multimedia[0]?.url);
-          setUploadedImages(productResponse.result.multimedia || []);
-        } else {
-          toast.error("Producto no encontrado");
-          navigate("/dashboard");
-          return;
+        // Asegurarse de que los campos dinámicos estén inicializados como objetos
+        if (!product.technicalData) product.technicalData = {};
+        if (!product.functionalities) product.functionalities = {};
+        if (!product.downloads) product.downloads = {};
+        if (!product.description) product.description = {};
+        
+        // Procesar campos JSON si son strings
+        if (typeof product.technicalData === 'string') {
+          try {
+            product.technicalData = JSON.parse(product.technicalData);
+          } catch (e) {
+            console.error('Error al parsear technicalData:', e);
+            product.technicalData = {};
+          }
         }
         
-        setBrands(brandsResponse);
-        setCategories(categoriesResponse);
-      } catch (error) {
-        toast.error("Error al cargar los datos");
-        console.error(error);
+        if (typeof product.functionalities === 'string') {
+          try {
+            product.functionalities = JSON.parse(product.functionalities);
+          } catch (e) {
+            console.error('Error al parsear functionalities:', e);
+            product.functionalities = {};
+          }
+        }
+        
+        if (typeof product.downloads === 'string') {
+          try {
+            product.downloads = JSON.parse(product.downloads);
+          } catch (e) {
+            console.error('Error al parsear downloads:', e);
+            product.downloads = {};
+          }
+        }
+        
+        if (typeof product.description === 'string') {
+          try {
+            product.description = JSON.parse(product.description);
+          } catch (e) {
+            console.error('Error al parsear description:', e);
+            product.description = {};
+          }
+        }
+        
+        // Asegurarse de que brandId y categoryId estén presentes
+        product.brandId = product.brandId || product.brand_id;
+        product.categoryId = product.categoryId || product.category_id;
+        product.brand_id = product.brandId;
+        product.category_id = product.categoryId;
+        
+        console.log('Producto cargado (procesado):', product);
+        console.log('Datos técnicos:', product.technicalData);
+        
+        // Actualizar el estado con los datos procesados
+        setProducto({...product});
+        setEditedProduct({...product});
+        setUploadedImages(product.multimedia || []);
+        if (product.multimedia && product.multimedia.length > 0) {
+          setMainImage(product.multimedia[0]?.url);
+        }
+        
+        return product;
+      } else {
+        toast.error("Error al cargar el producto");
         navigate("/dashboard");
+        return null;
+      }
+    } catch (error) {
+      console.error('Error loading product data:', error);
+      toast.error("Error al cargar los datos del producto: " + (error.message || 'Error desconocido'));
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const productId = localStorage.getItem("selectedProductId");
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const id = localStorage.getItem("selectedProductId");
+        
+        if (id) {
+          await loadProductData(id);
+        } else {
+          navigate("/dashboard");
+        }
+        
+        // Cargar marcas y categorías en paralelo para mejorar el rendimiento
+        try {
+          const [brandsResponse, categoriesResponse] = await Promise.all([
+            getAllBrands(),
+            getAllCategories()
+          ]);
+          
+          console.log('Respuesta de marcas:', brandsResponse);
+          console.log('Respuesta de categorías:', categoriesResponse);
+          
+          if (brandsResponse.type === "SUCCESS" && brandsResponse.result) {
+            setBrands(brandsResponse.result);
+            console.log('Marcas cargadas:', brandsResponse.result);
+          } else {
+            console.error('Error al cargar marcas:', brandsResponse);
+            toast.error("Error al cargar las marcas");
+          }
+          
+          if (categoriesResponse.type === "SUCCESS" && categoriesResponse.result) {
+            setCategories(categoriesResponse.result);
+            console.log('Categorías cargadas:', categoriesResponse.result);
+          } else {
+            console.error('Error al cargar categorías:', categoriesResponse);
+            toast.error("Error al cargar las categorías");
+          }
+        } catch (error) {
+          console.error('Error al cargar marcas y categorías:', error);
+          toast.error("Error al cargar marcas y categorías");
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error("Error al cargar los datos");
       } finally {
         setIsLoading(false);
       }
     };
     
-    loadData();
-  }, []);
+    fetchData();
+  }, [navigate]);
 
   // Función para manejar el cambio de marca y actualizar el color automáticamente
   const handleBrandChange = (value) => {
@@ -71,7 +170,7 @@ export default function ProductoDetalle() {
     setEditedProduct(prev => ({
       ...prev,
       brandId: value,
-      brand_id: value,
+      brand_id: value, // Mantener ambos por compatibilidad
       color: selectedBrand?.color || prev.color
     }));
   };
@@ -81,7 +180,7 @@ export default function ProductoDetalle() {
     setEditedProduct(prev => ({
       ...prev,
       categoryId: value,
-      category_id: value
+      category_id: value // Mantener ambos por compatibilidad
     }));
   };
 
@@ -151,34 +250,90 @@ export default function ProductoDetalle() {
 
   // Funciones para manejar campos dinámicos
   const handleAddField = (section) => {
-    setEditedProduct(prev => ({
-      ...prev,
-      [section]: { ...(prev[section] || {}), [`nuevo_${Date.now()}`]: "" }
-    }));
+    // Crear una copia profunda del estado actual
+    const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+    
+    // Asegurarse de que la sección existe
+    if (!updatedProduct[section]) {
+      updatedProduct[section] = {};
+    }
+    
+    // Añadir el nuevo campo con un ID único
+    const newKey = `nuevo_${Date.now()}`;
+    updatedProduct[section][newKey] = "";
+    
+    // Actualizar el estado
+    setEditedProduct(updatedProduct);
+    
+    // Log para depuración
+    console.log(`Campo añadido a ${section}:`, updatedProduct[section]);
   };
 
   const handleRemoveField = (section, key) => {
-    setEditedProduct(prev => {
-      const sectionData = { ...prev[section] };
-      delete sectionData[key];
-      return { ...prev, [section]: sectionData };
-    });
+    // Crear una copia profunda del estado actual
+    const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+    
+    // Asegurarse de que la sección existe
+    if (updatedProduct[section] && updatedProduct[section][key] !== undefined) {
+      // Eliminar el campo
+      delete updatedProduct[section][key];
+      
+      // Actualizar el estado
+      setEditedProduct(updatedProduct);
+      
+      // Log para depuración
+      console.log(`Campo eliminado de ${section}:`, updatedProduct[section]);
+    }
   };
 
   const handleFieldChange = (section, key, value) => {
-    setEditedProduct(prev => ({
-      ...prev,
-      [section]: { ...(prev[section] || {}), [key]: value }
-    }));
+    // Crear una copia profunda del estado actual
+    const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+    
+    // Asegurarse de que la sección existe
+    if (!updatedProduct[section]) {
+      updatedProduct[section] = {};
+    }
+    
+    // Actualizar el valor
+    updatedProduct[section][key] = value;
+    
+    // Actualizar el estado
+    setEditedProduct(updatedProduct);
+    
+    // Log para depuración
+    console.log(`Valor actualizado en ${section}[${key}]:`, value);
+    console.log('Estado actualizado:', updatedProduct[section]);
   };
 
   const handleFieldKeyChange = (section, oldKey, newKey) => {
-    setEditedProduct(prev => {
-      const sectionData = { ...prev[section] };
-      const value = sectionData[oldKey];
-      delete sectionData[oldKey];
-      return { ...prev, [section]: { ...sectionData, [newKey]: value } };
-    });
+    // Evitar claves vacías
+    if (!newKey.trim()) return;
+    
+    // Si las claves son iguales, no hacer nada
+    if (oldKey === newKey) return;
+    
+    // Crear una copia profunda del estado actual
+    const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+    
+    // Asegurarse de que la sección existe
+    if (!updatedProduct[section]) {
+      updatedProduct[section] = {};
+    }
+    
+    // Si la clave antigua existe, copiar su valor a la nueva clave
+    if (updatedProduct[section][oldKey] !== undefined) {
+      const value = updatedProduct[section][oldKey];
+      updatedProduct[section][newKey] = value;
+      delete updatedProduct[section][oldKey];
+      
+      // Actualizar el estado
+      setEditedProduct(updatedProduct);
+      
+      // Log para depuración
+      console.log(`Clave cambiada en ${section}: ${oldKey} -> ${newKey}`);
+      console.log('Estado actualizado:', updatedProduct[section]);
+    }
   };
 
   const handleBack = () => {
@@ -195,48 +350,75 @@ export default function ProductoDetalle() {
     try {
       setIsLoading(true);
       
-      // Procesar campos JSON si son strings
-      const processJsonField = (field) => {
-        if (!field) return {};
-        return typeof field === 'string' ? JSON.parse(field) : field;
-      };
+      // Crear una copia profunda para evitar problemas de referencia
+      const productToUpdate = JSON.parse(JSON.stringify(editedProduct));
+      
+      console.log('Estado actual antes de guardar:', productToUpdate);
+      
+      // Asegurarse de que los campos dinámicos estén presentes y sean objetos
+      if (!productToUpdate.technicalData) productToUpdate.technicalData = {};
+      if (!productToUpdate.functionalities) productToUpdate.functionalities = {};
+      if (!productToUpdate.downloads) productToUpdate.downloads = {};
+      if (!productToUpdate.description) productToUpdate.description = {};
       
       // Preparar los datos del producto para la actualización
       const productData = {
-        ...editedProduct,
-        id: Number(editedProduct.id),
-        status: editedProduct.status || 'ACTIVE',
-        description: processJsonField(editedProduct.description),
-        technicalData: processJsonField(editedProduct.technicalData),
-        functionalities: processJsonField(editedProduct.functionalities),
-        downloads: processJsonField(editedProduct.downloads),
-        brandId: Number(editedProduct.brandId),
-        categoryId: Number(editedProduct.categoryId),
-        cost: Number(editedProduct.cost),
-        price: Number(editedProduct.price),
-        discount: Number(editedProduct.discount),
-        stock: Number(editedProduct.stock),
-        garanty: Number(editedProduct.garanty),
-        productMultimediaDto: editedProduct.multimedia?.map((m, index) => ({
-          id: Number(m.id),
-          displayOrder: index + 1,
-          productId: Number(editedProduct.id),
-          multimediaId: Number(m.id)
-        })) || []
+        ...productToUpdate,
+        id: Number(productToUpdate.id),
+        status: productToUpdate.status || 'ACTIVE',
+        // Asegurarse de que los campos JSON sean objetos, no strings
+        description: typeof productToUpdate.description === 'string' 
+          ? JSON.parse(productToUpdate.description) 
+          : productToUpdate.description,
+        technicalData: typeof productToUpdate.technicalData === 'string' 
+          ? JSON.parse(productToUpdate.technicalData) 
+          : productToUpdate.technicalData,
+        functionalities: typeof productToUpdate.functionalities === 'string' 
+          ? JSON.parse(productToUpdate.functionalities) 
+          : productToUpdate.functionalities,
+        downloads: typeof productToUpdate.downloads === 'string' 
+          ? JSON.parse(productToUpdate.downloads) 
+          : productToUpdate.downloads,
+        // Asegurarse de que los IDs sean números
+        brandId: Number(productToUpdate.brandId || productToUpdate.brand_id || 0),
+        categoryId: Number(productToUpdate.categoryId || productToUpdate.category_id || 0),
+        // Asegurarse de que los valores numéricos sean números
+        cost: Number(productToUpdate.cost || 0),
+        price: Number(productToUpdate.price || 0),
+        discount: Number(productToUpdate.discount || 0),
+        stock: Number(productToUpdate.stock || 0),
+        garanty: Number(productToUpdate.garanty || 0),
+        // Procesar multimedia
+        productMultimediaDto: Array.isArray(productToUpdate.multimedia)
+          ? productToUpdate.multimedia.map((m, index) => ({
+              id: m.id ? Number(m.id) : 0,
+              displayOrder: index + 1,
+              productId: Number(productToUpdate.id),
+              multimediaId: m.id ? Number(m.id) : 0
+            }))
+          : []
       };
+      
+      // Mantener compatibilidad con brand_id y category_id
+      productData.brand_id = productData.brandId;
+      productData.category_id = productData.categoryId;
+      
+      console.log('Datos preparados para enviar al servidor:', productData);
       
       // Enviar la actualización al servidor
       const response = await updateProduct(productData);
+      console.log('Respuesta del servidor:', response);
       
-      if (response.type === "SUCCESS") {
+      if (response && (response.type === "SUCCESS" || response.result)) {
         toast.success("Producto actualizado correctamente");
-        setProducto(response.result);
-        setEditedProduct(response.result);
-        setUploadedImages(response.result.multimedia || []);
-        setMainImage(response.result.multimedia[0]?.url);
+        
+        // Recargar los datos del producto desde el servidor para asegurar que tenemos la última versión
+        await loadProductData(productData.id);
+        
+        // Cambiar a la pestaña de visualización para ver los cambios
         setIsEditing(false);
       } else {
-        toast.error(response.message || "Error al actualizar el producto");
+        toast.error("Error al actualizar el producto: " + (response?.message || "Error desconocido"));
       }
     } catch (error) {
       toast.error("Error al actualizar el producto: " + (error.message || 'Error desconocido'));
@@ -253,18 +435,37 @@ export default function ProductoDetalle() {
 
   const handleInputChange = (e) => {
     const { name, value, type } = e.target;
-    setEditedProduct((prev) => ({
-      ...prev,
-      [name]: type === 'number' ? Number(value) : value,
-    }));
+    
+    // Crear una copia profunda del estado actual para evitar problemas de referencia
+    const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+    
+    // Actualizar el campo correspondiente
+    updatedProduct[name] = type === 'number' ? Number(value) : value;
+    
+    // Actualizar el estado con la copia actualizada
+    setEditedProduct(updatedProduct);
   };
 
   const handleJsonInputChange = (name, value) => {
     try {
+      // Crear una copia profunda del estado actual
+      const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+      
+      // Intentar parsear el valor como JSON si es una cadena
       const jsonValue = typeof value === 'string' ? JSON.parse(value) : value;
-      setEditedProduct((prev) => ({ ...prev, [name]: jsonValue }));
-    } catch {
-      setEditedProduct((prev) => ({ ...prev, [name]: value }));
+      
+      // Actualizar el campo correspondiente
+      updatedProduct[name] = jsonValue;
+      
+      // Actualizar el estado
+      setEditedProduct(updatedProduct);
+    } catch (error) {
+      // Si hay un error al parsear, usar el valor tal cual
+      const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+      updatedProduct[name] = value;
+      setEditedProduct(updatedProduct);
+      
+      console.error(`Error al procesar el campo JSON ${name}:`, error);
     }
   };
 
@@ -418,31 +619,51 @@ export default function ProductoDetalle() {
             </div>
           )}
 
-          {/* Especificaciones técnicas en formato de tabla */}
-          {(producto.technicalData || producto.functionalities) && (
-            <div className="mt-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">ESPECIFICACIONES TÉCNICAS</h3>
-              <div className="overflow-hidden border border-gray-200 rounded-lg">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {producto.technicalData && Object.entries(producto.technicalData).map(([key, value]) => (
+          {/* Especificaciones técnicas */}
+          <div className="mt-6" data-component-name="ProductoDetalle">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">ESPECIFICACIONES TÉCNICAS</h3>
+            <div className="overflow-hidden border border-gray-200 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {producto.technicalData && Object.entries(producto.technicalData).length > 0 ? (
+                    Object.entries(producto.technicalData).map(([key, value]) => (
                       <tr key={`tech-${key}`}>
-                        <td className="px-6 py-3 text-sm font-medium text-gray-900 bg-gray-50 w-1/3 capitalize">{key.replace('_', ' ')}</td>
-                        <td className="px-6 py-3 text-sm text-gray-500">{value}</td>
+                        <td className="px-6 py-3 text-sm font-medium text-gray-900 bg-gray-50 w-1/3 capitalize" data-component-name="ProductoDetalle">{key}</td>
+                        <td className="px-6 py-3 text-sm text-gray-500" data-component-name="ProductoDetalle">{value}</td>
                       </tr>
-                    ))}
-                    {producto.functionalities && Object.entries(producto.functionalities).map(([key, value]) => (
-                      <tr key={`func-${key}`}>
-                        <td className="px-6 py-3 text-sm font-medium text-gray-900 bg-gray-50 w-1/3 capitalize">{key.replace('_', ' ')}</td>
-                        <td className="px-6 py-3 text-sm text-gray-500">{value}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="2" className="px-6 py-4 text-sm text-gray-500 text-center">No hay especificaciones técnicas disponibles</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
-          )}
+          </div>
 
+          {/* Funcionalidades */}
+          <div className="mt-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">FUNCIONALIDADES</h3>
+            <div className="overflow-hidden border border-gray-200 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {producto.functionalities && Object.entries(producto.functionalities).length > 0 ? (
+                    Object.entries(producto.functionalities).map(([key, value]) => (
+                      <tr key={`func-${key}`}>
+                        <td className="px-6 py-3 text-sm font-medium text-gray-900 bg-gray-50 w-1/3 capitalize">{key}</td>
+                        <td className="px-6 py-3 text-sm text-gray-500">{value}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="2" className="px-6 py-4 text-sm text-gray-500 text-center">No hay funcionalidades disponibles</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
 
           {/* Sección de descargas */}
@@ -502,7 +723,7 @@ export default function ProductoDetalle() {
                   <div className="mb-4">
                     <Label htmlFor="brand" className="text-sm font-medium text-gray-700">Marca</Label>
                     <Select
-                      value={editedProduct.brand_id ? editedProduct.brand_id.toString() : ""}
+                      value={editedProduct.brandId ? editedProduct.brandId.toString() : ""}
                       onValueChange={(value) => handleBrandChange(parseInt(value))}
                     >
                       <SelectTrigger id="brand">
@@ -529,7 +750,7 @@ export default function ProductoDetalle() {
                   <div className="mb-4">
                     <Label htmlFor="category" className="text-sm font-medium text-gray-700">Categoría</Label>
                     <Select
-                      value={editedProduct.category_id ? editedProduct.category_id.toString() : ""}
+                      value={editedProduct.categoryId ? editedProduct.categoryId.toString() : ""}
                       onValueChange={(value) => handleCategoryChange(parseInt(value))}
                     >
                       <SelectTrigger id="category">
@@ -721,16 +942,13 @@ export default function ProductoDetalle() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Características</label>
                     <textarea
                       name="caracteristicas"
-                      value={editedProduct.description.caracteristicas || ''}
-                      onChange={(e) =>
-                        setEditedProduct((prev) => ({
-                          ...prev,
-                          description: {
-                            ...prev.description,
-                            caracteristicas: e.target.value,
-                          },
-                        }))
-                      }
+                      value={editedProduct.description?.caracteristicas || ''}
+                      onChange={(e) => {
+                        const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+                        if (!updatedProduct.description) updatedProduct.description = {};
+                        updatedProduct.description.caracteristicas = e.target.value;
+                        setEditedProduct(updatedProduct);
+                      }}
                       className="w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
                       rows="5"
                     />
@@ -740,16 +958,13 @@ export default function ProductoDetalle() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Detalles</label>
                     <textarea
                       name="details"
-                      value={editedProduct.description.details || ''}
-                      onChange={(e) =>
-                        setEditedProduct((prev) => ({
-                          ...prev,
-                          description: {
-                            ...prev.description,
-                            details: e.target.value,
-                          },
-                        }))
-                      }
+                      value={editedProduct.description?.details || ''}
+                      onChange={(e) => {
+                        const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+                        if (!updatedProduct.description) updatedProduct.description = {};
+                        updatedProduct.description.details = e.target.value;
+                        setEditedProduct(updatedProduct);
+                      }}
                       className="w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
                       rows="5"
                     />
@@ -759,16 +974,13 @@ export default function ProductoDetalle() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Aplicaciones</label>
                     <textarea
                       name="aplicaciones"
-                      value={editedProduct.description.aplicaciones || ''}
-                      onChange={(e) =>
-                        setEditedProduct((prev) => ({
-                          ...prev,
-                          description: {
-                            ...prev.description,
-                            aplicaciones: e.target.value,
-                          },
-                        }))
-                      }
+                      value={editedProduct.description?.aplicaciones || ''}
+                      onChange={(e) => {
+                        const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+                        if (!updatedProduct.description) updatedProduct.description = {};
+                        updatedProduct.description.aplicaciones = e.target.value;
+                        setEditedProduct(updatedProduct);
+                      }}
                       className="w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
                       rows="5"
                     />
@@ -778,16 +990,13 @@ export default function ProductoDetalle() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Destacados</label>
                     <textarea
                       name="destacados"
-                      value={editedProduct.description.destacados || ''}
-                      onChange={(e) =>
-                        setEditedProduct((prev) => ({
-                          ...prev,
-                          description: {
-                            ...prev.description,
-                            destacados: e.target.value,
-                          },
-                        }))
-                      }
+                      value={editedProduct.description?.destacados || ''}
+                      onChange={(e) => {
+                        const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+                        if (!updatedProduct.description) updatedProduct.description = {};
+                        updatedProduct.description.destacados = e.target.value;
+                        setEditedProduct(updatedProduct);
+                      }}
                       className="w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
                       rows="5"
                     />
@@ -814,37 +1023,109 @@ export default function ProductoDetalle() {
                   </button>
                 </div>
                 <div className="space-y-3 border border-gray-200 rounded-lg p-4">
-                  {editedProduct.technicalData && Object.entries(editedProduct.technicalData).map(([key, value]) => (
-                    <div key={key} className="flex items-center gap-2">
-                      <div className="flex-1">
-                        <Input
-                          placeholder="Nombre del campo"
-                          value={key}
-                          onChange={(e) => {
-                            const newKey = e.target.value;
-                            const oldValue = editedProduct.technicalData[key];
-                            handleFieldKeyChange('technicalData', key, newKey);
+                  {editedProduct.technicalData && Object.entries(editedProduct.technicalData || {}).map(([key, value], index) => {
+                    // Crear un ID único para este par clave-valor
+                    const fieldId = `tech-${index}-${key}`;
+                    return (
+                      <div key={fieldId} className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <Input
+                            placeholder="Nombre del campo"
+                            value={key}
+                            onChange={(e) => {
+                              if (!e.target.value.trim()) return;
+                              
+                              // Crear una copia profunda del estado actual
+                              const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+                              
+                              // Asegurarse de que technicalData existe
+                              if (!updatedProduct.technicalData) {
+                                updatedProduct.technicalData = {};
+                              }
+                              
+                              // Obtener el valor actual
+                              const currentValue = updatedProduct.technicalData[key];
+                              
+                              // Eliminar la entrada antigua
+                              delete updatedProduct.technicalData[key];
+                              
+                              // Crear la nueva entrada con la clave actualizada
+                              updatedProduct.technicalData[e.target.value] = currentValue;
+                              
+                              // Actualizar el estado
+                              setEditedProduct(updatedProduct);
+                              
+                              // Log para depuración
+                              console.log(`Clave cambiada: ${key} -> ${e.target.value}`);
+                              console.log('Datos técnicos actualizados:', updatedProduct.technicalData);
+                            }}
+                            className="mb-1"
+                            onBlur={(e) => {
+                              // Forzar la actualización del estado al perder el foco
+                              const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+                              setEditedProduct(updatedProduct);
+                            }}
+                          />
+                          <Input
+                            placeholder="Valor"
+                            value={value}
+                            onChange={(e) => {
+                              // Crear una copia profunda del estado actual
+                              const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+                              
+                              // Asegurarse de que technicalData existe
+                              if (!updatedProduct.technicalData) {
+                                updatedProduct.technicalData = {};
+                              }
+                              
+                              // Actualizar el valor
+                              updatedProduct.technicalData[key] = e.target.value;
+                              
+                              // Actualizar el estado
+                              setEditedProduct(updatedProduct);
+                              
+                              // Log para depuración
+                              console.log(`Valor actualizado para ${key}: ${e.target.value}`);
+                              console.log('Datos técnicos actualizados:', updatedProduct.technicalData);
+                            }}
+                            onBlur={(e) => {
+                              // Forzar la actualización del estado al perder el foco
+                              const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+                              setEditedProduct(updatedProduct);
+                            }}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // Crear una copia profunda del estado actual
+                            const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+                            
+                            // Asegurarse de que technicalData existe
+                            if (!updatedProduct.technicalData) {
+                              updatedProduct.technicalData = {};
+                            }
+                            
+                            // Eliminar la entrada
+                            delete updatedProduct.technicalData[key];
+                            
+                            // Actualizar el estado
+                            setEditedProduct(updatedProduct);
+                            
+                            // Log para depuración
+                            console.log(`Campo eliminado: ${key}`);
+                            console.log('Datos técnicos actualizados:', updatedProduct.technicalData);
                           }}
-                          className="mb-1"
-                        />
-                        <Input
-                          placeholder="Valor"
-                          value={value}
-                          onChange={(e) => handleFieldChange('technicalData', key, e.target.value)}
-                        />
+                          className="text-red-500 hover:text-red-700 self-center"
+                          title="Eliminar campo"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveField('technicalData', key)}
-                        className="text-red-500 hover:text-red-700 self-center"
-                        title="Eliminar campo"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {(!editedProduct.technicalData || Object.keys(editedProduct.technicalData).length === 0) && (
                     <p className="text-gray-500 text-center py-2">No hay características técnicas. Haz clic en "Agregar campo" para añadir.</p>
                   )}
@@ -867,37 +1148,70 @@ export default function ProductoDetalle() {
                   </button>
                 </div>
                 <div className="space-y-3 border border-gray-200 rounded-lg p-4">
-                  {editedProduct.functionalities && Object.entries(editedProduct.functionalities).map(([key, value]) => (
-                    <div key={key} className="flex items-center gap-2">
-                      <div className="flex-1">
-                        <Input
-                          placeholder="Nombre del campo"
-                          value={key}
-                          onChange={(e) => {
-                            const newKey = e.target.value;
-                            const oldValue = editedProduct.functionalities[key];
-                            handleFieldKeyChange('functionalities', key, newKey);
+                  {editedProduct.functionalities && Object.entries(editedProduct.functionalities || {}).map(([key, value], index) => {
+                    // Crear un ID único para este par clave-valor
+                    const fieldId = `func-${index}-${key}`;
+                    return (
+                      <div key={fieldId} className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <Input
+                            placeholder="Nombre del campo"
+                            value={key}
+                            onChange={(e) => {
+                              // Crear una copia profunda del estado actual
+                              const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+                              
+                              // Obtener el valor actual
+                              const currentValue = updatedProduct.functionalities[key];
+                              
+                              // Eliminar la entrada antigua
+                              delete updatedProduct.functionalities[key];
+                              
+                              // Crear la nueva entrada con la clave actualizada
+                              updatedProduct.functionalities[e.target.value] = currentValue;
+                              
+                              // Actualizar el estado
+                              setEditedProduct(updatedProduct);
+                            }}
+                            className="mb-1"
+                          />
+                          <Input
+                            placeholder="Valor"
+                            value={value}
+                            onChange={(e) => {
+                              // Crear una copia profunda del estado actual
+                              const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+                              
+                              // Actualizar el valor
+                              updatedProduct.functionalities[key] = e.target.value;
+                              
+                              // Actualizar el estado
+                              setEditedProduct(updatedProduct);
+                            }}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // Crear una copia profunda del estado actual
+                            const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+                            
+                            // Eliminar la entrada
+                            delete updatedProduct.functionalities[key];
+                            
+                            // Actualizar el estado
+                            setEditedProduct(updatedProduct);
                           }}
-                          className="mb-1"
-                        />
-                        <Input
-                          placeholder="Valor"
-                          value={value}
-                          onChange={(e) => handleFieldChange('functionalities', key, e.target.value)}
-                        />
+                          className="text-red-500 hover:text-red-700 self-center"
+                          title="Eliminar campo"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveField('functionalities', key)}
-                        className="text-red-500 hover:text-red-700 self-center"
-                        title="Eliminar campo"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {(!editedProduct.functionalities || Object.keys(editedProduct.functionalities).length === 0) && (
                     <p className="text-gray-500 text-center py-2">No hay funcionalidades. Haz clic en "Agregar campo" para añadir.</p>
                   )}
@@ -921,42 +1235,75 @@ export default function ProductoDetalle() {
                 </button>
               </div>
               <div className="space-y-3 border border-gray-200 rounded-lg p-4">
-                {editedProduct.downloads && Object.entries(editedProduct.downloads).map(([key, value]) => (
-                  <div key={key} className="flex items-center gap-2">
-                    <div className="flex-1">
-                      <div className="flex items-center mb-1">
-                        <svg className="w-5 h-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
+                {editedProduct.downloads && Object.entries(editedProduct.downloads || {}).map(([key, value], index) => {
+                  // Crear un ID único para este par clave-valor
+                  const fieldId = `download-${index}-${key}`;
+                  return (
+                    <div key={fieldId} className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center mb-1">
+                          <svg className="w-5 h-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <Input
+                            placeholder="Nombre del documento (ej: manual, ficha_tecnica)"
+                            value={key}
+                            onChange={(e) => {
+                              // Crear una copia profunda del estado actual
+                              const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+                              
+                              // Obtener el valor actual
+                              const currentValue = updatedProduct.downloads[key];
+                              
+                              // Eliminar la entrada antigua
+                              delete updatedProduct.downloads[key];
+                              
+                              // Crear la nueva entrada con la clave actualizada
+                              updatedProduct.downloads[e.target.value] = currentValue;
+                              
+                              // Actualizar el estado
+                              setEditedProduct(updatedProduct);
+                            }}
+                            className="flex-1"
+                          />
+                        </div>
                         <Input
-                          placeholder="Nombre del documento (ej: manual, ficha_tecnica)"
-                          value={key}
+                          placeholder="URL del documento"
+                          value={value}
                           onChange={(e) => {
-                            const newKey = e.target.value;
-                            const oldValue = editedProduct.downloads[key];
-                            handleFieldKeyChange('downloads', key, newKey);
+                            // Crear una copia profunda del estado actual
+                            const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+                            
+                            // Actualizar el valor
+                            updatedProduct.downloads[key] = e.target.value;
+                            
+                            // Actualizar el estado
+                            setEditedProduct(updatedProduct);
                           }}
-                          className="flex-1"
                         />
                       </div>
-                      <Input
-                        placeholder="URL del documento"
-                        value={value}
-                        onChange={(e) => handleFieldChange('downloads', key, e.target.value)}
-                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Crear una copia profunda del estado actual
+                          const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
+                          
+                          // Eliminar la entrada
+                          delete updatedProduct.downloads[key];
+                          
+                          // Actualizar el estado
+                          setEditedProduct(updatedProduct);
+                        }}
+                        className="text-red-500 hover:text-red-700 self-center"
+                        title="Eliminar descarga"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveField('downloads', key)}
-                      className="text-red-500 hover:text-red-700 self-center"
-                      title="Eliminar descarga"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
                 {(!editedProduct.downloads || Object.keys(editedProduct.downloads).length === 0) && (
                   <p className="text-gray-500 text-center py-2">No hay descargas. Haz clic en "Agregar descarga" para añadir.</p>
                 )}
