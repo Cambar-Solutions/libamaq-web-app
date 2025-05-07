@@ -566,7 +566,7 @@ export function ContentView() {
             href="https://www.tiktok.com/@libamaqherramientas"
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-blue-700 hover:bg-blue-900 text-white font-bold py-2 px-4 rounded-2xl inline-flex items-center cursor-pointer"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-2 px-4 rounded-2xl inline-flex items-center cursor-pointer"
           >
             Ver perfil de TikTok
             <FileVideo2 className="ml-2" />
@@ -580,8 +580,8 @@ export function ContentView() {
             <TabsTrigger
               className="cursor-pointer
       transition-colors
-      hover:underline hover:decoration-blue-200 hover:decoration-3
-      data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:decoration-3"
+      hover:underline hover:bg-blue-100
+      data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:underline-offset-2"
               value="multimedia"
             >
               Tik toks
@@ -589,8 +589,8 @@ export function ContentView() {
             <TabsTrigger
               className="cursor-pointer
       transition-colors
-      hover:underline hover:decoration-blue-200 hover:decoration-3
-      data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:decoration-3"
+      hover:underline hover:bg-blue-100
+      data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:underline-offset-2"
               value="images"
             >
               Imagenes
@@ -598,8 +598,8 @@ export function ContentView() {
             <TabsTrigger
               className="cursor-pointer
       transition-colors
-      hover:underline hover:decoration-blue-200 hover:decoration-3
-      data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:decoration-3"
+      hover:underline hover:bg-blue-100
+      data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:underline-offset-2"
               value="facebook"
             >
               Videos
@@ -619,7 +619,7 @@ export function ContentView() {
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <Button 
-                      className="bg-black hover:bg-blue-900 cursor-pointer"
+                      className="bg-black hover:bg-blue-500 cursor-pointer"
                       onClick={openNewLandingDialog}
                     >
                       Agregar TikTok
@@ -951,7 +951,7 @@ export function ContentView() {
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button 
-                      className="bg-black hover:bg-blue-900 cursor-pointer"
+                      className="bg-black hover:bg-blue-500 cursor-pointer"
                     >
                       Agregar Imagen
                     </Button>
@@ -1064,7 +1064,7 @@ export function ContentView() {
                 ) : (
                   <div className="flex flex-wrap justify-around gap-4 p-4">
                     {images.map((image) => (
-                      <Card key={image.id} className="p-5 relative group w-[300px]">
+                      <Card key={image.id} className="p-5 relative group w-[300px] bg-stone-100">
                         <div className="absolute top-2 right-2 flex gap-2 transition-opacity">
                           <Button 
                             size="icon" 
@@ -1300,7 +1300,7 @@ export function ContentView() {
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button 
-                      className="bg-black hover:bg-blue-900 cursor-pointer"
+                      className="bg-black hover:bg-blue-500 cursor-pointer"
                     >
                       Agregar Video
                     </Button>
@@ -1409,7 +1409,7 @@ export function ContentView() {
                 ) : (
                   <div className="flex flex-wrap justify-around gap-4 p-4">
                     {videos.map((video) => (
-                      <Card key={video.id} className="p-5 relative group w-[300px]">
+                      <Card key={video.id} className="p-5 relative group w-[300px] bg-stone-100">
                         <div className="absolute top-2 right-2 flex gap-2 transition-opacity">
                           <Button 
                             size="icon" 

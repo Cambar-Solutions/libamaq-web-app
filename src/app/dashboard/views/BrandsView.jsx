@@ -390,10 +390,10 @@ export function BrandsView() {
         <Dialog>
           <DialogTrigger asChild>
             <Button 
-              className="w-full md:w-auto"
+              className="w-full md:w-auto bg-blue-600 text-white hover:bg-blue-700 hover:border-blue-600 text-sm font-semibold px-4 py-2 rounded-lg transition cursor-pointer"
               onClick={handleNewBrand}
             >
-              <Plus className="mr-2 h-4 w-4" /> Nueva marca
+              + Nueva marca
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px]">

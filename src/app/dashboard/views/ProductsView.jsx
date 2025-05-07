@@ -7,6 +7,7 @@ import { getAllBrands } from "@/services/admin/brandService";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+
 const CardComponent = ({ product, onClick }) => {
   const getImageUrl = () => {
     if (product.multimedia && product.multimedia.length > 0) {

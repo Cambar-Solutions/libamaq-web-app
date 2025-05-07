@@ -19,10 +19,10 @@ export function SiteHeader() {
 
   return (
     <header
-      className="bg-red-500 sticky top-0 z-50 flex w-full items-center border-b">
+    className="bg-sky-800 sticky top-0 z-50 flex w-full items-center border-b">
       <div className="flex flex-wrap items-center gap-2 px-4 py-2 w-full">
         <Button className="h-8 w-8" variant="ghost" size="icon" onClick={toggleSidebar}>
-          <SidebarIcon />
+          <SidebarIcon className="text-[#FFB547]"/>
         </Button>
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb className="hidden sm:block">
@@ -34,7 +34,7 @@ export function SiteHeader() {
 
               <Link to="/">
                 <img
-                  src="/Tipografia_LIBAMAQ.png"
+                  src="/Tipografia_LIBAMAQ_legulab_color_hor.png"
                   alt="logo"
                   className="max-h-10 sm:max-h-12 w-auto"
                 />

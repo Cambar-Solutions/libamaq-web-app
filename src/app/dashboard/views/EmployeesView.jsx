@@ -139,7 +139,7 @@ export function EmployeesView() {
         </button>
       </div>
       <div className="rounded-md border">
-        <Table>
+        <Table className="bg-white">
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>

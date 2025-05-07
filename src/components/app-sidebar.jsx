@@ -33,32 +33,32 @@ const data = {
     {
       name: "Productos",
       id: "productos",
-      icon: Package, 
+      icon: Package,
     },
     {
       name: "Marcas",
       id: "marcas",
-      icon: Tag, 
+      icon: Tag,
     },
     {
       name: "Pedidos",
       id: "pedidos",
-      icon: ShoppingCart, 
+      icon: ShoppingCart,
     },
     {
       name: "Clientes",
       id: "clientes",
-      icon: Users, 
+      icon: Users,
     },
     {
       name: "Empleados",
       id: "empleados",
-      icon: Briefcase, 
+      icon: Briefcase,
     },
     {
       name: "Estadísticas",
       id: "estadisticas",
-      icon: BarChart3, 
+      icon: BarChart3,
     },
     {
       name: "Contenido",
@@ -89,11 +89,11 @@ export function AppSidebar({ onViewChange, currentView, ...props }) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="bg-slate-100">
         <SidebarMenu>
           {data.optionsMenu.map((item) => (
             <SidebarMenuItem key={item.id}>
-              <SidebarMenuButton
+              <SidebarMenuButton className="data-[active=true]:bg-blue-100 data-[active=true]:text-sky-600 hover:bg-stone-200"
                 onClick={() => onViewChange(item.id)}
                 isActive={currentView === item.id}
               >
