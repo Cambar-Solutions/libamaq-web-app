@@ -151,7 +151,7 @@ export default function DrawerCategories() {
       .toLowerCase()
       .replace(/\s+/g, "-")
       .replace(/[^a-z0-9\-]/g, ""); // elimina caracteres extraños
-    
+
     // Devolvemos la ruta con la extensión especificada (webp por defecto)
     return `/images/${brandKey}/${slug}.${extension}`;
   };
@@ -212,11 +212,11 @@ export default function DrawerCategories() {
                       : window.innerWidth < 768
                         ? 180 // Tablet
                         : 220; // Desktop - Tarjetas más grandes
-                  
+
                   // Calcular cuántas tarjetas caben en una fila
                   const containerWidth = Math.min(window.innerWidth - 40, 900);
                   const cardsPerRow = Math.floor(containerWidth / cardWidth);
-                  
+
                   // Determinar si necesitamos slider
                   // En móvil y tablet, mostrar slider si hay más de 2 tarjetas
                   // En desktop, mostrar slider solo si hay más tarjetas que las que caben en una fila

@@ -5,6 +5,7 @@ import { ArrowLeft, Search, Filter, ChevronRight, ChevronLeft } from "lucide-rea
 import Nav2 from "@/components/Nav2";
 import { simulatedProductsByBrand } from "@data/simulatedProducts";
 import "@/styles/carousel-vanilla.css";
+import { Link } from "react-router-dom";
 
 // JSON con los detalles de marca y sus categorías
 const brandDetails = {
@@ -157,90 +158,90 @@ export default function CategoryPage() {
   const [showCarouselControls, setShowCarouselControls] = useState(false);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [maxScroll, setMaxScroll] = useState(0);
-  
+
   // Calcular si se deben mostrar los controles del carrusel
   useEffect(() => {
     if (!carouselTrackRef.current) return;
-    
+
     const updateCarouselMetrics = () => {
       const track = carouselTrackRef.current;
       const container = carouselRef.current;
-      
+
       if (!track || !container) return;
-      
+
       // El ancho total del contenido del carrusel
       const trackWidth = track.scrollWidth;
       // El ancho visible del contenedor
       const containerWidth = container.clientWidth;
-      
+
       // Solo mostrar controles si hay contenido que no es visible
       const shouldShowControls = trackWidth > containerWidth;
       setShowCarouselControls(shouldShowControls);
-      
+
       // Calcular el máximo desplazamiento posible
       const maxScrollValue = trackWidth - containerWidth;
       setMaxScroll(maxScrollValue);
     };
-    
+
     // Ejecutar al montar y cuando cambie el tamaño de la ventana
     updateCarouselMetrics();
     window.addEventListener('resize', updateCarouselMetrics);
-    
+
     // Limpiar al desmontar
     return () => window.removeEventListener('resize', updateCarouselMetrics);
   }, [topSellingProducts]);
-  
+
   // Función para manejar la navegación del carrusel
   const handleCarouselNav = (direction) => {
     if (!carouselTrackRef.current || !showCarouselControls) return;
-    
+
     const track = carouselTrackRef.current;
     const container = carouselRef.current;
-    
+
     if (!track || !container) return;
-    
+
     // Calcular el tamaño de desplazamiento (80% del ancho visible)
     const scrollAmount = container.clientWidth * 0.8;
-    
+
     // Actualizar la posición de desplazamiento según la dirección
     let newPosition;
     if (direction === 'next') {
       newPosition = Math.min(scrollPosition + scrollAmount, maxScroll);
-      
+
       // Si estamos cerca del final, ir al final exacto
       if (newPosition > maxScroll - 50) newPosition = maxScroll;
-      
+
       // Si ya estamos al final, volver al principio (comportamiento circular)
       if (scrollPosition >= maxScroll - 10) newPosition = 0;
     } else {
       newPosition = Math.max(scrollPosition - scrollAmount, 0);
-      
+
       // Si estamos cerca del principio, ir al principio exacto
       if (newPosition < 50) newPosition = 0;
-      
+
       // Si ya estamos al principio, ir al final (comportamiento circular)
       if (scrollPosition <= 10) newPosition = maxScroll;
     }
-    
+
     // Aplicar el desplazamiento con una animación suave
     track.style.transform = `translateX(-${newPosition}px)`;
     setScrollPosition(newPosition);
   };
-  
+
   // Configurar autoplay si es necesario
   useEffect(() => {
     // Solo configurar autoplay si hay contenido que no es visible
     if (!showCarouselControls) return;
-    
+
     // Crear intervalo para autoplay
     const interval = setInterval(() => {
       handleCarouselNav('next');
     }, 5000);
-    
+
     // Limpiar al desmontar
     return () => clearInterval(interval);
   }, [showCarouselControls, scrollPosition, maxScroll]);
-  
+
   // helper de scroll suave con duración de 800ms
   const scrollToSection = () => {
     if (!sectionRef.current) return;
@@ -333,14 +334,35 @@ export default function CategoryPage() {
       <div className="min-h-screen bg-gray-50 flex flex-col pt-20">
         {!brand && !category && (
           <div className="w-full bg-gradient-to-t from-gray-50 via-blue-200 to-blue-600 text-white pt-8 px-4 mb-6">
-            <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between">
-              <div className="mb-4 md:mb-0 md:mr-6">
-                <h2 className="text-2xl md:text-3xl font-bold mb-2">Ofertas especiales en herramientas</h2>
-                <p className="text-blue-50">Hasta 30% de descuento en productos seleccionados</p>
+            {/* CARRUSEL CHIDO */}
+            <div className="carousel-container overflow-hidden px-14 h-[200px]">
+              {/* Pista del carrusel */}
+              <div
+                ref={carouselTrackRef}
+                className="carousel-track flex transition-transform duration-500 ease-out pb-10 pt-2"
+                style={{ transform: `translateX(0px)` }}
+              >
+                {topSellingProducts.map((item, index) => (
+                  <motion.div
+                    key={`top-${index}`}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className="carousel-item flex-shrink-0 px-2 w-full h-full"
+                  >
+                    <Link href={`/detalle/${item.id}`} className="block w-full h-full">
+                      <div className="w-full h-[400px] overflow-hidden relative">
+                        <img
+                          src="/promocionBosch.png"
+                          alt={item.title}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      </div>
+                    </Link>
+                  </motion.div>
+
+                ))}
               </div>
-              <button className="bg-yellow-400 hover:bg-yellow-500 text-blue-600 hover:text-white font-bold py-2 px-6 rounded-full transition-colors">
-                Ver ofertas
-              </button>
             </div>
 
             {/* NUEVA ZONA */}
@@ -351,7 +373,7 @@ export default function CategoryPage() {
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-xl font-bold text-gray-100">Los más vendidos</h2>
                       <button
-                        className="text-white hover:text-indigo-800 hover:font-semibold hover:transition-all hover:duration-300 hover:ease-in-out flex items-center"
+                        className="text-white underline underline-offset-4 hover:text-indigo-800 hover:font-bold hover:transition-all hover:duration-200 hover:ease-in-out flex items-center cursor-pointer"
                         onClick={() => {
                           // limpia búsqueda si quieres
                           setSearchTerm("");
@@ -367,7 +389,7 @@ export default function CategoryPage() {
                         {/* Contenedor del carrusel con padding lateral para los botones */}
                         <div className="carousel-container overflow-hidden px-14">
                           {/* Pista del carrusel */}
-                          <div 
+                          <div
                             ref={carouselTrackRef}
                             className="carousel-track flex transition-transform duration-500 ease-out pb-10 pt-2"
                             style={{ transform: `translateX(0px)` }}
@@ -382,45 +404,46 @@ export default function CategoryPage() {
                                 style={{
                                   width: `${Math.max(
                                     20,
-                                    window.innerWidth >= 1280 ? 20 : // 5 items per row
-                                    window.innerWidth >= 1024 ? 25 : // 4 items per row
-                                    window.innerWidth >= 768 ? 33.333 : // 3 items per row
-                                    window.innerWidth >= 640 ? 50 : // 2 items per row
-                                    100 // 1 item per row
+                                    window.innerWidth >= 1280 ? 20 : // 5 items
+                                      window.innerWidth >= 1024 ? 25 : // 4 items
+                                        window.innerWidth >= 768 ? 33.333 : // 3 items
+                                          window.innerWidth >= 640 ? 50 : // 2 items
+                                            100 // 1 item
                                   )}%`
                                 }}
                               >
-                                <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col h-full hover:-translate-y-1 duration-200">
-                                  <div className="h-40 bg-gray-100 flex items-center justify-center p-4 relative">
-                                    <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">TOP</div>
-                                    <img src="/placeholder-product.png" alt={item.title} className="max-h-full max-w-full object-contain" />
-                                  </div>
-                                  <div className="p-3 flex-grow flex flex-col h-[180px]">
-                                    <div>
-                                      <p className="text-xs text-blue-600 uppercase font-semibold truncate" title={item.brand}>{item.brand}</p>
-                                      <h3 className="text-lg font-medium text-gray-800 truncate" title={item.title}>{item.title}</h3>
-                                      <p className="text-sm text-gray-500 truncate" title={item.text}>{item.text}</p>
+                                <Link href={`/detalle/${item.id}`} className="block h-full">
+                                  <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col h-full hover:-translate-y-1 duration-200 cursor-pointer">
+                                    <div className="h-52 bg-gray-100 flex items-center justify-center p-4 relative">
+                                      <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">TOP</div>
+                                      <img src="/placeholder-product.png" alt={item.title} className="max-h-full max-w-full object-contain" />
                                     </div>
-                                    <p className="text-xl font-bold text-blue-700 mb-2">${item.price.toLocaleString()}</p>
-                                    <button className="w-full py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm mt-auto">Ver detalles</button>
+                                    <div className="p-3 flex-grow flex flex-col h-[150px]">
+                                      <div>
+                                        <p className="text-xs text-blue-600 uppercase font-semibold truncate" title={item.brand}>{item.brand}</p>
+                                        <h3 className="text-lg font-medium text-gray-800 truncate" title={item.title}>{item.title}</h3>
+                                        <p className="text-sm text-gray-500 truncate" title={item.text}>{item.text}</p>
+                                      </div>
+                                      <p className="text-xl font-bold text-blue-700 mt-2">${item.price.toLocaleString()}</p>
+                                    </div>
                                   </div>
-                                </div>
+                                </Link>
                               </motion.div>
                             ))}
                           </div>
                         </div>
-                        
+
                         {/* Botones de navegación fuera del contenedor del carrusel pero dentro del grupo */}
                         {showCarouselControls && (
                           <>
-                            <button 
+                            <button
                               className="carousel-prev absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                               onClick={() => handleCarouselNav('prev')}
                               aria-label="Anterior"
                             >
                               <ChevronLeft className="text-blue-600" size={20} />
                             </button>
-                            <button 
+                            <button
                               className="carousel-next absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                               onClick={() => handleCarouselNav('next')}
                               aria-label="Siguiente"
@@ -430,7 +453,7 @@ export default function CategoryPage() {
                           </>
                         )}
                       </div>
-                      
+
                       {/* Carrusel con diseño de fila flexible */}
 
                     </div>
@@ -504,27 +527,29 @@ export default function CategoryPage() {
             {/* Contenedor principal con ancho ajustado */}
             <div className="w-full mx-auto">
               {filteredProducts.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-8 mb-8">
+                <div className="cursor-pointer grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-8 mb-8">
                   {filteredProducts.map((item, index) => (
-                    <motion.div 
-                      key={index} 
-                      initial={{ opacity: 0 }} 
-                      animate={{ opacity: 1 }} 
-                      transition={{ duration: 0.3 }} 
-                      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col mx-auto w-full"
-                    >
-                      <div className="h-36 bg-gray-100 flex items-center justify-center p-4">
-                        <img src="/placeholder-product.png" alt={item.title} className="max-h-full max-w-full object-contain" />
-                      </div>
-                      <div className="p-4 flex-grow flex flex-col h-[180px]">
-                        <div>
-                          <h3 className="text-lg font-medium text-gray-800 truncate" title={item.title}>{item.title}</h3>
-                          <p className="text-sm text-gray-500 truncate" title={item.text}>{item.text}</p>
+                    <Link href={`/detalle/${item.id}`} key={index} className="w-full">
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                        className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col mx-auto w-full cursor-pointer"
+                      >
+                        {/* Imagen más larga: cambiamos de h-36 a h-52 (o ajusta según prefieras) */}
+                        <div className="h-52 bg-gray-100 flex items-center justify-center p-4">
+                          <img src="/placeholder-product.png" alt={item.title} className="max-h-full max-w-full object-contain" />
                         </div>
-                        {item.price && <p className="text-xl font-bold text-blue-700 mb-3">${item.price.toLocaleString()}</p>}
-                        <button className="w-full py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm mt-auto">Ver detalles</button>
-                      </div>
-                    </motion.div>
+
+                        <div className="p-4 flex-grow flex flex-col h-[150px]">
+                          <div>
+                            <h3 className="text-lg font-medium text-gray-800 truncate" title={item.title}>{item.title}</h3>
+                            <p className="text-sm text-gray-500 truncate" title={item.text}>{item.text}</p>
+                          </div>
+                          {item.price && <p className="text-xl font-bold text-blue-700 mt-3">${item.price.toLocaleString()}</p>}
+                        </div>
+                      </motion.div>
+                    </Link>
                   ))}
                 </div>
               ) : (
