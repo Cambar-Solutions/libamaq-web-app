@@ -74,6 +74,8 @@ export default function CategoryPage() {
   // Imágenes de ejemplo para el carrusel (puedes reemplazarlas con tus propias imágenes)
   const carouselImages = [
     { src: "/promocionBosch.png", alt: "Promoción Bosch", id: 1 },
+    { src: "/promocionMakita.png", alt: "Promoción Makita", id: 2 },
+    { src: "/promocionHusqvarna.png", alt: "Promoción Husqvarna", id: 3 },
   
   ];
 
