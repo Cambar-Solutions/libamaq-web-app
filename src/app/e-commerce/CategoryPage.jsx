@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Search, Filter, ChevronRight, ChevronLeft } from "lucide-react";
 import Nav2 from "@/components/Nav2";
@@ -7,101 +7,7 @@ import { simulatedProductsByBrand } from "@data/simulatedProducts";
 import "@/styles/carousel-vanilla.css";
 import { Link } from "react-router-dom";
 
-// JSON con los detalles de marca y sus categorías
-const brandDetails = {
-  bosch: {
-    name: "Bosch",
-    description: "Líder mundial en herramientas eléctricas profesionales y accesorios. Bosch ofrece soluciones innovadoras y de alta calidad para todo tipo de aplicaciones.",
-    products: [
-      "Rotomartillos y taladros",
-      "Amoladoras",
-      "Herramienta para madera",
-      "Herramientas de medición",
-      "Herramienta a Bateria 12V y 18V",
-      "Limpieza y jardineria"
-    ],
-    image: "/logo_bosch.png",
-  },
-  makita: {
-    name: "Makita",
-    description: "Reconocida por su durabilidad y rendimiento excepcional. Makita ofrece una amplia gama de herramientas eléctricas y accesorios para profesionales.",
-    products: [
-      "Taladros inalámbricos",
-      "Amoladoras",
-      "Herramienta para madera",
-      "Herramientas de medición",
-      "Herramienta a Bateria 12V y 18V ",
-      "Limpieza y jardineria"
-    ],
-    image: "/makita.png",
-  },
-  husqvarna: {
-    name: "Husqvarna",
-    description: "Especialistas en equipos para exteriores y construcción. Husqvarna combina potencia y precisión en cada una de sus herramientas.",
-    products: [
-      "Cortadoras de concreto",
-      "Apisonadoras o bailarinas",
-      "Placas Vibratorias",
-      "Rodillos Vibratorios",
-      "Desbaste y pulido de concreto",
-      "Barrenadores",
-      "Accesorios y Herramientas de diamante"
-    ],
-    image: "/husq.png",
-  },
-  honda: {
-    name: "Honda",
-    description: "Líder en motores y equipos de fuerza. Honda ofrece productos confiables y eficientes para diversas aplicaciones.",
-    products: [
-      "Generadores",
-      "Motobombas 2 y 3 pulgadas ",
-      "Motores de 6.5hp, 9hp y 14hp"
-    ],
-    image: "/honda-fuerza.png",
-  },
-  marshalltown: {
-    name: "Marshalltown",
-    description: "Expertos en herramientas manuales para construcción. Marshalltown es sinónimo de calidad y precisión en el acabado.",
-    products: [
-      "Llanas tipo avión",
-      "Llanas tipo fresno",
-      "Texturizadores 1/2, 3/4 y 1 pulgada",
-      "Regla Vibratoria",
-      "Llanas Manuales",
-      "Orilladores",
-      "Barredoras de concreto",
-      "Cortadores de concreto"
-    ],
-    image: "/marshalltown.png",
-  },
-  mpower: {
-    name: "Mpower",
-    description: "Innovación y calidad en herramientas eléctricas. Mpower ofrece soluciones efectivas para profesionales y entusiastas.",
-    products: [
-      "Motores a gasolina 6.5, 9, 15hp.",
-      "Motobombas 2 y 3 pulgadas.",
-      "Generadores de luz de 3,500w a 8000w.",
-      "Soldadora 200 A.",
-      "Discos de 14 in para corte de concreto",
-      "Accesorios"
-    ],
-    image: "/m-power.webp",
-  },
-  cipsa: {
-    name: "Cipsa",
-    description: "Cipsa es especialistas en herramientas y maquinaria para construcción.",
-    products: [
-      "Revolvedoras para concreto de 1 y 2 sacos",
-      "Vibradores a gasolina para concreto",
-      "Rodillos Vibratorios",
-      "Apisonadores o bailarinas",
-      "Torres de ilumiación",
-      "Soldadoras",
-      "Bombas para concreto"
-    ],
-    image: "/cipsa.avif",
-  }
-};
+
 
 // Funciones auxiliares
 const getFeaturedProducts = () => {
@@ -159,73 +65,91 @@ export default function CategoryPage() {
   const [scrollPosition, setScrollPosition] = useState(0);
   const [maxScroll, setMaxScroll] = useState(0);
 
-  // Calcular si se deben mostrar los controles del carrusel
+  // Estado para el carrusel
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [autoplayEnabled, setAutoplayEnabled] = useState(true);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+  
+  // Imágenes de ejemplo para el carrusel (puedes reemplazarlas con tus propias imágenes)
+  const carouselImages = [
+    { src: "/promocionBosch.png", alt: "Promoción Bosch", id: 1 },
+  
+  ];
+
+  // Función para navegar al siguiente slide
+  const nextSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev === carouselImages.length - 1 ? 0 : prev + 1));
+  }, [carouselImages.length]);
+
+  // Función para navegar al slide anterior
+  const prevSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev === 0 ? carouselImages.length - 1 : prev - 1));
+  }, [carouselImages.length]);
+
+  // Configurar autoplay
   useEffect(() => {
-    if (!carouselTrackRef.current) return;
+    if (!autoplayEnabled) return;
+    
+    const interval = setInterval(() => {
+      nextSlide();
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [autoplayEnabled, nextSlide]);
 
-    const updateCarouselMetrics = () => {
-      const track = carouselTrackRef.current;
-      const container = carouselRef.current;
+  // Estado para detectar si estamos en dispositivo móvil
+  const [isMobile, setIsMobile] = useState(false);
 
-      if (!track || !container) return;
-
-      // El ancho total del contenido del carrusel
-      const trackWidth = track.scrollWidth;
-      // El ancho visible del contenedor
-      const containerWidth = container.clientWidth;
-
-      // Solo mostrar controles si hay contenido que no es visible
-      const shouldShowControls = trackWidth > containerWidth;
-      setShowCarouselControls(shouldShowControls);
-
-      // Calcular el máximo desplazamiento posible
-      const maxScrollValue = trackWidth - containerWidth;
-      setMaxScroll(maxScrollValue);
+  // Detectar si estamos en dispositivo móvil
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
     };
+    
+    // Comprobar al inicio
+    checkIfMobile();
+    
+    // Comprobar al cambiar el tamaño de la ventana
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
+  }, []);
 
-    // Ejecutar al montar y cuando cambie el tamaño de la ventana
-    updateCarouselMetrics();
-    window.addEventListener('resize', updateCarouselMetrics);
-
-    // Limpiar al desmontar
-    return () => window.removeEventListener('resize', updateCarouselMetrics);
-  }, [topSellingProducts]);
-
-  // Función para manejar la navegación del carrusel
-  const handleCarouselNav = (direction) => {
-    if (!carouselTrackRef.current || !showCarouselControls) return;
-
-    const track = carouselTrackRef.current;
-    const container = carouselRef.current;
-
-    if (!track || !container) return;
-
-    // Calcular el tamaño de desplazamiento (80% del ancho visible)
-    const scrollAmount = container.clientWidth * 0.8;
-
-    // Actualizar la posición de desplazamiento según la dirección
-    let newPosition;
-    if (direction === 'next') {
-      newPosition = Math.min(scrollPosition + scrollAmount, maxScroll);
-
-      // Si estamos cerca del final, ir al final exacto
-      if (newPosition > maxScroll - 50) newPosition = maxScroll;
-
-      // Si ya estamos al final, volver al principio (comportamiento circular)
-      if (scrollPosition >= maxScroll - 10) newPosition = 0;
-    } else {
-      newPosition = Math.max(scrollPosition - scrollAmount, 0);
-
-      // Si estamos cerca del principio, ir al principio exacto
-      if (newPosition < 50) newPosition = 0;
-
-      // Si ya estamos al principio, ir al final (comportamiento circular)
-      if (scrollPosition <= 10) newPosition = maxScroll;
+  // Manejo de eventos táctiles mejorado para deslizar en dispositivos móviles
+  const handleTouchStart = (e) => {
+    setTouchStart(e.targetTouches[0].clientX);
+    // Desactivar autoplay al interactuar con el carrusel
+    setAutoplayEnabled(false);
+  };
+  
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+    
+    // Prevenir el desplazamiento de la página mientras se desliza el carrusel
+    if (Math.abs(touchStart - e.targetTouches[0].clientX) > 10) {
+      e.preventDefault();
     }
-
-    // Aplicar el desplazamiento con una animación suave
-    track.style.transform = `translateX(-${newPosition}px)`;
-    setScrollPosition(newPosition);
+  };
+  
+  const handleTouchEnd = () => {
+    // Umbral más bajo para dispositivos móviles (50px en lugar de 75px)
+    const threshold = isMobile ? 50 : 75;
+    
+    if (touchStart - touchEnd > threshold) {
+      // Deslizar a la izquierda (siguiente slide)
+      nextSlide();
+    } else if (touchStart - touchEnd < -threshold) {
+      // Deslizar a la derecha (slide anterior)
+      prevSlide();
+    }
+    
+    // Reactivar autoplay después de 5 segundos de inactividad
+    setTimeout(() => {
+      setAutoplayEnabled(true);
+    }, 5000);
   };
 
   // Configurar autoplay si es necesario
@@ -333,40 +257,72 @@ export default function CategoryPage() {
 
       <div className="min-h-screen bg-gray-50 flex flex-col pt-20">
         {!brand && !category && (
-          <div className="w-full bg-gradient-to-t from-gray-50 via-blue-200 to-blue-600 text-white pt-8 px-4 mb-6">
-            {/* CARRUSEL CHIDO */}
-            <div className="carousel-container overflow-hidden px-14 h-[200px]">
-              {/* Pista del carrusel */}
-              <div
-                ref={carouselTrackRef}
-                className="carousel-track flex transition-transform duration-500 ease-out pb-10 pt-2"
-                style={{ transform: `translateX(0px)` }}
-              >
-                {topSellingProducts.map((item, index) => (
-                  <motion.div
-                    key={`top-${index}`}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="carousel-item flex-shrink-0 px-2 w-full h-full"
+          <div className="w-full bg-gradient-to-t from-gray-50 via-blue-200 to-blue-600 text-white mb-6 overflow-hidden">
+            {/* CARRUSEL FULLWIDTH MEJORADO */}
+            <div className="max-w-5xl mx-auto px-4 md:px-16 relative">
+              {/* Controles de navegación fuera de la imagen - ocultos en móvil */}
+              {!isMobile && (
+                <>
+                  <button 
+                    onClick={prevSlide} 
+                    className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-transparent text-blue-600 hover:text-blue-800 p-2 transition-all duration-200 hidden md:block"
+                    aria-label="Anterior"
                   >
-                    <Link href={`/detalle/${item.id}`} className="block w-full h-full">
-                      <div className="w-full h-[400px] overflow-hidden relative">
+                    <ChevronLeft size={28} />
+                  </button>
+                  
+                  <button 
+                    onClick={nextSlide} 
+                    className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-transparent text-blue-600 hover:text-blue-800 p-2 transition-all duration-200 hidden md:block"
+                    aria-label="Siguiente"
+                  >
+                    <ChevronRight size={28} />
+                  </button>
+                </>
+              )}
+              
+              <div 
+                className="relative w-full overflow-hidden h-[300px] md:h-[400px] rounded-lg shadow-lg mx-auto mt-6"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+              {/* Contenedor de slides */}
+              <div className="flex h-full w-full relative mx-auto">
+                {carouselImages.map((image, index) => (
+                  <div 
+                    key={image.id}
+                    className={`absolute  w-full h-full transition-opacity duration-500 ease-in-out ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+                  >
+                      <div className="w-full h-full">
                         <img
-                          src="/promocionBosch.png"
-                          alt={item.title}
-                          className="absolute inset-0 w-full h-full object-cover"
+                          src={image.src}
+                          alt={image.alt}
+                          className="w-full h-full object-cover object-center"
                         />
                       </div>
-                    </Link>
-                  </motion.div>
-
+                  </div>
                 ))}
+              </div>
+              
+
+              
+              {/* Indicadores de posición minimalistas - más pequeños en móvil */}
+              <div className="absolute -bottom-6 md:-bottom-8 left-1/2 -translate-x-1/2 z-20 flex space-x-2 md:space-x-3">
+                {carouselImages.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`w-6 md:w-8 h-1 transition-all duration-300 ${index === currentSlide ? 'bg-blue-600' : 'bg-gray-300 hover:bg-gray-400'}`}
+                    aria-label={`Ir a slide ${index + 1}`}
+                  />
+                ))}
+              </div>
               </div>
             </div>
 
             {/* NUEVA ZONA */}
-            <div className="rounded-t-[3rem] px-12 pt-14 w-[95%] mx-auto flex-grow">
+            <div className="rounded-t-[3rem] px-12 pt-8 w-[95%] mx-auto flex-grow">
               {!brand && !selectedCategory && !searchTerm && (
                 <>
                   <div className="mb-10">
@@ -512,7 +468,7 @@ export default function CategoryPage() {
               </div>
             )}
           </div>
-          <div className="mb-6 mt-16 w-full">
+          <div className="mb-6 mt-8 w-full">
             <h1 className="text-xl md:text-2xl font-bold text-gray-800">
               {brand
                 ? selectedCategory
