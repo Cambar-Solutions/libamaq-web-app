@@ -13,11 +13,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import "../../../index.css";
 
-import { 
-  FileVideo2, 
-  Trash2, 
-  Edit, 
-  Loader2, 
+import {
+  FileVideo2,
+  Trash2,
+  Edit,
+  Loader2,
   SquareMousePointer,
   Image as ImageIcon,
   Upload
@@ -69,7 +69,7 @@ const getVimeoEmbedUrl = (url) => {
 // Componente para renderizar videos de diferentes fuentes
 const VideoPlayer = ({ url, title = "Video", className = "" }) => {
   if (!url) return <div className="bg-gray-200 rounded-md flex items-center justify-center h-full"><FileVideo2 className="h-12 w-12 text-gray-400" /></div>;
-  
+
   if (isYouTubeUrl(url)) {
     return (
       <div className={`relative ${className}`} style={{ paddingBottom: '56.25%' }}>
@@ -98,8 +98,8 @@ const VideoPlayer = ({ url, title = "Video", className = "" }) => {
     );
   } else {
     return (
-      <video 
-        controls 
+      <video
+        controls
         className={`w-full h-full object-cover rounded-md ${className}`}
         playsInline
       >
@@ -117,7 +117,7 @@ export function ContentView() {
   const [landings, setLandings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+
   // Estados para el formulario de creación/edición
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -133,12 +133,12 @@ export function ContentView() {
   const [imageDescription, setImageDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [submittingImage, setSubmittingImage] = useState(false);
-  
+
   // Estados para diálogo de confirmación
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [itemToUpdate, setItemToUpdate] = useState(null);
   const [updateType, setUpdateType] = useState(""); // "TIKTOK", "IMAGE", "VIDEO"
-  
+
   // Estados para videos
   const [videoTitle, setVideoTitle] = useState("");
   const [videoDescription, setVideoDescription] = useState("");
@@ -171,11 +171,11 @@ export function ContentView() {
       // Usar getAllActiveLandings en lugar de getLandings como se muestra en Postman
       const response = await getAllActiveLandings();
       console.log("Respuesta de getAllActiveLandings:", response);
-      
+
       // Basado en la estructura de respuesta de Postman
       if (response && response.result) {
         // Filtrar solo los elementos de tipo TIKTOK
-        const tiktoks = Array.isArray(response.result) 
+        const tiktoks = Array.isArray(response.result)
           ? response.result.filter(item => item.type === "TIKTOK")
           : (response.result.type === "TIKTOK" ? [response.result] : []);
         setLandings(tiktoks);
@@ -200,7 +200,7 @@ export function ContentView() {
       alert("El título y el link son obligatorios");
       return;
     }
-    
+
     setSubmitting(true);
     try {
       // Formato exacto como se muestra en Postman
@@ -210,9 +210,9 @@ export function ContentView() {
         description,
         type: "TIKTOK"
       };
-      
+
       console.log("Enviando datos:", landingData);
-      
+
       if (isEditing && currentLandingId) {
         // Actualizar landing existente
         const updatedLanding = await updateLanding({ ...landingData, id: currentLandingId });
@@ -222,7 +222,7 @@ export function ContentView() {
         const newLanding = await createLanding(landingData);
         console.log("Nuevo landing creado:", newLanding);
       }
-      
+
       // Resetear formulario y recargar landings
       resetForm();
       loadLandings();
@@ -242,13 +242,13 @@ export function ContentView() {
       try {
         // Encontrar el landing completo en el estado actual
         const landingToDelete = landings.find(landing => landing.id === landingId);
-        
+
         if (!landingToDelete) {
           throw new Error(`No se encontró el TikTok con ID ${landingId}`);
         }
-        
+
         console.log('TikTok a eliminar:', landingToDelete);
-        
+
         // Cambiar estado a INACTIVE - pasar todos los campos requeridos
         const response = await changeLandingStatus({
           id: landingToDelete.id,
@@ -258,9 +258,9 @@ export function ContentView() {
           type: landingToDelete.type || 'TIKTOK',
           status: 'INACTIVE'
         });
-        
+
         console.log('Respuesta de eliminación:', response);
-        
+
         // Recargar la lista de landings
         await loadLandings();
         console.log("TikTok eliminado correctamente");
@@ -282,7 +282,7 @@ export function ContentView() {
     setIsEditing(true);
     setIsDialogOpen(true);
   };
-  
+
   // Función para preparar la actualización y mostrar el diálogo de confirmación
   const prepareUpdate = (item, type) => {
     setItemToUpdate(item);
@@ -294,7 +294,7 @@ export function ContentView() {
   const confirmUpdate = async () => {
     try {
       if (!itemToUpdate) return;
-      
+
       // Preparar los datos para la actualización
       const updatedData = {
         id: itemToUpdate.id,
@@ -304,13 +304,13 @@ export function ContentView() {
         type: itemToUpdate.type || updateType,
         status: itemToUpdate.status || "ACTIVE" // Añadir el campo status requerido por la API
       };
-      
+
       console.log("Enviando datos actualizados:", updatedData);
-      
+
       // Llamar al servicio de actualización
       const result = await updateLanding(updatedData);
       console.log("Resultado de la actualización:", result);
-      
+
       // Recargar los datos según el tipo
       if (updateType === "TIKTOK") {
         await loadLandings();
@@ -319,11 +319,11 @@ export function ContentView() {
       } else if (updateType === "VIDEO") {
         await loadVideos();
       }
-      
+
       // Cerrar el diálogo de confirmación
       setIsConfirmDialogOpen(false);
       setItemToUpdate(null);
-      
+
       // Operación completada con éxito
       console.log(`${updateType === "TIKTOK" ? "TikTok" : updateType === "IMAGE" ? "Imagen" : "Video"} actualizado correctamente`);
     } catch (error) {
@@ -332,17 +332,17 @@ export function ContentView() {
       setIsConfirmDialogOpen(false);
     }
   };
-  
+
   // Función para guardar los cambios de edición desde el modal (TikTok)
   const handleSaveEdits = (landing) => {
     prepareUpdate(landing, "TIKTOK");
   };
-  
+
   // Función para guardar los cambios de edición de imágenes
   const handleSaveImageEdits = (image) => {
     prepareUpdate(image, "IMAGE");
   };
-  
+
   // Función para guardar los cambios de edición de videos
   const handleSaveVideoEdits = (video) => {
     prepareUpdate(video, "VIDEO");
@@ -377,10 +377,10 @@ export function ContentView() {
     setLoadingImages(true);
     try {
       const response = await getAllActiveLandings();
-      
+
       // Filtrar solo los elementos de tipo IMAGE
       if (response && response.result) {
-        const imageItems = Array.isArray(response.result) 
+        const imageItems = Array.isArray(response.result)
           ? response.result.filter(item => item.type === "IMAGE")
           : (response.result.type === "IMAGE" ? [response.result] : []);
         setImages(imageItems);
@@ -402,10 +402,10 @@ export function ContentView() {
     setLoadingVideos(true);
     try {
       const response = await getAllActiveLandings();
-      
+
       // Filtrar solo los elementos de tipo VIDEO
       if (response && response.result) {
-        const videoItems = Array.isArray(response.result) 
+        const videoItems = Array.isArray(response.result)
           ? response.result.filter(item => item.type === "VIDEO")
           : (response.result.type === "VIDEO" ? [response.result] : []);
         setVideos(videoItems);
@@ -428,7 +428,7 @@ export function ContentView() {
       alert("El título y la URL de la imagen son obligatorios");
       return;
     }
-    
+
     setSubmittingImage(true);
     try {
       // Crear landing con tipo IMAGE
@@ -438,10 +438,10 @@ export function ContentView() {
         description: imageDescription,
         type: "IMAGE"
       };
-      
+
       const newLanding = await createLanding(landingData);
       console.log("Nueva imagen creada:", newLanding);
-      
+
       // Resetear formulario y recargar imágenes
       resetImageForm();
       loadImages();
@@ -460,7 +460,7 @@ export function ContentView() {
       alert("El título y la URL del video son obligatorios");
       return;
     }
-    
+
     setSubmittingVideo(true);
     try {
       // Crear landing con tipo VIDEO
@@ -470,10 +470,10 @@ export function ContentView() {
         description: videoDescription,
         type: "VIDEO"
       };
-      
+
       const newLanding = await createLanding(landingData);
       console.log("Nuevo video creado:", newLanding);
-      
+
       // Resetear formulario y recargar videos
       resetVideoForm();
       loadVideos();
@@ -494,7 +494,7 @@ export function ContentView() {
         if (!imageToDelete) {
           throw new Error(`No se encontró la imagen con ID ${imageId}`);
         }
-        
+
         // Pasar todos los campos requeridos
         await changeLandingStatus({
           id: imageToDelete.id,
@@ -504,7 +504,7 @@ export function ContentView() {
           type: imageToDelete.type || 'IMAGE',
           status: 'INACTIVE'
         });
-        
+
         console.log("Imagen eliminada correctamente");
         loadImages();
       } catch (err) {
@@ -522,7 +522,7 @@ export function ContentView() {
         if (!videoToDelete) {
           throw new Error(`No se encontró el video con ID ${videoId}`);
         }
-        
+
         // Pasar todos los campos requeridos
         await changeLandingStatus({
           id: videoToDelete.id,
@@ -532,7 +532,7 @@ export function ContentView() {
           type: videoToDelete.type || 'VIDEO',
           status: 'INACTIVE'
         });
-        
+
         console.log("Video eliminado correctamente");
         loadVideos();
       } catch (err) {
@@ -552,11 +552,11 @@ export function ContentView() {
     <div className="flex flex-col gap-4 p-4 bg-gradient-to-b from-gray-100 to-blue-300 rounded-2xl">
       <div className="flex items-center justify-between rounded shadow p-4 bg-white">
         <div>
-          <h1 className="text-2xl font-semibold ">
+          <h1 className="text-2xl font-semibold select-none">
             En esta sección se puede agregar contenido multimedia
           </h1>
-          <p className="text-gray-700">
-            Da clic en el botón "Agregar contenido" dependiendo cada seccion de
+          <p className="text-gray-700 select-none">
+            Da clic en el botón "Agregar contenido" dependiendo cada sección de
             contenido multimedia
           </p>
         </div>
@@ -580,7 +580,7 @@ export function ContentView() {
             <TabsTrigger
               className="cursor-pointer
       transition-colors
-      hover:underline hover:bg-blue-100
+       hover:bg-blue-100
       data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:underline-offset-2"
               value="multimedia"
             >
@@ -589,8 +589,8 @@ export function ContentView() {
             <TabsTrigger
               className="cursor-pointer
       transition-colors
-      hover:underline hover:bg-blue-100
-      data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:underline-offset-2"
+       hover:bg-blue-100
+      data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:underline-offset-3"
               value="images"
             >
               Imagenes
@@ -598,7 +598,7 @@ export function ContentView() {
             <TabsTrigger
               className="cursor-pointer
       transition-colors
-      hover:underline hover:bg-blue-100
+       hover:bg-blue-100
       data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:underline-offset-2"
               value="facebook"
             >
@@ -611,14 +611,14 @@ export function ContentView() {
               <div className="flex justify-between px-10 gap-5 items-center">
                 <div className="flex gap-3 items-center">
                   <img src="/logo_Tiktok.png" className="w-12" />
-                  <section className="border-b-2">
-                    Recueda que aqui podras gestionar tu contenido
+                  <section className="border-b-2 select-none">
+                    Recuerda que aquí podrás gestionar tu contenido
                   </section>
                 </div>
 
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button 
+                    <Button
                       className="bg-black hover:bg-blue-500 cursor-pointer"
                       onClick={openNewLandingDialog}
                     >
@@ -629,10 +629,10 @@ export function ContentView() {
                   <DialogContent className="w-full max-w-[80vw] md:max-w-[800px] mx-auto">
                     <Card className="border-0 m-2">
                       <CardHeader>
-                        <CardTitle className="text-2xl font-semibold">
+                        <CardTitle className="text-2xl font-semibold select-none">
                           Contenido
                         </CardTitle>
-                        <CardDescription>
+                        <CardDescription className="select-none">
                           Llena los campos para agregar tu TikTok
                         </CardDescription>
                       </CardHeader>
@@ -677,23 +677,17 @@ export function ContentView() {
                           {link ? (
                             <TikTokEmbed videoUrl={link} aspectRatio="177%" />
                           ) : (
-                            <div className="flex items-center justify-center h-full border rounded p-4 text-gray-400">
+                            <div className="flex items-center justify-center h-full border rounded p-4 text-gray-400 select-none">
                               Vista previa del TikTok
                             </div>
                           )}
                         </div>
                       </CardContent>
 
-                      <CardFooter className="flex justify-between space-x-2">
-                        <Button 
-                          variant="outline" 
-                          onClick={resetForm}
-                          disabled={submitting}
-                        >
-                          Cancelar
-                        </Button>
-                        <Button 
-                          className="bg-blue-600 hover:bg-blue-700"
+                      <CardFooter className="flex space-x-2 mt-5">
+
+                        <Button
+                          className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
                           onClick={handleCreateLanding}
                           disabled={submitting}
                         >
@@ -728,28 +722,28 @@ export function ContentView() {
                 ) : (
                   <div className="flex flex-wrap justify-around gap-4">
                     {landings.map((landing) => (
-                      <div key={landing.id} className="bg-gradient-to-l from-red-500 to-blue-500 p-2 rounded-2xl w-[300px]">
+                      <div key={landing.id} className="bg-gradient-to-l from-red-500 to-blue-500 p-2 rounded-2xl w-[300px] mt-4">
                         <Card className="p-5 relative group h-[220px] flex flex-col">
                           <div className="absolute top-2 right-2 flex gap-2 transition-opacity">
-                            <Button 
-                              size="icon" 
-                              variant="ghost" 
-                              className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm"
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm cursor-pointer"
                               onClick={() => handleDeleteLanding(landing.id)}
                             >
                               <Trash2 className="h-5 w-5" />
                             </Button>
                           </div>
                           <CardHeader className="flex-1 overflow-hidden">
-                            <CardTitle className="text-lg font-bold truncate" title={landing.title}>{landing.title}</CardTitle>
-                            <CardDescription className="line-clamp-3 h-[60px] overflow-hidden" title={landing.description}>
+                            <CardTitle className="text-lg font-bold truncate select-none" title={landing.title}>{landing.title}</CardTitle>
+                            <CardDescription className="line-clamp-3 h-[60px] overflow-hidden select-none" title={landing.description}>
                               {landing.description}
                             </CardDescription>
                           </CardHeader>
                           <Dialog>
                             <DialogTrigger asChild>
-                              <div className="cursor-pointer flex justify-start items-center">
-                              <SquareMousePointer size={20} />
+                              <div className="w-8 h-8 cursor-pointer flex justify-center items-center hover:bg-indigo-100 shadow-sm rounded-md">
+                                <SquareMousePointer size={20} />
 
 
                               </div>
@@ -838,11 +832,11 @@ export function ContentView() {
                                     </CardContent>
                                   </Card>
                                 </TabsContent>
-                                
+
                                 {/* Editar (formulario de edición) */}
                                 <TabsContent value="edit">
                                   <Card className="border-0 m-2">
-                                    <CardHeader>
+                                    <CardHeader className="select-none">
                                       <CardTitle className="text-2xl font-semibold">
                                         Editar TikTok
                                       </CardTitle>
@@ -861,10 +855,10 @@ export function ContentView() {
                                             defaultValue={landing.title}
                                             onChange={(e) => {
                                               // Crear una copia temporal del landing para edición
-                                              const updatedLanding = {...landing};
+                                              const updatedLanding = { ...landing };
                                               updatedLanding.title = e.target.value;
                                               // Actualizar el estado local
-                                              const updatedLandings = landings.map(l => 
+                                              const updatedLandings = landings.map(l =>
                                                 l.id === landing.id ? updatedLanding : l
                                               );
                                               setLandings(updatedLandings);
@@ -878,10 +872,10 @@ export function ContentView() {
                                             defaultValue={landing.description}
                                             onChange={(e) => {
                                               // Crear una copia temporal del landing para edición
-                                              const updatedLanding = {...landing};
+                                              const updatedLanding = { ...landing };
                                               updatedLanding.description = e.target.value;
                                               // Actualizar el estado local
-                                              const updatedLandings = landings.map(l => 
+                                              const updatedLandings = landings.map(l =>
                                                 l.id === landing.id ? updatedLanding : l
                                               );
                                               setLandings(updatedLandings);
@@ -895,10 +889,10 @@ export function ContentView() {
                                             defaultValue={landing.url}
                                             onChange={(e) => {
                                               // Crear una copia temporal del landing para edición
-                                              const updatedLanding = {...landing};
+                                              const updatedLanding = { ...landing };
                                               updatedLanding.url = e.target.value;
                                               // Actualizar el estado local
-                                              const updatedLandings = landings.map(l => 
+                                              const updatedLandings = landings.map(l =>
                                                 l.id === landing.id ? updatedLanding : l
                                               );
                                               setLandings(updatedLandings);
@@ -913,12 +907,10 @@ export function ContentView() {
                                       </div>
                                     </CardContent>
 
-                                    <CardFooter className="flex justify-between space-x-2">
-                                      <Button variant="outline">
-                                        Cancelar
-                                      </Button>
-                                      <Button 
-                                        className="bg-blue-600 hover:bg-blue-700"
+                                    <CardFooter className="flex space-x-2">
+
+                                      <Button
+                                        className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
                                         onClick={() => handleSaveEdits(landing)}
                                       >
                                         Guardar cambios
@@ -943,14 +935,14 @@ export function ContentView() {
               <div className="flex justify-between px-10 gap-5 items-center">
                 <div className="flex gap-3 items-center">
                   <ImageIcon className="w-12 h-12" />
-                  <section className="border-b-2">
+                  <section className="border-b-2 select-none">
                     Gestiona tus imágenes destacadas
                   </section>
                 </div>
 
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button 
+                    <Button
                       className="bg-black hover:bg-blue-500 cursor-pointer"
                     >
                       Agregar Imagen
@@ -959,7 +951,7 @@ export function ContentView() {
 
                   <DialogContent className="w-full max-w-[80vw] md:max-w-[800px] mx-auto">
                     <Card className="border-0 m-2">
-                      <CardHeader>
+                      <CardHeader className="select-none">
                         <CardTitle className="text-2xl font-semibold">
                           Contenido
                         </CardTitle>
@@ -1006,17 +998,17 @@ export function ContentView() {
                         {/* DERECHA: vista previa de Imagen */}
                         <div className="md:w-1/3">
                           {imageUrl ? (
-                            <img 
-                              src={imageUrl} 
-                              alt="Vista previa" 
-                              className="w-full h-auto max-h-64 object-contain border rounded" 
+                            <img
+                              src={imageUrl}
+                              alt="Vista previa"
+                              className="w-full h-auto max-h-64 object-contain border rounded"
                               onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src = "/tiktok_preview.jpg";
                               }}
                             />
                           ) : (
-                            <div className="flex flex-col items-center justify-center h-full border rounded p-4 text-gray-400">
+                            <div className="select-none flex flex-col items-center justify-center h-full border rounded p-4 text-gray-400">
                               <ImageIcon size={48} className="mb-2" />
                               <p>Ingresa la URL de una imagen</p>
                             </div>
@@ -1024,16 +1016,10 @@ export function ContentView() {
                         </div>
                       </CardContent>
 
-                      <CardFooter className="flex justify-between space-x-2">
-                        <Button 
-                          variant="outline"
-                          onClick={resetImageForm}
-                          disabled={submittingImage}
-                        >
-                          Cancelar
-                        </Button>
-                        <Button 
-                          className="bg-blue-600 hover:bg-blue-700"
+                      <CardFooter className="flex space-x-2 mt-5">
+
+                        <Button
+                          className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
                           onClick={handleCreateImage}
                           disabled={submittingImage}
                         >
@@ -1064,222 +1050,223 @@ export function ContentView() {
                 ) : (
                   <div className="flex flex-wrap justify-around gap-4 p-4">
                     {images.map((image) => (
-                      <Card key={image.id} className="p-5 relative group w-[300px] bg-stone-100">
-                        <div className="absolute top-2 right-2 flex gap-2 transition-opacity">
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm"
-                            onClick={() => handleDeleteImage(image.id)}
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </Button>
-                        </div>
-                        <CardHeader>
-                          <CardTitle>{image.title}</CardTitle>
-                          <CardDescription>
-                            {image.description}
-                          </CardDescription>
-                        </CardHeader>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <div className="cursor-pointer">
-                              <img 
-                                src={image.url} 
-                                alt={image.title} 
-                                className="w-full h-32 object-cover rounded-md mt-2" 
-                              />
-                              <div className="flex justify-start items-center mt-2">
-                                <SquareMousePointer size={20} />
+                      <div className="bg-gradient-to-l from-blue-700 to-zinc-500 p-2 rounded-2xl">
+                        <Card key={image.id} className="p-5 relative group w-[300px] bg-stone-100 ">
+                          <div className="absolute top-2 right-2 flex gap-2 transition-opacity">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="cursor-pointer h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm"
+                              onClick={() => handleDeleteImage(image.id)}
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </Button>
+                          </div>
+                          <CardHeader className="select-none">
+                            <CardTitle>{image.title}</CardTitle>
+                            <CardDescription>
+                              {image.description}
+                            </CardDescription>
+                          </CardHeader>
+                          <img
+                            src={image.url}
+                            alt={image.title}
+                            className="w-full h-32 object-cover rounded-md mt-2"
+                          />
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <div className="">
+
+                                <div className="w-8 h-8 flex mt-2 cursor-pointer justify-center items-center hover:bg-indigo-100 shadow-sm rounded-md">
+                                  <SquareMousePointer size={20} />
+                                </div>
                               </div>
-                            </div>
-                          </DialogTrigger>
+                            </DialogTrigger>
 
-                          <DialogContent className="w-full max-w-[80vw] md:max-w-[800px] mx-auto">
-                            <Tabs defaultValue="details" className="w-full mt-2">
-                              <TabsList className="grid w-[20em] grid-cols-2 gap-2">
-                                <TabsTrigger
-                                  value="details"
-                                  className="cursor-pointer
+                            <DialogContent className="w-full max-w-[80vw] md:max-w-[800px] mx-auto">
+                              <Tabs defaultValue="details" className="w-full mt-2">
+                                <TabsList className="grid w-[20em] grid-cols-2 gap-2">
+                                  <TabsTrigger
+                                    value="details"
+                                    className="cursor-pointer
                                   transition-colors
                                   hover:underline hover:decoration-blue-200 hover:decoration-3
                                   data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:decoration-3"
-                                >
-                                  Detalles
-                                </TabsTrigger>
-                                <TabsTrigger
-                                  value="edit"
-                                  className="cursor-pointer
+                                  >
+                                    Detalles
+                                  </TabsTrigger>
+                                  <TabsTrigger
+                                    value="edit"
+                                    className="cursor-pointer
                                   transition-colors
                                   hover:underline hover:decoration-blue-200 hover:decoration-3
                                   data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:decoration-3"
-                                >
-                                  Editar
-                                </TabsTrigger>
-                              </TabsList>
+                                  >
+                                    Editar
+                                  </TabsTrigger>
+                                </TabsList>
 
-                              {/* Detalles (vista de solo lectura) */}
-                              <TabsContent value="details">
-                                <Card className="border-0 m-2">
-                                  <CardHeader>
-                                    <CardTitle className="text-2xl font-semibold">
-                                      Detalles de la Imagen
-                                    </CardTitle>
-                                    <CardDescription>
-                                      Información completa de la imagen
-                                    </CardDescription>
-                                  </CardHeader>
+                                {/* Detalles (vista de solo lectura) */}
+                                <TabsContent value="details">
+                                  <Card className="border-0 m-2">
+                                    <CardHeader>
+                                      <CardTitle className="text-2xl font-semibold">
+                                        Detalles de la Imagen
+                                      </CardTitle>
+                                      <CardDescription>
+                                        Información completa de la imagen
+                                      </CardDescription>
+                                    </CardHeader>
 
-                                  <CardContent className="flex flex-col md:flex-row gap-20">
-                                    {/* IZQUIERDA: campos de solo lectura */}
-                                    <div className="flex-1 space-y-6">
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`view-title-${image.id}`}>Título</Label>
-                                        <Input
-                                          id={`view-title-${image.id}`}
-                                          value={image.title}
-                                          disabled
-                                          className="cursor-not-allowed bg-gray-50"
-                                        />
+                                    <CardContent className="flex flex-col md:flex-row gap-20">
+                                      {/* IZQUIERDA: campos de solo lectura */}
+                                      <div className="flex-1 space-y-6">
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`view-title-${image.id}`}>Título</Label>
+                                          <Input
+                                            id={`view-title-${image.id}`}
+                                            value={image.title}
+                                            disabled
+                                            className="cursor-not-allowed bg-gray-50"
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`view-description-${image.id}`}>Descripción</Label>
+                                          <Input
+                                            id={`view-description-${image.id}`}
+                                            value={image.description}
+                                            disabled
+                                            className="cursor-not-allowed bg-gray-50"
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`view-url-${image.id}`}>URL</Label>
+                                          <Input
+                                            id={`view-url-${image.id}`}
+                                            value={image.url}
+                                            disabled
+                                            className="cursor-not-allowed bg-gray-50"
+                                            onFocus={(e) => e.currentTarget.select()}
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`view-created-${image.id}`}>Fecha de creación</Label>
+                                          <Input
+                                            id={`view-created-${image.id}`}
+                                            value={image.createdAt ? new Date(image.createdAt).toLocaleString() : 'N/A'}
+                                            disabled
+                                            className="cursor-not-allowed bg-gray-50"
+                                          />
+                                        </div>
                                       </div>
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`view-description-${image.id}`}>Descripción</Label>
-                                        <Input
-                                          id={`view-description-${image.id}`}
-                                          value={image.description}
-                                          disabled
-                                          className="cursor-not-allowed bg-gray-50"
-                                        />
-                                      </div>
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`view-url-${image.id}`}>URL</Label>
-                                        <Input
-                                          id={`view-url-${image.id}`}
-                                          value={image.url}
-                                          disabled
-                                          className="cursor-not-allowed bg-gray-50"
-                                          onFocus={(e) => e.currentTarget.select()}
-                                        />
-                                      </div>
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`view-created-${image.id}`}>Fecha de creación</Label>
-                                        <Input
-                                          id={`view-created-${image.id}`}
-                                          value={image.createdAt ? new Date(image.createdAt).toLocaleString() : 'N/A'}
-                                          disabled
-                                          className="cursor-not-allowed bg-gray-50"
-                                        />
-                                      </div>
-                                    </div>
 
-                                    {/* DERECHA: vista previa de imagen */}
-                                    <div className="md:w-1/3">
-                                      <img 
-                                        src={image.url} 
-                                        alt={image.title} 
-                                        className="w-full object-contain rounded-md" 
-                                      />
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              </TabsContent>
-                              
-                              {/* Editar (formulario de edición) */}
-                              <TabsContent value="edit">
-                                <Card className="border-0 m-2">
-                                  <CardHeader>
-                                    <CardTitle className="text-2xl font-semibold">
-                                      Editar Imagen
-                                    </CardTitle>
-                                    <CardDescription>
-                                      Modifica los campos para actualizar esta imagen
-                                    </CardDescription>
-                                  </CardHeader>
-
-                                  <CardContent className="flex flex-col md:flex-row gap-20">
-                                    {/* IZQUIERDA: campos de edición */}
-                                    <div className="flex-1 space-y-6">
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`edit-title-${image.id}`}>Título</Label>
-                                        <Input
-                                          id={`edit-title-${image.id}`}
-                                          defaultValue={image.title}
-                                          onChange={(e) => {
-                                            // Crear una copia temporal de la imagen para edición
-                                            const updatedImage = {...image};
-                                            updatedImage.title = e.target.value;
-                                            // Actualizar el estado local
-                                            const updatedImages = images.map(img => 
-                                              img.id === image.id ? updatedImage : img
-                                            );
-                                            setImages(updatedImages);
-                                          }}
+                                      {/* DERECHA: vista previa de imagen */}
+                                      <div className="md:w-1/3">
+                                        <img
+                                          src={image.url}
+                                          alt={image.title}
+                                          className="w-full object-contain rounded-md"
                                         />
                                       </div>
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`edit-description-${image.id}`}>Descripción</Label>
-                                        <Input
-                                          id={`edit-description-${image.id}`}
-                                          defaultValue={image.description}
-                                          onChange={(e) => {
-                                            // Crear una copia temporal de la imagen para edición
-                                            const updatedImage = {...image};
-                                            updatedImage.description = e.target.value;
-                                            // Actualizar el estado local
-                                            const updatedImages = images.map(img => 
-                                              img.id === image.id ? updatedImage : img
-                                            );
-                                            setImages(updatedImages);
-                                          }}
+                                    </CardContent>
+                                  </Card>
+                                </TabsContent>
+
+                                {/* Editar (formulario de edición) */}
+                                <TabsContent value="edit">
+                                  <Card className="border-0 m-2">
+                                    <CardHeader className="select-none">
+                                      <CardTitle className="text-2xl font-semibold">
+                                        Editar Imagen
+                                      </CardTitle>
+                                      <CardDescription>
+                                        Modifica los campos para actualizar esta imagen
+                                      </CardDescription>
+                                    </CardHeader>
+
+                                    <CardContent className="flex flex-col md:flex-row gap-20">
+                                      {/* IZQUIERDA: campos de edición */}
+                                      <div className="flex-1 space-y-6">
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`edit-title-${image.id}`}>Título</Label>
+                                          <Input
+                                            id={`edit-title-${image.id}`}
+                                            defaultValue={image.title}
+                                            onChange={(e) => {
+                                              // Crear una copia temporal de la imagen para edición
+                                              const updatedImage = { ...image };
+                                              updatedImage.title = e.target.value;
+                                              // Actualizar el estado local
+                                              const updatedImages = images.map(img =>
+                                                img.id === image.id ? updatedImage : img
+                                              );
+                                              setImages(updatedImages);
+                                            }}
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`edit-description-${image.id}`}>Descripción</Label>
+                                          <Input
+                                            id={`edit-description-${image.id}`}
+                                            defaultValue={image.description}
+                                            onChange={(e) => {
+                                              // Crear una copia temporal de la imagen para edición
+                                              const updatedImage = { ...image };
+                                              updatedImage.description = e.target.value;
+                                              // Actualizar el estado local
+                                              const updatedImages = images.map(img =>
+                                                img.id === image.id ? updatedImage : img
+                                              );
+                                              setImages(updatedImages);
+                                            }}
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`edit-url-${image.id}`}>URL</Label>
+                                          <Input
+                                            id={`edit-url-${image.id}`}
+                                            defaultValue={image.url}
+                                            onChange={(e) => {
+                                              // Crear una copia temporal de la imagen para edición
+                                              const updatedImage = { ...image };
+                                              updatedImage.url = e.target.value;
+                                              // Actualizar el estado local
+                                              const updatedImages = images.map(img =>
+                                                img.id === image.id ? updatedImage : img
+                                              );
+                                              setImages(updatedImages);
+                                            }}
+                                            onFocus={(e) => e.currentTarget.select()}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* DERECHA: vista previa de imagen */}
+                                      <div className="md:w-1/3">
+                                        <img
+                                          src={image.url}
+                                          alt={image.title}
+                                          className="w-full object-contain rounded-md"
                                         />
                                       </div>
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`edit-url-${image.id}`}>URL</Label>
-                                        <Input
-                                          id={`edit-url-${image.id}`}
-                                          defaultValue={image.url}
-                                          onChange={(e) => {
-                                            // Crear una copia temporal de la imagen para edición
-                                            const updatedImage = {...image};
-                                            updatedImage.url = e.target.value;
-                                            // Actualizar el estado local
-                                            const updatedImages = images.map(img => 
-                                              img.id === image.id ? updatedImage : img
-                                            );
-                                            setImages(updatedImages);
-                                          }}
-                                          onFocus={(e) => e.currentTarget.select()}
-                                        />
-                                      </div>
-                                    </div>
+                                    </CardContent>
 
-                                    {/* DERECHA: vista previa de imagen */}
-                                    <div className="md:w-1/3">
-                                      <img 
-                                        src={image.url} 
-                                        alt={image.title} 
-                                        className="w-full object-contain rounded-md" 
-                                      />
-                                    </div>
-                                  </CardContent>
+                                    <CardFooter className="flex space-x-2 mt-5">
+                                      <Button
+                                        className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                                        onClick={() => handleSaveImageEdits(image)}
+                                      >
+                                        Guardar cambios
+                                      </Button>
+                                    </CardFooter>
+                                  </Card>
+                                </TabsContent>
+                              </Tabs>
+                            </DialogContent>
+                          </Dialog>
+                        </Card>
+                      </div>
 
-                                  <CardFooter className="flex justify-between space-x-2">
-                                    <Button variant="outline">
-                                      Cancelar
-                                    </Button>
-                                    <Button 
-                                      className="bg-blue-600 hover:bg-blue-700"
-                                      onClick={() => handleSaveImageEdits(image)}
-                                    >
-                                      Guardar cambios
-                                    </Button>
-                                  </CardFooter>
-                                </Card>
-                              </TabsContent>
-                            </Tabs>
-                          </DialogContent>
-                        </Dialog>
-                      </Card>
                     ))}
                   </div>
                 )}
@@ -1292,14 +1279,14 @@ export function ContentView() {
               <div className="flex justify-between px-10 gap-5 items-center">
                 <div className="flex gap-3 items-center">
                   <FileVideo2 className="w-12 h-12" />
-                  <section className="border-b-2">
+                  <section className="border-b-2 select-none">
                     Gestiona tus videos destacados
                   </section>
                 </div>
 
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button 
+                    <Button
                       className="bg-black hover:bg-blue-500 cursor-pointer"
                     >
                       Agregar Video
@@ -1308,7 +1295,7 @@ export function ContentView() {
 
                   <DialogContent className="w-full max-w-[80vw] md:max-w-[800px] mx-auto">
                     <Card className="border-0 m-2">
-                      <CardHeader>
+                      <CardHeader className="select-none">
                         <CardTitle className="text-2xl font-semibold">
                           Contenido
                         </CardTitle>
@@ -1355,13 +1342,13 @@ export function ContentView() {
                         {/* DERECHA: vista previa de Video */}
                         <div className="md:w-1/3">
                           {videoUrl ? (
-                            <VideoPlayer 
-                              url={videoUrl} 
-                              title="Vista previa del video" 
-                              className="w-full h-auto object-contain" 
+                            <VideoPlayer
+                              url={videoUrl}
+                              title="Vista previa del video"
+                              className="w-full h-auto object-contain"
                             />
                           ) : (
-                            <div className="flex flex-col items-center justify-center h-full border rounded p-4 text-gray-400">
+                            <div className="flex flex-col items-center justify-center h-full border rounded p-4 text-gray-400 select-none">
                               <FileVideo2 size={48} className="mb-2" />
                               <p>Ingresa la URL de un video</p>
                             </div>
@@ -1369,16 +1356,10 @@ export function ContentView() {
                         </div>
                       </CardContent>
 
-                      <CardFooter className="flex justify-between space-x-2">
-                        <Button 
-                          variant="outline"
-                          onClick={resetVideoForm}
-                          disabled={submittingVideo}
-                        >
-                          Cancelar
-                        </Button>
-                        <Button 
-                          className="bg-blue-600 hover:bg-blue-700"
+                      <CardFooter className="flex space-x-2 mt-5">
+
+                        <Button
+                          className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
                           onClick={handleCreateVideo}
                           disabled={submittingVideo}
                         >
@@ -1409,225 +1390,223 @@ export function ContentView() {
                 ) : (
                   <div className="flex flex-wrap justify-around gap-4 p-4">
                     {videos.map((video) => (
-                      <Card key={video.id} className="p-5 relative group w-[300px] bg-stone-100">
-                        <div className="absolute top-2 right-2 flex gap-2 transition-opacity">
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm"
-                            onClick={() => handleDeleteVideo(video.id)}
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </Button>
-                        </div>
-                        <CardHeader>
-                          <CardTitle>{video.title}</CardTitle>
-                          <CardDescription>
-                            {video.description}
-                          </CardDescription>
-                        </CardHeader>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <div className="cursor-pointer">
-                              <div className="w-full h-32 bg-gray-200 rounded-md mt-2 flex items-center justify-center relative overflow-hidden">
-                                <FileVideo2 className="h-12 w-12 text-gray-400" />
-                                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 hover:opacity-100 transition-opacity">
-                                  <Button variant="ghost" className="text-white">
-                                    Ver video
-                                  </Button>
+                      <div className="bg-gradient-to-l from-orange-500 to-zinc-500 p-2 rounded-2xl">
+                        <Card key={video.id} className="p-5 relative group w-[300px] bg-stone-100">
+                          <div className="absolute top-2 right-2 flex gap-2 transition-opacity">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="cursor-pointer h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm"
+                              onClick={() => handleDeleteVideo(video.id)}
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </Button>
+                          </div>
+                          <CardHeader className="select-none">
+                            <CardTitle>{video.title}</CardTitle>
+                            <CardDescription>
+                              {video.description}
+                            </CardDescription>
+                          </CardHeader>
+                          <div className="w-full h-32 bg-gray-200 rounded-md mt-2 flex items-center justify-center relative overflow-hidden">
+                            <FileVideo2 className="h-12 w-12 text-gray-400" />
+
+                          </div>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <div className="">
+
+                                <div className="w-8 h-8 cursor-pointer flex mt-2 justify-center items-center hover:bg-indigo-100 shadow-sm rounded-md">
+                                  <SquareMousePointer size={20} />
                                 </div>
                               </div>
-                              <div className="flex justify-start items-center mt-2">
-                                <SquareMousePointer size={20} />
-                              </div>
-                            </div>
-                          </DialogTrigger>
+                            </DialogTrigger>
 
-                          <DialogContent className="w-full max-w-[80vw] md:max-w-[800px] mx-auto">
-                            <Tabs defaultValue="details" className="w-full mt-2">
-                              <TabsList className="grid w-[20em] grid-cols-2 gap-2">
-                                <TabsTrigger
-                                  value="details"
-                                  className="cursor-pointer
+                            <DialogContent className="w-full max-w-[80vw] md:max-w-[900px] mx-auto">
+                              <Tabs defaultValue="details" className="w-full mt-2">
+                                <TabsList className="grid w-[20em] grid-cols-2 gap-2">
+                                  <TabsTrigger
+                                    value="details"
+                                    className="cursor-pointer
                                   transition-colors
                                   hover:underline hover:decoration-blue-200 hover:decoration-3
                                   data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:decoration-3"
-                                >
-                                  Detalles
-                                </TabsTrigger>
-                                <TabsTrigger
-                                  value="edit"
-                                  className="cursor-pointer
+                                  >
+                                    Detalles
+                                  </TabsTrigger>
+                                  <TabsTrigger
+                                    value="edit"
+                                    className="cursor-pointer
                                   transition-colors
                                   hover:underline hover:decoration-blue-200 hover:decoration-3
                                   data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:decoration-3"
-                                >
-                                  Editar
-                                </TabsTrigger>
-                              </TabsList>
+                                  >
+                                    Editar
+                                  </TabsTrigger>
+                                </TabsList>
 
-                              {/* Detalles (vista de solo lectura) */}
-                              <TabsContent value="details">
-                                <Card className="border-0 m-2">
-                                  <CardHeader>
-                                    <CardTitle className="text-2xl font-semibold">
-                                      Detalles del Video
-                                    </CardTitle>
-                                    <CardDescription>
-                                      Información completa del video
-                                    </CardDescription>
-                                  </CardHeader>
+                                {/* Detalles (vista de solo lectura) */}
+                                <TabsContent value="details">
+                                  <Card className="border-0 m-2">
+                                    <CardHeader className="select-none">
+                                      <CardTitle className="text-2xl font-semibold">
+                                        Detalles del Video
+                                      </CardTitle>
+                                      <CardDescription>
+                                        Información completa del video
+                                      </CardDescription>
+                                    </CardHeader>
 
-                                  <CardContent className="flex flex-col md:flex-row gap-20">
-                                    {/* IZQUIERDA: campos de solo lectura */}
-                                    <div className="flex-1 space-y-6">
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`view-title-${video.id}`}>Título</Label>
-                                        <Input
-                                          id={`view-title-${video.id}`}
-                                          value={video.title}
-                                          disabled
-                                          className="cursor-not-allowed bg-gray-50"
-                                        />
+                                    <CardContent className="flex flex-col md:flex-row gap-10">
+                                      {/* IZQUIERDA: campos de solo lectura */}
+                                      <div className="flex-1 space-y-6">
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`view-title-${video.id}`}>Título</Label>
+                                          <Input
+                                            id={`view-title-${video.id}`}
+                                            value={video.title}
+                                            disabled
+                                            className="cursor-not-allowed bg-gray-50"
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`view-description-${video.id}`}>Descripción</Label>
+                                          <Input
+                                            id={`view-description-${video.id}`}
+                                            value={video.description}
+                                            disabled
+                                            className="cursor-not-allowed bg-gray-50"
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`view-url-${video.id}`}>URL</Label>
+                                          <Input
+                                            id={`view-url-${video.id}`}
+                                            value={video.url}
+                                            disabled
+                                            className="cursor-not-allowed bg-gray-50"
+                                            onFocus={(e) => e.currentTarget.select()}
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`view-created-${video.id}`}>Fecha de creación</Label>
+                                          <Input
+                                            id={`view-created-${video.id}`}
+                                            value={video.createdAt ? new Date(video.createdAt).toLocaleString() : 'N/A'}
+                                            disabled
+                                            className="cursor-not-allowed bg-gray-50"
+                                          />
+                                        </div>
                                       </div>
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`view-description-${video.id}`}>Descripción</Label>
-                                        <Input
-                                          id={`view-description-${video.id}`}
-                                          value={video.description}
-                                          disabled
-                                          className="cursor-not-allowed bg-gray-50"
-                                        />
-                                      </div>
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`view-url-${video.id}`}>URL</Label>
-                                        <Input
-                                          id={`view-url-${video.id}`}
-                                          value={video.url}
-                                          disabled
-                                          className="cursor-not-allowed bg-gray-50"
-                                          onFocus={(e) => e.currentTarget.select()}
-                                        />
-                                      </div>
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`view-created-${video.id}`}>Fecha de creación</Label>
-                                        <Input
-                                          id={`view-created-${video.id}`}
-                                          value={video.createdAt ? new Date(video.createdAt).toLocaleString() : 'N/A'}
-                                          disabled
-                                          className="cursor-not-allowed bg-gray-50"
-                                        />
-                                      </div>
-                                    </div>
 
-                                    {/* DERECHA: vista previa de video */}
-                                    <div className="md:w-1/3">
-                                      <VideoPlayer 
-                                        url={video.url} 
-                                        title={video.title} 
-                                        className="w-full object-contain" 
-                                      />
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              </TabsContent>
-                              
-                              {/* Editar (formulario de edición) */}
-                              <TabsContent value="edit">
-                                <Card className="border-0 m-2">
-                                  <CardHeader>
-                                    <CardTitle className="text-2xl font-semibold">
-                                      Editar Video
-                                    </CardTitle>
-                                    <CardDescription>
-                                      Modifica los campos para actualizar este video
-                                    </CardDescription>
-                                  </CardHeader>
-
-                                  <CardContent className="flex flex-col md:flex-row gap-20">
-                                    {/* IZQUIERDA: campos de edición */}
-                                    <div className="flex-1 space-y-6">
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`edit-title-${video.id}`}>Título</Label>
-                                        <Input
-                                          id={`edit-title-${video.id}`}
-                                          defaultValue={video.title}
-                                          onChange={(e) => {
-                                            // Crear una copia temporal del video para edición
-                                            const updatedVideo = {...video};
-                                            updatedVideo.title = e.target.value;
-                                            // Actualizar el estado local
-                                            const updatedVideos = videos.map(vid => 
-                                              vid.id === video.id ? updatedVideo : vid
-                                            );
-                                            setVideos(updatedVideos);
-                                          }}
+                                      {/* DERECHA: vista previa de video */}
+                                      <div className="md:w-1/2">
+                                        <VideoPlayer
+                                          url={video.url}
+                                          title={video.title}
+                                          className="w-full object-contain"
                                         />
                                       </div>
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`edit-description-${video.id}`}>Descripción</Label>
-                                        <Input
-                                          id={`edit-description-${video.id}`}
-                                          defaultValue={video.description}
-                                          onChange={(e) => {
-                                            // Crear una copia temporal del video para edición
-                                            const updatedVideo = {...video};
-                                            updatedVideo.description = e.target.value;
-                                            // Actualizar el estado local
-                                            const updatedVideos = videos.map(vid => 
-                                              vid.id === video.id ? updatedVideo : vid
-                                            );
-                                            setVideos(updatedVideos);
-                                          }}
+                                    </CardContent>
+                                  </Card>
+                                </TabsContent>
+
+                                {/* Editar (formulario de edición) */}
+                                <TabsContent value="edit">
+                                  <Card className="border-0 m-2">
+                                    <CardHeader className="select-none">
+                                      <CardTitle className="text-2xl font-semibold">
+                                        Editar Video
+                                      </CardTitle>
+                                      <CardDescription>
+                                        Modifica los campos para actualizar este video
+                                      </CardDescription>
+                                    </CardHeader>
+
+                                    <CardContent className="flex flex-col md:flex-row gap-20">
+                                      {/* IZQUIERDA: campos de edición */}
+                                      <div className="flex-1 space-y-6">
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`edit-title-${video.id}`}>Título</Label>
+                                          <Input
+                                            id={`edit-title-${video.id}`}
+                                            defaultValue={video.title}
+                                            onChange={(e) => {
+                                              // Crear una copia temporal del video para edición
+                                              const updatedVideo = { ...video };
+                                              updatedVideo.title = e.target.value;
+                                              // Actualizar el estado local
+                                              const updatedVideos = videos.map(vid =>
+                                                vid.id === video.id ? updatedVideo : vid
+                                              );
+                                              setVideos(updatedVideos);
+                                            }}
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`edit-description-${video.id}`}>Descripción</Label>
+                                          <Input
+                                            id={`edit-description-${video.id}`}
+                                            defaultValue={video.description}
+                                            onChange={(e) => {
+                                              // Crear una copia temporal del video para edición
+                                              const updatedVideo = { ...video };
+                                              updatedVideo.description = e.target.value;
+                                              // Actualizar el estado local
+                                              const updatedVideos = videos.map(vid =>
+                                                vid.id === video.id ? updatedVideo : vid
+                                              );
+                                              setVideos(updatedVideos);
+                                            }}
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label htmlFor={`edit-url-${video.id}`}>URL</Label>
+                                          <Input
+                                            id={`edit-url-${video.id}`}
+                                            defaultValue={video.url}
+                                            onChange={(e) => {
+                                              // Crear una copia temporal del video para edición
+                                              const updatedVideo = { ...video };
+                                              updatedVideo.url = e.target.value;
+                                              // Actualizar el estado local
+                                              const updatedVideos = videos.map(vid =>
+                                                vid.id === video.id ? updatedVideo : vid
+                                              );
+                                              setVideos(updatedVideos);
+                                            }}
+                                            onFocus={(e) => e.currentTarget.select()}
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {/* DERECHA: vista previa de video */}
+                                      <div className="md:w-1/2">
+                                        <VideoPlayer
+                                          url={video.url}
+                                          title={video.title}
+                                          className="w-full object-contain"
                                         />
                                       </div>
-                                      <div className="space-y-1">
-                                        <Label htmlFor={`edit-url-${video.id}`}>URL</Label>
-                                        <Input
-                                          id={`edit-url-${video.id}`}
-                                          defaultValue={video.url}
-                                          onChange={(e) => {
-                                            // Crear una copia temporal del video para edición
-                                            const updatedVideo = {...video};
-                                            updatedVideo.url = e.target.value;
-                                            // Actualizar el estado local
-                                            const updatedVideos = videos.map(vid => 
-                                              vid.id === video.id ? updatedVideo : vid
-                                            );
-                                            setVideos(updatedVideos);
-                                          }}
-                                          onFocus={(e) => e.currentTarget.select()}
-                                        />
-                                      </div>
-                                    </div>
+                                    </CardContent>
 
-                                    {/* DERECHA: vista previa de video */}
-                                    <div className="md:w-1/3">
-                                      <VideoPlayer 
-                                        url={video.url} 
-                                        title={video.title} 
-                                        className="w-full object-contain" 
-                                      />
-                                    </div>
-                                  </CardContent>
+                                    <CardFooter className="flex space-x-2 mt-5">
 
-                                  <CardFooter className="flex justify-between space-x-2">
-                                    <Button variant="outline">
-                                      Cancelar
-                                    </Button>
-                                    <Button 
-                                      className="bg-blue-600 hover:bg-blue-700"
-                                      onClick={() => handleSaveVideoEdits(video)}
-                                    >
-                                      Guardar cambios
-                                    </Button>
-                                  </CardFooter>
-                                </Card>
-                              </TabsContent>
-                            </Tabs>
-                          </DialogContent>
-                        </Dialog>
-                      </Card>
+                                      <Button
+                                        className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                                        onClick={() => handleSaveVideoEdits(video)}
+                                      >
+                                        Guardar cambios
+                                      </Button>
+                                    </CardFooter>
+                                  </Card>
+                                </TabsContent>
+                              </Tabs>
+                            </DialogContent>
+                          </Dialog>
+                        </Card>
+                      </div>
+
                     ))}
                   </div>
                 )}
