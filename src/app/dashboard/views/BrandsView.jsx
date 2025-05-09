@@ -1,34 +1,34 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { 
-  getAllBrands, 
-  createBrand, 
-  updateBrand, 
-  changeBrandStatus 
+import {
+  getAllBrands,
+  createBrand,
+  updateBrand,
+  changeBrandStatus
 } from "@/services/admin/brandService";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
   DialogClose
 } from "@/components/ui/dialog";
-import { 
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -40,6 +40,16 @@ import {
 } from "@/components/ui/sheet";
 import { motion } from "framer-motion";
 import { Edit, Trash2, Plus, Check, X, RefreshCcw } from "lucide-react";
+
+function isLightColor(hexColor) {
+  const hex = hexColor?.replace("#", "") || "ffffff";
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+  return luminance > 186;
+}
+
 
 export function BrandsView() {
   const [brands, setBrands] = useState([]);
@@ -66,7 +76,7 @@ export function BrandsView() {
     if (searchTerm.trim() === "") {
       setFilteredBrands(brands);
     } else {
-      const filtered = brands.filter(brand => 
+      const filtered = brands.filter(brand =>
         brand.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         brand.description?.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -80,12 +90,12 @@ export function BrandsView() {
       setIsLoading(true);
       const response = await getAllBrands();
       console.log("Respuesta de marcas:", response);
-      
+
       // Extraer los datos de la respuesta
-      const brandsData = Array.isArray(response) 
-        ? response 
+      const brandsData = Array.isArray(response)
+        ? response
         : (response.result || []);
-      
+
       setBrands(brandsData);
       setFilteredBrands(brandsData);
     } catch (error) {
@@ -160,7 +170,7 @@ export function BrandsView() {
 
       // Recargar lista de marcas
       await fetchBrands();
-      
+
       // Cerrar diálogo
       closeDialog();
     } catch (error) {
@@ -184,8 +194,11 @@ export function BrandsView() {
 
   // Renderizar tarjeta de marca
   const renderBrandCard = (brand) => {
+    const bg = brand.color || "#f3f4f6";
+    const isLight = isLightColor(bg);
+
     const isActive = brand.status === "ACTIVE";
-    
+
     return (
       <motion.div
         key={brand.id}
@@ -197,9 +210,9 @@ export function BrandsView() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-center h-40 bg-gray-50 rounded-md">
               {brand.logoUrl ? (
-                <img 
-                  src={brand.logoUrl} 
-                  alt={brand.name} 
+                <img
+                  src={brand.logoUrl}
+                  alt={brand.name}
                   className="max-h-36 max-w-full object-contain"
                   onError={(e) => {
                     e.target.src = "/placeholder-logo.png";
@@ -218,22 +231,23 @@ export function BrandsView() {
           </CardContent>
           <div
             className="w-full px-4 py-3 text-white rounded-b-xl"
-            style={{ backgroundColor: brand.color || "#f3f4f6" }}
+            style={{ backgroundColor: bg }}
           >
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="font-semibold truncate">{brand.name}</h3>
-                <p className="text-sm text-white/80">
+                <h3 className={`font-semibold truncate ${isLight ? "text-black/60" : "text-white/80"}`}>{brand.name}</h3>
+                <p className={`text-sm ${isLight ? "text-black/60" : "text-white/80"}`}>
+
                   {isActive ? "Activa" : "Inactiva"}
                 </p>
               </div>
               <div className="flex gap-1">
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 bg-white/20 hover:bg-white/30 text-white"
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`h-8 w-8 bg-white/20 hover:bg-white/30 text-white ${isLight ? "text-black/60 hover:text-white hover:bg-black/30" : "text-white/80"}`}
                       onClick={() => handleEditBrand(brand)}
                     >
                       <Edit className="h-4 w-4" />
@@ -283,7 +297,7 @@ export function BrandsView() {
                             value={formData.color}
                             onChange={handleInputChange}
                           />
-                          <div 
+                          <div
                             className="w-10 h-10 rounded border"
                             style={{ backgroundColor: formData.color }}
                           />
@@ -310,7 +324,7 @@ export function BrandsView() {
                         </Button>
                       </DialogClose>
                       <DialogClose asChild>
-                        <Button type="submit" onClick={(e) => handleSaveBrand(() => {})}>
+                        <Button type="submit" onClick={(e) => handleSaveBrand(() => { })}>
                           Guardar cambios
                         </Button>
                       </DialogClose>
@@ -320,10 +334,10 @@ export function BrandsView() {
 
                 <Sheet>
                   <SheetTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 bg-white/20 hover:bg-white/30 text-white"
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`h-8 w-8 bg-white/20 hover:bg-white/30 text-white ${isLight ? "text-black/60 hover:text-white hover:bg-black/30" : "text-white/80"}`}
                     >
                       {isActive ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                     </Button>
@@ -334,7 +348,7 @@ export function BrandsView() {
                         {isActive ? "¿Desactivar marca?" : "¿Activar marca?"}
                       </SheetTitle>
                       <SheetDescription>
-                        {isActive 
+                        {isActive
                           ? "Esta acción desactivará la marca. Los productos asociados seguirán existiendo pero la marca no aparecerá en listados públicos."
                           : "Esta acción activará la marca y estará visible en listados públicos."}
                       </SheetDescription>
@@ -345,7 +359,7 @@ export function BrandsView() {
                           <Button variant="outline">Cancelar</Button>
                         </SheetClose>
                         <SheetClose asChild>
-                          <Button 
+                          <Button
                             onClick={() => handleChangeStatus(brand.id, brand.status)}
                           >
                             {isActive ? "Desactivar" : "Activar"}
@@ -377,8 +391,8 @@ export function BrandsView() {
               className="w-full"
             />
           </div>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="icon"
             onClick={fetchBrands}
             title="Recargar marcas"
@@ -386,10 +400,10 @@ export function BrandsView() {
             <RefreshCcw className="h-4 w-4" />
           </Button>
         </div>
-        
+
         <Dialog>
           <DialogTrigger asChild>
-            <Button 
+            <Button
               className="w-full md:w-auto bg-blue-600 text-white hover:bg-blue-700 hover:border-blue-600 text-sm font-semibold px-4 py-2 rounded-lg transition cursor-pointer"
               onClick={handleNewBrand}
             >
@@ -402,7 +416,7 @@ export function BrandsView() {
                 {isEditing ? "Editar Marca" : "Nueva Marca"}
               </DialogTitle>
               <DialogDescription>
-                {isEditing 
+                {isEditing
                   ? "Actualiza los detalles de la marca. Haz clic en guardar cuando termines."
                   : "Completa el formulario para crear una nueva marca."}
               </DialogDescription>
@@ -444,7 +458,7 @@ export function BrandsView() {
                     value={formData.color}
                     onChange={handleInputChange}
                   />
-                  <div 
+                  <div
                     className="w-10 h-10 rounded border"
                     style={{ backgroundColor: formData.color }}
                   />
@@ -471,7 +485,7 @@ export function BrandsView() {
                 </Button>
               </DialogClose>
               <DialogClose asChild>
-                <Button type="submit" onClick={(e) => handleSaveBrand(() => {})}>
+                <Button type="submit" onClick={(e) => handleSaveBrand(() => { })}>
                   {isEditing ? "Guardar cambios" : "Crear marca"}
                 </Button>
               </DialogClose>
@@ -488,8 +502,8 @@ export function BrandsView() {
       ) : filteredBrands.length === 0 ? (
         <div className="text-center py-10">
           <p className="text-gray-500 mb-4">No se encontraron marcas</p>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => setSearchTerm("")}
             className="mx-auto"
           >

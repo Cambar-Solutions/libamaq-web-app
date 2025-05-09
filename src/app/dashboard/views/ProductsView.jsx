@@ -8,6 +8,16 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
+function isLightColor(hexColor) {
+  const hex = hexColor.replace("#", "");
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+  return luminance > 186;
+}
+
+
 const CardComponent = ({ product, onClick }) => {
   const getImageUrl = () => {
     if (product.multimedia && product.multimedia.length > 0) {
@@ -17,6 +27,8 @@ const CardComponent = ({ product, onClick }) => {
   };
 
   const bg = product.color || "#e5e7eb";
+  const isLight = isLightColor(bg);
+  const textColor = isLight ? "text-black" : "text-white";
 
   return (
     <Card
@@ -47,9 +59,9 @@ const CardComponent = ({ product, onClick }) => {
         className="rounded-b-xl w-full px-6 py-3 text-white"
         style={{ backgroundColor: bg }}
       >
-        <CardTitle className="truncate whitespace-nowrap overflow-hidden text-sm md:text-base" title={product.name}>{product.name}</CardTitle>
+        <CardTitle className={`truncate whitespace-nowrap overflow-hidden text-sm md:text-base ${textColor}`} title={product.name}>{product.name}</CardTitle>
         <CardDescription>
-          <div className="flex flex-col text-white">
+          <div className={`flex flex-col ${textColor}`}>
             <span>ID: {product.externalId}</span>
             <span>Marca: {product.brand?.name || "Sin marca"}</span>
           </div>
@@ -98,38 +110,38 @@ export function ProductsView() {
       console.log('Obteniendo productos y marcas...');
       const productsResponse = await getProductPreviews();
       const brandsResponse = await getAllBrands();
-      
+
       console.log('Respuesta de productos:', productsResponse);
       console.log('Respuesta de marcas:', brandsResponse);
-      
+
       // Verificar que las respuestas sean válidas
       if (!productsResponse || !brandsResponse) {
         throw new Error('Respuestas inválidas de la API');
       }
-      
+
       // Extraer los datos de las respuestas
-      const productsData = Array.isArray(productsResponse) 
-        ? productsResponse 
+      const productsData = Array.isArray(productsResponse)
+        ? productsResponse
         : (productsResponse.result || []);
-        
-      const brandsData = Array.isArray(brandsResponse) 
-        ? brandsResponse 
+
+      const brandsData = Array.isArray(brandsResponse)
+        ? brandsResponse
         : (brandsResponse.result || []);
-      
+
       console.log('Datos de productos procesados:', productsData);
       console.log('Datos de marcas procesados:', brandsData);
-      
+
       // Establecer marcas
       setBrands(brandsData);
-      
+
       // Combinar productos con sus marcas correspondientes
       const withBrand = productsData.map((prod) => ({
         ...prod,
         brand: brandsData.find((b) => b.id === prod.brandId || b.id === prod.brand_id),
       }));
-      
+
       console.log('Productos con marcas:', withBrand);
-      
+
       // Actualizar estado
       setProducts(withBrand);
       setFilteredProducts(withBrand);
@@ -149,10 +161,10 @@ export function ProductsView() {
     try {
       const response = await getAllBrands();
       console.log('Respuesta de fetchBrands:', response);
-      
+
       const data = Array.isArray(response) ? response : (response.result || []);
       console.log('Datos de marcas procesados en fetchBrands:', data);
-      
+
       setBrands(data);
     } catch (err) {
       toast.error("Error al cargar las marcas: " + (err.message || 'Error desconocido'));
@@ -217,7 +229,7 @@ export function ProductsView() {
         </div>
         {/* Botón de agregar producto */}
         <div className="w-full md:w-auto">
-        <button
+          <button
             onClick={() => navigate("/nuevo-producto")}
             className="w-full md:w-auto bg-blue-600 text-white hover:bg-blue-700 hover:border-blue-600 text-sm font-semibold px-4 py-2 rounded-lg transition cursor-pointer"
           >
