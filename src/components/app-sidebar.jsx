@@ -6,12 +6,10 @@ import {
   Briefcase,     // Empleados (Portafolio)
   BarChart3,     // Estadísticas (Gráfico de barras)
   Film,          // Contenido (Película)
-  Tag            // Marcas (Etiqueta)
+  Tag,           // Marcas (Etiqueta)
+  Layers         // Categorías (Capas)
 } from "lucide-react"
 
-import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
-import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -39,6 +37,11 @@ const data = {
       name: "Marcas",
       id: "marcas",
       icon: Tag,
+    },
+    {
+      name: "Categorías",
+      id: "categorias",
+      icon: Layers,
     },
     {
       name: "Pedidos",
