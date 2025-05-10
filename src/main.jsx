@@ -6,6 +6,7 @@ import App from './App.jsx';
 import Dashboard from './app/dashboard/page.jsx'; 
 import Login from './app/normal/Login';
 import DetalleHerramienta from './app/e-commerce/DetalleHerramienta'; 
+import DetalleProducto from './app/e-commerce/DetalleProducto';
 import BrandPage from './components/brand-page';
 import ProductList from './app/e-commerce/Ecomerce';
 import CategoryPage from './app/e-commerce/CategoryPage';
@@ -26,6 +27,7 @@ createRoot(document.getElementById('root')).render(
         {/* E-COMMERCE */}
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/detalle/:nombre" element={<DetalleHerramienta />} />
+        <Route path="/producto/:id" element={<DetalleProducto />} />
         <Route path="/marcas/:brandName" element={<BrandPage />} />
         <Route path="/tienda" element={<ProductList />} />
         

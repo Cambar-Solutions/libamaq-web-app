@@ -332,56 +332,56 @@ export function CategoriesView() {
         transition={{ duration: 0.3 }}
         className="w-full"
       >
-        <Card className="w-full h-full mb-4">
-          <CardHeader className="pb-2">
+        <Card className="w-full h-full mb-2 sm:mb-4 overflow-hidden">
+          <CardHeader className="pb-1 pt-3">
             <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-lg font-bold">{category.name}</CardTitle>
-                <CardDescription className="text-sm text-gray-500">
+              <div className="max-w-[75%]">
+                <CardTitle className="text-base sm:text-lg font-bold truncate">{category.name}</CardTitle>
+                <CardDescription className="text-xs sm:text-sm text-gray-500 truncate">
                   Marca: {brandName} 
                 </CardDescription>
-                <div className="text-xs text-gray-400 mt-1">
-                  ID Categoría: {category.id} | BrandID: {category.brandId || 'No asignado'}
+                <div className="text-[10px] sm:text-xs text-gray-400 mt-1 truncate">
+                  ID: {category.id}
                 </div>
               </div>
-              <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                category.status === "ACTIVE" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+              <div className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${
+                category.status === "ACTIVE" ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"
               }`}>
                 {category.status === "ACTIVE" ? "Activo" : "Inactivo"}
               </div>
             </div>
           </CardHeader>
-          <CardContent className="pb-2">
-            <p className="text-sm text-gray-600 line-clamp-2">{category.description || "Sin descripción"}</p>
+          <CardContent className="pb-1 pt-1">
+            <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{category.description || "Sin descripción"}</p>
           </CardContent>
-          <CardFooter className="flex justify-end gap-2 pt-2">
+          <CardFooter className="flex justify-end gap-1 sm:gap-2 pt-1 pb-2">
             <Button
               variant="outline"
               size="sm"
-              className="h-8 px-2"
+              className="h-7 sm:h-8 px-1.5 sm:px-2 text-[10px] sm:text-xs"
               onClick={() => {
                 handleEditCategory(category);
                 document.getElementById('edit-category-dialog-trigger').click();
               }}
             >
-              <Edit className="h-3.5 w-3.5 mr-1" />
-              <span className="text-xs">Editar</span>
+              <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5 sm:mr-1" />
+              <span>Editar</span>
             </Button>
             <Button
               variant={category.status === "ACTIVE" ? "destructive" : "outline"}
               size="sm"
-              className="h-8 px-2"
+              className="h-7 sm:h-8 px-1.5 sm:px-2 text-[10px] sm:text-xs"
               onClick={() => handleToggleStatus(category.id, category.status)}
             >
               {category.status === "ACTIVE" ? (
                 <>
-                  <X className="h-3.5 w-3.5 mr-1" />
-                  <span className="text-xs">Desactivar</span>
+                  <X className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5 sm:mr-1" />
+                  <span>Desactivar</span>
                 </>
               ) : (
                 <>
-                  <Check className="h-3.5 w-3.5 mr-1" />
-                  <span className="text-xs">Activar</span>
+                  <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5 sm:mr-1" />
+                  <span>Activar</span>
                 </>
               )}
             </Button>
@@ -395,56 +395,60 @@ export function CategoriesView() {
     <div className="container mx-auto py-6">
       <h1 className="text-2xl font-bold mb-6">Gestión de Categorías</h1>
       
-      <div className="flex flex-col md:flex-row gap-4 mb-6 items-start md:items-center">
-        <Input
-          type="text"
-          placeholder="Buscar categorías..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full md:w-[300px]"
-        />
-        <Select 
-          value={selectedBrandFilter} 
-          onValueChange={setSelectedBrandFilter}
-        >
-          <SelectTrigger className="w-full md:w-[200px]">
-            <SelectValue placeholder="Filtrar por marca" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all-brands">Todas las marcas</SelectItem>
-            {brands
-              .filter(brand => brand && brand.id)
-              .map(brand => (
-                <SelectItem 
-                  key={brand.id} 
-                  value={brand.id.toString() || "default-id"}
-                >
-                  {brand.name || "Marca sin nombre"}
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={fetchDataFromAPI}
-          title="Recargar categorías"
-        >
-          <RefreshCcw className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* Dialog para crear nueva categoría */}
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button
-            className="w-full md:w-auto bg-blue-600 text-white hover:bg-blue-700 hover:border-blue-600 text-sm font-semibold px-4 py-2 rounded-lg transition cursor-pointer mb-6"
-            onClick={handleNewCategory}
+      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6 items-start sm:items-center">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <div className="relative w-full sm:w-[200px] md:w-[250px]">
+            <Input
+              type="text"
+              placeholder="Buscar categorías..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full text-sm"
+            />
+          </div>
+          <Select 
+            value={selectedBrandFilter} 
+            onValueChange={setSelectedBrandFilter}
           >
-            <Plus className="mr-2 h-4 w-4" /> Nueva Categoría
+            <SelectTrigger className="w-full sm:w-[150px] md:w-[180px] text-sm">
+              <SelectValue placeholder="Filtrar por marca" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all-brands">Todas las marcas</SelectItem>
+              {brands
+                .filter(brand => brand && brand.id)
+                .map(brand => (
+                  <SelectItem 
+                    key={brand.id} 
+                    value={brand.id.toString() || "default-id"}
+                  >
+                    {brand.name || "Marca sin nombre"}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={fetchDataFromAPI}
+            title="Recargar categorías"
+            className="h-9 w-9 sm:h-10 sm:w-10"
+          >
+            <RefreshCcw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
+        </div>
+        
+        {/* Botón de nueva categoría */}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button
+              className="w-full sm:w-auto bg-blue-600 text-white hover:bg-blue-700 hover:border-blue-600 text-xs sm:text-sm font-semibold px-3 py-2 rounded-lg transition cursor-pointer"
+              onClick={handleNewCategory}
+            >
+              <Plus className="mr-1 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" /> Nueva Categoría
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="w-[95%] sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Nueva Categoría
@@ -534,7 +538,7 @@ export function CategoriesView() {
         <DialogTrigger asChild>
           <button id="edit-category-dialog-trigger" className="hidden">Editar Categoría</button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="w-[95%] sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Editar Categoría
@@ -618,6 +622,7 @@ export function CategoriesView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
 
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
@@ -634,7 +639,7 @@ export function CategoriesView() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredCategories.map(renderCategoryCard)}
         </div>
       )}

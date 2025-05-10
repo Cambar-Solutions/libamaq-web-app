@@ -370,7 +370,7 @@ export default function CategoryPage() {
                                   )}%`
                                 }}
                               >
-                                <Link href={`/detalle/${item.id}`} className="block h-full">
+                                <Link to={`/producto/${item.id}`} className="block h-full">
                                   <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col h-full hover:-translate-y-1 duration-200 cursor-pointer">
                                     <div className="h-52 bg-gray-100 flex items-center justify-center p-4 relative">
                                       <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">TOP</div>
@@ -487,7 +487,7 @@ export default function CategoryPage() {
               {filteredProducts.length > 0 ? (
                 <div className="cursor-pointer grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-8 mb-8">
                   {filteredProducts.map((item, index) => (
-                    <Link href={`/detalle/${item.id}`} key={index} className="w-full">
+                    <Link to={`/producto/${item.id}`} key={index} className="w-full">
                       <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
