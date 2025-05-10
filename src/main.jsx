@@ -7,6 +7,7 @@ import Dashboard from './app/dashboard/page.jsx';
 import Login from './app/normal/Login';
 import DetalleHerramienta from './app/e-commerce/DetalleHerramienta'; 
 import DetalleProducto from './app/e-commerce/DetalleProducto';
+import RentPage from './app/e-commerce/RentPage';
 import BrandPage from './components/brand-page';
 import ProductList from './app/e-commerce/Ecomerce';
 import CategoryPage from './app/e-commerce/CategoryPage';
@@ -28,6 +29,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/detalle/:nombre" element={<DetalleHerramienta />} />
         <Route path="/producto/:id" element={<DetalleProducto />} />
+        <Route path="/e-commerce/rentar/:id" element={<RentPage />} />
         <Route path="/marcas/:brandName" element={<BrandPage />} />
         <Route path="/tienda" element={<ProductList />} />
         

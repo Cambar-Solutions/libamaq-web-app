@@ -3,13 +3,14 @@ import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { ShoppingCart, CreditCard, Clock } from "lucide-react";
 
 const DetalleProducto = () => {
   const navigate = useNavigate();
 
   // Función para regresar a la página de categorías
   const handleBack = () => {
-    navigate("/e-commerce", { replace: true });
+    navigate("/tienda", { replace: true });
   };
 
   // Al montar el componente, hacer scroll al inicio de la página
@@ -345,6 +346,8 @@ const DetalleProducto = () => {
   const producto = productos[0];
   const [mainImage, setMainImage] = useState(producto.multimedia[0]);
   
+
+  
   // No need for the not found check since we're always showing the first product
 
   return (
@@ -388,12 +391,22 @@ const DetalleProducto = () => {
           <p className="text-gray-600 text-md sm:text-lg font-semibold">{producto.description}</p>
           <p className="text-2xl font-bold text-blue-700 mt-4">${producto.price.toLocaleString()}</p>
           
-          <div className="mt-6 space-y-4">
-            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md">
+          {/* Botones solo para móvil */}
+          <div className="mt-6 space-y-4 lg:hidden">
+            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md flex items-center justify-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
               Agregar al carrito
             </Button>
-            <Button className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-md">
+            <Button className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-md flex items-center justify-center gap-2">
+              <CreditCard className="h-5 w-5" />
               Comprar ahora
+            </Button>
+            <Button 
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-md flex items-center justify-center gap-2"
+              onClick={() => navigate(`/e-commerce/rentar/${producto.id || '1'}`, { state: { product: producto } })}
+            >
+              <Clock className="h-5 w-5" />
+              Rentar
             </Button>
           </div>
   
@@ -423,10 +436,31 @@ const DetalleProducto = () => {
                   </div>
                 ))}
               </div>
+              
+              {/* Botones horizontales para desktop, debajo de las ventajas */}
+              <div className="hidden lg:flex mt-6 gap-4 w-full">
+                <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md flex items-center justify-center gap-2">
+                  <ShoppingCart className="h-5 w-5" />
+                  Agregar al carrito
+                </Button>
+                <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-md flex items-center justify-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Comprar ahora
+                </Button>
+                <Button 
+                  className="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-md flex items-center justify-center gap-2"
+                  onClick={() => navigate(`/e-commerce/rentar/${producto.id || '1'}`, { state: { product: producto } })}
+                >
+                  <Clock className="h-5 w-5" />
+                  Rentar
+                </Button>
+              </div>
             </>
           )}
         </div>
       </div>
+  
+
   
       {/* Información Adicional */}
       <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
