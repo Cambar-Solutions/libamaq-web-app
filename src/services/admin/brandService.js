@@ -1,11 +1,11 @@
 import apiClient from "../apiClient";
 
-// Obtener todas las marcas
+// Obtener todas las marcas con sus categorías
 export const getAllBrands = async () => {
   try {
-    console.log('Obteniendo todas las marcas...');
-    const { data } = await apiClient.get("/admin/brand/all");
-    console.log('Respuesta de marcas:', data);
+    console.log('Obteniendo todas las marcas con categorías...');
+    const { data } = await apiClient.get("/admin/brand/all/with-categories");
+    console.log('Respuesta de marcas con categorías:', data);
     return data; // Devolver el objeto completo con type y result
   } catch (error) {
     console.error('Error al obtener marcas:', error);

@@ -23,8 +23,15 @@ export const getAllCategories = async () => {
  */
 export const createCategory = async (categoryData) => {
   try {
-    console.log('Creando nueva categoría:', categoryData);
-    const { data } = await apiClient.post("/admin/category/create", categoryData);
+    // Asegurar que solo enviamos los campos requeridos por el backend
+    const payload = {
+      name: categoryData.name || "",
+      url: categoryData.url || "",
+      description: categoryData.description || ""
+    };
+    
+    console.log('Creando nueva categoría:', payload);
+    const { data } = await apiClient.post("/admin/category/create", payload);
     console.log('Respuesta de creación de categoría:', data);
     return data;
   } catch (error) {

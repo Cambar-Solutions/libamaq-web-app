@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay } from 'swiper';
 import "swiper/css";
@@ -6,7 +6,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "swiper/css/autoplay";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { getAllBrands } from "@/services/admin/brandService";
 
 
 
@@ -106,14 +106,35 @@ const brandDetails = {
 export default function Dashbrand() {
   const navigate = useNavigate();
   const [selectedBrand, setSelectedBrand] = useState(null);
+  const [brands, setBrands] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const goToCategoryPage = (brandKey, productName) => {
-    const formattedBrand = brandDetails[brandKey].name;
-    const formattedCategory = productName;
-    navigate(`/productos/${formattedBrand}/${formattedCategory}`);
+    const brand = brands.find(b => b.id === brandKey);
+    if (brand) {
+      const formattedBrand = brand.name;
+      const formattedCategory = productName;
+      navigate(`/productos/${formattedBrand}/${formattedCategory}`);
+    }
   };
 
+  // Cargar marcas desde el backend
   useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        setLoading(true);
+        const response = await getAllBrands();
+        const brandsData = response?.result || [];
+        console.log('Marcas cargadas:', brandsData);
+        setBrands(brandsData);
+      } catch (error) {
+        console.error('Error al cargar marcas:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBrands();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
@@ -138,45 +159,66 @@ export default function Dashbrand() {
     <div className="w-full min-h-screen flex flex-col items-center py-4 px-4">
       {/* Swiper de marcas */}
       <div className="w-full max-w-[90%] sm:max-w-6xl mx-auto p-4">
-        <Swiper
-          modules={[Navigation, Pagination, Autoplay]}
-          spaceBetween={20}
-          slidesPerView={2}
-          breakpoints={{
-            640: { slidesPerView: 3 },
-            768: { slidesPerView: 4 },
-            1024: { slidesPerView: 5 },
-          }}
-          navigation
-          pagination={{ clickable: true }}
-          autoplay={{ delay: 3000, disableOnInteraction: false }}
-          className="rounded-lg"
-        >
-          {brandLogos.map((logo, index) => (
-            <SwiperSlide
-              key={index}
-              onClick={() => setSelectedBrand(logo.key)}
-              className="flex justify-center items-center h-44 p-3  bg-white rounded-xl  hover:bg-gray-100 transition-transform duration-300 cursor-pointer"
-            >
-              <img
-                src={logo.src}
-                alt={`Marca ${logo.key}`}
-                className="h-24 object-contain transition-transform duration-300 hover:scale-105"
-              />
-            </SwiperSlide>
-          ))}
-        </Swiper>
+        {loading ? (
+          <div className="flex justify-center items-center h-44">
+            <p>Cargando marcas...</p>
+          </div>
+        ) : (
+          <Swiper
+            modules={[Navigation, Pagination, Autoplay]}
+            spaceBetween={20}
+            slidesPerView={2}
+            breakpoints={{
+              640: { slidesPerView: 3 },
+              768: { slidesPerView: 4 },
+              1024: { slidesPerView: 5 },
+            }}
+            navigation
+            pagination={{ clickable: true }}
+            autoplay={{ delay: 3000, disableOnInteraction: false }}
+            className="rounded-lg"
+          >
+            {brands.map((brand) => (
+              <SwiperSlide
+                key={brand.id}
+                onClick={() => setSelectedBrand(brand.id)}
+                className="flex justify-center items-center h-44 p-3 bg-white rounded-xl hover:bg-gray-100 transition-transform duration-300 cursor-pointer"
+                style={{ borderTop: `4px solid ${brand.color || '#000000'}` }}
+              >
+                {brand.url ? (
+                  <img
+                    src={brand.url}
+                    alt={`Marca ${brand.name}`}
+                    className="h-24 object-contain transition-transform duration-300 hover:scale-105"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "/placeholder-logo.png";
+                    }}
+                  />
+                ) : (
+                  <div 
+                    className="h-24 w-full flex items-center justify-center text-xl font-bold transition-transform duration-300 hover:scale-105"
+                    style={{ color: brand.color || '#000000' }}
+                  >
+                    {brand.name}
+                  </div>
+                )}
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        )}
       </div>
 
       {/* Bento Grid de categorías */}
-      {selectedBrand && brandDetails[selectedBrand] && (
-        <div className="w-full max-w-6xl bg-white rounded-xl  p-6 mt-4">
+      {selectedBrand && (
+        <div className="w-full max-w-6xl bg-white rounded-xl p-6 mt-4">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Categorías: {brandDetails[selectedBrand].name}
+            Categorías: {brands.find(b => b.id === selectedBrand)?.name || 'Marca'}
           </h2>
           
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 auto-rows-[120px]">
-          {brandDetails[selectedBrand].products.map((product, index) => {
+          {/* Usar los datos de brandDetails para mantener la estructura actual */}
+          {brandDetails[brands.find(b => b.id === selectedBrand)?.name?.toLowerCase() || 'bosch']?.products.map((product, index) => {
   const size = getBentoSize(index, brandDetails[selectedBrand].products.length);
 
   // Clases CSS según el tamaño

@@ -38,11 +38,7 @@ const data = {
       id: "marcas",
       icon: Tag,
     },
-    {
-      name: "Categorías",
-      id: "categorias",
-      icon: Layers,
-    },
+    // Se eliminó la opción de Categorías ya que ahora se gestionan desde Marcas
     {
       name: "Pedidos",
       id: "pedidos",

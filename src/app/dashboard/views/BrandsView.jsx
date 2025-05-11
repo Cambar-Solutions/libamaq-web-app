@@ -6,6 +6,7 @@ import {
   updateBrand,
   changeBrandStatus
 } from "@/services/admin/brandService";
+import { getAllCategories, createCategory } from "@/services/admin/categoryService";
 import {
   Card,
   CardContent,
@@ -60,11 +61,19 @@ export function BrandsView() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
-    logoUrl: "",
+    url: "",
     color: "#000000",
     description: "",
-    status: "ACTIVE"
+    status: "ACTIVE",
+    categories: [] // IDs de categorías seleccionadas
   });
+  const [categories, setCategories] = useState([]);
+  const [categoryForm, setCategoryForm] = useState({
+    name: "",
+    url: "",
+    description: ""
+  });
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
   // Cargar marcas al iniciar
   useEffect(() => {
@@ -96,8 +105,19 @@ export function BrandsView() {
         ? response
         : (response.result || []);
 
-      setBrands(brandsData);
-      setFilteredBrands(brandsData);
+      // Asegurarse de que cada marca tenga los campos necesarios
+      const processedBrands = brandsData.map(brand => ({
+        id: brand.id,
+        name: brand.name,
+        description: brand.description || "",
+        url: brand.url || "",
+        color: brand.color || "#000000",
+        status: brand.status || "ACTIVE",
+        categories: brand.categories || []
+      }));
+
+      setBrands(processedBrands);
+      setFilteredBrands(processedBrands);
     } catch (error) {
       console.error("Error al obtener marcas:", error);
       toast.error("Error al cargar las marcas");
@@ -119,13 +139,15 @@ export function BrandsView() {
   const handleNewBrand = () => {
     setFormData({
       name: "",
-      logoUrl: "",
+      url: "",
       color: "#000000",
       description: "",
-      status: "ACTIVE"
+      status: "ACTIVE",
+      categories: []
     });
     setIsEditing(false);
     setCurrentBrand(null);
+    fetchCategories();
   };
 
   // Preparar formulario para editar marca existente
@@ -133,20 +155,22 @@ export function BrandsView() {
     setFormData({
       id: brand.id,
       name: brand.name || "",
-      logoUrl: brand.logoUrl || "",
+      url: brand.url || "",
       color: brand.color || "#000000",
       description: brand.description || "",
-      status: brand.status || "ACTIVE"
+      status: brand.status || "ACTIVE",
+      categories: (brand.categories || []).map(cat => cat.id)
     });
     setIsEditing(true);
     setCurrentBrand(brand);
+    fetchCategories();
   };
 
   // Guardar marca (crear o actualizar)
   const handleSaveBrand = async (closeDialog) => {
     try {
       // Validar campos requeridos
-      if (!formData.name || !formData.logoUrl) {
+      if (!formData.name || !formData.url) {
         toast.error("Nombre y URL del logo son obligatorios");
         return;
       }
@@ -158,13 +182,51 @@ export function BrandsView() {
         return;
       }
 
+      // 1. Separar ids de categorías existentes y objetos de categorías nuevas
+      const selectedCategories = formData.categories;
+      const existingCategoryIds = categories.filter(cat => selectedCategories.includes(cat.id)).map(cat => cat.id);
+      const newCategories = selectedCategories.filter(catIdOrObj => {
+        // Si es un objeto o no existe en categories, es nueva
+        return !categories.some(cat => cat.id === catIdOrObj);
+      });
+
+      // 2. Crear las categorías nuevas y obtener sus IDs
+      let newCategoryIds = [];
+      for (const cat of newCategories) {
+        // cat puede ser un id (si ya existe) o un objeto (si es nueva)
+        if (typeof cat === 'object' && cat.name) {
+          try {
+            // Solo enviar name, url y description para la categoría
+            const { name, url, description } = cat;
+            const data = await createCategory({ name, url, description });
+            if (data && data.result && data.result.id) {
+              newCategoryIds.push(data.result.id);
+              setCategories(prev => [...prev, data.result]);
+            }
+          } catch (e) {
+            toast.error('Error al crear categoría: ' + (cat.name || '')); 
+            return;
+          }
+        } else if (typeof cat === 'string' || typeof cat === 'number') {
+          // Si por alguna razón llegó un id, lo agregamos
+          newCategoryIds.push(cat);
+        }
+      }
+
+      // 3. Preparar payload final solo con IDs
+      const allCategoryIds = [...existingCategoryIds, ...newCategoryIds];
+      const payload = {
+        ...formData,
+        categories: allCategoryIds.map(id => ({ id }))
+      };
+
       if (isEditing) {
         // Actualizar marca existente
-        await updateBrand(formData);
+        await updateBrand(payload);
         toast.success("Marca actualizada correctamente");
       } else {
         // Crear nueva marca
-        await createBrand(formData);
+        await createBrand(payload);
         toast.success("Marca creada correctamente");
       }
 
@@ -176,6 +238,19 @@ export function BrandsView() {
     } catch (error) {
       console.error("Error al guardar marca:", error);
       toast.error(`Error al ${isEditing ? 'actualizar' : 'crear'} la marca: ${error.message || 'Error desconocido'}`);
+    }
+  };
+
+  // Obtener todas las categorías
+  const fetchCategories = async () => {
+    try {
+      const response = await getAllCategories();
+      const cats = Array.isArray(response)
+        ? response
+        : (response.result || []);
+      setCategories(cats);
+    } catch (error) {
+      toast.error("Error al cargar categorías");
     }
   };
 
@@ -209,9 +284,9 @@ export function BrandsView() {
         <Card className={`overflow-hidden ${!isActive ? 'opacity-60' : ''}`}>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-center h-40 bg-gray-50 rounded-md">
-              {brand.logoUrl ? (
+              {brand.url ? (
                 <img
-                  src={brand.logoUrl}
+                  src={brand.url}
                   alt={brand.name}
                   className="max-h-36 max-w-full object-contain"
                   onError={(e) => {
@@ -274,13 +349,13 @@ export function BrandsView() {
                         />
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="logoUrl" className="text-right">
+                        <Label htmlFor="url" className="text-right">
                           URL del Logo
                         </Label>
                         <Input
-                          id="logoUrl"
-                          name="logoUrl"
-                          value={formData.logoUrl}
+                          id="url"
+                          name="url"
+                          value={formData.url}
                           onChange={handleInputChange}
                           className="col-span-3"
                         />
@@ -410,83 +485,263 @@ export function BrandsView() {
               + Nueva marca
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>
+          <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="pb-4 border-b">
+              <DialogTitle className="text-xl font-bold text-blue-800">
                 {isEditing ? "Editar Marca" : "Nueva Marca"}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-gray-600 mt-1">
                 {isEditing
                   ? "Actualiza los detalles de la marca. Haz clic en guardar cuando termines."
                   : "Completa el formulario para crear una nueva marca."}
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Nombre
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="logoUrl" className="text-right">
-                  URL del Logo
-                </Label>
-                <Input
-                  id="logoUrl"
-                  name="logoUrl"
-                  value={formData.logoUrl}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="color" className="text-right">
-                  Color
-                </Label>
-                <div className="col-span-3 flex gap-2">
-                  <Input
-                    id="color"
-                    name="color"
-                    type="text"
-                    value={formData.color}
-                    onChange={handleInputChange}
-                  />
-                  <div
-                    className="w-10 h-10 rounded border"
-                    style={{ backgroundColor: formData.color }}
-                  />
+            <div className="flex flex-col gap-6 py-6">
+              <div className="space-y-5">
+                <h3 className="text-lg font-medium">Información básica</h3>
+                
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="name" className="font-medium">
+                      Nombre de la marca *
+                    </Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      placeholder="Ej: Makita, Bosch, DeWalt"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="url" className="font-medium">
+                      URL del Logo *
+                    </Label>
+                    <Input
+                      id="url"
+                      name="url"
+                      placeholder="https://ejemplo.com/logo.png"
+                      value={formData.url}
+                      onChange={handleInputChange}
+                    />
+                    {formData.url && (
+                      <div className="mt-2 p-2 border rounded flex justify-center bg-gray-50">
+                        <img 
+                          src={formData.url} 
+                          alt="Vista previa" 
+                          className="max-h-20 object-contain" 
+                          onError={(e) => {
+                            e.target.src = "/placeholder-logo.png";
+                            e.target.onerror = null;
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="color" className="font-medium">
+                      Color de la marca
+                    </Label>
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-4">
+                        <div className="relative">
+                          <Input
+                            id="color"
+                            name="color"
+                            type="color"
+                            value={formData.color}
+                            onChange={handleInputChange}
+                            className="w-14 h-14 p-1 cursor-pointer overflow-hidden rounded-md opacity-0 absolute inset-0 z-10"
+                          />
+                          <div 
+                            className="w-14 h-14 rounded-md border border-gray-300 shadow-sm flex items-center justify-center overflow-hidden"
+                            style={{ backgroundColor: formData.color }}
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-black/10" />
+                          </div>
+                        </div>
+                        
+                        <div className="flex-1 space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">Color seleccionado:</span>
+                            <span className="text-sm font-mono bg-gray-100 px-2 py-0.5 rounded">{formData.color}</span>
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            {['#01758D', '#1C398E', '#f7e25f', '#184cd5', '#c51f2c', '#a3c0d5', '#16ae42'].map(color => (
+                              <button
+                                key={color}
+                                type="button"
+                                className={`w-6 h-6 rounded-full border transition-transform ${formData.color === color ? 'scale-125 shadow-md border-white' : 'hover:scale-110'}`}
+                                style={{ backgroundColor: color }}
+                                onClick={() => setFormData({...formData, color})}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="description" className="font-medium">
+                      Descripción
+                    </Label>
+                    <Textarea
+                      id="description"
+                      name="description"
+                      placeholder="Describe brevemente esta marca..."
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      rows={3}
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="description" className="text-right">
-                  Descripción
-                </Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  rows={3}
-                />
+
+              {/* Sección de categorías */}
+              <div className="col-span-4 mt-6 border-t pt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium">Categorías para esta marca</h3>
+                  <Button 
+                    size="sm" 
+                    variant={isCreatingCategory ? "destructive" : "default"} 
+                    onClick={() => setIsCreatingCategory(v => !v)}
+                    className="gap-1"
+                  >
+                    {isCreatingCategory ? (
+                      <>
+                        <X className="h-4 w-4" /> Cancelar
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4" /> Nueva Categoría
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
+                {/* Crear nueva categoría */}
+                {isCreatingCategory && (
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 mb-4 shadow-sm">
+                    <h4 className="font-medium text-blue-800 mb-3">Nueva categoría</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <Label htmlFor="cat-name" className="mb-1 block text-sm">Nombre *</Label>
+                        <Input
+                          id="cat-name"
+                          name="name"
+                          placeholder="Ej: Herramientas Eléctricas"
+                          value={categoryForm.name}
+                          onChange={e => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="cat-url" className="mb-1 block text-sm">URL de imagen</Label>
+                        <Input
+                          id="cat-url"
+                          name="url"
+                          placeholder="https://ejemplo.com/imagen.jpg"
+                          value={categoryForm.url}
+                          onChange={e => setCategoryForm({ ...categoryForm, url: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="cat-description" className="mb-1 block text-sm">Descripción</Label>
+                        <Input
+                          id="cat-description"
+                          name="description"
+                          placeholder="Breve descripción..."
+                          value={categoryForm.description}
+                          onChange={e => setCategoryForm({ ...categoryForm, description: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end mt-3">
+                      <Button
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            if (!categoryForm.name) return toast.error('El nombre de la categoría es obligatorio');
+                            // Solo enviar name, url y description para la categoría
+                            const { name, url, description } = categoryForm;
+                            const data = await createCategory({ name, url, description });
+                            if (data && data.result && data.result.id) {
+                              setCategories(prev => [...prev, data.result]);
+                              setFormData(f => ({ ...f, categories: [...f.categories, data.result.id] }));
+                              setCategoryForm({ name: '', url: '', description: '' });
+                              setIsCreatingCategory(false);
+                              toast.success('Categoría creada correctamente');
+                            }
+                          } catch (e) {
+                            toast.error('Error al crear la categoría');
+                          }
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-1" /> Crear categoría
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Lista de categorías seleccionables */}
+                <div className="mt-2">
+                  <Label className="mb-2 block text-sm">Selecciona las categorías para esta marca:</Label>
+                  <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[60px] bg-gray-50">
+                    {categories.map(cat => (
+                      <Button
+                        key={cat.id}
+                        size="sm"
+                        variant={formData.categories.includes(cat.id) ? "default" : "outline"}
+                        style={{
+                          backgroundColor: formData.categories.includes(cat.id) ? '#3b82f6' : undefined,
+                          borderColor: formData.categories.includes(cat.id) ? '#3b82f6' : undefined,
+                          color: formData.categories.includes(cat.id) ? '#fff' : undefined
+                        }}
+                        onClick={() => setFormData(f => ({
+                          ...f,
+                          categories: f.categories.includes(cat.id)
+                            ? f.categories.filter(id => id !== cat.id)
+                            : [...f.categories, cat.id]
+                        }))}
+                        className="transition-all duration-200 hover:scale-105"
+                      >
+                        {formData.categories.includes(cat.id) && <Check className="h-3 w-3 mr-1" />}
+                        {cat.name}
+                      </Button>
+                    ))}
+                    {categories.length === 0 && (
+                      <div className="flex items-center justify-center w-full h-12 text-gray-400">
+                        No hay categorías disponibles
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="border-t pt-4 mt-4 flex gap-2">
               <DialogClose asChild>
-                <Button type="button" variant="secondary">
-                  Cancelar
+                <Button type="button" variant="secondary" className="gap-1">
+                  <X className="h-4 w-4" /> Cancelar
                 </Button>
               </DialogClose>
               <DialogClose asChild>
-                <Button type="submit" onClick={(e) => handleSaveBrand(() => { })}>
-                  {isEditing ? "Guardar cambios" : "Crear marca"}
+                <Button 
+                  type="submit" 
+                  onClick={(e) => handleSaveBrand(() => { })}
+                  className="gap-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  {isEditing ? (
+                    <>
+                      <Check className="h-4 w-4" /> Guardar cambios
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" /> Crear marca
+                    </>
+                  )}
                 </Button>
               </DialogClose>
             </DialogFooter>
