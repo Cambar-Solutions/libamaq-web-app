@@ -339,9 +339,20 @@ export function ProductsView() {
   return (
     <>
       {/* Responsive Header */}
-      <div className="mb-6 space-y-4">
-        {/* Controles superiores - filtros y búsqueda */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-center">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        {/* Controles de filtro y búsqueda */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          {/* Barra de búsqueda */}
+          <div className="w-3/4 sm:flex-1">
+            <input
+              type="text"
+              placeholder="Buscar por nombre o ID..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
           {/* Select de marcas */}
           <div className="w-full">
             <Select
@@ -378,27 +389,16 @@ export function ProductsView() {
               </SelectContent>
             </Select>
           </div>
-          
-          {/* Barra de búsqueda */}
-          <div className="w-full sm:col-span-1 lg:col-span-1">
-            <input
-              type="text"
-              placeholder="Buscar por nombre o ID"
-              className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
-          {/* Botón de agregar producto */}
-          <div className="w-full flex justify-end sm:col-span-2 lg:col-span-1">
-            <button
-              onClick={() => navigate("/nuevo-producto")}
-              className="w-full sm:w-auto bg-blue-600 text-white hover:bg-blue-700 hover:border-blue-600 text-sm font-semibold px-6 py-2 h-10 rounded-lg transition cursor-pointer flex items-center justify-center gap-1"
-            >
-              <span className="text-lg font-semibold">+</span> Agregar producto
-            </button>
-          </div>
+        </div>
+        
+        {/* Botón de agregar producto */}
+        <div className="w-full md:w-auto">
+          <button
+            onClick={() => navigate("/nuevo-producto")}
+            className="w-full md:w-auto bg-blue-600 text-white hover:bg-blue-700 hover:border-blue-600 text-sm font-semibold px-4 py-2 rounded-lg transition cursor-pointer"
+          >
+            + Agregar producto
+          </button>
         </div>
       </div>
 

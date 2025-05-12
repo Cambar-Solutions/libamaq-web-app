@@ -11,100 +11,100 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 // Sample order data with additional fields
 const orderData = [
-  { 
-    id: "ORD-2025-001", 
-    cliente: "Juan Pérez", 
+  {
+    id: "ORD-2025-001",
+    cliente: "Juan Pérez",
     clienteId: "CLI-001",
     email: "juan.perez@example.com",
     telefono: "+52 555 123 4567",
     direccion: "Av. Insurgentes Sur 1234, CDMX",
-    productoId: "PROD-001", 
-    producto: "Taladro reversible Bosch", 
-    tipo: "Renta", 
-    estado: "Pendiente", 
+    productoId: "PROD-001",
+    producto: "Taladro reversible Bosch",
+    tipo: "Renta",
+    estado: "Pendiente",
     fecha: "2025-04-11",
     fechaEntrega: "2025-04-15",
     fechaDevolucion: "2025-04-22",
     total: 1250.00,
     detalles: "Renta por 7 días con opción a extensión. Cliente solicita entrega en sitio."
   },
-  { 
-    id: "ORD-2025-002", 
-    cliente: "María García", 
+  {
+    id: "ORD-2025-002",
+    cliente: "María García",
     clienteId: "CLI-002",
     email: "maria.garcia@example.com",
     telefono: "+52 555 987 6543",
     direccion: "Paseo de la Reforma 567, CDMX",
-    productoId: "PROD-002", 
-    producto: "Sierra Ingleteadora DeWalt", 
-    tipo: "Compra", 
-    estado: "Entregado", 
+    productoId: "PROD-002",
+    producto: "Sierra Ingleteadora DeWalt",
+    tipo: "Compra",
+    estado: "Entregado",
     fecha: "2025-04-10",
     fechaEntrega: "2025-04-12",
     total: 4500.00,
     detalles: "Compra con garantía extendida de 2 años. Incluye kit de accesorios básicos."
   },
-  { 
-    id: "ORD-2025-003", 
-    cliente: "Carlos López", 
+  {
+    id: "ORD-2025-003",
+    cliente: "Carlos López",
     clienteId: "CLI-003",
     email: "carlos.lopez@example.com",
     telefono: "+52 555 456 7890",
     direccion: "Calle Durango 789, CDMX",
-    productoId: "PROD-001", 
-    producto: "Taladro reversible Bosch", 
-    tipo: "Renta", 
-    estado: "En proceso", 
+    productoId: "PROD-001",
+    producto: "Taladro reversible Bosch",
+    tipo: "Renta",
+    estado: "En proceso",
     fecha: "2025-04-09",
     fechaEntrega: "2025-04-13",
     fechaDevolucion: "2025-04-20",
     total: 1250.00,
     detalles: "Renta por 7 días. Cliente solicita revisión del equipo antes de la entrega."
   },
-  { 
-    id: "ORD-2025-004", 
-    cliente: "Ana Martínez", 
+  {
+    id: "ORD-2025-004",
+    cliente: "Ana Martínez",
     clienteId: "CLI-004",
     email: "ana.martinez@example.com",
     telefono: "+52 555 234 5678",
     direccion: "Av. Universidad 1000, CDMX",
-    productoId: "PROD-003", 
-    producto: "Compresor de aire Campbell Hausfeld", 
-    tipo: "Compra", 
-    estado: "Pendiente", 
+    productoId: "PROD-003",
+    producto: "Compresor de aire Campbell Hausfeld",
+    tipo: "Compra",
+    estado: "Pendiente",
     fecha: "2025-04-12",
     fechaEntrega: "2025-04-16",
     total: 3200.00,
     detalles: "Compra con envío gratuito. Cliente solicita factura."
   },
-  { 
-    id: "ORD-2025-005", 
-    cliente: "Roberto Sánchez", 
+  {
+    id: "ORD-2025-005",
+    cliente: "Roberto Sánchez",
     clienteId: "CLI-005",
     email: "roberto.sanchez@example.com",
     telefono: "+52 555 876 5432",
     direccion: "Calle Sonora 432, CDMX",
-    productoId: "PROD-004", 
-    producto: "Generador eléctrico Honda", 
-    tipo: "Renta", 
-    estado: "Entregado", 
+    productoId: "PROD-004",
+    producto: "Generador eléctrico Honda",
+    tipo: "Renta",
+    estado: "Entregado",
     fecha: "2025-04-08",
     fechaEntrega: "2025-04-09",
     fechaDevolucion: "2025-04-16",
     total: 2800.00,
     detalles: "Renta por 7 días para evento. Incluye tanque de combustible lleno."
   },
-  { 
-    id: "ORD-2025-006", 
-    cliente: "Laura Gómez", 
+  {
+    id: "ORD-2025-006",
+    cliente: "Laura Gómez",
     clienteId: "CLI-006",
     email: "laura.gomez@example.com",
     telefono: "+52 555 345 6789",
     direccion: "Av. Chapultepec 567, CDMX",
-    productoId: "PROD-005", 
-    producto: "Mezcladora de concreto CIPSA", 
-    tipo: "Renta", 
-    estado: "En proceso", 
+    productoId: "PROD-005",
+    producto: "Mezcladora de concreto CIPSA",
+    tipo: "Renta",
+    estado: "En proceso",
     fecha: "2025-04-11",
     fechaEntrega: "2025-04-14",
     fechaDevolucion: "2025-04-21",
@@ -129,7 +129,7 @@ const OrderCard = ({ order, onClick }) => {
   };
 
   const getTypeIcon = (type) => {
-    return type === "Renta" ? 
+    return type === "Renta" ?
       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg> :
@@ -139,12 +139,12 @@ const OrderCard = ({ order, onClick }) => {
   };
 
   return (
-    <Card 
-      onClick={onClick} 
+    <Card
+      onClick={onClick}
       className="cursor-pointer hover:shadow-md transition-all duration-300 hover:-translate-y-1 overflow-hidden relative w-full"
     >
       {/* Status badge in top right corner */}
-      <div className={`absolute top-2 right-2 ${getStatusColor(order.estado)} text-white text-[10px] font-medium px-2 py-0.5 rounded-sm z-10`}>
+      <div className={`absolute top-2 right-2 ${getStatusColor(order.estado)} text-white text-[10px] font-medium px-2 py-0.5 mt-1 mr-1 rounded-sm z-10`}>
         {order.estado}
       </div>
 
@@ -171,7 +171,7 @@ const OrderCard = ({ order, onClick }) => {
             <span className="text-xs font-medium">Total:</span>
             <span className="text-xs font-bold">${order.total.toLocaleString()}</span>
           </div>
-          
+
           {/* Type badge at bottom */}
           <div className="pt-2">
             <div className={`${getTypeColor(order.tipo)} bg-white border text-xs font-medium px-3 py-1 rounded-md w-full text-center flex items-center justify-center gap-1`}>
@@ -192,21 +192,21 @@ export function OrdersView() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("view");
-  
+
   // Estados para edición
   const [editFechaEntrega, setEditFechaEntrega] = useState("");
   const [editDireccion, setEditDireccion] = useState("");
 
   // Filter orders based on search term and filters
   const filteredOrders = orderData.filter(order => {
-    const matchesSearch = 
+    const matchesSearch =
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.producto.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesType = selectedType === "all" || order.tipo === selectedType;
     const matchesStatus = selectedStatus === "all" || order.estado === selectedStatus;
-    
+
     return matchesSearch && matchesType && matchesStatus;
   });
 
@@ -217,7 +217,7 @@ export function OrdersView() {
     setActiveTab("view");
     setIsDialogOpen(true);
   };
-  
+
   const handleSaveChanges = () => {
     // Aquí se implementaría la lógica para guardar los cambios en el backend
     // Por ahora, solo actualizamos el estado local
@@ -226,7 +226,7 @@ export function OrdersView() {
       fechaEntrega: editFechaEntrega,
       direccion: editDireccion
     }));
-    
+
     // Cambiar a la pestaña de visualización después de guardar
     setActiveTab("view");
   };
@@ -249,7 +249,7 @@ export function OrdersView() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          
+
           {/* Type filter */}
           <div className="w-full sm:w-40">
             <Select
@@ -266,7 +266,7 @@ export function OrdersView() {
               </SelectContent>
             </Select>
           </div>
-          
+
           {/* Status filter */}
           <div className="w-full sm:w-40">
             <Select
@@ -285,7 +285,7 @@ export function OrdersView() {
             </Select>
           </div>
         </div>
-        
+
 
       </div>
 
@@ -299,9 +299,9 @@ export function OrdersView() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3 }}
             >
-              <OrderCard 
-                order={order} 
-                onClick={() => handleOrderClick(order)} 
+              <OrderCard
+                order={order}
+                onClick={() => handleOrderClick(order)}
               />
             </motion.div>
           ))
@@ -316,7 +316,7 @@ export function OrdersView() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[600px] w-[95%] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center justify-between">
+            <DialogTitle className="text-xl font-bold flex items-center justify-between mt-2">
               <span>Pedido {selectedOrder?.id}</span>
               <span className={`text-sm ${selectedOrder?.estado === "Entregado" ? "bg-emerald-500" : selectedOrder?.estado === "En proceso" ? "bg-sky-500" : "bg-amber-500"} text-white px-3 py-1 rounded-full`}>
                 {selectedOrder?.estado}
@@ -339,7 +339,7 @@ export function OrdersView() {
                   Editar
                 </TabsTrigger>
               </TabsList>
-              
+
               {/* Vista de visualización */}
               <TabsContent value="view" className="space-y-4 overflow-y-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
@@ -374,7 +374,7 @@ export function OrdersView() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <h3 className="text-sm font-bold text-gray-700 mb-2">Producto</h3>
                       <div className="space-y-2">
@@ -413,7 +413,7 @@ export function OrdersView() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <h3 className="text-sm font-bold text-gray-700 mb-2">Detalles</h3>
                       <p className="text-sm text-gray-600">{selectedOrder.detalles}</p>
@@ -427,7 +427,7 @@ export function OrdersView() {
                   </div>
                 </div>
               </TabsContent>
-              
+
               {/* Vista de edición */}
               <TabsContent value="edit" className="space-y-6">
                 <div className="bg-gray-50 p-4 rounded-lg">
@@ -435,19 +435,19 @@ export function OrdersView() {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="fechaEntrega" className="text-sm">Fecha de Entrega</Label>
-                      <Input 
-                        id="fechaEntrega" 
-                        type="date" 
+                      <Input
+                        id="fechaEntrega"
+                        type="date"
                         value={editFechaEntrega}
                         onChange={(e) => setEditFechaEntrega(e.target.value)}
                         className="text-sm"
                       />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="direccion" className="text-sm">Dirección de Entrega</Label>
-                      <Input 
-                        id="direccion" 
+                      <Input
+                        id="direccion"
                         value={editDireccion}
                         onChange={(e) => setEditDireccion(e.target.value)}
                         className="text-sm"
@@ -455,11 +455,11 @@ export function OrdersView() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setActiveTab("view")}>Cancelar</Button>
-                  <Button 
-                    className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1" 
+                  <Button variant="outline" className="cursor-pointer" onClick={() => setActiveTab("view")}>Cancelar</Button>
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1 cursor-pointer"
                     onClick={handleSaveChanges}
                   >
                     <Save className="h-4 w-4" />
