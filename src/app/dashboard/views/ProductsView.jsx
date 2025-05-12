@@ -197,6 +197,16 @@ export function ProductsView() {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         {/* Controles de filtro y búsqueda */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 ">
+          {/* Barra de búsqueda */}
+          <div className="w-3/4 sm:flex-1">
+            <input
+              type="text"
+              placeholder="Buscar por nombre o ID..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
           {/* Select de marcas */}
           <div className="w-full sm:w-64">
             <Select
@@ -215,16 +225,6 @@ export function ProductsView() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          {/* Barra de búsqueda */}
-          <div className="w-3/4 sm:flex-1">
-            <input
-              type="text"
-              placeholder="Buscar por nombre o ID"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
           </div>
         </div>
         {/* Botón de agregar producto */}

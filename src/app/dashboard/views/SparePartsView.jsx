@@ -523,7 +523,7 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col overflow-hidden">
-        <DialogHeader className="sticky top-0 bg-white z-10 pb-2 border-b">
+        <DialogHeader className="sticky top-0 z-10 pb-2 border-b">
           <DialogTitle>{sparePartId ? "Editar Repuesto" : "Nuevo Repuesto"}</DialogTitle>
           <DialogDescription>
             {sparePartId ? "Modifica los detalles del repuesto seleccionado." : "Completa los datos para crear un nuevo repuesto."}
@@ -977,8 +977,8 @@ export function SparePartsView() {
           <div className="w-full sm:flex-1">
             <input
               type="text"
-              placeholder="Buscar por nombre, código o ID externo"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
+              placeholder="Buscar por nombre, código o ID externo..."
+              className="w-full md:w-[20em] px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />

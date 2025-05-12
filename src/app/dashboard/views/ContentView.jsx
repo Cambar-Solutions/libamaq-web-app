@@ -550,7 +550,7 @@ export function ContentView() {
 
   return (
     <div className="flex flex-col gap-4 p-4 bg-gradient-to-b from-gray-100 to-blue-300 rounded-2xl">
-      <div className="flex items-center justify-between rounded shadow p-4 bg-white">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between rounded shadow p-4 bg-white">
         <div>
           <h1 className="text-2xl font-semibold select-none">
             En esta sección se puede agregar contenido multimedia
@@ -561,7 +561,8 @@ export function ContentView() {
           </p>
         </div>
 
-        <div>
+        {/* Añadimos un margen top sólo en móvil para separar del texto */}
+        <div className="mt-4 md:mt-0">
           <a
             href="https://www.tiktok.com/@libamaqherramientas"
             target="_blank"
@@ -573,6 +574,7 @@ export function ContentView() {
           </a>
         </div>
       </div>
+
 
       <div className="border border-gray-200 rounded p-4 mt-5 bg-gradient-to-b from-gray-100 to-blue-100 shadow-md">
         <Tabs defaultValue="multimedia">
@@ -608,7 +610,7 @@ export function ContentView() {
 
           <TabsContent value="multimedia">
             <Card>
-              <div className="flex justify-between px-10 gap-5 items-center">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-10 gap-5">
                 <div className="flex gap-3 items-center">
                   <img src="/logo_Tiktok.png" className="w-12" />
                   <section className="border-b-2 select-none">
@@ -932,7 +934,7 @@ export function ContentView() {
 
           <TabsContent value="images">
             <Card>
-              <div className="flex justify-between px-10 gap-5 items-center">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-10 gap-5">
                 <div className="flex gap-3 items-center">
                   <ImageIcon className="w-12 h-12" />
                   <section className="border-b-2 select-none">
@@ -1276,7 +1278,7 @@ export function ContentView() {
 
           <TabsContent value="facebook">
             <Card>
-              <div className="flex justify-between px-10 gap-5 items-center">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-10 gap-5">
                 <div className="flex gap-3 items-center">
                   <FileVideo2 className="w-12 h-12" />
                   <section className="border-b-2 select-none">

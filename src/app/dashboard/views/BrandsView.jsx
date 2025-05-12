@@ -384,14 +384,14 @@ export function BrandsView() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className={`h-8 w-8 bg-white/20 hover:bg-white/30 text-white ${isLight ? "text-black/60 hover:text-white hover:bg-black/30" : "text-white/80"}`}
+                      className={`h-8 w-8 bg-white/20 hover:bg-white/30 text-white cursor-pointer ${isLight ? "text-black/60 hover:text-white hover:bg-black/30" : "text-white/80"}`}
                       onClick={() => handleEditBrand(brand)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[600px] md:max-w-[700px] max-h-[90vh] flex flex-col overflow-hidden">
-                    <DialogHeader className="sticky top-0 bg-white z-10 pb-2 border-b">
+                    <DialogHeader className="sticky top-0 z-10 pb-2 border-b">
                       <DialogTitle>Editar Marca</DialogTitle>
                       <DialogDescription>
                         Actualiza los detalles de la marca. Haz clic en guardar cuando termines.
@@ -519,6 +519,7 @@ export function BrandsView() {
                               <div className="flex justify-end mt-3">
                                 <Button
                                   size="sm"
+                                  className="cursor-pointer"
                                   onClick={async () => {
                                     try {
                                       if (!categoryForm.name) return toast.error('El nombre de la categoría es obligatorio');
@@ -550,12 +551,12 @@ export function BrandsView() {
                               {categories
                                 .filter(cat => formData.categories.includes(cat.id))
                                 .map(cat => (
-                                  <div key={cat.id} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md">
+                                  <div key={cat.id} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md select-none">
                                     <span>{cat.name}</span>
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-5 w-5 rounded-full hover:bg-blue-200"
+                                      className="h-5 w-5 rounded-full hover:bg-blue-200 cursor-pointer"
                                       onClick={() => setFormData(f => ({
                                         ...f,
                                         categories: f.categories.filter(id => id !== cat.id)
@@ -588,7 +589,7 @@ export function BrandsView() {
                                       ...f,
                                       categories: [...f.categories, cat.id]
                                     }))}
-                                    className="transition-all duration-200 hover:scale-105"
+                                    className="transition-all duration-200 hover:scale-105 cursor-pointer"
                                   >
                                     <Plus className="h-3 w-3 mr-1" />
                                     {cat.name}
@@ -606,12 +607,12 @@ export function BrandsView() {
                     </div>
                     <DialogFooter className="sticky bottom-0 bg-white z-10 pt-2 border-t mt-4">
                       <DialogClose asChild>
-                        <Button type="button" variant="secondary">
+                        <Button type="button" variant="secondary" className="cursor-pointer">
                           Cancelar
                         </Button>
                       </DialogClose>
                       <DialogClose asChild>
-                        <Button type="submit" onClick={(e) => handleSaveBrand(() => { })}>
+                        <Button type="submit" className="cursor-pointer" onClick={(e) => handleSaveBrand(() => { })}>
                           Guardar cambios
                         </Button>
                       </DialogClose>
@@ -624,7 +625,7 @@ export function BrandsView() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className={`h-8 w-8 bg-white/20 hover:bg-white/30 text-white ${isLight ? "text-black/60 hover:text-white hover:bg-black/30" : "text-white/80"}`}
+                      className={`h-8 w-8 bg-white/20 hover:bg-white/30 text-white cursor-pointer ${isLight ? "text-black/60 hover:text-white hover:bg-black/30" : "text-white/80"}`}
                     >
                       {isActive ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                     </Button>
@@ -673,17 +674,18 @@ export function BrandsView() {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="w-full sm:w-64">
-            <Input
+            <input
               type="text"
               placeholder="Buscar marcas..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
             />
           </div>
           <Button
             variant="outline"
             size="icon"
+            className="cursor-pointer"
             onClick={fetchBrands}
             title="Recargar marcas"
           >
@@ -824,7 +826,7 @@ export function BrandsView() {
                     size="sm" 
                     variant={isCreatingCategory ? "destructive" : "default"} 
                     onClick={() => setIsCreatingCategory(v => !v)}
-                    className="gap-1"
+                    className="gap-1 cursor-pointer"
                   >
                     {isCreatingCategory ? (
                       <>
@@ -877,6 +879,7 @@ export function BrandsView() {
                     <div className="flex justify-end mt-3">
                       <Button
                         size="sm"
+                        className="cursor-pointer"
                         onClick={async () => {
                           try {
                             if (!categoryForm.name) return toast.error('El nombre de la categoría es obligatorio');
@@ -946,7 +949,7 @@ export function BrandsView() {
                 <Button 
                   type="submit" 
                   onClick={(e) => handleSaveBrand(() => { })}
-                  className="gap-1 bg-blue-600 hover:bg-blue-700"
+                  className="gap-1 bg-blue-600 hover:bg-blue-700 cursor-pointer"
                 >
                   {isEditing ? (
                     <>

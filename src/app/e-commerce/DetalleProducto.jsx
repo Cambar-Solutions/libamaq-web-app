@@ -439,16 +439,16 @@ const DetalleProducto = () => {
               
               {/* Botones horizontales para desktop, debajo de las ventajas */}
               <div className="hidden lg:flex mt-6 gap-4 w-full">
-                <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md flex items-center justify-center gap-2">
+                <Button className="cursor-pointer flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-md flex items-center justify-center gap-2">
                   <ShoppingCart className="h-5 w-5" />
                   Agregar al carrito
                 </Button>
-                <Button className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-md flex items-center justify-center gap-2">
+                <Button className="cursor-pointer flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-md flex items-center justify-center gap-2">
                   <CreditCard className="h-5 w-5" />
                   Comprar ahora
                 </Button>
                 <Button 
-                  className="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-md flex items-center justify-center gap-2"
+                  className="cursor-pointer flex-1 bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-md flex items-center justify-center gap-2"
                   onClick={() => navigate(`/e-commerce/rentar/${producto.id || '1'}`, { state: { product: producto } })}
                 >
                   <Clock className="h-5 w-5" />
