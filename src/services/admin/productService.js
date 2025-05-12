@@ -1,4 +1,5 @@
 import apiClient from "../apiClient";
+import axios from "axios";
 
 // Obtener todos los productos
 export const getAllProducts = async () => {
@@ -11,11 +12,21 @@ export const getAllProducts = async () => {
   }
 };
 
-// Obtener vista previa de productos
+// Obtener vista previa de todos los productos
 export const getProductPreviews = async () => {
   try {
+    console.log('Obteniendo vista previa de todos los productos...');
     const { data } = await apiClient.get("/admin/product/preview/all");
-    return data.result || [];
+    
+    console.log('Respuesta de productos:', data);
+    const products = data.result || [];
+    
+    // Verificar que los productos tengan el campo status
+    console.log('Productos con status ACTIVE:', products.filter(p => p.status === "ACTIVE").length);
+    console.log('Productos con status INACTIVE:', products.filter(p => p.status === "INACTIVE").length);
+    console.log('Productos sin status definido:', products.filter(p => !p.status).length);
+    
+    return products;
   } catch (error) {
     console.error('Error fetching product previews:', error);
     throw error.response?.data || error.message;
@@ -159,24 +170,18 @@ export const updateProduct = async (productData) => {
 
     console.log('Datos enviados a la API:', productDto);
     
-    // Realizar una petición directa a la API sin usar el cliente API para evitar cualquier middleware
-    // que pueda estar modificando los datos
-    const token = localStorage.getItem('token');
-    const response = await fetch('https://libamaq.com/api/admin/product/update', {
-      method: 'PUT',
+    // Usar axios directamente con la URL completa y correcta, igual que en brandService
+    const { data } = await axios({
+      method: 'put',
+      url: "https://libamaq.com/api/admin/product/update",
+      data: productDto,
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(productDto)
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+      }
     });
     
-    if (!response.ok) {
-      throw new Error(`Error en la respuesta del servidor: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    console.log('Respuesta de la API (fetch directo):', data);
+    console.log('Respuesta de la API (axios directo):', data);
     
     // Esperar un momento para asegurar que los cambios se hayan aplicado en el servidor
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -196,6 +201,59 @@ export const updateProduct = async (productData) => {
     return data;
   } catch (error) {
     console.error('Error updating product:', error);
+    throw error.response?.data || error.message;
+  }
+};
+
+// Actualizar solo el estado de un producto (más simple y directo)
+export const updateProductStatus = async (productId, newStatus) => {
+  try {
+    console.log(`Actualizando estado del producto ${productId} a ${newStatus}...`);
+    
+    // Primero obtenemos el producto para asegurarnos de tener todos los datos necesarios
+    const { data: productData } = await apiClient.get(`/admin/product/${productId}`);
+    
+    const product = productData.result;
+    
+    if (!product) {
+      throw new Error(`No se encontró el producto con ID ${productId}`);
+    }
+    
+    // Crear payload con todos los campos requeridos por la API
+    const updatePayload = {
+      id: Number(productId),
+      name: product.name || "Producto",
+      externalId: product.externalId || "EXT-" + productId,
+      shortDescription: product.shortDescription || "Descripción no disponible",
+      type: product.type || "PRODUCT",
+      status: newStatus,
+      price: Number(product.price || 0),
+      cost: Number(product.cost || 0),
+      discount: Number(product.discount || 0),
+      stock: Number(product.stock || 0),
+      garanty: Number(product.garanty || 0),
+      brandId: Number(product.brandId || product.brand_id || 0),
+      categoryId: Number(product.categoryId || product.category_id || 0)
+    };
+    
+    console.log('Enviando payload para cambio de estado:', updatePayload);
+    
+    // Usar axios directamente con la URL completa, igual que en updateBrand
+    const { data } = await axios({
+      method: 'put',
+      url: "https://libamaq.com/api/admin/product/update",
+      data: updatePayload,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+      }
+    });
+    
+    console.log('Respuesta de actualización de estado:', data);
+    return data;
+  } catch (error) {
+    console.error('Error updating product status:', error);
+    console.error('Detalles del error:', error.response?.data);
     throw error.response?.data || error.message;
   }
 };
