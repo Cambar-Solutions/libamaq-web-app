@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, CreditCard, Clock, ArrowLeft, Share2, Shield, ChevronRight } from "lucide-react";
+import { ShoppingCart, CreditCard, Clock, ArrowLeft, Heart, Star, Truck, Shield, ChevronRight } from "lucide-react";
 import { getProductById } from "@/services/public/productService";
 import { toast } from "sonner";
 import Nav2 from "@/components/Nav2";
@@ -13,35 +13,11 @@ const DetalleProducto = () => {
   const [loading, setLoading] = useState(true);
   const [mainImage, setMainImage] = useState("");
   const [favorite, setFavorite] = useState(false);
-  const [highlightActive, setHighlightActive] = useState(false);
-  const [brandName, setBrandName] = useState("");
 
   // Función para regresar a la página de categorías
   const handleBack = () => {
     navigate("/tienda", { replace: true });
   };
-
-  // Efecto para activar el resaltado del nombre del producto y obtener la marca
-  useEffect(() => {
-    if (product) {
-      // Activar el resaltado después de cargar el producto
-      setHighlightActive(true);
-      
-      // Determinar el nombre de la marca basado en brandId
-      if (product.brandId === 1) {
-        setBrandName("Makita");
-      } else if (product.brandId === 2) {
-        setBrandName("DeWalt");
-      } else if (product.brandId === 3) {
-        setBrandName("Bosch");
-      } else if (product.brandId === 4) {
-        setBrandName("Milwaukee");
-      } else if (product.type) {
-        // Si no tenemos la marca pero tenemos el tipo de producto
-        setBrandName(product.type);
-      }
-    }
-  }, [product]);
 
   // Cargar datos del producto
   useEffect(() => {
@@ -94,75 +70,42 @@ const DetalleProducto = () => {
   }
 
   return (
-    <div className="w-full bg-gray-100 min-h-screen pt-20 pb-8">
+    <div className="w-full bg-gray-100 min-h-screen pt-16">
       <Nav2 />
       
       <div className="max-w-7xl mx-auto px-4">
         {/* Migas de pan y navegación */}
-        <div className="py-4 mt-4 flex items-center text-sm text-gray-500">
+        <div className="py-2 flex items-center text-sm text-gray-500">
           <button onClick={handleBack} className="flex items-center hover:text-blue-500">
             <ArrowLeft size={16} className="mr-1" />
             Volver al listado
           </button>
           <ChevronRight size={14} className="mx-2" />
-          {brandName && (
-            <>
-              <span className="text-gray-500">{brandName}</span>
-              <ChevronRight size={14} className="mx-2" />
-            </>
-          )}
-          <span className={`truncate transition-colors duration-300 ${highlightActive ? 'text-blue-700 font-medium' : 'text-gray-500'}`}>{product?.name}</span>
+          <span className="truncate">{product?.name}</span>
         </div>
 
         {/* Contenido principal */}
-        <div className="flex flex-col md:flex-row gap-4 bg-white rounded-lg shadow-sm mt-2">
+        <div className="flex flex-col md:flex-row gap-6 bg-white rounded-lg shadow-sm mt-2">
           {/* Galería de imágenes */}
-          <div className="w-full md:w-3/5 lg:w-2/3 p-4">
-            <div className="flex flex-row gap-4">
-              {/* Miniaturas verticales */}
-              <div className="hidden sm:flex flex-col space-y-2 overflow-y-auto max-h-96">
-                {product?.multimedia?.map((img, index) => (
-                  <img
-                    key={index}
-                    src={img.url}
-                    alt={`${product.name} - ${index}`}
-                    className={`w-16 h-16 object-contain border p-1 cursor-pointer rounded ${
-                      mainImage === img.url ? "border-blue-500" : "border-gray-200 hover:border-gray-400"
-                    }`}
-                    onClick={() => setMainImage(img.url)}
-                  />
-                ))}
-                {(!product?.multimedia || product.multimedia.length === 0) && (
-                  <img
-                    src="/placeholder-product.png"
-                    alt="Imagen no disponible"
-                    className="w-16 h-16 object-contain border p-1 border-blue-500 rounded"
-                  />
-                )}
-              </div>
-              
-              {/* Imagen principal */}
-              <div className="relative group flex-1">
-                <button 
-                  onClick={() => setFavorite(!favorite)}
-                  className="absolute top-2 right-2 z-10 bg-white rounded-full p-2 shadow-md hover:bg-gray-100"
-                >
-                  <Share2 size={20} className="text-gray-400" />
-                </button>
-                <div className="w-full h-80 sm:h-96 flex justify-center items-center bg-white rounded-lg">
-                  <img
-                    src={product?.multimedia && product.multimedia.length > 0 
-                      ? mainImage || product.multimedia[0].url 
-                      : "/placeholder-product.png"}
-                    alt={product?.name}
-                    className="max-h-full max-w-full object-contain"
-                  />
-                </div>
+          <div className="w-full md:w-2/3 lg:w-7/12 p-4">
+            <div className="relative group">
+              <button 
+                onClick={() => setFavorite(!favorite)}
+                className="absolute top-2 right-2 z-10 bg-white rounded-full p-2 shadow-md hover:bg-gray-100"
+              >
+                <Heart size={20} className={favorite ? "fill-red-500 text-red-500" : "text-gray-400"} />
+              </button>
+              <div className="w-full h-80 sm:h-96 flex justify-center items-center bg-white rounded-lg">
+                <img
+                  src={product?.multimedia && product.multimedia.length > 0 
+                    ? mainImage || product.multimedia[0].url 
+                    : "/placeholder-product.png"}
+                  alt={product?.name}
+                  className="max-h-full max-w-full object-contain"
+                />
               </div>
             </div>
-            
-            {/* Miniaturas horizontales (solo móvil) */}
-            <div className="flex sm:hidden mt-4 space-x-2 overflow-x-auto pb-2">
+            <div className="flex mt-4 space-x-2 overflow-x-auto pb-2">
               {product?.multimedia?.map((img, index) => (
                 <img
                   key={index}
@@ -185,7 +128,7 @@ const DetalleProducto = () => {
           </div>
 
           {/* Información del producto */}
-          <div className="w-full md:w-2/5 lg:w-1/3 p-4">
+          <div className="w-full md:w-1/3 lg:w-5/12 p-4">
             <div className="flex items-center mb-1">
               <span className="text-sm text-gray-500">Nuevo | ID: {product?.externalId}</span>
               {product?.stock > 0 && (
@@ -193,13 +136,16 @@ const DetalleProducto = () => {
               )}
             </div>
             
-            <h1 className="text-xl sm:text-2xl font-medium text-gray-900 mb-1">{product?.name}</h1>
+            <h1 className="text-xl sm:text-2xl font-medium text-gray-900 mb-2">{product?.name}</h1>
             
-            {brandName && (
-              <div className="mb-3">
-                <span className="text-sm font-medium text-blue-600">Marca: {brandName}</span>
+            <div className="flex items-center mb-4">
+              <div className="flex">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} size={16} className={i < 4 ? "fill-yellow-400 text-yellow-400" : "text-gray-300"} />
+                ))}
               </div>
-            )}
+              <span className="text-sm text-blue-500 ml-2">(24 opiniones)</span>
+            </div>
             
             <div className="mb-4">
               <div className="flex items-baseline">
@@ -208,74 +154,58 @@ const DetalleProducto = () => {
                   <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded-md">{product.discount}% OFF</span>
                 )}
               </div>
+              <p className="text-sm text-gray-500 mt-1">en 12x ${(product?.price / 12).toFixed(2)}</p>
+              <p className="text-blue-500 text-sm mt-1">Ver los medios de pago</p>
             </div>
             
-            {product?.garanty && (
-              <div className="mb-4">
-                <div className="flex items-center text-sm text-gray-700">
-                  <Shield size={18} className="text-green-500 mr-2" />
-                  <div>
-                    <p className="font-medium">Garantía: {product.garanty} {product.garanty === 1 ? 'año' : 'años'}</p>
-                  </div>
+            <div className="mb-4">
+              <div className="flex items-center text-sm text-gray-700 mb-2">
+                <Truck size={18} className="text-green-500 mr-2" />
+                <div>
+                  <p className="font-medium">Envío gratis a todo el país</p>
+                  <p className="text-gray-500">Conoce los tiempos y las formas de envío</p>
                 </div>
               </div>
-            )}
-            
-            {/* Descripción del producto */}
-            {product?.shortDescription && (
-              <div className="mb-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Descripción</h3>
-                <p className="text-gray-700 text-sm whitespace-pre-line mb-2">{product.shortDescription}</p>
-                {product?.description?.details && (
-                  <p className="text-gray-700 text-sm whitespace-pre-line">{product.description.details}</p>
-                )}
-              </div>
-            )}
-            
-            {/* Botones de acción - Verticales en móvil, horizontales en desktop */}
-            <div className="mt-6">
-              {/* Botones verticales para móvil */}
-              <div className="flex flex-col space-y-3 md:hidden">
-                <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-2">
-                  <ShoppingCart className="h-5 w-5" />
-                  Agregar al carrito
-                </Button>
-                <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Comprar ahora
-                </Button>
-                <Button 
-                  className="w-full bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 py-3 rounded-md flex items-center justify-center gap-2"
-                  onClick={() => navigate(`/e-commerce/rentar/${product?.id}`, { state: { product } })}
-                >
-                  <Clock className="h-5 w-5" />
-                  Rentar
-                </Button>
-              </div>
               
-              {/* Botones horizontales para tablet/desktop */}
-              <div className="hidden md:grid md:grid-cols-3 md:gap-2 lg:gap-3">
-                <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-1">
-                  <ShoppingCart className="h-4 w-4 lg:h-5 lg:w-5" />
-                  <span className="text-sm lg:text-base">Agregar</span>
-                </Button>
-                <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1">
-                  <CreditCard className="h-4 w-4 lg:h-5 lg:w-5" />
-                  <span className="text-sm lg:text-base">Comprar</span>
-                </Button>
-                <Button 
-                  className="w-full bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 py-3 rounded-md flex items-center justify-center gap-1"
-                  onClick={() => navigate(`/e-commerce/rentar/${product?.id}`, { state: { product } })}
-                >
-                  <Clock className="h-4 w-4 lg:h-5 lg:w-5" />
-                  <span className="text-sm lg:text-base">Rentar</span>
-                </Button>
+              <div className="flex items-center text-sm text-gray-700">
+                <Shield size={18} className="text-green-500 mr-2" />
+                <div>
+                  <p className="font-medium">Garantía de 12 meses</p>
+                  <p className="text-gray-500">Garantía del vendedor</p>
+                </div>
               </div>
+            </div>
+            
+            {/* Botones de acción */}
+            <div className="space-y-3 mt-6">
+              <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-2">
+                <ShoppingCart className="h-5 w-5" />
+                Agregar al carrito
+              </Button>
+              <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Comprar ahora
+              </Button>
+              <Button 
+                className="w-full bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 py-3 rounded-md flex items-center justify-center gap-2"
+                onClick={() => navigate(`/e-commerce/rentar/${product?.id}`, { state: { product } })}
+              >
+                <Clock className="h-5 w-5" />
+                Rentar
+              </Button>
             </div>
           </div>
         </div>
         
-
+        {/* Descripción del producto */}
+        <div className="mt-6 bg-white rounded-lg shadow-sm p-4">
+          <h2 className="text-2xl font-medium text-gray-900 mb-4">Descripción</h2>
+          <p className="text-gray-700 whitespace-pre-line mb-4">{product?.shortDescription}</p>
+          
+          {product?.description?.details && (
+            <p className="text-gray-700 whitespace-pre-line">{product?.description?.details}</p>
+          )}
+        </div>
 
         {/* Características principales - Estilo Mercado Libre */}
         <div className="mt-6 bg-white rounded-lg shadow-sm p-4">

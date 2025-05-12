@@ -6,26 +6,30 @@ import Nav2 from "@/components/Nav2";
 import { simulatedProductsByBrand } from "@data/simulatedProducts";
 import "@/styles/carousel-vanilla.css";
 import { Link } from "react-router-dom";
+import { getAllPublicProducts, getProductsByBrand, getProductsByCategoryAndBrand } from "@/services/public/productService";
+import { getAllBrandsWithCategories } from "@/services/public/brandService";
+import { toast } from "sonner";
 
 
 
-// Funciones auxiliares
-const getFeaturedProducts = () => {
-  const featured = [];
-  Object.keys(simulatedProductsByBrand).forEach(brandKey => {
-    const brand = simulatedProductsByBrand[brandKey];
-    Object.keys(brand).forEach(categoryKey => {
-      const products = brand[categoryKey];
-      if (products && products.length > 0 && featured.length < 12) {
-        featured.push({
-          ...products[0],
-          brand: brandKey,
-          category: categoryKey
-        });
-      }
-    });
-  });
-  return featured;
+// Función para obtener productos destacados de la API
+const getFeaturedProducts = async () => {
+  try {
+    const response = await getAllPublicProducts();
+    if (response && response.type === "SUCCESS" && Array.isArray(response.result)) {
+      // Filtrar solo productos activos
+      const activeProducts = response.result.filter(product => product.status === "ACTIVE");
+      console.log(`Productos activos: ${activeProducts.length} de ${response.result.length}`);
+      
+      // Limitamos a 12 productos destacados
+      return activeProducts.slice(0, 12);
+    }
+    return [];
+  } catch (error) {
+    console.error("Error al obtener productos destacados:", error);
+    toast.error("Error al cargar productos destacados");
+    return [];
+  }
 };
 
 const getTopSellingProducts = () => {
@@ -57,13 +61,15 @@ export default function CategoryPage() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(category || "");
-  const [featuredProducts] = useState(getFeaturedProducts());
+  const [featuredProducts, setFeaturedProducts] = useState([]);
   const [topSellingProducts] = useState(getTopSellingProducts());
   const [allCategories, setAllCategories] = useState([]);
+  const [allBrands, setAllBrands] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
   const [showCarouselControls, setShowCarouselControls] = useState(false);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [maxScroll, setMaxScroll] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Estado para el carrusel
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -189,22 +195,71 @@ export default function CategoryPage() {
 
   // helper de scroll suave con duración de 800ms
 
+  // Cargar productos destacados al iniciar
+  useEffect(() => {
+    const loadFeaturedProducts = async () => {
+      setIsLoading(true);
+      try {
+        const products = await getFeaturedProducts();
+        setFeaturedProducts(products);
+      } catch (error) {
+        console.error("Error al cargar productos destacados:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadFeaturedProducts();
+  }, []);
+
+  // Cargar marcas con categorías
+  useEffect(() => {
+    const loadBrandsWithCategories = async () => {
+      try {
+        const response = await getAllBrandsWithCategories();
+        if (response && response.type === "SUCCESS" && Array.isArray(response.result)) {
+          // Filtrar solo marcas activas
+          const activeBrands = response.result.filter(brand => brand.status === "ACTIVE");
+          setAllBrands(activeBrands);
+          
+          // Extraer todas las categorías únicas de todas las marcas
+          const allCatsSet = new Set();
+          activeBrands.forEach(brand => {
+            brand.categories.forEach(category => {
+              if (category.status === "ACTIVE") {
+                allCatsSet.add(category.name);
+              }
+            });
+          });
+          setAllCategories(Array.from(allCatsSet));
+        }
+      } catch (error) {
+        console.error("Error al cargar marcas con categorías:", error);
+        toast.error("Error al cargar marcas");
+      }
+    };
+
+    loadBrandsWithCategories();
+  }, []);
+
+  // Efecto para manejar cambios en la marca seleccionada
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-    // Configurar categorías basadas en simulatedProductsByBrand para asegurar keys válidas
-    const key = brand ? brand.toLowerCase() : null;
-    if (key && simulatedProductsByBrand[key]) {
-      // Solo categorías de la marca seleccionada
-      setAllCategories(Object.keys(simulatedProductsByBrand[key]));
-    } else {
-      // Todas las categorías de todas las marcas sin duplicados
-      const allCatsSet = new Set();
-      Object.values(simulatedProductsByBrand).forEach(brandData => {
-        Object.keys(brandData).forEach(catKey => allCatsSet.add(catKey));
-      });
-      setAllCategories(Array.from(allCatsSet));
+    
+    if (brand) {
+      // Buscar la marca seleccionada en allBrands
+      const selectedBrand = allBrands.find(b => b.name.toLowerCase() === brand.toLowerCase());
+      
+      if (selectedBrand) {
+        // Obtener categorías activas de la marca seleccionada
+        const brandCategories = selectedBrand.categories
+          .filter(cat => cat.status === "ACTIVE")
+          .map(cat => cat.name);
+        
+        setAllCategories(brandCategories);
+      }
     }
-  }, [brand]);
+  }, [brand, allBrands]);
 
   useEffect(() => {
     if (category) setSelectedCategory(category);
@@ -221,37 +276,77 @@ export default function CategoryPage() {
     }
   };
 
-  // Obtener lista de productos a mostrar según filtros
-  const getDisplayProducts = () => {
-    const key = brand ? brand.toLowerCase() : null;
-    const isBrand = key && simulatedProductsByBrand[key];
-    if (isBrand && selectedCategory) {
-      // Categoría dentro de una marca válida
-      return simulatedProductsByBrand[key][selectedCategory] || [];
-    } else if (isBrand) {
-      // Página de marca sin categoría específica
-      return Object.values(simulatedProductsByBrand[key] || {}).flat();
-    } else if (selectedCategory) {
-      // Filtro general: categoría buscada en todas las marcas
-      return Object.entries(simulatedProductsByBrand).flatMap(
-        ([brandKey, brandData]) => {
-          const products = brandData[selectedCategory] || [];
-          return products.map(item => ({ ...item, brand: brandKey }));
+  // Cargar productos según los filtros seleccionados
+  useEffect(() => {
+    const loadFilteredProducts = async () => {
+      if (!brand && !selectedCategory) {
+        // Si no hay filtros, ya tenemos los productos destacados
+        return;
+      }
+      
+      setIsLoading(true);
+      try {
+        // Obtener el objeto de la marca seleccionada
+        const selectedBrand = allBrands.find(b => b.name.toLowerCase() === brand?.toLowerCase());
+        const brandId = selectedBrand?.id;
+        
+        if (!brandId) {
+          console.log('No se encontró la marca seleccionada');
+          setIsLoading(false);
+          return;
         }
-      );
-    }
-    // Sin filtros: productos destacados
-    return featuredProducts;
-  };
+        
+        let response;
+        
+        // Buscar la categoría seleccionada si existe
+        if (selectedCategory) {
+          const categoryObj = selectedBrand.categories.find(
+            cat => cat.name.toLowerCase() === selectedCategory.toLowerCase()
+          );
+          const categoryId = categoryObj?.id;
+          
+          if (categoryId) {
+            // Obtener productos por marca y categoría usando el endpoint específico
+            console.log(`Buscando productos por marca ${brandId} y categoría ${categoryId}`);
+            response = await getProductsByCategoryAndBrand(categoryId, brandId);
+          } else {
+            console.log(`Categoría ${selectedCategory} no encontrada para la marca ${selectedBrand.name}`);
+            // Si la categoría no existe, mostrar productos de la marca
+            response = await getProductsByBrand(brandId);
+          }
+        } else {
+          // Obtener productos solo por marca usando el endpoint específico
+          console.log(`Buscando productos por marca ${brandId}`);
+          response = await getProductsByBrand(brandId);
+        }
+        
+        if (response && response.type === "SUCCESS" && Array.isArray(response.result)) {
+          console.log(`Productos encontrados: ${response.result.length}`);
+          setFeaturedProducts(response.result);
+        } else {
+          console.log('No se encontraron productos o respuesta inválida');
+          setFeaturedProducts([]);
+        }
+      } catch (error) {
+        console.error("Error al cargar productos filtrados:", error);
+        toast.error("Error al cargar productos");
+        setFeaturedProducts([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadFilteredProducts();
+  }, [brand, selectedCategory, allBrands]);
 
-  const displayProducts = getDisplayProducts();
+  // Filtrar productos por término de búsqueda
   const filteredProducts = searchTerm
-    ? displayProducts.filter(
-      item =>
-        item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.text.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    : displayProducts;
+    ? featuredProducts.filter(
+        item =>
+          item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.shortDescription?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : featuredProducts;
 
   return (
     <>
@@ -374,15 +469,19 @@ export default function CategoryPage() {
                                   <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col h-full hover:-translate-y-1 duration-200 cursor-pointer">
                                     <div className="h-52 bg-gray-100 flex items-center justify-center p-4 relative">
                                       <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">TOP</div>
-                                      <img src="/placeholder-product.png" alt={item.title} className="max-h-full max-w-full object-contain" />
+                                      <img 
+                                        src={item.images && item.images.length > 0 ? item.images[0] : "/placeholder-product.png"} 
+                                        alt={item.name || item.title} 
+                                        className="max-h-full max-w-full object-contain" 
+                                      />
                                     </div>
                                     <div className="p-3 flex-grow flex flex-col h-[150px]">
                                       <div>
-                                        <p className="text-xs text-blue-600 uppercase font-semibold truncate" title={item.brand}>{item.brand}</p>
-                                        <h3 className="text-lg font-medium text-gray-800 truncate" title={item.title}>{item.title}</h3>
-                                        <p className="text-sm text-gray-500 truncate" title={item.text}>{item.text}</p>
+                                        <p className="text-xs text-blue-600 uppercase font-semibold truncate" title={item.brand?.name || item.brand}>{item.brand?.name || item.brand}</p>
+                                        <h3 className="text-lg font-medium text-gray-800 truncate" title={item.name || item.title}>{item.name || item.title}</h3>
+                                        <p className="text-sm text-gray-500 truncate" title={item.shortDescription || item.text}>{item.shortDescription || item.text}</p>
                                       </div>
-                                      <p className="text-xl font-bold text-blue-700 mt-2">${item.price.toLocaleString()}</p>
+                                      <p className="text-xl font-bold text-blue-700 mt-2">${(item.price || 0).toLocaleString()}</p>
                                     </div>
                                   </div>
                                 </Link>
@@ -496,13 +595,17 @@ export default function CategoryPage() {
                       >
                         {/* Imagen más larga: cambiamos de h-36 a h-52 (o ajusta según prefieras) */}
                         <div className="h-52 bg-gray-100 flex items-center justify-center p-4">
-                          <img src="/placeholder-product.png" alt={item.title} className="max-h-full max-w-full object-contain" />
+                          <img 
+                            src={item.images && item.images.length > 0 ? item.images[0] : "/placeholder-product.png"} 
+                            alt={item.name} 
+                            className="max-h-full max-w-full object-contain" 
+                          />
                         </div>
 
                         <div className="p-4 flex-grow flex flex-col h-[150px]">
                           <div>
-                            <h3 className="text-lg font-medium text-gray-800 truncate" title={item.title}>{item.title}</h3>
-                            <p className="text-sm text-gray-500 truncate" title={item.text}>{item.text}</p>
+                            <h3 className="text-lg font-medium text-gray-800 truncate" title={item.name}>{item.name}</h3>
+                            <p className="text-sm text-gray-500 truncate" title={item.shortDescription}>{item.shortDescription}</p>
                           </div>
                           {item.price && <p className="text-xl font-bold text-blue-700 mt-3">${item.price.toLocaleString()}</p>}
                         </div>

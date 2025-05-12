@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,16 +17,10 @@ import {
   NavigationMenuContent,
   NavigationMenuLink,
 } from "@/components/ui/navigation-menu";
+import { getAllBrandsWithCategories } from "@/services/public/brandService";
+import { toast } from "sonner";
 
-const brands = [
-  { name: "Bosch", slogan: "Innovación para tu vida.", logo: "/logo_bosch.png" },
-  { name: "Makita", slogan: "Herramientas eléctricas.", logo: "/makita.png" },
-  { name: "Husqvarna", slogan: "Productos de construcción.", logo: "/husq.png" },
-  { name: "Honda", slogan: "Productos de fuerza.", logo: "/honda-fuerza.png" },
-  { name: "Marshalltown", slogan: "Herramientas para concreto.", logo: "/marshalltown.png" },
-  { name: "Mpower", slogan: "Productos de máxima calidad.", logo: "/m-power.webp" },
-  { name: "Cipsa", slogan: "Construimos más que obras...", logo: "/cipsa.avif" },
-];
+// Los brands ahora se cargarán desde la API
 
 const brandDetails = {
   bosch: {
@@ -129,18 +123,48 @@ const brandDetails = {
 export default function DrawerCategories() {
   const [open, setOpen] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState(null);
+  const [brands, setBrands] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  
+  // Cargar marcas desde la API
+  useEffect(() => {
+    const loadBrands = async () => {
+      try {
+        setLoading(true);
+        const response = await getAllBrandsWithCategories();
+        if (response && response.type === "SUCCESS" && Array.isArray(response.result)) {
+          // Filtrar solo marcas activas
+          const activeBrands = response.result.filter(brand => brand.status === "ACTIVE");
+          setBrands(activeBrands.map(brand => ({
+            id: brand.id,
+            name: brand.name,
+            slogan: brand.description || "",
+            logo: brand.url || "/placeholder-brand.png",
+            color: brand.color || "#0000FF",
+            categories: brand.categories.filter(cat => cat.status === "ACTIVE")
+          })));
+        }
+      } catch (error) {
+        console.error("Error al cargar marcas:", error);
+        toast.error("Error al cargar marcas");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBrands();
+  }, []);
 
   const handleBrandClick = (brand) => {
     setSelectedBrand(brand);
     setOpen(true);
   };
 
-  const goToCategoryPage = (brandKey, productName) => {
-    const brandName = brandDetails[brandKey].name;
+  const goToCategoryPage = (brand, category) => {
     setOpen(false);
     setTimeout(() => {
-      navigate(`/productos/${brandName}/${productName}`);
+      navigate(`/productos/${brand.name}/${category.name}`);
     }, 100);
   };
 
@@ -166,28 +190,39 @@ export default function DrawerCategories() {
               Ver marcas
             </NavigationMenuTrigger>
             <NavigationMenuContent className="mt-1 bg-stone-100 shadow-lg">
-              <ul className=" grid gap-2 p-3 w-[280px] sm:w-[320px] md:w-[400px] lg:w-[480px] grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-                {brands.map((brand) => (
-                  <li
-                    key={brand.name}
-                    className="flex justify-center items-center"
-                  >
-                    <NavigationMenuLink asChild>
-                      <button
-                        onClick={() => handleBrandClick(brand)}
-                        className="group flex justify-center items-center rounded-md p-2 no-underline outline-none transition hover:bg-slate-300 focus:bg-slate-300 w-full h-full cursor-pointer"
-                        title={brand.name}
-                      >
-                        <img
-                          src={brand.logo}
-                          alt={brand.name}
-                          className="h-10 w-auto object-contain"
-                        />
-                      </button>
-                    </NavigationMenuLink>
-                  </li>
-                ))}
-              </ul>
+              {loading ? (
+                <div className="p-4 text-center">
+                  <p>Cargando marcas...</p>
+                </div>
+              ) : (
+                <ul className=" grid gap-2 p-3 w-[280px] sm:w-[320px] md:w-[400px] lg:w-[480px] grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                  {brands.map((brand) => (
+                    <li
+                      key={brand.id}
+                      className="flex justify-center items-center"
+                    >
+                      <NavigationMenuLink asChild>
+                        <button
+                          onClick={() => handleBrandClick(brand)}
+                          className="group flex justify-center items-center rounded-md p-2 no-underline outline-none transition hover:bg-slate-300 focus:bg-slate-300 w-full h-full cursor-pointer"
+                          title={brand.name}
+                          style={{ backgroundColor: brand.color + '10' }} // Color de la marca con baja opacidad
+                        >
+                          <img
+                            src={brand.logo}
+                            alt={brand.name}
+                            className="h-10 w-auto object-contain"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = "/placeholder-brand.png";
+                            }}
+                          />
+                        </button>
+                      </NavigationMenuLink>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </NavigationMenuContent>
           </NavigationMenuItem>
         </NavigationMenuList>
@@ -203,8 +238,8 @@ export default function DrawerCategories() {
             <>
               <div className="p-2 w-full mx-auto">
                 {(() => {
-                  const brandKey = selectedBrand.name.toLowerCase();
-                  const products = brandDetails[brandKey].products;
+                  const categories = selectedBrand.categories || [];
+                  
                   // Calcular el ancho de cada tarjeta según el tamaño de pantalla
                   const cardWidth =
                     window.innerWidth < 640
@@ -221,16 +256,37 @@ export default function DrawerCategories() {
                   // En móvil y tablet, mostrar slider si hay más de 2 tarjetas
                   // En desktop, mostrar slider solo si hay más tarjetas que las que caben en una fila
                   const needsSlider = window.innerWidth < 768
-                    ? products.length > 2
-                    : products.length > cardsPerRow;
+                    ? categories.length > 2
+                    : categories.length > cardsPerRow;
+                    
+                  // Si no hay categorías, mostrar mensaje
+                  if (categories.length === 0) {
+                    return (
+                      <div className="p-8 text-center">
+                        <h3 className="text-lg font-semibold mb-2">{selectedBrand.name}</h3>
+                        <p className="text-gray-500">No hay categorías disponibles para esta marca.</p>
+                        <Button 
+                          onClick={() => navigate(`/productos/${selectedBrand.name}`)} 
+                          className="mt-4"
+                          style={{ backgroundColor: selectedBrand.color }}
+                        >
+                          Ver todos los productos
+                        </Button>
+                      </div>
+                    );
+                  }
 
                   return (
                     <div className="relative">
+                      <h3 className="text-lg font-semibold mb-4 text-center" style={{ color: selectedBrand.color }}>
+                        {selectedBrand.name} - Categorías
+                      </h3>
+                      
                       {needsSlider && (
                         <button
                           className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-2 shadow-md"
                           onClick={() => {
-                            const slider = document.getElementById(`slider-${brandKey}`);
+                            const slider = document.getElementById(`slider-${selectedBrand.id}`);
                             if (slider) {
                               // Calcular el ancho visible del contenedor
                               const visibleWidth = slider.clientWidth;
@@ -245,7 +301,7 @@ export default function DrawerCategories() {
                         </button>
                       )}
                       <div
-                        id={`slider-${brandKey}`}
+                        id={`slider-${selectedBrand.id}`}
                         className={`flex ${!needsSlider
                           ? "justify-center flex-wrap gap-4" // Centrado con espacio entre tarjetas cuando no hay slider
                           : "overflow-x-auto snap-x snap-mandatory"
@@ -253,38 +309,32 @@ export default function DrawerCategories() {
                           } max-w-[1200px] mx-auto`} // Ancho máximo y centrado horizontal
                         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                       >
-                        {products.map((product, idx) => (
+                        {categories.map((category) => (
                           <div
-                            key={idx}
-                            onClick={() =>
-                              goToCategoryPage(brandKey, product)
-                            }
+                            key={category.id}
+                            onClick={() => goToCategoryPage(selectedBrand, category)}
                             className={`flex-none ${needsSlider ? "snap-center" : ""
                               } cursor-pointer flex flex-col items-center justify-center rounded-lg bg-white p-4 shadow-md transition-transform hover:scale-105 ${needsSlider ? "mx-2" : "m-1"} min-w-[140px] max-w-[140px] sm:min-w-[180px] sm:max-w-[180px] md:min-w-[220px] md:max-w-[220px] lg:min-w-[240px] lg:max-w-[240px]`}
+                            style={{ borderColor: selectedBrand.color, borderWidth: '1px' }}
                           >
                             <div className="w-full aspect-square flex items-center justify-center mb-4 h-[120px] sm:h-[140px] md:h-[160px] lg:h-[180px] overflow-hidden">
                               <div className="relative w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] md:w-[140px] md:h-[140px] lg:w-[160px] lg:h-[160px] flex items-center justify-center">
                                 <img
-                                  src={getProductImage(brandKey, product, 'webp')}
-                                  alt={product}
+                                  src={category.url || `/placeholder-category.png`}
+                                  alt={category.name}
                                   className="absolute max-h-[100px] max-w-[100px] sm:max-h-[120px] sm:max-w-[120px] md:max-h-[140px] md:max-w-[140px] lg:max-h-[160px] lg:max-w-[160px] w-auto h-auto object-contain"
                                   onError={(e) => {
                                     // Evitar bucle infinito
                                     e.target.onerror = null;
-                                    // Intentar con PNG si webp falla
-                                    if (e.target.src.endsWith('.webp')) {
-                                      e.target.src = getProductImage(brandKey, product, 'png');
-                                    } else {
-                                      // Si PNG también falla, mostrar un placeholder
-                                      e.target.src = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22100%22%20height%3D%22100%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23f0f0f0%22%2F%3E%3C%2Fsvg%3E';
-                                    }
+                                    // Mostrar un placeholder
+                                    e.target.src = '/placeholder-category.png';
                                   }}
                                   style={{ objectFit: 'contain' }}
                                 />
                               </div>
                             </div>
                             <span className="text-xs sm:text-sm md:text-base lg:text-lg font-medium text-center w-full truncate">
-                              {product}
+                              {category.name}
                             </span>
                           </div>
                         ))}
@@ -293,7 +343,7 @@ export default function DrawerCategories() {
                         <button
                           className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-2 shadow-md"
                           onClick={() => {
-                            const slider = document.getElementById(`slider-${brandKey}`);
+                            const slider = document.getElementById(`slider-${selectedBrand.id}`);
                             if (slider) {
                               // Calcular el ancho visible del contenedor
                               const visibleWidth = slider.clientWidth;
