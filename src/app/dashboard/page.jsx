@@ -12,6 +12,7 @@ import { ContentView } from "./views/ContentView";
 import { StatsView } from "./views/StatsView";
 import { BrandsView } from "./views/BrandsView";
 import { CategoriesView } from "./views/CategoriesView";
+import { SparePartsView } from "./views/SparePartsView";
 import { toast } from "sonner";
 
 export default function Page() {
@@ -32,6 +33,8 @@ export default function Page() {
       switch (currentView) {
         case "productos":
           return <ProductsView />;
+        case "repuestos":
+          return <SparePartsView />;
         case "pedidos":
           return <OrdersView />;
         case "clientes":

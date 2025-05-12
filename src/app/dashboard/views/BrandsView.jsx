@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
   getAllBrands,
+  getAllActiveBrands,
   createBrand,
   updateBrand,
   changeBrandStatus
@@ -82,10 +83,14 @@ export function BrandsView() {
 
   // Filtrar marcas cuando cambia el término de búsqueda
   useEffect(() => {
+    // Primero filtrar solo las marcas activas
+    const activeBrands = brands.filter(brand => brand.status === "ACTIVE");
+    
+    // Luego aplicar el filtro de búsqueda si existe
     if (searchTerm.trim() === "") {
-      setFilteredBrands(brands);
+      setFilteredBrands(activeBrands);
     } else {
-      const filtered = brands.filter(brand =>
+      const filtered = activeBrands.filter(brand =>
         brand.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         brand.description?.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -93,7 +98,7 @@ export function BrandsView() {
     }
   }, [brands, searchTerm]);
 
-  // Obtener todas las marcas
+  // Obtener todas las marcas y filtrar las activas
   const fetchBrands = async () => {
     try {
       setIsLoading(true);
@@ -115,9 +120,12 @@ export function BrandsView() {
         status: brand.status || "ACTIVE",
         categories: brand.categories || []
       }));
+      
+      // Filtrar solo las marcas activas
+      const activeBrands = processedBrands.filter(brand => brand.status === "ACTIVE");
 
-      setBrands(processedBrands);
-      setFilteredBrands(processedBrands);
+      setBrands(processedBrands); // Mantener todas las marcas en el estado
+      setFilteredBrands(activeBrands); // Mostrar solo las activas
     } catch (error) {
       console.error("Error al obtener marcas:", error);
       toast.error("Error al cargar las marcas");
@@ -152,6 +160,9 @@ export function BrandsView() {
 
   // Preparar formulario para editar marca existente
   const handleEditBrand = (brand) => {
+    // Cargar las categorías antes de abrir el modal
+    fetchCategories();
+    
     setFormData({
       id: brand.id,
       name: brand.name || "",
@@ -213,21 +224,45 @@ export function BrandsView() {
         }
       }
 
-      // 3. Preparar payload final solo con IDs
+      // 3. Preparar payload final
       const allCategoryIds = [...existingCategoryIds, ...newCategoryIds];
-      const payload = {
-        ...formData,
-        categories: allCategoryIds.map(id => ({ id }))
-      };
-
+      
+      // Preparar el payload según si es edición o creación
+      let brandData;
+      
       if (isEditing) {
-        // Actualizar marca existente
-        await updateBrand(payload);
-        toast.success("Marca actualizada correctamente");
+        // Para actualización, usar EXACTAMENTE la estructura que espera la API
+        brandData = {
+          id: formData.id,
+          name: formData.name,
+          url: formData.url,
+          color: formData.color,
+          description: formData.description || "",
+          status: formData.status || "ACTIVE",
+          categories: allCategoryIds.map(categoryId => ({
+            id: parseInt(categoryId)
+          }))
+        };
       } else {
-        // Crear nueva marca
-        await createBrand(payload);
-        toast.success("Marca creada correctamente");
+        // Para creación, usar la estructura original
+        brandData = {
+          ...formData,
+          brandCategoryDto: allCategoryIds.map(categoryId => ({
+            categoryId: categoryId
+          }))
+        };
+      }
+
+      console.log('Enviando datos de marca:', brandData);
+      
+      const response = isEditing
+        ? await updateBrand(brandData)
+        : await createBrand(brandData);
+
+      if (response && (response.type === 'SUCCESS' || response.result)) {
+        toast.success(`Marca ${isEditing ? 'actualizada' : 'creada'} correctamente`);
+      } else {
+        throw new Error(response?.text || 'No se recibió una respuesta válida del servidor');
       }
 
       // Recargar lista de marcas
@@ -237,7 +272,7 @@ export function BrandsView() {
       closeDialog();
     } catch (error) {
       console.error("Error al guardar marca:", error);
-      toast.error(`Error al ${isEditing ? 'actualizar' : 'crear'} la marca: ${error.message || 'Error desconocido'}`);
+      toast.error(`Error al ${isEditing ? 'actualizar' : 'crear'} la marca: ${error.response?.data ? JSON.stringify(error.response.data) : (error.message || 'Error desconocido')}`);
     }
   };
 
@@ -255,15 +290,42 @@ export function BrandsView() {
   };
 
   // Cambiar estado de marca (activar/desactivar)
-  const handleChangeStatus = async (id, currentStatus) => {
+  const handleChangeBrandStatus = async (brandId, newStatus) => {
     try {
-      const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
-      await changeBrandStatus(id, newStatus);
-      toast.success(`Marca ${newStatus === "ACTIVE" ? "activada" : "desactivada"} correctamente`);
-      await fetchBrands();
+      // Encontrar la marca completa en el estado
+      const brandToUpdate = brands.find(brand => brand.id === brandId);
+      
+      if (!brandToUpdate) {
+        throw new Error('Marca no encontrada');
+      }
+      
+      // Crear una copia con el nuevo estado
+      const updatedBrand = {
+        ...brandToUpdate,
+        status: newStatus
+      };
+      
+      // Usar updateBrand en lugar de changeBrandStatus para enviar todos los datos
+      const response = await updateBrand(updatedBrand);
+      
+      if (response && (response.type === 'SUCCESS' || response.result)) {
+        toast.success(`Estado de la marca cambiado a ${newStatus === 'ACTIVE' ? 'activo' : 'inactivo'}`);
+        
+        // Si se desactivó una marca, eliminarla del estado local inmediatamente
+        if (newStatus === 'INACTIVE') {
+          setBrands(prevBrands => prevBrands.map(brand => 
+            brand.id === brandId ? {...brand, status: 'INACTIVE'} : brand
+          ));
+          setFilteredBrands(prevFiltered => prevFiltered.filter(brand => brand.id !== brandId));
+        } else {
+          fetchBrands(); // Recargar todas las marcas si se activó
+        }
+      } else {
+        throw new Error(response?.text || 'No se recibió una respuesta válida del servidor');
+      }
     } catch (error) {
-      console.error("Error al cambiar estado de marca:", error);
-      toast.error(`Error al cambiar estado de la marca: ${error.message || 'Error desconocido'}`);
+      console.error('Error al cambiar estado de la marca:', error);
+      toast.error(`Error al cambiar estado: ${error.response?.data ? JSON.stringify(error.response.data) : (error.message || 'Error desconocido')}`);
     }
   };
 
@@ -328,14 +390,14 @@ export function BrandsView() {
                       <Edit className="h-4 w-4" />
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
+                  <DialogContent className="sm:max-w-[600px] md:max-w-[700px] max-h-[90vh] flex flex-col overflow-hidden">
+                    <DialogHeader className="sticky top-0 bg-white z-10 pb-2 border-b">
                       <DialogTitle>Editar Marca</DialogTitle>
                       <DialogDescription>
                         Actualiza los detalles de la marca. Haz clic en guardar cuando termines.
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
+                    <div className="grid gap-4 py-4 overflow-y-auto pr-2">
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="name" className="text-right">
                           Nombre
@@ -391,8 +453,158 @@ export function BrandsView() {
                           rows={3}
                         />
                       </div>
+                      
+                      {/* Sección de Categorías */}
+                      <div className="grid grid-cols-4 items-start gap-4">
+                        <Label className="text-right pt-2">
+                          Categorías
+                        </Label>
+                        <div className="col-span-3">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-medium">Categorías para esta marca</h3>
+                            <Button 
+                              size="sm" 
+                              variant={isCreatingCategory ? "destructive" : "default"} 
+                              onClick={() => setIsCreatingCategory(v => !v)}
+                              className="gap-1"
+                            >
+                              {isCreatingCategory ? (
+                                <>
+                                  <X className="h-4 w-4" /> Cancelar
+                                </>
+                              ) : (
+                                <>
+                                  <Plus className="h-4 w-4" /> Nueva Categoría
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                          
+                          {/* Crear nueva categoría */}
+                          {isCreatingCategory && (
+                            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 mb-4 shadow-sm">
+                              <h4 className="font-medium text-blue-800 mb-3">Nueva categoría</h4>
+                              <div className="grid grid-cols-1 gap-3">
+                                <div>
+                                  <Label htmlFor="cat-name" className="mb-1 block text-sm">Nombre *</Label>
+                                  <Input
+                                    id="cat-name"
+                                    name="name"
+                                    placeholder="Ej: Herramientas Eléctricas"
+                                    value={categoryForm.name}
+                                    onChange={e => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="cat-url" className="mb-1 block text-sm">URL de imagen</Label>
+                                  <Input
+                                    id="cat-url"
+                                    name="url"
+                                    placeholder="https://ejemplo.com/imagen.jpg"
+                                    value={categoryForm.url}
+                                    onChange={e => setCategoryForm({ ...categoryForm, url: e.target.value })}
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="cat-description" className="mb-1 block text-sm">Descripción</Label>
+                                  <Input
+                                    id="cat-description"
+                                    name="description"
+                                    placeholder="Breve descripción..."
+                                    value={categoryForm.description}
+                                    onChange={e => setCategoryForm({ ...categoryForm, description: e.target.value })}
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex justify-end mt-3">
+                                <Button
+                                  size="sm"
+                                  onClick={async () => {
+                                    try {
+                                      if (!categoryForm.name) return toast.error('El nombre de la categoría es obligatorio');
+                                      // Solo enviar name, url y description para la categoría
+                                      const { name, url, description } = categoryForm;
+                                      const data = await createCategory({ name, url, description });
+                                      if (data && data.result && data.result.id) {
+                                        setCategories(prev => [...prev, data.result]);
+                                        setFormData(f => ({ ...f, categories: [...f.categories, data.result.id] }));
+                                        setCategoryForm({ name: '', url: '', description: '' });
+                                        setIsCreatingCategory(false);
+                                        toast.success('Categoría creada correctamente');
+                                      }
+                                    } catch (e) {
+                                      toast.error('Error al crear la categoría');
+                                    }
+                                  }}
+                                >
+                                  <Plus className="h-4 w-4 mr-1" /> Crear categoría
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Lista de categorías asignadas */}
+                          <div className="mt-2">
+                            <Label className="mb-2 block text-sm">Categorías asignadas:</Label>
+                            <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[60px] bg-gray-50">
+                              {categories
+                                .filter(cat => formData.categories.includes(cat.id))
+                                .map(cat => (
+                                  <div key={cat.id} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md">
+                                    <span>{cat.name}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-5 w-5 rounded-full hover:bg-blue-200"
+                                      onClick={() => setFormData(f => ({
+                                        ...f,
+                                        categories: f.categories.filter(id => id !== cat.id)
+                                      }))}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                              ))}
+                              {formData.categories.length === 0 && (
+                                <div className="flex items-center justify-center w-full h-12 text-gray-400">
+                                  No hay categorías asignadas
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Lista de categorías disponibles */}
+                          <div className="mt-4">
+                            <Label className="mb-2 block text-sm">Categorías disponibles:</Label>
+                            <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[60px] bg-gray-50">
+                              {categories
+                                .filter(cat => !formData.categories.includes(cat.id))
+                                .map(cat => (
+                                  <Button
+                                    key={cat.id}
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setFormData(f => ({
+                                      ...f,
+                                      categories: [...f.categories, cat.id]
+                                    }))}
+                                    className="transition-all duration-200 hover:scale-105"
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    {cat.name}
+                                  </Button>
+                              ))}
+                              {categories.filter(cat => !formData.categories.includes(cat.id)).length === 0 && (
+                                <div className="flex items-center justify-center w-full h-12 text-gray-400">
+                                  No hay más categorías disponibles
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="sticky bottom-0 bg-white z-10 pt-2 border-t mt-4">
                       <DialogClose asChild>
                         <Button type="button" variant="secondary">
                           Cancelar
@@ -435,7 +647,10 @@ export function BrandsView() {
                         </SheetClose>
                         <SheetClose asChild>
                           <Button
-                            onClick={() => handleChangeStatus(brand.id, brand.status)}
+                            onClick={() => {
+                              const newStatus = isActive ? "INACTIVE" : "ACTIVE";
+                              handleChangeBrandStatus(brand.id, newStatus);
+                            }}
                           >
                             {isActive ? "Desactivar" : "Activar"}
                           </Button>
@@ -485,8 +700,8 @@ export function BrandsView() {
               + Nueva marca
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader className="pb-4 border-b">
+          <DialogContent className="sm:max-w-[700px] md:max-w-[800px] max-h-[90vh] flex flex-col overflow-hidden">
+            <DialogHeader className="pb-4 border-b sticky top-0 bg-white z-10">
               <DialogTitle className="text-xl font-bold text-blue-800">
                 {isEditing ? "Editar Marca" : "Nueva Marca"}
               </DialogTitle>
@@ -496,7 +711,7 @@ export function BrandsView() {
                   : "Completa el formulario para crear una nueva marca."}
               </DialogDescription>
             </DialogHeader>
-            <div className="flex flex-col gap-6 py-6">
+            <div className="flex flex-col gap-6 py-6 overflow-y-auto pr-2">
               <div className="space-y-5">
                 <h3 className="text-lg font-medium">Información básica</h3>
                 
@@ -721,7 +936,7 @@ export function BrandsView() {
                 </div>
               </div>
             </div>
-            <DialogFooter className="border-t pt-4 mt-4 flex gap-2">
+            <DialogFooter className="border-t pt-4 mt-4 flex gap-2 sticky bottom-0 bg-white z-10">
               <DialogClose asChild>
                 <Button type="button" variant="secondary" className="gap-1">
                   <X className="h-4 w-4" /> Cancelar

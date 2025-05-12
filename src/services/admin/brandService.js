@@ -1,4 +1,5 @@
 import apiClient from "../apiClient";
+import axios from "axios";
 
 // Obtener todas las marcas con sus categorías
 export const getAllBrands = async () => {
@@ -42,12 +43,22 @@ export const createBrand = async (brandData) => {
 // Actualizar una marca existente
 export const updateBrand = async (brandData) => {
   try {
-    console.log('Actualizando marca:', brandData);
-    const { data } = await apiClient.put("/admin/brand/update", brandData);
+    console.log('Actualizando marca:', JSON.stringify(brandData, null, 2));
+    // Usar axios directamente con la URL completa y correcta
+    const { data } = await axios({
+      method: 'put',
+      url: "https://libamaq.com/api/admin/brand/update",
+      data: brandData,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+      }
+    });
     console.log('Respuesta de actualización de marca:', data);
     return data;
   } catch (error) {
     console.error('Error al actualizar marca:', error);
+    console.error('Detalles del error:', error.response?.data);
     throw error.response?.data || error.message;
   }
 };

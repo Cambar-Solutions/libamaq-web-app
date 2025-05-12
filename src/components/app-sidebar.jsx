@@ -7,7 +7,8 @@ import {
   BarChart3,     // Estadísticas (Gráfico de barras)
   Film,          // Contenido (Película)
   Tag,           // Marcas (Etiqueta)
-  Layers         // Categorías (Capas)
+  Layers,        // Categorías (Capas)
+  Wrench         // Repuestos (Llave inglesa)
 } from "lucide-react"
 
 import { NavUser } from "@/components/nav-user"
@@ -32,6 +33,11 @@ const data = {
       name: "Productos",
       id: "productos",
       icon: Package,
+    },
+    {
+      name: "Repuestos",
+      id: "repuestos",
+      icon: Wrench,
     },
     {
       name: "Marcas",
