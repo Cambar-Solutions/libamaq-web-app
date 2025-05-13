@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, CreditCard, Clock, ArrowLeft, Share2, Shield, Home } from "lucide-react";
 import { getProductById } from "@/services/public/productService";
+import ShareProduct from "@/components/ShareProduct";
 import { toast } from "sonner";
 import Nav2 from "@/components/Nav2";
 import {
@@ -146,12 +147,10 @@ const DetalleProducto = () => {
               
               {/* Imagen principal */}
               <div className="relative group flex-1">
-                <button 
-                  onClick={() => setFavorite(!favorite)}
-                  className="absolute top-2 right-2 z-10 bg-white rounded-full p-2 shadow-md hover:bg-gray-100"
-                >
-                  <Share2 size={20} className="text-gray-400" />
-                </button>
+                {/* Componente para compartir en redes sociales */}
+                <div className="absolute top-2 right-2 z-10">
+                  <ShareProduct product={product} />
+                </div>
                 <div className="w-full h-80 sm:h-96 flex justify-center items-center bg-white rounded-lg">
                   <img
                     src={product?.multimedia && product.multimedia.length > 0 
