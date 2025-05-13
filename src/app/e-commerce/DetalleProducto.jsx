@@ -28,6 +28,12 @@ const DetalleProducto = () => {
     const currentUrl = window.location.href;
     const productName = product?.name || "Producto";
     const productPrice = product?.price ? `$${product.price.toLocaleString()}` : "";
+    
+    // Usar Link Preview API para generar una URL con metadatos enriquecidos
+    const apiKey = "14cd3449c2c318cd5ddc39edc56ae53d";
+    const previewUrl = `https://api.linkpreview.net/?key=${apiKey}&q=${encodeURIComponent(currentUrl)}`;
+    
+    // Crear mensaje con la URL de la API
     const message = `¡Mira este producto en Libamaq! ${productName} ${productPrice}\n${currentUrl}`;
     
     // Codificar el mensaje para la URL
@@ -49,7 +55,13 @@ const DetalleProducto = () => {
   // Función para compartir en Facebook
   const shareOnFacebook = () => {
     const currentUrl = window.location.href;
-    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`;
+    
+    // Usar Link Preview API para generar una URL con metadatos enriquecidos
+    const apiKey = "14cd3449c2c318cd5ddc39edc56ae53d";
+    const previewUrl = `https://api.linkpreview.net/?key=${apiKey}&q=${encodeURIComponent(currentUrl)}`;
+    
+    // Usar la URL de la API para compartir en Facebook
+    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(previewUrl)}`;
     window.open(facebookUrl, "_blank");
     setShowShareOptions(false);
     toast.success("Enlace preparado para compartir en Facebook");
@@ -59,8 +71,13 @@ const DetalleProducto = () => {
   const shareOnTwitter = () => {
     const currentUrl = window.location.href;
     const productName = product?.name || "Producto";
+    
+    // Usar Link Preview API para generar una URL con metadatos enriquecidos
+    const apiKey = "14cd3449c2c318cd5ddc39edc56ae53d";
+    const previewUrl = `https://api.linkpreview.net/?key=${apiKey}&q=${encodeURIComponent(currentUrl)}`;
+    
     const message = `¡Mira este producto en Libamaq! ${productName}`;
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent(currentUrl)}`;
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent(previewUrl)}`;
     window.open(twitterUrl, "_blank");
     setShowShareOptions(false);
     toast.success("Enlace preparado para compartir en Twitter");
