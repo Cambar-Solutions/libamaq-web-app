@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, CreditCard, Clock, ArrowLeft, Share2, Shield, ChevronRight } from "lucide-react";
+import { ShoppingCart, CreditCard, Clock, ArrowLeft, Share2, Shield, ChevronRight, MessageCircle, Copy, Facebook, Twitter } from "lucide-react";
 import { getProductById } from "@/services/public/productService";
 import { toast } from "sonner";
 import Nav2 from "@/components/Nav2";
+import DynamicMetaTags from "@/components/DynamicMetaTags";
 
 const DetalleProducto = () => {
   const navigate = useNavigate();
@@ -15,10 +16,68 @@ const DetalleProducto = () => {
   const [favorite, setFavorite] = useState(false);
   const [highlightActive, setHighlightActive] = useState(false);
   const [brandName, setBrandName] = useState("");
+  const [showShareOptions, setShowShareOptions] = useState(false);
 
   // Función para regresar a la página de categorías
   const handleBack = () => {
     navigate("/tienda", { replace: true });
+  };
+
+  // Función para compartir por WhatsApp
+  const shareOnWhatsApp = () => {
+    const currentUrl = window.location.href;
+    const productName = product?.name || "Producto";
+    const productPrice = product?.price ? `$${product.price.toLocaleString()}` : "";
+    const message = `¡Mira este producto en Libamaq! ${productName} ${productPrice}\n${currentUrl}`;
+    
+    // Codificar el mensaje para la URL
+    const encodedMessage = encodeURIComponent(message);
+    
+    // Crear la URL de WhatsApp
+    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    
+    // Abrir en una nueva pestaña
+    window.open(whatsappUrl, "_blank");
+    
+    // Cerrar el menú de opciones de compartir
+    setShowShareOptions(false);
+    
+    // Mostrar notificación de éxito
+    toast.success("Enlace preparado para compartir en WhatsApp");
+  };
+  
+  // Función para compartir en Facebook
+  const shareOnFacebook = () => {
+    const currentUrl = window.location.href;
+    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`;
+    window.open(facebookUrl, "_blank");
+    setShowShareOptions(false);
+    toast.success("Enlace preparado para compartir en Facebook");
+  };
+  
+  // Función para compartir en Twitter
+  const shareOnTwitter = () => {
+    const currentUrl = window.location.href;
+    const productName = product?.name || "Producto";
+    const message = `¡Mira este producto en Libamaq! ${productName}`;
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent(currentUrl)}`;
+    window.open(twitterUrl, "_blank");
+    setShowShareOptions(false);
+    toast.success("Enlace preparado para compartir en Twitter");
+  };
+  
+  // Función para copiar el enlace
+  const copyLink = () => {
+    const currentUrl = window.location.href;
+    navigator.clipboard.writeText(currentUrl)
+      .then(() => {
+        toast.success("Enlace copiado al portapapeles");
+        setShowShareOptions(false);
+      })
+      .catch(err => {
+        console.error('Error al copiar: ', err);
+        toast.error("No se pudo copiar el enlace");
+      });
   };
 
   // Efecto para activar el resaltado del nombre del producto y obtener la marca
@@ -93,8 +152,24 @@ const DetalleProducto = () => {
     );
   }
 
+  // Preparar datos para las etiquetas meta
+  const metaTitle = product ? `${product.name} ${product.price ? `$${product.price.toLocaleString()}` : ''} | Libamaq` : '';
+  const metaDescription = product?.shortDescription || (product?.description?.details || '');
+  const metaImage = product?.multimedia && product.multimedia.length > 0 
+    ? product.multimedia[0].url 
+    : '/Monograma_LIBAMAQ.png';
+
   return (
     <div className="w-full bg-gray-100 min-h-screen pt-20 pb-8">
+      {/* Componente para gestionar las etiquetas meta */}
+      {product && (
+        <DynamicMetaTags 
+          title={metaTitle}
+          description={metaDescription}
+          image={metaImage}
+          type="product"
+        />
+      )}
       <Nav2 />
       
       <div className="max-w-7xl mx-auto px-4">
@@ -143,12 +218,50 @@ const DetalleProducto = () => {
               
               {/* Imagen principal */}
               <div className="relative group flex-1">
-                <button 
-                  onClick={() => setFavorite(!favorite)}
-                  className="absolute top-2 right-2 z-10 bg-white rounded-full p-2 shadow-md hover:bg-gray-100"
-                >
-                  <Share2 size={20} className="text-gray-400" />
-                </button>
+                <div className="absolute top-2 right-2 z-10">
+                  <button 
+                    onClick={() => setShowShareOptions(!showShareOptions)}
+                    className="bg-white rounded-full p-2 shadow-md hover:bg-gray-100"
+                    data-component-name="DetalleProducto"
+                  >
+                    <Share2 size={20} className="text-gray-400" />
+                  </button>
+                  
+                  {/* Menú de opciones para compartir */}
+                  {showShareOptions && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-20 py-1">
+                      <button
+                        onClick={shareOnWhatsApp}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      >
+                        <MessageCircle size={16} className="mr-2 text-green-500" />
+                        Compartir por WhatsApp
+                      </button>
+                      <button
+                        onClick={shareOnFacebook}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      >
+                        <Facebook size={16} className="mr-2 text-blue-600" />
+                        Compartir en Facebook
+                      </button>
+                      <button
+                        onClick={shareOnTwitter}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      >
+                        <Twitter size={16} className="mr-2 text-blue-400" />
+                        Compartir en Twitter
+                      </button>
+                      <hr className="my-1 border-gray-200" />
+                      <button
+                        onClick={copyLink}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      >
+                        <Copy size={16} className="mr-2 text-gray-500" />
+                        Copiar enlace
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <div className="w-full h-80 sm:h-96 flex justify-center items-center bg-white rounded-lg">
                   <img
                     src={product?.multimedia && product.multimedia.length > 0 
