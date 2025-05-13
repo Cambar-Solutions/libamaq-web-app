@@ -22,8 +22,16 @@ const ShareProduct = ({ product, baseUrl = window.location.origin }) => {
   
   // Preparar los datos para compartir
   const title = product.name || 'Producto Libamaq';
-  const description = product.shortDescription || product.description?.general || 'Descubre este producto en nuestra tienda';
-  const imageUrl = product.multimedia?.[0]?.url || product.image || '';
+  const description = product.shortDescription || product.description?.general || product.description?.details || 'Descubre este producto en nuestra tienda';
+  
+  // Obtener la URL de la imagen del producto
+  // La API devuelve las imágenes en el array multimedia
+  const imageUrl = product.multimedia && product.multimedia.length > 0 
+    ? product.multimedia[0].url 
+    : (product.image || '');
+    
+  // Log para depuración
+  console.log('Datos para compartir:', { title, description, imageUrl, productUrl });
   
   // Función para copiar el enlace al portapapeles
   const copyToClipboard = () => {

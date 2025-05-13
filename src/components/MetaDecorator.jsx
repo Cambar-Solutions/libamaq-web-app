@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { toast } from 'sonner';
 
 /**
  * Componente que actualiza dinámicamente las metaetiquetas Open Graph para compartir contenido
@@ -13,6 +14,13 @@ import PropTypes from 'prop-types';
  */
 const MetaDecorator = ({ title, description, imageUrl, url }) => {
   useEffect(() => {
+    // Validar que la URL de la imagen sea válida
+    if (!imageUrl) {
+      console.warn('MetaDecorator: No se proporcionó una URL de imagen válida');
+    } else {
+      console.log('MetaDecorator: Configurando imagen:', imageUrl);
+    }
+
     // Guardar las metaetiquetas originales para restaurarlas cuando el componente se desmonte
     const originalTitle = document.title;
     const originalMetaTags = {};
@@ -52,13 +60,28 @@ const MetaDecorator = ({ title, description, imageUrl, url }) => {
     // Actualizar metaetiquetas Open Graph
     updateMetaTag(null, title, 'og:title');
     updateMetaTag(null, description, 'og:description');
-    updateMetaTag(null, imageUrl, 'og:image');
+    
+    // Asegurarse de que la URL de la imagen sea absoluta
+    const absoluteImageUrl = imageUrl && !imageUrl.startsWith('http') 
+      ? `${window.location.origin}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}` 
+      : imageUrl;
+    
+    if (absoluteImageUrl) {
+      updateMetaTag(null, absoluteImageUrl, 'og:image');
+      // Añadir dimensiones de imagen si están disponibles (mejora la previsualización)
+      updateMetaTag(null, 'summary_large_image', 'og:image:type');
+    }
+    
     updateMetaTag(null, url || window.location.href, 'og:url');
-    updateMetaTag(null, 'website', 'og:type');
+    updateMetaTag(null, 'product', 'og:type');
     
     // Actualizar metaetiquetas Twitter Card
     updateMetaTag('twitter:card', 'summary_large_image');
-    updateMetaTag('twitter:image', imageUrl);
+    if (absoluteImageUrl) {
+      updateMetaTag('twitter:image', absoluteImageUrl);
+    }
+    updateMetaTag('twitter:title', title);
+    updateMetaTag('twitter:description', description);
     
     // Limpiar al desmontar el componente
     return () => {
