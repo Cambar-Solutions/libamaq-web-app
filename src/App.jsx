@@ -47,19 +47,19 @@ export const items = [
   },
 
   {
-    image:"/card-section/cipsa-10.jpg",
-    title:"Revolvedora para concreto Máxi 10"
+    image: "/card-section/cipsa-10.jpg",
+    title: "Revolvedora para concreto Máxi 10"
   },
   {
-    image:"/card-section/rotomartillo.png",
-    title:"Rotomartillo electro neumático HR2475"
+    image: "/card-section/rotomartillo.png",
+    title: "Rotomartillo electro neumático HR2475"
   }
 ];
 
 const destacados = [
   'https://www.tiktok.com/@libamaqherramientas/video/7388193969009626373',
   'https://www.tiktok.com/@libamaqherramientas/video/7263189002147187973'
-  
+
 ];
 
 export default function App() {
@@ -80,28 +80,28 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       {/* Navbar */}
-      <Nav/>
-      
-    
+      <Nav />
+
+
 
       {/* Hero Section */}
       <header className="text-center py-6 bg-gradient-to-l from-gray-100 to-blue-400 text-black mt-[7em]">
         <h1 className="text-4xl font-bold select-none">
-           Las mejores herramientas para cualquier persona
+          Las mejores herramientas para cualquier persona
         </h1>
         <p className="mt-4 text-xl select-none">
-        Encuentra herramientas de calidad al mejor precio en LIBAMAQ.
+          Encuentra herramientas de calidad al mejor precio en LIBAMAQ.
         </p>
 
         <Button className="bg-blue-500 hover:bg-blue-800 rounded-full p-5 mt-4 text-1xl transition-transform transition-colors duration-500">
-        <Link to="/tienda" className="flex items-center justify-center space-x-2">
-    <span>Explorar Tienda</span>
-    <FaStore />
-  </Link>
-          </Button>
+          <Link to="/tienda" className="flex items-center justify-center space-x-2">
+            <span>Explorar Tienda</span>
+            <FaStore />
+          </Link>
+        </Button>
       </header>
 
-      <Carousel images={images} className="mb-6"/>
+      <Carousel images={images} className="mb-6" />
 
       <section className="py-10 px-6 mb-8 select-none">
         <motion.div

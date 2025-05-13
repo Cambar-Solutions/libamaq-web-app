@@ -14,6 +14,7 @@ import CategoryPage from './app/e-commerce/CategoryPage';
 import NuevoProducto from './app/dashboard/NuevoProducto';
 import ProductoDetalle from './app/dashboard/ProductoDetalle';
 import Nosotros from './Nosotros.jsx';
+import UserHome from './app/user/UserHome';
 
 
 createRoot(document.getElementById('root')).render(
@@ -37,6 +38,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/nuevo-producto" element={<NuevoProducto />} />
         <Route path="/producto-detalle" element={<ProductoDetalle />} />
 
+        <Route path='/user-home' element={<UserHome/>}/>
       </Routes>
     </Router>
   </StrictMode>
