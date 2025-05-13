@@ -1,11 +1,18 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, CreditCard, Clock, ArrowLeft, Share2, Shield, ChevronRight, MessageCircle, Copy, Facebook, Twitter } from "lucide-react";
+import { ShoppingCart, CreditCard, Clock, ArrowLeft, Share2, Shield, Home } from "lucide-react";
 import { getProductById } from "@/services/public/productService";
 import { toast } from "sonner";
 import Nav2 from "@/components/Nav2";
-import DynamicMetaTags from "@/components/DynamicMetaTags";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 const DetalleProducto = () => {
   const navigate = useNavigate();
@@ -15,107 +22,17 @@ const DetalleProducto = () => {
   const [mainImage, setMainImage] = useState("");
   const [favorite, setFavorite] = useState(false);
   const [highlightActive, setHighlightActive] = useState(false);
-  const [brandName, setBrandName] = useState("");
-  const [showShareOptions, setShowShareOptions] = useState(false);
 
   // Función para regresar a la página de categorías
   const handleBack = () => {
     navigate("/tienda", { replace: true });
   };
 
-  // Función para compartir por WhatsApp
-  const shareOnWhatsApp = () => {
-    const currentUrl = window.location.href;
-    const productName = product?.name || "Producto";
-    const productPrice = product?.price ? `$${product.price.toLocaleString()}` : "";
-    
-    // Usar Link Preview API para generar una URL con metadatos enriquecidos
-    const apiKey = "14cd3449c2c318cd5ddc39edc56ae53d";
-    const previewUrl = `https://api.linkpreview.net/?key=${apiKey}&q=${encodeURIComponent(currentUrl)}`;
-    
-    // Crear mensaje con la URL de la API
-    const message = `¡Mira este producto en Libamaq! ${productName} ${productPrice}\n${currentUrl}`;
-    
-    // Codificar el mensaje para la URL
-    const encodedMessage = encodeURIComponent(message);
-    
-    // Crear la URL de WhatsApp
-    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-    
-    // Abrir en una nueva pestaña
-    window.open(whatsappUrl, "_blank");
-    
-    // Cerrar el menú de opciones de compartir
-    setShowShareOptions(false);
-    
-    // Mostrar notificación de éxito
-    toast.success("Enlace preparado para compartir en WhatsApp");
-  };
-  
-  // Función para compartir en Facebook
-  const shareOnFacebook = () => {
-    const currentUrl = window.location.href;
-    
-    // Usar Link Preview API para generar una URL con metadatos enriquecidos
-    const apiKey = "14cd3449c2c318cd5ddc39edc56ae53d";
-    const previewUrl = `https://api.linkpreview.net/?key=${apiKey}&q=${encodeURIComponent(currentUrl)}`;
-    
-    // Usar la URL de la API para compartir en Facebook
-    const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(previewUrl)}`;
-    window.open(facebookUrl, "_blank");
-    setShowShareOptions(false);
-    toast.success("Enlace preparado para compartir en Facebook");
-  };
-  
-  // Función para compartir en Twitter
-  const shareOnTwitter = () => {
-    const currentUrl = window.location.href;
-    const productName = product?.name || "Producto";
-    
-    // Usar Link Preview API para generar una URL con metadatos enriquecidos
-    const apiKey = "14cd3449c2c318cd5ddc39edc56ae53d";
-    const previewUrl = `https://api.linkpreview.net/?key=${apiKey}&q=${encodeURIComponent(currentUrl)}`;
-    
-    const message = `¡Mira este producto en Libamaq! ${productName}`;
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent(previewUrl)}`;
-    window.open(twitterUrl, "_blank");
-    setShowShareOptions(false);
-    toast.success("Enlace preparado para compartir en Twitter");
-  };
-  
-  // Función para copiar el enlace
-  const copyLink = () => {
-    const currentUrl = window.location.href;
-    navigator.clipboard.writeText(currentUrl)
-      .then(() => {
-        toast.success("Enlace copiado al portapapeles");
-        setShowShareOptions(false);
-      })
-      .catch(err => {
-        console.error('Error al copiar: ', err);
-        toast.error("No se pudo copiar el enlace");
-      });
-  };
-
-  // Efecto para activar el resaltado del nombre del producto y obtener la marca
+  // Efecto para activar el resaltado del nombre del producto
   useEffect(() => {
     if (product) {
       // Activar el resaltado después de cargar el producto
       setHighlightActive(true);
-      
-      // Determinar el nombre de la marca basado en brandId
-      if (product.brandId === 1) {
-        setBrandName("Makita");
-      } else if (product.brandId === 2) {
-        setBrandName("DeWalt");
-      } else if (product.brandId === 3) {
-        setBrandName("Bosch");
-      } else if (product.brandId === 4) {
-        setBrandName("Milwaukee");
-      } else if (product.type) {
-        // Si no tenemos la marca pero tenemos el tipo de producto
-        setBrandName(product.type);
-      }
     }
   }, [product]);
 
@@ -169,47 +86,41 @@ const DetalleProducto = () => {
     );
   }
 
-  // Preparar datos para las etiquetas meta
-  const metaTitle = product ? `${product.name} ${product.price ? `$${product.price.toLocaleString()}` : ''} | Libamaq` : '';
-  const metaDescription = product?.shortDescription || (product?.description?.details || '');
-  const metaImage = product?.multimedia && product.multimedia.length > 0 
-    ? product.multimedia[0].url 
-    : '/Monograma_LIBAMAQ.png';
-
   return (
     <div className="w-full bg-gray-100 min-h-screen pt-20 pb-8">
-      {/* Componente para gestionar las etiquetas meta */}
-      {product && (
-        <DynamicMetaTags 
-          title={metaTitle}
-          description={metaDescription}
-          image={metaImage}
-          type="product"
-        />
-      )}
       <Nav2 />
       
       <div className="max-w-7xl mx-auto px-4">
-        {/* Migas de pan y navegación */}
-        <div className="py-4 mt-4 flex items-center text-sm text-gray-500">
-          <button onClick={handleBack} className="flex items-center hover:text-blue-500">
-            <ArrowLeft size={16} className="mr-1" />
-            Volver al listado
-          </button>
-          <ChevronRight size={14} className="mx-2" />
-          {brandName && (
-            <>
-              <span className="text-gray-500">{brandName}</span>
-              <ChevronRight size={14} className="mx-2" />
-            </>
-          )}
-          <span className={`truncate transition-colors duration-300 ${highlightActive ? 'text-blue-700 font-medium' : 'text-gray-500'}`}>{product?.name}</span>
+        {/* Migas de pan y navegación con el componente Breadcrumb */}
+        <div className="py-4 mt-4">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/" className="flex items-center">
+                  <Home size={16} className="mr-1" />
+                  Inicio
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/tienda" onClick={(e) => { e.preventDefault(); handleBack(); }}>
+                  Tienda
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage className={`truncate transition-colors duration-300 ${highlightActive ? 'text-blue-700 font-medium' : 'text-gray-500'}`}>
+                  {product?.name}
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </div>
 
         {/* Contenido principal */}
         <div className="flex flex-col md:flex-row gap-4 bg-white rounded-lg shadow-sm mt-2">
           {/* Galería de imágenes */}
-          <div className="w-full md:w-3/5 lg:w-2/3 p-4">
+          <div className="w-full md:w-1/2 lg:w-3/5 p-4">
             <div className="flex flex-row gap-4">
               {/* Miniaturas verticales */}
               <div className="hidden sm:flex flex-col space-y-2 overflow-y-auto max-h-96">
@@ -235,50 +146,12 @@ const DetalleProducto = () => {
               
               {/* Imagen principal */}
               <div className="relative group flex-1">
-                <div className="absolute top-2 right-2 z-10">
-                  <button 
-                    onClick={() => setShowShareOptions(!showShareOptions)}
-                    className="bg-white rounded-full p-2 shadow-md hover:bg-gray-100"
-                    data-component-name="DetalleProducto"
-                  >
-                    <Share2 size={20} className="text-gray-400" />
-                  </button>
-                  
-                  {/* Menú de opciones para compartir */}
-                  {showShareOptions && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-20 py-1">
-                      <button
-                        onClick={shareOnWhatsApp}
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      >
-                        <MessageCircle size={16} className="mr-2 text-green-500" />
-                        Compartir por WhatsApp
-                      </button>
-                      <button
-                        onClick={shareOnFacebook}
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      >
-                        <Facebook size={16} className="mr-2 text-blue-600" />
-                        Compartir en Facebook
-                      </button>
-                      <button
-                        onClick={shareOnTwitter}
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      >
-                        <Twitter size={16} className="mr-2 text-blue-400" />
-                        Compartir en Twitter
-                      </button>
-                      <hr className="my-1 border-gray-200" />
-                      <button
-                        onClick={copyLink}
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      >
-                        <Copy size={16} className="mr-2 text-gray-500" />
-                        Copiar enlace
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <button 
+                  onClick={() => setFavorite(!favorite)}
+                  className="absolute top-2 right-2 z-10 bg-white rounded-full p-2 shadow-md hover:bg-gray-100"
+                >
+                  <Share2 size={20} className="text-gray-400" />
+                </button>
                 <div className="w-full h-80 sm:h-96 flex justify-center items-center bg-white rounded-lg">
                   <img
                     src={product?.multimedia && product.multimedia.length > 0 
@@ -315,7 +188,7 @@ const DetalleProducto = () => {
           </div>
 
           {/* Información del producto */}
-          <div className="w-full md:w-2/5 lg:w-1/3 p-4">
+          <div className="w-full md:w-1/2 lg:w-2/5 p-4">
             <div className="flex items-center mb-1">
               <span className="text-sm text-gray-500">Nuevo | ID: {product?.externalId}</span>
               {product?.stock > 0 && (
@@ -323,13 +196,7 @@ const DetalleProducto = () => {
               )}
             </div>
             
-            <h1 className="text-xl sm:text-2xl font-medium text-gray-900 mb-1">{product?.name}</h1>
-            
-            {brandName && (
-              <div className="mb-3">
-                <span className="text-sm font-medium text-blue-600">Marca: {brandName}</span>
-              </div>
-            )}
+            <h1 className="text-xl sm:text-2xl font-medium text-gray-900 mb-3">{product?.name}</h1>
             
             <div className="mb-4">
               <div className="flex items-baseline">
