@@ -1,3 +1,26 @@
+# Libamaq - Venta y Renta de Maquinaria y Herramienta en México
+# https://libamaq.com
+
+# Permitir a todos los robots de búsqueda
 User-agent: *
 Allow: /
+
+# Evitar indexación de páginas administrativas o de desarrollo
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /login
+Disallow: /api/
+Disallow: /dev/
+
+# Evitar indexación de archivos duplicados o no relevantes
+Disallow: /*.json$
+Disallow: /*.js$
+Disallow: /*.css$
+Disallow: /*.xml$
+Disallow: /*.scss$
+
+# Sitemap
 Sitemap: https://libamaq.com/sitemap.xml
+
+# Tiempo de rastreo (opcional, para no sobrecargar el servidor)
+Crawl-delay: 10
