@@ -61,15 +61,29 @@ const MetaDecorator = ({ title, description, imageUrl, url }) => {
     updateMetaTag(null, title, 'og:title');
     updateMetaTag(null, description, 'og:description');
     
-    // Asegurarse de que la URL de la imagen sea absoluta
-    const absoluteImageUrl = imageUrl && !imageUrl.startsWith('http') 
-      ? `${window.location.origin}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}` 
-      : imageUrl;
+    // Asegurarse de que la URL de la imagen sea absoluta y esté correctamente formateada
+    // No modificar URLs que ya son absolutas (comienzan con http o https)
+    const absoluteImageUrl = imageUrl || '';
     
     if (absoluteImageUrl) {
+      console.log('Configurando imagen Open Graph:', absoluteImageUrl);
+      
+      // Establecer metaetiquetas de imagen para Open Graph
       updateMetaTag(null, absoluteImageUrl, 'og:image');
-      // Añadir dimensiones de imagen si están disponibles (mejora la previsualización)
-      updateMetaTag(null, 'summary_large_image', 'og:image:type');
+      
+      // Especificar el tipo de contenido de la imagen (ayuda con la previsualización)
+      if (absoluteImageUrl.endsWith('.jpg') || absoluteImageUrl.endsWith('.jpeg')) {
+        updateMetaTag(null, 'image/jpeg', 'og:image:type');
+      } else if (absoluteImageUrl.endsWith('.png')) {
+        updateMetaTag(null, 'image/png', 'og:image:type');
+      }
+      
+      // Añadir dimensiones predeterminadas para mejorar la previsualización
+      updateMetaTag(null, '1200', 'og:image:width');
+      updateMetaTag(null, '630', 'og:image:height');
+      
+      // Asegurar que la imagen se muestre correctamente
+      updateMetaTag(null, 'true', 'og:image:secure_url');
     }
     
     updateMetaTag(null, url || window.location.href, 'og:url');
@@ -78,10 +92,13 @@ const MetaDecorator = ({ title, description, imageUrl, url }) => {
     // Actualizar metaetiquetas Twitter Card
     updateMetaTag('twitter:card', 'summary_large_image');
     if (absoluteImageUrl) {
+      console.log('Configurando imagen Twitter Card:', absoluteImageUrl);
       updateMetaTag('twitter:image', absoluteImageUrl);
+      updateMetaTag('twitter:image:src', absoluteImageUrl); // Alternativa que algunos clientes utilizan
     }
     updateMetaTag('twitter:title', title);
     updateMetaTag('twitter:description', description);
+    updateMetaTag('twitter:site', '@libamaq'); // Reemplaza con tu nombre de usuario en Twitter si lo tienes
     
     // Limpiar al desmontar el componente
     return () => {

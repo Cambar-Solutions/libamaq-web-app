@@ -26,12 +26,37 @@ const ShareProduct = ({ product, baseUrl = window.location.origin }) => {
   
   // Obtener la URL de la imagen del producto
   // La API devuelve las imágenes en el array multimedia
-  const imageUrl = product.multimedia && product.multimedia.length > 0 
-    ? product.multimedia[0].url 
-    : (product.image || '');
+  let imageUrl = '';
+  
+  if (product.multimedia && product.multimedia.length > 0) {
+    imageUrl = product.multimedia[0].url;
+    console.log('Imagen encontrada en multimedia:', imageUrl);
+  } else if (product.image) {
+    imageUrl = product.image;
+    console.log('Imagen encontrada en product.image:', imageUrl);
+  } else {
+    console.warn('No se encontró imagen para el producto:', product.id);
+  }
+  
+  // Verificar que la URL de la imagen sea válida y accesible
+  if (imageUrl) {
+    // Asegurarse de que la URL sea absoluta
+    if (!imageUrl.startsWith('http')) {
+      imageUrl = `${window.location.origin}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+    }
     
+    console.log('URL final de la imagen para compartir:', imageUrl);
+  }
+  
   // Log para depuración
-  console.log('Datos para compartir:', { title, description, imageUrl, productUrl });
+  console.log('Datos completos para compartir:', { 
+    title, 
+    description, 
+    imageUrl, 
+    productUrl,
+    productId: product.id,
+    multimedia: product.multimedia
+  });
   
   // Función para copiar el enlace al portapapeles
   const copyToClipboard = () => {
