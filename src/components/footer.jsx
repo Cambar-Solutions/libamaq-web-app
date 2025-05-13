@@ -77,7 +77,7 @@ export default function Footer() {
             {/* Botón de tienda */}
             <div className="flex justify-center lg:justify-start">
               <Button
-                className="bg-white border-2 border-blue-700 text-blue-600 rounded-full hover:bg-blue-700 hover:text-white hover:scale-10 transition-colors duration-500"
+                className="bg-white border-2 border-blue-700 text-blue-600 rounded-full hover:bg-blue-700 hover:text-white hover:scale-105 transition-all duration-500"
               >
                 <Link to="/tienda" className="flex items-center justify-center space-x-1">
                   <span>Explorar Tienda</span>
