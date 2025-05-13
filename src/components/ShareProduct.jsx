@@ -18,7 +18,7 @@ const ShareProduct = ({ product, baseUrl = window.location.origin }) => {
   if (!product) return null;
   
   // Construir la URL completa del producto
-  const productUrl = `${baseUrl}/service-libamaq/public/share/product/${product.id}`;
+  const productUrl = `${baseUrl}/api/public/share/product/${product.id}`;
 
   
   // Preparar los datos para compartir
