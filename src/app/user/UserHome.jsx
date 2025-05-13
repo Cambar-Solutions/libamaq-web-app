@@ -23,7 +23,7 @@ import { Link } from "react-router-dom";
 import { getAllPublicProducts } from "@/services/public/productService";
 import { toast } from "sonner";
 
-export default function LoginUser() {
+export default function UserHome() {
     const [searchTerm, setSearchTerm] = useState("");
     const [showFilters, setShowFilters] = useState(false);
     const [products, setProducts] = useState([]);
