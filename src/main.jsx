@@ -4,8 +4,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './index.css';
 import LoadingScreen from './components/LoadingScreen';
 
-// Importar el componente principal de forma normal ya que es el que se carga primero
-import App from './App.jsx';
+// Importar todos los componentes usando lazy loading
+const App = lazy(() => import('./App.jsx'));
 
 // Importar los demás componentes usando lazy loading
 const Dashboard = lazy(() => import('./app/dashboard/page.jsx'));
@@ -33,7 +33,11 @@ createRoot(document.getElementById('root')).render(
     <Router>
       <Routes>
         {/* PRINCIPAL */}
-        <Route path="/" element={<App />} />
+        <Route path="/" element={
+          <AppLayout>
+            <App />
+          </AppLayout>
+        } />
         <Route path="/login" element={
           <AppLayout>
             <Login />

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -64,10 +64,29 @@ const destacados = [
 
 export default function App() {
   const location = useLocation();
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+
+  // Función para manejar cuando todas las imágenes del carrusel se han cargado
+  const handleImagesLoaded = () => {
+    console.log('Todas las imágenes del carrusel se han cargado');
+    setImagesLoaded(true);
+  };
+
+  // Mostrar el contenido después de que las imágenes se hayan cargado
+  useEffect(() => {
+    if (imagesLoaded) {
+      // Añadir un pequeño retraso para asegurar una transición suave
+      const timer = setTimeout(() => {
+        setShowContent(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [imagesLoaded]);
 
   // Detectar hash en la URL y hacer scroll automático
   useEffect(() => {
-    if (location.hash) {
+    if (location.hash && showContent) {
       setTimeout(() => {
         const element = document.getElementById(location.hash.substring(1));
         if (element) {
@@ -75,7 +94,17 @@ export default function App() {
         }
       }, 200);
     }
-  }, [location]);
+  }, [location, showContent]);
+
+  // Si no se han cargado las imágenes, no renderizar nada (la pantalla de carga se muestra desde el Suspense)
+  if (!showContent) {
+    // Renderizar solo el carrusel para cargar las imágenes, pero ocultarlo visualmente
+    return (
+      <div className="hidden">
+        <Carousel images={images} onImagesLoaded={handleImagesLoaded} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -101,7 +130,7 @@ export default function App() {
           </Button>
       </header>
 
-      <Carousel images={images} className="mb-6"/>
+      <Carousel images={images} onImagesLoaded={() => {}} className="mb-6"/>
 
       <section className="py-10 px-6 mb-8 select-none">
         <motion.div
