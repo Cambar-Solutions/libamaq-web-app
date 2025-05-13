@@ -72,7 +72,26 @@ const ShareProduct = ({ product, baseUrl = window.location.origin }) => {
   
   // Funciones para compartir en redes sociales
   const shareOnWhatsApp = () => {
-    const whatsappText = encodeURIComponent(`${title} - ${description} ${productUrl}`);
+    // Formatear el precio con separador de miles y dos decimales
+    const formatPrice = (price) => {
+      if (!price && price !== 0) return '';
+      return new Intl.NumberFormat('es-MX', {
+        style: 'currency',
+        currency: 'MXN',
+        minimumFractionDigits: 2
+      }).format(price);
+    };
+    
+    // Calcular precio con descuento si aplica
+    const finalPrice = product.discount && product.discount > 0
+      ? product.price - (product.price * (product.discount / 100))
+      : product.price;
+    
+    // Crear un mensaje personalizado con detalles del producto
+    const whatsappText = encodeURIComponent(
+      `¡Mira este producto en Libamaq! ${title}${product.shortDescription ? ` - ${product.shortDescription}` : ''} ${formatPrice(finalPrice)}\n${productUrl}`
+    );
+    
     window.open(`https://wa.me/?text=${whatsappText}`, '_blank');
     setShowOptions(false);
   };
