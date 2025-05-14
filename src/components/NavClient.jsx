@@ -21,8 +21,8 @@ const NavClient = () => {
         <img src="/Tipografia_LIBAMAQ_legulab_color_hor.png" alt="logo" className="max-h-12" />
 
         {/* Botón "Ubicación" */}
-        <button className="h-12 bg-transparent text-white hover:bg-black hover:text-white transition-colors duration-600">
-          <Link to="/location" className="flex items-center gap-2">
+        <button className="h-12 bg-transparent text-white">
+          <Link to="/location" className="flex items-center gap-1 text-white hover:text-yellow-500 transition-colors duration-600">
             <MapPin size={28} />
             <div className="justify-items-start">
               <p className="text-sm">San Antón</p>
@@ -73,29 +73,33 @@ const NavClient = () => {
       {/* Menú principal (solo en pantallas grandes) */}
       <div className="flex items-center space-x-4 md:flex">
         {/* Botón "Perfil" */}
-        <button asChild className="h-10 w-35 justify-center rounded-2xl flex items-center bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-600">
-          <Link to="/perfil" className="flex items-center">
-            Hola usuario
-            <GrUserWorker size={28} />
+        <Link
+          to="/perfil"
+          className="group inline-flex items-center"
+        >
+          <div className="relative">
+            {/* Texto */}
+            <span className="px-6 py-2 bg-blue-600 text-white rounded-l-full group-hover:bg-blue-700 transition-colors duration-600 inline-block mr-10 max-w-[12em] truncate">
+              Hola Angel Murga
+            </span>
 
-          </Link>
-        </button>
+            {/* Círculo del icono */}
+            <div className="absolute top-1/2 right-0 w-14 h-14 bg-blue-600 rounded-full -translate-y-1/2 flex items-center justify-center group-hover:bg-blue-700">
+              <GrUserWorker size={26} className="text-white" />
+            </div>
+          </div>
+        </Link>
+
 
         {/* Botón "Carrito" */}
-        <button asChild className="h-10 w-10 justify-center items-center rounded-2xl bg-white text-black hover:bg-black hover:text-white border-2 border-gray-900 hover:border-gray-900 transition-colors duration-600">
+        <button asChild className="flex h-12 w-12 justify-center items-center rounded-2x text-white hover:text-yellow-500 transition-colors duration-600">
           <Link to="/carrito">
-            <RiShoppingCartFill size={24} className="justify-items-center"/>
+            <RiShoppingCartFill size={24} className="justify-items-center" />
 
           </Link>
         </button>
 
-        <button asChild className="h-10 w-10 justify-center items-center rounded-2xl bg-white text-black hover:bg-black hover:text-white border-2 border-gray-900 hover:border-gray-900 transition-colors duration-600">
-          <Link to="/carrito">
-            <TfiShoppingCartFull size={24} />
 
-
-          </Link>
-        </button>
 
       </div>
     </nav>
