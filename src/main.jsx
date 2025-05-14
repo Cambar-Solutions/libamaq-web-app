@@ -51,18 +51,58 @@ createRoot(document.getElementById('root')).render(
         } />
 
         {/* E-COMMERCE */}
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/detalle/:nombre" element={<DetalleHerramienta />} />
-        <Route path="/producto/:id" element={<DetalleProducto />} />
-        <Route path="/e-commerce/rentar/:id" element={<RentPage />} />
-        <Route path="/marcas/:brandName" element={<BrandPage />} />
-        <Route path="/tienda" element={<ProductList />} />
+        <Route path="/dashboard" element={
+          <AppLayout>
+            <Dashboard />
+          </AppLayout>
+        } />
+        <Route path="/detalle/:nombre" element={
+          <AppLayout>
+            <DetalleHerramienta />
+          </AppLayout>
+        } />
+        <Route path="/producto/:id" element={
+          <AppLayout>
+            <DetalleProducto />
+          </AppLayout>
+        } />
+        <Route path="/e-commerce/rentar/:id" element={
+          <AppLayout>
+            <RentPage />
+          </AppLayout>
+        } />
+        <Route path="/marcas/:brandName" element={
+          <AppLayout>
+            <BrandPage />
+          </AppLayout>
+        } />
+        <Route path="/tienda" element={
+          <AppLayout>
+            <ProductList />
+          </AppLayout>
+        } />
         
-        <Route path="/productos/:brand/:category" element={<CategoryPage />} />
-        <Route path="/nuevo-producto" element={<NuevoProducto />} />
-        <Route path="/producto-detalle" element={<ProductoDetalle />} />
+        <Route path="/productos/:brand/:category" element={
+          <AppLayout>
+            <CategoryPage />
+          </AppLayout>
+        } />
+        <Route path="/nuevo-producto" element={
+          <AppLayout>
+            <NuevoProducto />
+          </AppLayout>
+        } />
+        <Route path="/producto-detalle" element={
+          <AppLayout>
+            <ProductoDetalle />
+          </AppLayout>
+        } />
 
-        <Route path="/user-home" element={<UserHome/>} />
+        <Route path="/user-home" element={
+          <AppLayout>
+            <UserHome/>
+          </AppLayout>
+        } />
       </Routes>
     </Router>
   </StrictMode>

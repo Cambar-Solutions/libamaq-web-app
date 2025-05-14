@@ -38,7 +38,7 @@
     mpower: {
       name: "Mpower",
       description: "Innovación y calidad en herramientas eléctricas. Mpower ofrece soluciones efectivas para profesionales y entusiastas.",
-      products: ["Motores a gasolina 6.5, 9, 15hp.", "Motobombas 2 y 3 pulgadas.", "Gemeradores de luz de 3,500w a 8000w.", "Soldadora 200 A.", "Discos de 14 in para corte de concreto", "Accesorios"],
+      products: ["Motores a gasolina 6.5, 9, 15hp.", "Motobombas 2 y 3 pulgadas.", "Generadores de luz de 3,500w a 8000w.", "Soldadora 200 A.", "Discos de 14 in para corte de concreto", "Accesorios"],
       image: "/m-power.webp",
     },
     cipsa: {

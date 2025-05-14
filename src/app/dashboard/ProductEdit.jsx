@@ -143,7 +143,7 @@ export default function ProductEdit() {
             <Package className="w-8 h-8 text-blue-600" />
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Editar Producto</h1>
-              <p className="text-sm text-gray-500">{product?.name || 'Cargando...'}</p>
+              <p className="text-sm text-gray-500">{product?.name || ''}</p>
             </div>
           </div>
           <div className="flex space-x-2">

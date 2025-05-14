@@ -81,7 +81,7 @@ const brandDetails = {
     products: [
       { name: "Motores a gasolina 6.5, 9, 15hp.", image: "/categorias/mpower/motores.jpg" },
       { name: "Motobombas 2 y 3 pulgadas.", image: "/categorias/mpower/motobombas.jpg" },
-      { name: "Gemeradores de luz de 3,500w a 8000w.", image: "/categorias/mpower/generadores.jpg" },
+      { name: "Generadores de luz de 3,500w a 8000w.", image: "/categorias/mpower/generadores.jpg" },
       { name: "Soldadora 200 A.", image: "/categorias/mpower/soldadora.jpg" },
       { name: "Discos de 14 in para corte de concreto", image: "/categorias/mpower/discos.jpg" },
       { name: "Accesorios", image: "/categorias/mpower/accesorios.jpg" },
