@@ -73,13 +73,18 @@ const Nav2 = () => {
     <nav className="bg-blue-950 dark:bg-gray-800 shadow-lg py-4 px-12 flex justify-between items-center fixed top-0 w-full z-50">
       {/* Logo */}
       <div className="flex items-center">
-        <Link to="/">
+        <div 
+          onClick={() => {
+            // Forzar una recarga completa para asegurar que se muestre el LoadingScreen
+            navigate('/', { replace: true, state: { forceLoading: true } });
+          }}
+        >
           <img
             src="/Tipografia_LIBAMAQ_legulab_color_hor.png"
             alt="logo"
             className="max-h-12 cursor-pointer"
           />
-        </Link>
+        </div>
       </div>
 
       {/* Menú hamburguesa (pantallas pequeñas) */}
@@ -142,7 +147,7 @@ const Nav2 = () => {
       </div>
 
       {/* Menú desktop */}
-      <div className="flex items-center space-x-4 hidden md:flex">
+      <div className="items-center space-x-4 hidden md:flex">
         <DrawerCategories ref={drawerRef} />
 
         <Button

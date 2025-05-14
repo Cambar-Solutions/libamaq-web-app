@@ -73,6 +73,20 @@ export default function App() {
     setImagesLoaded(true);
   };
 
+  // Verificar si la navegación incluye el estado forceLoading
+  useEffect(() => {
+    // Si venimos de otra página con forceLoading, reiniciar el estado de carga
+    if (location.state && location.state.forceLoading) {
+      setImagesLoaded(false);
+      setShowContent(false);
+      // Simular un pequeño retraso para asegurar que se muestre el LoadingScreen
+      const timer = setTimeout(() => {
+        setImagesLoaded(true);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [location]);
+
   // Mostrar el contenido después de que las imágenes se hayan cargado
   useEffect(() => {
     if (imagesLoaded) {
@@ -175,7 +189,7 @@ export default function App() {
           transition={{ duration: 0.5 }}
           className="max-w-3xl mx-auto"
         >
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center select-none">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center pb-8 ">
             Nuestros Valores
           </h2>
           <ValoresAccordion />

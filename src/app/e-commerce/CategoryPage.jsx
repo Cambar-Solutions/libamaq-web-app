@@ -1,5 +1,5 @@
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Search, Filter, ChevronRight, ChevronLeft } from "lucide-react";
 import Nav2 from "@/components/Nav2";
@@ -70,6 +70,13 @@ export default function CategoryPage() {
   const [scrollPosition, setScrollPosition] = useState(0);
   const [maxScroll, setMaxScroll] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Estados para controlar la carga de imágenes y mostrar contenido
+  const [carouselImagesLoaded, setCarouselImagesLoaded] = useState(false);
+  const [productsImagesLoaded, setProductsImagesLoaded] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+  const [totalImagesToLoad, setTotalImagesToLoad] = useState(0);
+  const [loadedImagesCount, setLoadedImagesCount] = useState(0);
 
   // Estado para el carrusel
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -232,6 +239,35 @@ export default function CategoryPage() {
 
   // helper de scroll suave con duración de 800ms
 
+  // Función para manejar la carga de imágenes individuales
+  const handleImageLoad = () => {
+    setLoadedImagesCount(prev => {
+      const newCount = prev + 1;
+      console.log(`Imagen cargada: ${newCount}/${totalImagesToLoad}`);
+      return newCount;
+    });
+  };
+
+  // Efecto para verificar cuando todas las imágenes están cargadas
+  useEffect(() => {
+    if (loadedImagesCount > 0 && loadedImagesCount >= totalImagesToLoad) {
+      console.log('Todas las imágenes han sido cargadas');
+      setProductsImagesLoaded(true);
+    }
+  }, [loadedImagesCount, totalImagesToLoad]);
+
+  // Efecto para mostrar el contenido cuando todas las imágenes estén cargadas
+  useEffect(() => {
+    if (carouselImagesLoaded && productsImagesLoaded) {
+      console.log('Todas las imágenes del carrusel y productos están cargadas');
+      // Añadir un pequeño retraso para asegurar una transición suave
+      const timer = setTimeout(() => {
+        setShowContent(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [carouselImagesLoaded, productsImagesLoaded]);
+
   // Cargar productos destacados al iniciar
   useEffect(() => {
     const loadFeaturedProducts = async () => {
@@ -239,8 +275,15 @@ export default function CategoryPage() {
       try {
         const products = await getFeaturedProducts();
         setFeaturedProducts(products);
+        
+        // Calcular el número total de imágenes a cargar (carrusel + productos)
+        const totalImages = carouselImages.length + products.length;
+        setTotalImagesToLoad(totalImages);
+        console.log(`Total de imágenes a cargar: ${totalImages}`);
       } catch (error) {
         console.error("Error al cargar productos destacados:", error);
+        // En caso de error, mostrar el contenido de todas formas
+        setProductsImagesLoaded(true);
       } finally {
         setIsLoading(false);
       }
@@ -385,6 +428,56 @@ export default function CategoryPage() {
       )
     : featuredProducts;
 
+  // Si no se han cargado todas las imágenes, mostrar el LoadingScreen
+  if (!showContent) {
+    // Importamos el componente LoadingScreen
+    const LoadingScreen = React.lazy(() => import('@/components/LoadingScreen'));
+    
+    // Renderizamos un div oculto con las imágenes del carrusel para precargarlas
+    return (
+      <>
+        <React.Suspense fallback={<div></div>}>
+          <LoadingScreen />
+        </React.Suspense>
+        
+        {/* Div oculto para precargar imágenes */}
+        <div className="hidden">
+          {carouselImages.map((image) => (
+            <img 
+              key={image.id}
+              src={image.src}
+              alt=""
+              onLoad={() => {
+                handleImageLoad();
+                // Si es la última imagen del carrusel, marcar como cargado
+                if (image.id === carouselImages[carouselImages.length - 1].id) {
+                  setCarouselImagesLoaded(true);
+                }
+              }}
+              onError={() => {
+                handleImageLoad();
+                if (image.id === carouselImages[carouselImages.length - 1].id) {
+                  setCarouselImagesLoaded(true);
+                }
+              }}
+            />
+          ))}
+          
+          {/* Precargar imágenes de productos destacados */}
+          {featuredProducts.slice(0, 8).map((product, index) => (
+            <img 
+              key={`featured-${index}`}
+              src={product.images && product.images.length > 0 ? product.images[0] : "/placeholder-product.png"}
+              alt=""
+              onLoad={handleImageLoad}
+              onError={handleImageLoad}
+            />
+          ))}
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <Nav2 />
@@ -433,6 +526,21 @@ export default function CategoryPage() {
                           src={image.src}
                           alt={image.alt}
                           className="w-full h-full object-cover object-center"
+                          onLoad={() => {
+                            handleImageLoad();
+                            // Si es la última imagen del carrusel, marcar como cargado
+                            if (index === carouselImages.length - 1) {
+                              setCarouselImagesLoaded(true);
+                              console.log('Todas las imágenes del carrusel están cargadas');
+                            }
+                          }}
+                          onError={() => {
+                            // En caso de error, contar como cargada
+                            handleImageLoad();
+                            if (index === carouselImages.length - 1) {
+                              setCarouselImagesLoaded(true);
+                            }
+                          }}
                         />
                       </div>
                   </div>
@@ -515,8 +623,10 @@ export default function CategoryPage() {
                                         src={item.images && item.images.length > 0 ? item.images[0] : "/placeholder-product.png"} 
                                         alt="" 
                                         className="max-h-full max-w-full object-contain relative z-10" 
+                                        onLoad={handleImageLoad}
                                         onError={(e) => {
                                           e.target.style.opacity = "0"; // Ocultar la imagen si no carga
+                                          handleImageLoad(); // Contar como cargada aunque haya error
                                         }}
                                       />
                                     </div>
