@@ -2,7 +2,16 @@ import { motion } from "framer-motion";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { getAllSpareParts, getSparePartById, createSparePart, updateSparePart } from "@/services/admin/sparePartService";
+import { 
+  getAllSpareParts, 
+  getSparePartById, 
+  createSparePart, 
+  updateSparePart, 
+  createSparePartWithImages,
+  updateSparePartWithImages,
+  deleteSparePart,
+  getSparePartImages
+} from "@/services/admin/sparePartService";
 import { getAllProducts } from "@/services/admin/productService";
 import { createMultimedia } from "@/services/admin/multimediaService";
 import { toast } from "sonner";
@@ -270,6 +279,8 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
       const response = await getSparePartById(sparePartId);
       const data = response.result || response;
       
+      console.log('Detalles del repuesto obtenidos:', data);
+      
       setSparePart(data);
       setFormData({
         id: data.id,
@@ -284,20 +295,51 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
         status: data.status || "ACTIVE"
       });
 
+      // Verificar si hay productos asociados
       if (data.productSparePartDto) {
         setSelectedProductId(data.productSparePartDto.productId.toString());
         setCompatibilityNotes(data.productSparePartDto.compatibilityNotes || "");
+        console.log('Producto asociado encontrado:', data.productSparePartDto);
+      } else {
+        setSelectedProductId("none");
+        setCompatibilityNotes("");
+        console.log('No se encontró ningún producto asociado');
       }
-      
-      // Cargar imágenes si existen
-      if (data.sparePartMultimediaDto && Array.isArray(data.sparePartMultimediaDto)) {
-        setUploadedImages(data.sparePartMultimediaDto.map(item => ({
-          id: item.multimediaId,
-          displayOrder: item.displayOrder,
-          sparePartId: item.sparePartId
-        })));
+
+      // Verificar si hay imágenes en la respuesta principal
+      if (data.sparePartMultimediaDto && Array.isArray(data.sparePartMultimediaDto) && data.sparePartMultimediaDto.length > 0) {
+        // Si hay imágenes en la respuesta principal, usarlas
+        const imageUrls = data.sparePartMultimediaDto.map(item => ({
+          url: item.multimedia?.url || '',
+          id: item.multimediaId || item.multimedia?.id || null,
+          displayOrder: item.displayOrder || 0
+        }));
+        setUploadedImages(imageUrls);
+        console.log('Imágenes encontradas en la respuesta principal:', imageUrls);
+      } else {
+        // Si no hay imágenes en la respuesta principal, intentar obtenerlas por separado
+        console.log('No se encontraron imágenes en la respuesta principal, intentando obtenerlas por separado...');
+        try {
+          const imagesData = await getSparePartImages(sparePartId);
+          if (imagesData && imagesData.length > 0) {
+            const imageUrls = imagesData.map(item => ({
+              url: item.url || item.multimedia?.url || '',
+              id: item.id || item.multimediaId || item.multimedia?.id || null,
+              displayOrder: item.displayOrder || 0
+            }));
+            setUploadedImages(imageUrls);
+            console.log('Imágenes obtenidas por separado:', imageUrls);
+          } else {
+            console.log('No se encontraron imágenes asociadas al repuesto');
+            setUploadedImages([]);
+          }
+        } catch (imageError) {
+          console.error('Error al obtener imágenes del repuesto:', imageError);
+          setUploadedImages([]);
+        }
       }
     } catch (error) {
+      console.error('Error al cargar detalles del repuesto:', error);
       toast.error("Error al cargar los detalles del repuesto: " + (error.message || "Error desconocido"));
     } finally {
       setIsLoading(false);
@@ -388,28 +430,23 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
       console.log('Respuesta de subida de imagen:', response);
       
       if (response && response.id) {
+        // Crear objeto de imagen con todos los campos necesarios
         const newImage = {
           id: response.id,
+          multimediaId: response.id, // Añadimos multimediaId para compatibilidad
           displayOrder: uploadedImages.length + 1,
-          // El sparePartId se asignará cuando se guarde el repuesto
+          // Crear una URL para previsualización inmediata
+          previewUrl: URL.createObjectURL(selectedImage)
         };
         
-        // Primero actualizar el formData con la nueva imagen
+        // Actualizar el estado de las imágenes
         const updatedImages = [...uploadedImages, newImage];
-        const updatedMultimediaDto = updatedImages.map(img => ({
-          multimediaId: img.id,
-          displayOrder: img.displayOrder,
-          sparePartId: formData.id || 0
-        }));
-        
-        setFormData(prev => ({
-          ...prev,
-          sparePartMultimediaDto: updatedMultimediaDto
-        }));
-        
-        // Luego actualizar el estado de las imágenes
         setUploadedImages(updatedImages);
         setSelectedImage(null);
+        
+        // Limpiar el input de archivo para permitir seleccionar el mismo archivo nuevamente
+        const fileInput = document.getElementById('image-upload');
+        if (fileInput) fileInput.value = '';
         
         toast.success("Imagen subida correctamente");
       } else {
@@ -471,39 +508,111 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
   };
 
   const handleSubmit = async () => {
-    // Preparar datos para guardar
-    const saveData = {
-      ...formData,
-      // Asegurar que el estado siempre sea ACTIVE al crear o actualizar
-      status: "ACTIVE"
-    };
-
-    // Si hay un producto seleccionado, agregar la información de compatibilidad
-    if (selectedProductId && selectedProductId !== "none") {
-      saveData.productSparePartDto = {
-        productId: parseInt(selectedProductId, 10),
-        compatibilityNotes
+    try {
+      console.log('Iniciando guardado de repuesto...');
+      
+      // Preparar datos básicos del repuesto
+      const saveData = {
+        ...formData,
+        // Asegurar que el estado siempre sea ACTIVE al crear o actualizar
+        status: "ACTIVE"
       };
       
-      // Si estamos editando y ya existe un ID para la relación
-      if (sparePart?.productSparePartDto?.id) {
-        saveData.productSparePartDto.id = sparePart.productSparePartDto.id;
-      }
-    }
-    
-    // Agregar las imágenes al repuesto
-    if (uploadedImages.length > 0) {
-      saveData.sparePartMultimediaDto = uploadedImages.map((img, index) => ({
-        multimediaId: img.id,
-        displayOrder: index + 1,
-        sparePartId: formData.id || 0
-      }));
-    }
+      console.log('Datos básicos del repuesto:', saveData);
 
-    // Solo cerrar el diálogo si el guardado fue exitoso
-    const success = await onSave(saveData);
-    if (success) {
-      onClose();
+      // Preparar información de asignación a producto si existe
+      let productAssignment = null;
+      if (selectedProductId && selectedProductId !== "none") {
+        productAssignment = {
+          productId: parseInt(selectedProductId, 10),
+          compatibilityNotes
+        };
+        
+        // Si estamos editando y ya existe un ID para la relación
+        if (sparePart?.productSparePartDto?.id) {
+          productAssignment.id = sparePart.productSparePartDto.id;
+        }
+        
+        console.log('Asignación a producto:', productAssignment);
+      }
+      
+      // Preparar las imágenes para guardar (eliminar campos de previsualización)
+      const cleanedImages = uploadedImages.map(img => ({
+        multimediaId: img.multimediaId || img.id,
+        displayOrder: img.displayOrder || 1
+      }));
+      
+      console.log('Imágenes preparadas para guardar:', cleanedImages);
+      
+      let success = false;
+      let response;
+      
+      // Usar las nuevas funciones mejoradas según sea creación o actualización
+      if (sparePartId) {
+        console.log('Actualizando repuesto existente con ID:', sparePartId);
+        
+        // Actualizar repuesto existente con sus imágenes
+        if (cleanedImages.length > 0) {
+          saveData.sparePartMultimediaDto = cleanedImages;
+        } else {
+          // Si no hay imágenes, enviar un array vacío para eliminar todas las relaciones existentes
+          saveData.sparePartMultimediaDto = [];
+        }
+        
+        // Si hay asignación a producto, agregarla al payload
+        if (productAssignment) {
+          saveData.productSparePartDto = productAssignment;
+        }
+        
+        console.log('Datos completos para actualizar:', JSON.stringify(saveData, null, 2));
+        response = await updateSparePart(saveData);
+        console.log('Respuesta de actualización:', response);
+      } else {
+        console.log('Creando nuevo repuesto');
+        
+        // Crear nuevo repuesto
+        // Agregar las imágenes al repuesto
+        if (cleanedImages.length > 0) {
+          saveData.sparePartMultimediaDto = cleanedImages;
+        }
+        
+        // Si hay asignación a producto, agregarla al payload
+        if (productAssignment) {
+          saveData.productSparePartDto = productAssignment;
+        }
+        
+        console.log('Datos completos para crear:', JSON.stringify(saveData, null, 2));
+        response = await createSparePart(saveData);
+        console.log('Respuesta de creación:', response);
+      }
+      
+      // Verificar si la respuesta fue exitosa
+      success = response && (response.type === 'SUCCESS' || response.result);
+      console.log('Operación exitosa:', success);
+      
+      // Solo cerrar el diálogo si el guardado fue exitoso
+      if (success) {
+        toast.success(sparePartId ? "Repuesto actualizado correctamente" : "Repuesto creado correctamente");
+        
+        // Refrescar la lista de repuestos antes de cerrar el diálogo
+        if (typeof onSave === 'function') {
+          await onSave(saveData);
+        }
+        
+        onClose();
+        return true;
+      } else {
+        throw new Error("No se recibió una respuesta válida del servidor");
+      }
+    } catch (error) {
+      console.error('Error al guardar repuesto:', error);
+      toast.error(
+        "Error al " + 
+        (sparePartId ? "actualizar" : "crear") + 
+        " el repuesto: " + 
+        (error.message || "Error desconocido")
+      );
+      return false;
     }
   };
 
@@ -656,7 +765,7 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
                     <div key={image.id} className="relative group">
                       <div className="relative w-20 h-20 bg-gray-100 rounded border overflow-hidden flex items-center justify-center">
                         <img 
-                          src={`https://libamaq.com/api/multimedia/${image.id}`}
+                          src={image.previewUrl || `https://libamaq.com/api/multimedia/${image.id}`}
                           alt="Vista previa"
                           className="w-full h-full object-cover"
                           onError={(e) => {

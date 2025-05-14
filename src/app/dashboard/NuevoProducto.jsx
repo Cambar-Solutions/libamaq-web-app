@@ -64,11 +64,25 @@ export default function NuevoProducto() {
   useEffect(() => {
     (async () => {
       try {
-        const [b, c] = await Promise.all([getAllBrands(), getAllCategories()]);
-        setBrands(b);
-        setCategories(c);
+        const [brandsResponse, categoriesResponse] = await Promise.all([getAllBrands(), getAllCategories()]);
+        
+        // Verificar si la respuesta de marcas tiene la estructura esperada
+        const brandsData = Array.isArray(brandsResponse) 
+          ? brandsResponse 
+          : (brandsResponse?.result || []);
+
+        // Verificar si la respuesta de categorías tiene la estructura esperada
+        const categoriesData = Array.isArray(categoriesResponse) 
+          ? categoriesResponse 
+          : (categoriesResponse?.result || []);
+        
+        console.log('Marcas procesadas:', brandsData);
+        console.log('Categorías procesadas:', categoriesData);
+        
+        setBrands(brandsData);
+        setCategories(categoriesData);
       } catch (err) {
-        console.error(err);
+        console.error('Error al cargar marcas o categorías:', err);
         toast.error("Error al cargar marcas o categorías");
       }
     })();
@@ -314,11 +328,13 @@ export default function NuevoProducto() {
                         <SelectValue placeholder="Selecciona una marca" />
                       </SelectTrigger>
                       <SelectContent>
-                        {brands.map((b) => (
-                          <SelectItem key={b.id} value={String(b.id)}>
-                            {b.name}
-                          </SelectItem>
-                        ))}
+                        {brands
+                          .filter(b => b.status === 'ACTIVE')
+                          .map((b) => (
+                            <SelectItem key={b.id} value={String(b.id)}>
+                              {b.name}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>

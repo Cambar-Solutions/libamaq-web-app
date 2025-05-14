@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -120,7 +120,7 @@ const brandDetails = {
   },
 };
 
-export default function DrawerCategories() {
+const DrawerCategories = forwardRef((props, ref) => {
   const [open, setOpen] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState(null);
   const [brands, setBrands] = useState([]);
@@ -160,6 +160,15 @@ export default function DrawerCategories() {
     setSelectedBrand(brand);
     setOpen(true);
   };
+
+  // Exponer funciones y estados al componente padre
+  useImperativeHandle(ref, () => ({
+    handleBrandClick,
+    selectedBrand,
+    setSelectedBrand,
+    open,
+    setOpen
+  }));
 
   const goToCategoryPage = (brand, category) => {
     setOpen(false);
@@ -266,11 +275,23 @@ export default function DrawerCategories() {
                         <h3 className="text-lg font-semibold mb-2">{selectedBrand.name}</h3>
                         <p className="text-gray-500">No hay categorías disponibles para esta marca.</p>
                         <Button 
-                          onClick={() => navigate(`/productos/${selectedBrand.name}`)} 
+                          onClick={() => {
+                            // Cerrar el drawer primero
+                            setOpen(false);
+                            
+                            // Verificar si ya estamos en la página de la tienda
+                            const currentPath = window.location.pathname;
+                            if (currentPath !== '/tienda') {
+                              // Si no estamos en la tienda, navegar a ella después de un pequeño retraso
+                              setTimeout(() => {
+                                navigate('/tienda');
+                              }, 300);
+                            }
+                          }} 
                           className="mt-4"
                           style={{ backgroundColor: selectedBrand.color }}
                         >
-                          Ver todos los productos
+                          Volver a la tienda
                         </Button>
                       </div>
                     );
@@ -368,4 +389,6 @@ export default function DrawerCategories() {
       </Drawer>
     </>
   );
-}
+});
+
+export default DrawerCategories;

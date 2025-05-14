@@ -75,6 +75,11 @@ export default function CategoryPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoplayEnabled, setAutoplayEnabled] = useState(true);
   const [touchStart, setTouchStart] = useState(0);
+  
+  // Estados para el carrusel de productos más vendidos
+  const [carouselPosition, setCarouselPosition] = useState(0);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(true);
   const [touchEnd, setTouchEnd] = useState(0);
   
   // Imágenes de ejemplo para el carrusel (puedes reemplazarlas con tus propias imágenes)
@@ -105,6 +110,38 @@ export default function CategoryPage() {
     
     return () => clearInterval(interval);
   }, [autoplayEnabled, nextSlide]);
+
+  // Efecto para manejar el redimensionamiento y actualizar el estado del carrusel
+  useEffect(() => {
+    if (!topSellingProducts || topSellingProducts.length === 0) return;
+    
+    const handleResize = () => {
+      // Resetear la posición del carrusel cuando cambia el tamaño de la ventana
+      setCarouselPosition(0);
+      setShowLeftArrow(false);
+      
+      // Calcular si debe mostrar la flecha derecha
+      let itemWidth = 20; // Por defecto 5 items (20%)
+      if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25; // 4 items
+      else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333; // 3 items
+      else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50; // 2 items
+      else if (window.innerWidth < 640) itemWidth = 100; // 1 item
+      
+      const maxPosition = Math.max(0, (topSellingProducts.length * itemWidth) - 100);
+      setShowRightArrow(maxPosition > 0);
+    };
+    
+    // Inicializar el estado del carrusel
+    handleResize();
+    
+    // Agregar event listener para el redimensionamiento
+    window.addEventListener('resize', handleResize);
+    
+    // Limpiar event listener
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [topSellingProducts]);
 
   // Estado para detectar si estamos en dispositivo móvil
   const [isMobile, setIsMobile] = useState(false);
@@ -437,23 +474,19 @@ export default function CategoryPage() {
                       </button>
                     </div>
                     <div className="mb-10">
-                      {/* Contenedor principal del carrusel con espacio para los botones */}
-                      <div className="relative group" ref={carouselRef}>
-                        {/* Contenedor del carrusel con padding lateral para los botones */}
-                        <div className="carousel-container overflow-hidden px-14">
+                      {/* Contenedor principal del carrusel con estilo minimalista */}
+                      <div className="relative group">
+                        {/* Contenedor del carrusel */}
+                        <div className="carousel-container overflow-hidden px-0 sm:px-0">
                           {/* Pista del carrusel */}
                           <div
-                            ref={carouselTrackRef}
-                            className="carousel-track flex transition-transform duration-500 ease-out pb-10 pt-2"
-                            style={{ transform: `translateX(0px)` }}
+                            className="carousel-track flex transition-transform duration-300 ease-out pb-8 pt-2 justify-start"
+                            style={{ transform: `translateX(-${carouselPosition}%)` }}
                           >
                             {topSellingProducts.map((item, index) => (
-                              <motion.div
+                              <div
                                 key={`top-${index}`}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.3, delay: index * 0.05 }}
-                                className="carousel-item flex-shrink-0 px-2"
+                                className="carousel-item flex-shrink-0 px-0 sm:px-2 md:px-2"
                                 style={{
                                   width: `${Math.max(
                                     20,
@@ -461,21 +494,33 @@ export default function CategoryPage() {
                                       window.innerWidth >= 1024 ? 25 : // 4 items
                                         window.innerWidth >= 768 ? 33.333 : // 3 items
                                           window.innerWidth >= 640 ? 50 : // 2 items
-                                            100 // 1 item
+                                            100 // 1 item completo en móvil
                                   )}%`
                                 }}
                               >
                                 <Link to={`/producto/${item.id}`} className="block h-full">
                                   <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col h-full hover:-translate-y-1 duration-200 cursor-pointer">
-                                    <div className="h-52 bg-gray-100 flex items-center justify-center p-4 relative">
-                                      <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">TOP</div>
+                                    <div className="h-40 md:h-52 bg-gray-100 flex items-center justify-center p-4 relative overflow-hidden">
+                                      <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded z-20">TOP</div>
+                                      
+                                      {/* Fondo con patrón de imagen cuando no hay imagen disponible */}
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="w-12 h-12 border-2 border-gray-300 rounded-md flex items-center justify-center">
+                                          <div className="w-6 h-6 rounded-full bg-gray-300"></div>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* La imagen real del producto */}
                                       <img 
                                         src={item.images && item.images.length > 0 ? item.images[0] : "/placeholder-product.png"} 
-                                        alt={item.name || item.title} 
-                                        className="max-h-full max-w-full object-contain" 
+                                        alt="" 
+                                        className="max-h-full max-w-full object-contain relative z-10" 
+                                        onError={(e) => {
+                                          e.target.style.opacity = "0"; // Ocultar la imagen si no carga
+                                        }}
                                       />
                                     </div>
-                                    <div className="p-3 flex-grow flex flex-col h-[150px]">
+                                    <div className="p-3 flex-grow flex flex-col h-[120px] md:h-[150px]">
                                       <div>
                                         <p className="text-xs text-blue-600 uppercase font-semibold truncate" title={item.brand?.name || item.brand}>{item.brand?.name || item.brand}</p>
                                         <h3 className="text-lg font-medium text-gray-800 truncate" title={item.name || item.title}>{item.name || item.title}</h3>
@@ -485,30 +530,64 @@ export default function CategoryPage() {
                                     </div>
                                   </div>
                                 </Link>
-                              </motion.div>
+                              </div>
                             ))}
                           </div>
                         </div>
 
-                        {/* Botones de navegación fuera del contenedor del carrusel pero dentro del grupo */}
-                        {showCarouselControls && (
-                          <>
+                        {/* Botones de navegación simplificados */}
+                        <>
+                          {showLeftArrow && (
                             <button
-                              className="carousel-prev absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                              onClick={() => handleCarouselNav('prev')}
+                              className="carousel-prev absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
+                              onClick={() => {
+                                // Calcular el ancho de un item según el tamaño de pantalla
+                                let itemWidth = 20; // Por defecto 5 items (20%)
+                                if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25; // 4 items
+                                else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333; // 3 items
+                                else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50; // 2 items
+                                else if (window.innerWidth < 640) itemWidth = 100; // 1 item completo en móvil
+                                
+                                // Calcular nueva posición
+                                const newPosition = Math.max(0, carouselPosition - itemWidth);
+                                setCarouselPosition(newPosition);
+                                
+                                // Actualizar visibilidad de flechas
+                                setShowLeftArrow(newPosition > 0);
+                                setShowRightArrow(true);
+                              }}
                               aria-label="Anterior"
                             >
                               <ChevronLeft className="text-blue-600" size={20} />
                             </button>
+                          )}
+                          
+                          {showRightArrow && (
                             <button
-                              className="carousel-next absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                              onClick={() => handleCarouselNav('next')}
+                              className="carousel-next absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
+                              onClick={() => {
+                                // Calcular el ancho de un item según el tamaño de pantalla
+                                let itemWidth = 20; // Por defecto 5 items (20%)
+                                if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25; // 4 items
+                                else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333; // 3 items
+                                else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50; // 2 items
+                                else if (window.innerWidth < 640) itemWidth = 100; // 1 item completo en móvil
+                                
+                                // Calcular nueva posición y límite máximo
+                                const maxPosition = Math.max(0, (topSellingProducts.length * itemWidth) - 100);
+                                const newPosition = Math.min(maxPosition, carouselPosition + itemWidth);
+                                setCarouselPosition(newPosition);
+                                
+                                // Actualizar visibilidad de flechas
+                                setShowLeftArrow(true);
+                                setShowRightArrow(newPosition < maxPosition);
+                              }}
                               aria-label="Siguiente"
                             >
                               <ChevronRight className="text-blue-600" size={20} />
                             </button>
-                          </>
-                        )}
+                          )}
+                        </>
                       </div>
 
                       {/* Carrusel con diseño de fila flexible */}
@@ -523,9 +602,9 @@ export default function CategoryPage() {
           </div>
         )}
         <div ref={sectionRef} className="max-w-7xl w-full  mx-auto px-4">
-          <div className="sticky top-16 z-10 bg-white shadow-md rounded-lg mb-6 p-3">
-            <div className="flex flex-col md:flex-row md:items-center gap-3">
-              <div className="relative flex-grow">
+          <div className="sticky top-20 z-10 bg-white shadow-md rounded-lg mb-6 p-3">
+            <div className="flex flex-row items-center gap-2">
+              <div className="relative w-4/5">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
@@ -537,10 +616,10 @@ export default function CategoryPage() {
               </div>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center justify-center md:justify-start gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-full transition-colors"
+                className="flex items-center justify-center w-1/5 gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-full transition-colors"
               >
                 <Filter size={18} />
-                <span>Filtros</span>
+                <span className="hidden sm:inline">Filtros</span>
               </button>
               {brand && (
                 <button
@@ -591,23 +670,38 @@ export default function CategoryPage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.3 }}
-                        className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col mx-auto w-full cursor-pointer"
+                        className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden mx-auto w-full cursor-pointer"
                       >
-                        {/* Imagen más larga: cambiamos de h-36 a h-52 (o ajusta según prefieras) */}
-                        <div className="h-52 bg-gray-100 flex items-center justify-center p-4">
-                          <img 
-                            src={item.images && item.images.length > 0 ? item.images[0] : "/placeholder-product.png"} 
-                            alt={item.name} 
-                            className="max-h-full max-w-full object-contain" 
-                          />
-                        </div>
-
-                        <div className="p-4 flex-grow flex flex-col h-[150px]">
-                          <div>
-                            <h3 className="text-lg font-medium text-gray-800 truncate" title={item.name}>{item.name}</h3>
-                            <p className="text-sm text-gray-500 truncate" title={item.shortDescription}>{item.shortDescription}</p>
+                        {/* Diseño adaptativo: horizontal en móvil, vertical en tablet/desktop */}
+                        <div className="flex flex-row sm:flex-col w-full">
+                          {/* Imagen: 1/3 del ancho en móvil, altura completa en desktop */}
+                          <div className="w-1/3 sm:w-full h-28 sm:h-52 bg-gray-100 flex items-center justify-center p-2 sm:p-4 relative overflow-hidden">
+                            {/* Fondo con patrón de imagen cuando no hay imagen disponible */}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-12 h-12 border-2 border-gray-300 rounded-md flex items-center justify-center">
+                                <div className="w-6 h-6 rounded-full bg-gray-300"></div>
+                              </div>
+                            </div>
+                            
+                            {/* La imagen real del producto */}
+                            <img 
+                              src={item.images && item.images.length > 0 ? item.images[0] : "/placeholder-product.png"} 
+                              alt="" 
+                              className="max-h-full max-w-full object-contain relative z-10" 
+                              onError={(e) => {
+                                e.target.style.opacity = "0"; // Ocultar la imagen si no carga
+                              }}
+                            />
                           </div>
-                          {item.price && <p className="text-xl font-bold text-blue-700 mt-3">${item.price.toLocaleString()}</p>}
+
+                          {/* Contenido: 2/3 del ancho en móvil, ancho completo en desktop */}
+                          <div className="w-2/3 sm:w-full p-3 sm:p-4 flex-grow flex flex-col justify-between sm:h-[150px]">
+                            <div>
+                              <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={item.name}>{item.name}</h3>
+                              <p className="text-xs sm:text-sm text-gray-500 truncate" title={item.shortDescription}>{item.shortDescription}</p>
+                            </div>
+                            {item.price && <p className="text-lg sm:text-xl font-bold text-blue-700 mt-2 sm:mt-3">${item.price.toLocaleString()}</p>}
+                          </div>
                         </div>
                       </motion.div>
                     </Link>

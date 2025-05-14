@@ -329,11 +329,13 @@ export function ProductsView() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas las marcas</SelectItem>
-                {brands.map((brand) => (
-                  <SelectItem key={brand.id} value={brand.id.toString()} className="cursor-pointer">
-                    {brand.name}
-                  </SelectItem>
-                ))}
+                {brands
+                  .filter(brand => brand.status === 'ACTIVE')
+                  .map((brand) => (
+                    <SelectItem key={brand.id} value={brand.id.toString()} className="cursor-pointer">
+                      {brand.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>

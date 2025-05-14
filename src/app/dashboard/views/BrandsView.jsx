@@ -7,7 +7,8 @@ import {
   updateBrand,
   changeBrandStatus
 } from "@/services/admin/brandService";
-import { getAllCategories, createCategory } from "@/services/admin/categoryService";
+import { getAllCategories } from "@/services/admin/categoryService";
+import CategoryManager from "@/components/admin/CategoryManager";
 import {
   Card,
   CardContent,
@@ -69,12 +70,7 @@ export function BrandsView() {
     categories: [] // IDs de categorías seleccionadas
   });
   const [categories, setCategories] = useState([]);
-  const [categoryForm, setCategoryForm] = useState({
-    name: "",
-    url: "",
-    description: ""
-  });
-  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  // Las variables de estado para la gestión de categorías ahora están en el componente CategoryManager
 
   // Cargar marcas al iniciar
   useEffect(() => {
@@ -426,18 +422,41 @@ export function BrandsView() {
                         <Label htmlFor="color" className="text-right">
                           Color
                         </Label>
-                        <div className="col-span-3 flex gap-2">
-                          <Input
-                            id="color"
-                            name="color"
-                            type="text"
-                            value={formData.color}
-                            onChange={handleInputChange}
-                          />
-                          <div
-                            className="w-10 h-10 rounded border"
-                            style={{ backgroundColor: formData.color }}
-                          />
+                        <div className="col-span-3">
+                          <div className="flex items-center gap-3">
+                            <div className="relative">
+                              <Input
+                                id="color"
+                                name="color"
+                                type="color"
+                                value={formData.color}
+                                onChange={handleInputChange}
+                                className="w-12 h-12 p-1 cursor-pointer"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <div 
+                                  className="w-8 h-8 rounded-full border shadow-sm" 
+                                  style={{ backgroundColor: formData.color }}
+                                />
+                                <Input
+                                  type="text"
+                                  value={formData.color}
+                                  onChange={handleInputChange}
+                                  name="color"
+                                  className="font-mono uppercase"
+                                />
+                              </div>
+                              <div 
+                                className="w-full h-6 rounded-md" 
+                                style={{ 
+                                  background: `linear-gradient(to right, #fff, ${formData.color})`,
+                                  border: '1px solid #e2e8f0'
+                                }}
+                              />
+                            </div>
+                          </div>
                         </div>
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
@@ -460,148 +479,19 @@ export function BrandsView() {
                           Categorías
                         </Label>
                         <div className="col-span-3">
-                          <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-sm font-medium">Categorías para esta marca</h3>
-                            <Button 
-                              size="sm" 
-                              variant={isCreatingCategory ? "destructive" : "default"} 
-                              onClick={() => setIsCreatingCategory(v => !v)}
-                              className="gap-1"
-                            >
-                              {isCreatingCategory ? (
-                                <>
-                                  <X className="h-4 w-4" /> Cancelar
-                                </>
-                              ) : (
-                                <>
-                                  <Plus className="h-4 w-4" /> Nueva Categoría
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                          
-                          {/* Crear nueva categoría */}
-                          {isCreatingCategory && (
-                            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 mb-4 shadow-sm">
-                              <h4 className="font-medium text-blue-800 mb-3">Nueva categoría</h4>
-                              <div className="grid grid-cols-1 gap-3">
-                                <div>
-                                  <Label htmlFor="cat-name" className="mb-1 block text-sm">Nombre *</Label>
-                                  <Input
-                                    id="cat-name"
-                                    name="name"
-                                    placeholder="Ej: Herramientas Eléctricas"
-                                    value={categoryForm.name}
-                                    onChange={e => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="cat-url" className="mb-1 block text-sm">URL de imagen</Label>
-                                  <Input
-                                    id="cat-url"
-                                    name="url"
-                                    placeholder="https://ejemplo.com/imagen.jpg"
-                                    value={categoryForm.url}
-                                    onChange={e => setCategoryForm({ ...categoryForm, url: e.target.value })}
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="cat-description" className="mb-1 block text-sm">Descripción</Label>
-                                  <Input
-                                    id="cat-description"
-                                    name="description"
-                                    placeholder="Breve descripción..."
-                                    value={categoryForm.description}
-                                    onChange={e => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                                  />
-                                </div>
-                              </div>
-                              <div className="flex justify-end mt-3">
-                                <Button
-                                  size="sm"
-                                  className="cursor-pointer"
-                                  onClick={async () => {
-                                    try {
-                                      if (!categoryForm.name) return toast.error('El nombre de la categoría es obligatorio');
-                                      // Solo enviar name, url y description para la categoría
-                                      const { name, url, description } = categoryForm;
-                                      const data = await createCategory({ name, url, description });
-                                      if (data && data.result && data.result.id) {
-                                        setCategories(prev => [...prev, data.result]);
-                                        setFormData(f => ({ ...f, categories: [...f.categories, data.result.id] }));
-                                        setCategoryForm({ name: '', url: '', description: '' });
-                                        setIsCreatingCategory(false);
-                                        toast.success('Categoría creada correctamente');
-                                      }
-                                    } catch (e) {
-                                      toast.error('Error al crear la categoría');
-                                    }
-                                  }}
-                                >
-                                  <Plus className="h-4 w-4 mr-1" /> Crear categoría
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Lista de categorías asignadas */}
-                          <div className="mt-2">
-                            <Label className="mb-2 block text-sm">Categorías asignadas:</Label>
-                            <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[60px] bg-gray-50">
-                              {categories
-                                .filter(cat => formData.categories.includes(cat.id))
-                                .map(cat => (
-                                  <div key={cat.id} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-md select-none">
-                                    <span>{cat.name}</span>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-5 w-5 rounded-full hover:bg-blue-200 cursor-pointer"
-                                      onClick={() => setFormData(f => ({
-                                        ...f,
-                                        categories: f.categories.filter(id => id !== cat.id)
-                                      }))}
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                              ))}
-                              {formData.categories.length === 0 && (
-                                <div className="flex items-center justify-center w-full h-12 text-gray-400">
-                                  No hay categorías asignadas
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Lista de categorías disponibles */}
-                          <div className="mt-4">
-                            <Label className="mb-2 block text-sm">Categorías disponibles:</Label>
-                            <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[60px] bg-gray-50">
-                              {categories
-                                .filter(cat => !formData.categories.includes(cat.id))
-                                .map(cat => (
-                                  <Button
-                                    key={cat.id}
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setFormData(f => ({
-                                      ...f,
-                                      categories: [...f.categories, cat.id]
-                                    }))}
-                                    className="transition-all duration-200 hover:scale-105 cursor-pointer"
-                                  >
-                                    <Plus className="h-3 w-3 mr-1" />
-                                    {cat.name}
-                                  </Button>
-                              ))}
-                              {categories.filter(cat => !formData.categories.includes(cat.id)).length === 0 && (
-                                <div className="flex items-center justify-center w-full h-12 text-gray-400">
-                                  No hay más categorías disponibles
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                          <CategoryManager 
+                            categories={categories} 
+                            selectedCategories={formData.categories} 
+                            onCategoriesChange={(newSelectedCategories) => {
+                              setFormData(f => ({
+                                ...f,
+                                categories: newSelectedCategories
+                              }));
+                            }}
+                            onCategoriesListChange={(updatedCategories) => {
+                              setCategories(updatedCategories);
+                            }}
+                          />
                         </div>
                       </div>
                     </div>
@@ -822,121 +712,24 @@ export function BrandsView() {
               <div className="col-span-4 mt-6 border-t pt-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium">Categorías para esta marca</h3>
-                  <Button 
-                    size="sm" 
-                    variant={isCreatingCategory ? "destructive" : "default"} 
-                    onClick={() => setIsCreatingCategory(v => !v)}
-                    className="gap-1 cursor-pointer"
-                  >
-                    {isCreatingCategory ? (
-                      <>
-                        <X className="h-4 w-4" /> Cancelar
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="h-4 w-4" /> Nueva Categoría
-                      </>
-                    )}
-                  </Button>
                 </div>
                 
-                {/* Crear nueva categoría */}
-                {isCreatingCategory && (
-                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 mb-4 shadow-sm">
-                    <h4 className="font-medium text-blue-800 mb-3">Nueva categoría</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div>
-                        <Label htmlFor="cat-name" className="mb-1 block text-sm">Nombre *</Label>
-                        <Input
-                          id="cat-name"
-                          name="name"
-                          placeholder="Ej: Herramientas Eléctricas"
-                          value={categoryForm.name}
-                          onChange={e => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="cat-url" className="mb-1 block text-sm">URL de imagen</Label>
-                        <Input
-                          id="cat-url"
-                          name="url"
-                          placeholder="https://ejemplo.com/imagen.jpg"
-                          value={categoryForm.url}
-                          onChange={e => setCategoryForm({ ...categoryForm, url: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="cat-description" className="mb-1 block text-sm">Descripción</Label>
-                        <Input
-                          id="cat-description"
-                          name="description"
-                          placeholder="Breve descripción..."
-                          value={categoryForm.description}
-                          onChange={e => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex justify-end mt-3">
-                      <Button
-                        size="sm"
-                        className="cursor-pointer"
-                        onClick={async () => {
-                          try {
-                            if (!categoryForm.name) return toast.error('El nombre de la categoría es obligatorio');
-                            // Solo enviar name, url y description para la categoría
-                            const { name, url, description } = categoryForm;
-                            const data = await createCategory({ name, url, description });
-                            if (data && data.result && data.result.id) {
-                              setCategories(prev => [...prev, data.result]);
-                              setFormData(f => ({ ...f, categories: [...f.categories, data.result.id] }));
-                              setCategoryForm({ name: '', url: '', description: '' });
-                              setIsCreatingCategory(false);
-                              toast.success('Categoría creada correctamente');
-                            }
-                          } catch (e) {
-                            toast.error('Error al crear la categoría');
-                          }
-                        }}
-                      >
-                        <Plus className="h-4 w-4 mr-1" /> Crear categoría
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                {/* El componente CategoryManager ahora maneja la creación y gestión de categorías */}
                 
-                {/* Lista de categorías seleccionables */}
-                <div className="mt-2">
-                  <Label className="mb-2 block text-sm">Selecciona las categorías para esta marca:</Label>
-                  <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[60px] bg-gray-50">
-                    {categories.map(cat => (
-                      <Button
-                        key={cat.id}
-                        size="sm"
-                        variant={formData.categories.includes(cat.id) ? "default" : "outline"}
-                        style={{
-                          backgroundColor: formData.categories.includes(cat.id) ? '#3b82f6' : undefined,
-                          borderColor: formData.categories.includes(cat.id) ? '#3b82f6' : undefined,
-                          color: formData.categories.includes(cat.id) ? '#fff' : undefined
-                        }}
-                        onClick={() => setFormData(f => ({
-                          ...f,
-                          categories: f.categories.includes(cat.id)
-                            ? f.categories.filter(id => id !== cat.id)
-                            : [...f.categories, cat.id]
-                        }))}
-                        className="transition-all duration-200 hover:scale-105"
-                      >
-                        {formData.categories.includes(cat.id) && <Check className="h-3 w-3 mr-1" />}
-                        {cat.name}
-                      </Button>
-                    ))}
-                    {categories.length === 0 && (
-                      <div className="flex items-center justify-center w-full h-12 text-gray-400">
-                        No hay categorías disponibles
-                      </div>
-                    )}
-                  </div>
-                </div>
+                {/* Componente CategoryManager para gestionar categorías */}
+                <CategoryManager 
+                  categories={categories} 
+                  selectedCategories={formData.categories} 
+                  onCategoriesChange={(newSelectedCategories) => {
+                    setFormData(f => ({
+                      ...f,
+                      categories: newSelectedCategories
+                    }));
+                  }}
+                  onCategoriesListChange={(updatedCategories) => {
+                    setCategories(updatedCategories);
+                  }}
+                />
               </div>
             </div>
             <DialogFooter className="border-t pt-4 mt-4 flex gap-2 sticky bottom-0 bg-white z-10">

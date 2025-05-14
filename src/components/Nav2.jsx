@@ -1,31 +1,76 @@
-import { useState } from "react";
-import { FaStore, FaBars, FaTimes } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { FaBars, FaTimes } from "react-icons/fa";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import DrawerCategories from "./drawerCategories";
+import { getAllBrandsWithCategories } from "@/services/public/brandService";
 
 const Nav2 = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const drawerRef = useRef(null);
+  
   // Estado para controlar la visibilidad del menú lateral
   const [menuOpen, setMenuOpen] = useState(false);
+  // Estado para almacenar las marcas obtenidas de la API
+  const [brands, setBrands] = useState([]);
+  // Estado para controlar si se está cargando la información
+  const [loading, setLoading] = useState(true);
+  // Estado para almacenar la marca seleccionada en móvil
+  const [selectedBrandId, setSelectedBrandId] = useState("");
 
   // Función para abrir/cerrar el menú
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
-  // Marcas (idéntico arreglo al de BrandCards, pero solo aquí)
-  const brands = [
-    { name: "Bosch", slogan: "Innovación para tu vida.", logo: "/logo_bosch.png" },
-    { name: "Makita", slogan: "Herramientas electricas.", logo: "/makita.png" },
-    { name: "Husqvarna", slogan: "Productos de construcción.", logo: "/husq.png" },
-    { name: "Honda", slogan: "Productos de fuerza.", logo: "/honda-fuerza.png" },
-    { name: "Marshalltown", slogan: "Herramientas para concreto", logo: "/marshalltown.png" },
-    { name: "Mpower", slogan: "Productos de máxima calidad.", logo: "/m-power.webp" },
-    { name: "Cipsa", slogan: "Construimos más que obras...", logo: "/cipsa.avif" },
-  ];
+  // Cargar las marcas desde la API
+  useEffect(() => {
+    const loadBrands = async () => {
+      try {
+        setLoading(true);
+        const response = await getAllBrandsWithCategories();
+        const brandsData = response?.result || [];
+        // Filtrar solo marcas activas
+        const activeBrands = brandsData.filter(brand => brand.status === 'ACTIVE');
+        setBrands(activeBrands);
+      } catch (error) {
+        console.error('Error al cargar las marcas:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBrands();
+  }, []);
+
+  // Función para manejar el cambio de marca en el selector móvil
+  const handleBrandChange = (brandId) => {
+    setSelectedBrandId(brandId);
+    if (brandId && drawerRef.current) {
+      const selectedBrand = brands.find(b => b.id.toString() === brandId);
+      if (selectedBrand) {
+        // Cerrar el menú móvil antes de abrir el drawer
+        setMenuOpen(false);
+        // Esperar a que se cierre el menú antes de abrir el drawer
+        setTimeout(() => {
+          drawerRef.current.handleBrandClick(selectedBrand);
+        }, 300);
+      }
+    }
+  };
+  
+  // Determinar si estamos en la página de la tienda
+  const isInStore = location.pathname === '/tienda' || location.pathname.includes('/productos/');
 
   return (
-    <nav className="bg-blue-950 dark:bg-gray-800 shadow-lg py-4 px-12 flex justify-between items-center fixed top-0 w-full z-20">
+    <nav className="bg-blue-950 dark:bg-gray-800 shadow-lg py-4 px-12 flex justify-between items-center fixed top-0 w-full z-50">
       {/* Logo */}
       <div className="flex items-center">
         <Link to="/">
@@ -57,15 +102,38 @@ const Nav2 = () => {
         </button>
 
         <div className="flex flex-col items-center space-y-4 mt-12">
-          <Button
-            asChild
-            className="flex items-center justify-center bg-blue-100 border-2 border-yellow-500 text-blue-700 hover:bg-gray-100 w-full"
-          >
-            <Link to="/tienda">
-              <FaStore className="mr-2" />
-              Tienda
-            </Link>
-          </Button>
+          {/* Botón de Tienda (solo se muestra si no estamos ya en la tienda) */}
+          {!isInStore && (
+            <Button
+              asChild
+              className="flex items-center justify-center bg-blue-100 border-2 border-yellow-500 text-blue-700 hover:bg-gray-100 w-full"
+            >
+              <Link to="/tienda">
+                Ir a Tienda
+              </Link>
+            </Button>
+          )}
+
+          {/* Selector de marcas para móvil */}
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Explorar por marca</label>
+            <Select
+              value={selectedBrandId}
+              onValueChange={handleBrandChange}
+              disabled={loading}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecciona una marca" />
+              </SelectTrigger>
+              <SelectContent>
+                {brands.map((brand) => (
+                  <SelectItem key={brand.id} value={brand.id.toString()} className="cursor-pointer">
+                    {brand.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <Button asChild className="w-full">
             <Link to="/login">Iniciar sesión</Link>
@@ -75,8 +143,7 @@ const Nav2 = () => {
 
       {/* Menú desktop */}
       <div className="flex items-center space-x-4 hidden md:flex">
-        <DrawerCategories />
-
+        <DrawerCategories ref={drawerRef} />
 
         <Button
           asChild
