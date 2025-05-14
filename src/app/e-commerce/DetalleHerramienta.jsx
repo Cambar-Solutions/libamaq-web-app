@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 const DetalleHerramienta = () => {
 
-  
+
   const navigate = useNavigate();
 
   // Función para regresar a Productos Destacados
@@ -138,7 +138,7 @@ const DetalleHerramienta = () => {
       model: "GBH 8-45 DV",
       description: "1500 W de potencia con bajo nivel de vibraciones.",
       features: [
-        
+
         "Rendimiento máximo de perforación y cincelado.",
         "Sistema Vibration Control de tres etapas con función Turbo Power.",
       ],
@@ -151,7 +151,7 @@ const DetalleHerramienta = () => {
       multimedia: [
         "/card-section/8-45DV.webp",
         "/product-des/GBH8-45DV/p.webp",
-      
+
       ],
       selection: "En versión con función Turbo Power y sistema de reducción de vibraciones.",
       additionalInfo: {
@@ -180,7 +180,7 @@ const DetalleHerramienta = () => {
       ],
       downloads: [
         { title: "Manual de usuario", url: "https://www.bosch-professional.com/binary/manualsmedia/o204408v21_160992A0H2_final.pdf", size: "4.1 MB" },
-      
+
         { title: "Ficha técnica del producto", url: "https://www.bosch-professional.com/mx/es/pdf/productdata/gbh-8-45-dv-sheet.pdf", size: "1.5 MB" },
       ],
     },
@@ -203,7 +203,7 @@ const DetalleHerramienta = () => {
       multimedia: [
         "/card-section/2-26DRE.webp",
         "/product-des/GBH2-26DRE/gbh2-26dre-case.webp",
-        
+
       ],
       selection: "Incluye maletín de transporte con limitador de profundidad.",
       additionalInfo: {
@@ -267,7 +267,7 @@ const DetalleHerramienta = () => {
         { icon: "/icons/step3.png", text: "Pague" },
         { icon: "/icons/step4.png", text: "Reciba su pedido" }
       ],
-      
+
       downloads: [
         {
           title: "Ficha técnica del producto",
@@ -292,7 +292,7 @@ const DetalleHerramienta = () => {
         "Empuñadura ergonómica con goma antideslizante para mejor control",
         "Limitador de profundidad ajustable"
       ],
-  
+
       multimedia: [
         "/card-section/rotomartillo.png",
         "/product-des/HR2475/work.png"
@@ -334,14 +334,63 @@ const DetalleHerramienta = () => {
           size: "1.1 MB"
         }
       ]
+    },
+    {
+      title: "Regla vibro extendedora para concreto",
+      model: "28166",
+      description: "Una herramienta indispensable por sus características y ventajas para vibrar y extender el concreto.",
+      features: [
+        "Se puede instalar perfil de 5 o 3 Mts dependiendo de las necesidades del usuario",
+        "Potente Motor Honda® GX35 (4 tiempos): 1.3 hp (1.0 kW) @ 7 000 rpm, con tanque de combustible de 0.166 US gal (0.63 L)",
+        "Los perfiles son de fácil reemplazo",
+        "La vibración solo es en el perfil, no en el operador",
+        "Fácil de transportar",
+        "Cien por ciento reparable ",
+      ],
+      // advantages: [
+      //   {
+      //     "icon": "/product-des/SpeedStriker/icon_vibration_control.webp",
+      //     "text": "Vibración controlada"
+      //   }
+      // ],
+      multimedia: [
+        "/card-section/regla-vibro-extendedora-para-concretoR.png",
+        "/product-des/28166/regla-vibro-extendedora-detrasR.png"
+      ],
+      selection: "En carrito con hoja de 4 ½ ft",
+      additionalInfo: {
+        "highlights": "La regla vibro extendedora 28166 de Marshalltown para concreto consolida el concreto mientras nivelas, logrando una losa más fuerte y uniforme. Su ligereza (28.5 lbs / 12.9 kg) y sus agarres ergonómicos facilitan el transporte entre zonas de trabajo. Ideal para proyectos de tamaño medio a grande donde la eficiencia y comodidad del operador son cruciales.",
+        "application": "Recomendada para alisar y nivelar losas, aceras, rampas, patios y pisos industriales. Perfecta en obras donde se requiere un acabado profesional con mínimo esfuerzo manual."
+      },
+      spareParts: [
+        { "icon": "/icons/step1.png", "text": "Seleccione un repuesto" },
+        { "icon": "/icons/step2.png", "text": "Haga el pedido en línea" },
+        { "icon": "/icons/step3.png", "text": "Pague" },
+        { "icon": "/icons/step4.png", "text": "Reciba su pedido" }
+      ],
+      accessories: [
+        {
+          image: "/product-des/28166/Planchas-de-reglaje-motorizadas.png",
+          title: "Planchas de reglaje motorizadas 13284",
+          description: "Placa ideal para el revestimiento húmedo y de forma a forma",
+          material: "Aleación de aluminio",
+        },
+      ],
+      downloads: [
+        {
+          title: "Manual del usuario",
+          url: "chrome-extension://efaidnbmnnnibpcajpcglclefindmkaj/https://marshalltown-ecommerce.azureedge.net/mtdocuments/_WS1716_Speed_Striker_STRIKE45_Manual_FULL.pdf",
+          size: "4.3 MB"
+        },
+        {
+          title: "Ficha técnica del producto",
+          url: "chrome-extension://efaidnbmnnnibpcajpcglclefindmkaj/https://marshalltown-ecommerce.azureedge.net/mtdocuments/SpeedStriker_SS.pdf",
+          size: "1.9 MB"
+        }
+      ]
     }
-    
-    
-    
-    
-    
   ];
-  
+
 
   const herramienta = herramientas.find((item) => item.title === nombre);
   const [mainImage, setMainImage] = useState(herramienta?.multimedia[0]);
@@ -358,7 +407,7 @@ const DetalleHerramienta = () => {
           Regresar a productos destacados
         </Button>
       </div>
-  
+
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Galería de imágenes */}
         <div className="w-full lg:w-1/2 flex flex-col items-center">
@@ -375,21 +424,20 @@ const DetalleHerramienta = () => {
                 key={index}
                 src={img}
                 alt={`${herramienta.title} - ${index}`}
-                className={`w-16 h-16 object-contain border p-1 cursor-pointer ${
-                  mainImage === img ? "border-blue-600" : "border-gray-300 bg-black/20 hover:bg-black/10 transition-all duration-400"
-                }`}
+                className={`w-16 h-16 object-contain border p-1 cursor-pointer ${mainImage === img ? "border-blue-600" : "border-gray-300 bg-black/20 hover:bg-black/10 transition-all duration-400"
+                  }`}
                 onClick={() => setMainImage(img)}
               />
             ))}
           </div>
         </div>
-  
+
         {/* Información de la herramienta */}
         <div className="w-full lg:w-1/2">
           <h1 className="text-2xl sm:text-3xl font-bold text-blue-950">{herramienta.title}</h1>
           <p className="text-md sm:text-lg text-gray-700 font-bold my-2">{herramienta.model}</p>
           <p className="text-gray-600 text-md sm:text-lg font-semibold">{herramienta.description}</p>
-  
+
           {/* Características */}
           {herramienta.features?.length > 0 && (
             <>
@@ -401,7 +449,7 @@ const DetalleHerramienta = () => {
               </ul>
             </>
           )}
-  
+
           {/* Funciones y características con íconos */}
           {herramienta.advantages?.length > 0 && (
             <>
@@ -420,16 +468,16 @@ const DetalleHerramienta = () => {
           )}
         </div>
       </div>
-  
+
       {/* Información Adicional */}
       <div className="mt-12">
         <h2 className="text-xl sm:text-2xl font-bold mb-3 text-blue-950">Aspectos destacados del producto</h2>
         <p className="text-gray-700">{herramienta.additionalInfo?.highlights}</p>
-  
+
         <h2 className="text-xl sm:text-2xl font-bold mt-6 mb-3 text-blue-950">Equipos y aplicaciones</h2>
         <p className="text-gray-700">{herramienta.additionalInfo?.application}</p>
       </div>
-  
+
       {/* Sección de repuestos */}
       {herramienta.spareParts?.length > 0 && (
         <div className="mt-12 bg-blue-900 text-white p-6 text-center rounded-md">
@@ -437,7 +485,7 @@ const DetalleHerramienta = () => {
           <p className="mt-2">
             Aquí encontrará rápida y fácilmente los repuestos indicados para su herramienta profesional de Bosch.
           </p>
-  
+
           <ol className="mt-4 space-y-4 flex flex-col items-center max-w-lg mx-auto">
             {herramienta.spareParts.map((step, index) => (
               <li key={index} className="flex items-center gap-4 w-full sm:w-3/4 lg:w-2/3">
@@ -450,7 +498,7 @@ const DetalleHerramienta = () => {
           </ol>
         </div>
       )}
-  
+
       {/* Accesorios */}
       {herramienta.accessories?.length > 0 && (
         <div className="mt-12">
@@ -467,7 +515,7 @@ const DetalleHerramienta = () => {
           </div>
         </div>
       )}
-  
+
       {/* Descargas */}
       {herramienta.downloads?.length > 0 && (
         <div className="mt-12">
@@ -488,7 +536,7 @@ const DetalleHerramienta = () => {
       )}
     </div>
   );
-  
+
 };
 
 export default DetalleHerramienta;
