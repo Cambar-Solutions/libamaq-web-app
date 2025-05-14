@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { FaStore, FaBars, FaTimes } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button"; // Suponiendo que el botón es de tu librería
@@ -7,8 +7,29 @@ import { TfiShoppingCartFull } from "react-icons/tfi";
 import { GrUserWorker } from "react-icons/gr";
 import { SlLocationPin } from "react-icons/sl";
 import { MapPin } from 'lucide-react';
+import DrawerCategories from "./drawerCategories";
 
 const NavClient = () => {
+  const drawerRef = useRef(null);
+
+  // Función para manejar el cambio de marca en el selector móvil
+  const handleBrandChange = (brandId) => {
+    setSelectedBrandId(brandId);
+    if (brandId && drawerRef.current) {
+      const selectedBrand = brands.find(b => b.id.toString() === brandId);
+      if (selectedBrand) {
+        // Cerrar el menú móvil antes de abrir el drawer
+        setMenuOpen(false);
+        // Esperar a que se cierre el menú antes de abrir el drawer
+        setTimeout(() => {
+          drawerRef.current.handleBrandClick(selectedBrand);
+        }, 300);
+      }
+    }
+  };
+
+
+
   const [menuOpen, setMenuOpen] = useState(false); // Estado para controlar la visibilidad del menú lateral
 
   // Función para abrir/cerrar el menú
@@ -72,6 +93,10 @@ const NavClient = () => {
 
       {/* Menú principal (solo en pantallas grandes) */}
       <div className="flex items-center space-x-4 md:flex">
+
+        {/* Btn Ver Marcas */}
+        <DrawerCategories ref={drawerRef} />
+
         {/* Botón "Perfil" */}
         <Link
           to="/perfil"
@@ -79,16 +104,17 @@ const NavClient = () => {
         >
           <div className="relative">
             {/* Texto */}
-            <span className="px-6 py-2 bg-blue-600 text-white rounded-l-full group-hover:bg-blue-700 transition-colors duration-600 inline-block mr-10 max-w-[12em] truncate">
-              Hola Angel Murga
+            <span className="px-2.5 py-1 bg-white text-black group-hover:text-white text-sm rounded-l-full group-hover:bg-gradient-to-l from-yellow-600 to-yellow-500/80 transition-colors duration-600 inline-block mr-8 max-w-[10em]">
+              Hola Jonathan
             </span>
 
             {/* Círculo del icono */}
-            <div className="absolute top-1/2 right-0 w-14 h-14 bg-blue-600 rounded-full -translate-y-1/2 flex items-center justify-center group-hover:bg-blue-700">
-              <GrUserWorker size={26} className="text-white" />
+            <div className="absolute top-1/2 right-0 w-10 h-10 bg-yellow-600 rounded-full -translate-y-1/2 flex items-center justify-center">
+              <GrUserWorker size={20} className="text-white" />
             </div>
           </div>
         </Link>
+
 
 
         {/* Botón "Carrito" */}
@@ -98,7 +124,6 @@ const NavClient = () => {
 
           </Link>
         </button>
-
 
 
       </div>

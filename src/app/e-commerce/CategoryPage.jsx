@@ -20,7 +20,7 @@ const getFeaturedProducts = async () => {
       // Filtrar solo productos activos
       const activeProducts = response.result.filter(product => product.status === "ACTIVE");
       console.log(`Productos activos: ${activeProducts.length} de ${response.result.length}`);
-      
+
       // Limitamos a 12 productos destacados
       return activeProducts.slice(0, 12);
     }
@@ -70,7 +70,7 @@ export default function CategoryPage() {
   const [scrollPosition, setScrollPosition] = useState(0);
   const [maxScroll, setMaxScroll] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Estados para controlar la carga de imágenes y mostrar contenido
   const [carouselImagesLoaded, setCarouselImagesLoaded] = useState(false);
   const [productsImagesLoaded, setProductsImagesLoaded] = useState(false);
@@ -82,19 +82,19 @@ export default function CategoryPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoplayEnabled, setAutoplayEnabled] = useState(true);
   const [touchStart, setTouchStart] = useState(0);
-  
+
   // Estados para el carrusel de productos más vendidos
   const [carouselPosition, setCarouselPosition] = useState(0);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
   const [touchEnd, setTouchEnd] = useState(0);
-  
+
   // Imágenes de ejemplo para el carrusel (puedes reemplazarlas con tus propias imágenes)
   const carouselImages = [
     { src: "/promocionBosch.png", alt: "Promoción Bosch", id: 1 },
     { src: "/promocionMakita.png", alt: "Promoción Makita", id: 2 },
     { src: "/promocionHusqvarna.png", alt: "Promoción Husqvarna", id: 3 },
-  
+
   ];
 
   // Función para navegar al siguiente slide
@@ -110,40 +110,40 @@ export default function CategoryPage() {
   // Configurar autoplay
   useEffect(() => {
     if (!autoplayEnabled) return;
-    
+
     const interval = setInterval(() => {
       nextSlide();
     }, 5000);
-    
+
     return () => clearInterval(interval);
   }, [autoplayEnabled, nextSlide]);
 
   // Efecto para manejar el redimensionamiento y actualizar el estado del carrusel
   useEffect(() => {
     if (!topSellingProducts || topSellingProducts.length === 0) return;
-    
+
     const handleResize = () => {
       // Resetear la posición del carrusel cuando cambia el tamaño de la ventana
       setCarouselPosition(0);
       setShowLeftArrow(false);
-      
+
       // Calcular si debe mostrar la flecha derecha
       let itemWidth = 20; // Por defecto 5 items (20%)
       if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25; // 4 items
       else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333; // 3 items
       else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50; // 2 items
       else if (window.innerWidth < 640) itemWidth = 100; // 1 item
-      
+
       const maxPosition = Math.max(0, (topSellingProducts.length * itemWidth) - 100);
       setShowRightArrow(maxPosition > 0);
     };
-    
+
     // Inicializar el estado del carrusel
     handleResize();
-    
+
     // Agregar event listener para el redimensionamiento
     window.addEventListener('resize', handleResize);
-    
+
     // Limpiar event listener
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -158,13 +158,13 @@ export default function CategoryPage() {
     const checkIfMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     // Comprobar al inicio
     checkIfMobile();
-    
+
     // Comprobar al cambiar el tamaño de la ventana
     window.addEventListener('resize', checkIfMobile);
-    
+
     return () => {
       window.removeEventListener('resize', checkIfMobile);
     };
@@ -176,20 +176,20 @@ export default function CategoryPage() {
     // Desactivar autoplay al interactuar con el carrusel
     setAutoplayEnabled(false);
   };
-  
+
   const handleTouchMove = (e) => {
     setTouchEnd(e.targetTouches[0].clientX);
-    
+
     // Prevenir el desplazamiento de la página mientras se desliza el carrusel
     if (Math.abs(touchStart - e.targetTouches[0].clientX) > 10) {
       e.preventDefault();
     }
   };
-  
+
   const handleTouchEnd = () => {
     // Umbral más bajo para dispositivos móviles (50px en lugar de 75px)
     const threshold = isMobile ? 50 : 75;
-    
+
     if (touchStart - touchEnd > threshold) {
       // Deslizar a la izquierda (siguiente slide)
       nextSlide();
@@ -197,7 +197,7 @@ export default function CategoryPage() {
       // Deslizar a la derecha (slide anterior)
       prevSlide();
     }
-    
+
     // Reactivar autoplay después de 5 segundos de inactividad
     setTimeout(() => {
       setAutoplayEnabled(true);
@@ -275,7 +275,7 @@ export default function CategoryPage() {
       try {
         const products = await getFeaturedProducts();
         setFeaturedProducts(products);
-        
+
         // Calcular el número total de imágenes a cargar (carrusel + productos)
         const totalImages = carouselImages.length + products.length;
         setTotalImagesToLoad(totalImages);
@@ -301,7 +301,7 @@ export default function CategoryPage() {
           // Filtrar solo marcas activas
           const activeBrands = response.result.filter(brand => brand.status === "ACTIVE");
           setAllBrands(activeBrands);
-          
+
           // Extraer todas las categorías únicas de todas las marcas
           const allCatsSet = new Set();
           activeBrands.forEach(brand => {
@@ -325,17 +325,17 @@ export default function CategoryPage() {
   // Efecto para manejar cambios en la marca seleccionada
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-    
+
     if (brand) {
       // Buscar la marca seleccionada en allBrands
       const selectedBrand = allBrands.find(b => b.name.toLowerCase() === brand.toLowerCase());
-      
+
       if (selectedBrand) {
         // Obtener categorías activas de la marca seleccionada
         const brandCategories = selectedBrand.categories
           .filter(cat => cat.status === "ACTIVE")
           .map(cat => cat.name);
-        
+
         setAllCategories(brandCategories);
       }
     }
@@ -363,28 +363,28 @@ export default function CategoryPage() {
         // Si no hay filtros, ya tenemos los productos destacados
         return;
       }
-      
+
       setIsLoading(true);
       try {
         // Obtener el objeto de la marca seleccionada
         const selectedBrand = allBrands.find(b => b.name.toLowerCase() === brand?.toLowerCase());
         const brandId = selectedBrand?.id;
-        
+
         if (!brandId) {
           console.log('No se encontró la marca seleccionada');
           setIsLoading(false);
           return;
         }
-        
+
         let response;
-        
+
         // Buscar la categoría seleccionada si existe
         if (selectedCategory) {
           const categoryObj = selectedBrand.categories.find(
             cat => cat.name.toLowerCase() === selectedCategory.toLowerCase()
           );
           const categoryId = categoryObj?.id;
-          
+
           if (categoryId) {
             // Obtener productos por marca y categoría usando el endpoint específico
             console.log(`Buscando productos por marca ${brandId} y categoría ${categoryId}`);
@@ -399,7 +399,7 @@ export default function CategoryPage() {
           console.log(`Buscando productos por marca ${brandId}`);
           response = await getProductsByBrand(brandId);
         }
-        
+
         if (response && response.type === "SUCCESS" && Array.isArray(response.result)) {
           console.log(`Productos encontrados: ${response.result.length}`);
           setFeaturedProducts(response.result);
@@ -415,35 +415,35 @@ export default function CategoryPage() {
         setIsLoading(false);
       }
     };
-    
+
     loadFilteredProducts();
   }, [brand, selectedCategory, allBrands]);
 
   // Filtrar productos por término de búsqueda
   const filteredProducts = searchTerm
     ? featuredProducts.filter(
-        item =>
-          item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.shortDescription?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      item =>
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.shortDescription?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
     : featuredProducts;
 
   // Si no se han cargado todas las imágenes, mostrar el LoadingScreen
   if (!showContent) {
     // Importamos el componente LoadingScreen
     const LoadingScreen = React.lazy(() => import('@/components/LoadingScreen'));
-    
+
     // Renderizamos un div oculto con las imágenes del carrusel para precargarlas
     return (
       <>
         <React.Suspense fallback={<div></div>}>
           <LoadingScreen />
         </React.Suspense>
-        
+
         {/* Div oculto para precargar imágenes */}
         <div className="hidden">
           {carouselImages.map((image) => (
-            <img 
+            <img
               key={image.id}
               src={image.src}
               alt=""
@@ -462,10 +462,10 @@ export default function CategoryPage() {
               }}
             />
           ))}
-          
+
           {/* Precargar imágenes de productos destacados */}
           {featuredProducts.slice(0, 8).map((product, index) => (
-            <img 
+            <img
               key={`featured-${index}`}
               src={product.images && product.images.length > 0 ? product.images[0] : "/placeholder-product.png"}
               alt=""
@@ -490,16 +490,16 @@ export default function CategoryPage() {
               {/* Controles de navegación fuera de la imagen - ocultos en móvil */}
               {!isMobile && (
                 <>
-                  <button 
-                    onClick={prevSlide} 
+                  <button
+                    onClick={prevSlide}
                     className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-transparent text-blue-600 hover:text-blue-800 p-2 transition-all duration-200 hidden md:block"
                     aria-label="Anterior"
                   >
                     <ChevronLeft size={28} />
                   </button>
-                  
-                  <button 
-                    onClick={nextSlide} 
+
+                  <button
+                    onClick={nextSlide}
                     className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-transparent text-blue-600 hover:text-blue-800 p-2 transition-all duration-200 hidden md:block"
                     aria-label="Siguiente"
                   >
@@ -507,20 +507,20 @@ export default function CategoryPage() {
                   </button>
                 </>
               )}
-              
-              <div 
+
+              <div
                 className="relative w-full overflow-hidden h-[300px] md:h-[400px] rounded-lg shadow-lg mx-auto mt-6"
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
               >
-              {/* Contenedor de slides */}
-              <div className="flex h-full w-full relative mx-auto">
-                {carouselImages.map((image, index) => (
-                  <div 
-                    key={image.id}
-                    className={`absolute  w-full h-full transition-opacity duration-500 ease-in-out ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
-                  >
+                {/* Contenedor de slides */}
+                <div className="flex h-full w-full relative mx-auto">
+                  {carouselImages.map((image, index) => (
+                    <div
+                      key={image.id}
+                      className={`absolute  w-full h-full transition-opacity duration-500 ease-in-out ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+                    >
                       <div className="w-full h-full">
                         <img
                           src={image.src}
@@ -543,23 +543,23 @@ export default function CategoryPage() {
                           }}
                         />
                       </div>
-                  </div>
-                ))}
-              </div>
-              
+                    </div>
+                  ))}
+                </div>
 
-              
-              {/* Indicadores de posición minimalistas - más pequeños en móvil */}
-              <div className="absolute -bottom-6 md:-bottom-8 left-1/2 -translate-x-1/2 z-20 flex space-x-2 md:space-x-3">
-                {carouselImages.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentSlide(index)}
-                    className={`w-6 md:w-8 h-1 transition-all duration-300 ${index === currentSlide ? 'bg-blue-600' : 'bg-gray-300 hover:bg-gray-400'}`}
-                    aria-label={`Ir a slide ${index + 1}`}
-                  />
-                ))}
-              </div>
+
+
+                {/* Indicadores de posición minimalistas - más pequeños en móvil */}
+                <div className="absolute -bottom-6 md:-bottom-8 left-1/2 -translate-x-1/2 z-20 flex space-x-2 md:space-x-3">
+                  {carouselImages.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentSlide(index)}
+                      className={`w-6 md:w-8 h-1 transition-all duration-300 ${index === currentSlide ? 'bg-blue-600' : 'bg-gray-300 hover:bg-gray-400'}`}
+                      aria-label={`Ir a slide ${index + 1}`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -610,19 +610,19 @@ export default function CategoryPage() {
                                   <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col h-full hover:-translate-y-1 duration-200 cursor-pointer">
                                     <div className="h-40 md:h-52 bg-gray-100 flex items-center justify-center p-4 relative overflow-hidden">
                                       <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded z-20">TOP</div>
-                                      
+
                                       {/* Fondo con patrón de imagen cuando no hay imagen disponible */}
                                       <div className="absolute inset-0 flex items-center justify-center">
                                         <div className="w-12 h-12 border-2 border-gray-300 rounded-md flex items-center justify-center">
                                           <div className="w-6 h-6 rounded-full bg-gray-300"></div>
                                         </div>
                                       </div>
-                                      
+
                                       {/* La imagen real del producto */}
-                                      <img 
-                                        src={item.images && item.images.length > 0 ? item.images[0] : "/placeholder-product.png"} 
-                                        alt="" 
-                                        className="max-h-full max-w-full object-contain relative z-10" 
+                                      <img
+                                        src={item.images && item.images.length > 0 ? item.images[0] : "/placeholder-product.png"}
+                                        alt=""
+                                        className="max-h-full max-w-full object-contain relative z-10"
                                         onLoad={handleImageLoad}
                                         onError={(e) => {
                                           e.target.style.opacity = "0"; // Ocultar la imagen si no carga
@@ -657,11 +657,11 @@ export default function CategoryPage() {
                                 else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333; // 3 items
                                 else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50; // 2 items
                                 else if (window.innerWidth < 640) itemWidth = 100; // 1 item completo en móvil
-                                
+
                                 // Calcular nueva posición
                                 const newPosition = Math.max(0, carouselPosition - itemWidth);
                                 setCarouselPosition(newPosition);
-                                
+
                                 // Actualizar visibilidad de flechas
                                 setShowLeftArrow(newPosition > 0);
                                 setShowRightArrow(true);
@@ -671,7 +671,7 @@ export default function CategoryPage() {
                               <ChevronLeft className="text-blue-600" size={20} />
                             </button>
                           )}
-                          
+
                           {showRightArrow && (
                             <button
                               className="carousel-next absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
@@ -682,12 +682,12 @@ export default function CategoryPage() {
                                 else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333; // 3 items
                                 else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50; // 2 items
                                 else if (window.innerWidth < 640) itemWidth = 100; // 1 item completo en móvil
-                                
+
                                 // Calcular nueva posición y límite máximo
                                 const maxPosition = Math.max(0, (topSellingProducts.length * itemWidth) - 100);
                                 const newPosition = Math.min(maxPosition, carouselPosition + itemWidth);
                                 setCarouselPosition(newPosition);
-                                
+
                                 // Actualizar visibilidad de flechas
                                 setShowLeftArrow(true);
                                 setShowRightArrow(newPosition < maxPosition);
@@ -792,12 +792,12 @@ export default function CategoryPage() {
                                 <div className="w-6 h-6 rounded-full bg-gray-300"></div>
                               </div>
                             </div>
-                            
+
                             {/* La imagen real del producto */}
-                            <img 
-                              src={item.images && item.images.length > 0 ? item.images[0] : "/placeholder-product.png"} 
-                              alt="" 
-                              className="max-h-full max-w-full object-contain relative z-10" 
+                            <img
+                              src={item.images && item.images.length > 0 ? item.images[0] : "/placeholder-product.png"}
+                              alt=""
+                              className="max-h-full max-w-full object-contain relative z-10"
                               onError={(e) => {
                                 e.target.style.opacity = "0"; // Ocultar la imagen si no carga
                               }}
