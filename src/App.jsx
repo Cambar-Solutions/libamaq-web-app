@@ -53,6 +53,10 @@ export const items = [
   {
     image: "/card-section/rotomartillo.png",
     title: "Rotomartillo electro neumático HR2475"
+  },
+  {
+    image: "/card-section/regla-vibro-extendedora-para-concreto.jpg",
+    title: "Regla vibro extendedora para concreto"
   }
 ];
 
