@@ -23,28 +23,42 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
 
-    if (credentials.email !== 'libamaq@gmail.com' || credentials.password !== 'Cesar1234.') {
+    if (credentials.email === 'libamaq@gmail.com' && credentials.password === 'Cesar1234.') {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        toast.success("¡Bienvenido!", {
+          position: 'top-right',
+          style: { background: '#4caf50', color: '#fff', borderRadius: '10px' },
+        });
+        navigate("/dashboard");
+      } catch (error) {
+        toast.error("Error al iniciar sesión");
+      } finally {
+        setIsLoading(false);
+      }
+    } else if (credentials.email === 'jony@gmail.com' && credentials.password === 'Jony1234.') {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        toast.success(`¡Bienvenido, ${credentials.email}!`, {
+          position: 'top-right',
+          style: { background: '#4caf50', color: '#fff', borderRadius: '10px' },
+        });
+        navigate("/user-home");
+      } catch (error) {
+        toast.error("Error al iniciar sesión");
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
       toast.error("Credenciales incorrectas", {
         position: 'top-right',
         style: { background: '#f44336', color: '#fff', borderRadius: '10px' },
       });
       setIsLoading(false);
-      return;
-    }
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      toast.success("¡Bienvenido!", {
-        position: 'top-right',
-        style: { background: '#4caf50', color: '#fff', borderRadius: '10px' },
-      });
-      navigate("/dashboard");
-    } catch (error) {
-      toast.error("Error al iniciar sesión");
-    } finally {
-      setIsLoading(false);
     }
   };
+
+
 
   return (
     <>
