@@ -136,7 +136,7 @@ const Nav2 = () => {
 
           <Button
   asChild
-  className="w-full bg-transparent border border-blue-700 text-blue-700 hover:bg-blue-50"
+  className="w-full bg-transparent border border-blue-700 text-blue-700 hover:bg-blue-50 transition-all duration-600"
 >
   <Link to="/register">Crear tu cuenta</Link>
 </Button>

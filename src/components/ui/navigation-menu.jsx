@@ -29,7 +29,7 @@ export const NavigationMenuTrigger = React.forwardRef(({ children, className, ..
   <RadixNav.Trigger
     ref={ref}
     className={cn(
-      "text-base font-bold text-white hover:underline focus:outline-none",
+      "text-base font-bold text-white hover:underline underline-offset-2 focus:outline-none",
       className
     )}
     {...props}
