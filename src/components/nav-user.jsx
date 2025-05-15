@@ -39,9 +39,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Link, useNavigate, useParams } from "react-router-dom";
+
 
 export function NavUser({ user }) {
-  const { isMobile } = useSidebar();
+  const { isMobile } = useSidebar()
+  const navigate = useNavigate();
+
+    const handleLogout = () => {
+        // localStorage.removeItem("authToken");
+        navigate("/", { replace: true });
+    };;
 
   return (
     <SidebarMenu>
@@ -132,8 +140,7 @@ export function NavUser({ user }) {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer">
-              <LogOut />
+            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
               Cerrar sesión
             </DropdownMenuItem>
           </DropdownMenuContent>

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate, useParams } from "react-router-dom";
-
 import {
     Accordion,
     AccordionContent,
@@ -13,6 +12,12 @@ import {
 import { GrUserWorker } from "react-icons/gr";
 
 export default function ProfilePanel() {
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        // localStorage.removeItem("authToken");
+        navigate("/", { replace: true });
+    };
 
     return (
         <>
@@ -25,6 +30,9 @@ export default function ProfilePanel() {
                         <div className="ml-4 flex flex-col">
                             <p className="text-gray-700 text-3xl font-semibold">Jonathan</p>
                             <p className="text-gray-500 text-sm">jony@gmail.com</p>
+                        </div>
+                        <div className="ml-auto">
+                            <Button onClick={handleLogout} className="bg-red-700 hover:bg-red-900 cursor-pointer">Cerrar sesión</Button>
                         </div>
                     </div>
                 </div>
