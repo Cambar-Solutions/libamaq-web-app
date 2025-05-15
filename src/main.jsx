@@ -19,7 +19,8 @@ const CategoryPage = lazy(() => import('./app/e-commerce/CategoryPage'));
 const NuevoProducto = lazy(() => import('./app/dashboard/NuevoProducto'));
 const ProductoDetalle = lazy(() => import('./app/dashboard/ProductoDetalle'));
 const Nosotros = lazy(() => import('./Nosotros.jsx'));
-const UserHome = lazy(() => import('./app/user/UserHome')); 
+const UserHome = lazy(() => import('./app/user/UserHome'));
+const Account = lazy(() => import('./app/user/Account')); 
 
 
 // Componente de layout que envuelve todas las rutas con Suspense
@@ -98,9 +99,17 @@ createRoot(document.getElementById('root')).render(
           </AppLayout>
         } />
 
+
+        {/* Cliente */}
         <Route path="/user-home" element={
           <AppLayout>
             <UserHome/>
+          </AppLayout>
+        } />
+
+        <Route path="/user-profile" element={
+          <AppLayout>
+            <Account/>
           </AppLayout>
         } />
       </Routes>

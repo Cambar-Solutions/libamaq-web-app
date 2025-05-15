@@ -1,4 +1,4 @@
-import NavClient from "@/components/NavClient";
+import NavCustomer from "@/components/NavCustomer";
 import React, { useState, useEffect, useRef } from "react";
 import { ArrowLeft, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { getAllPublicProducts } from "@/services/public/productService";
 import { getAllBrandsWithCategories } from "@/services/public/brandService";
 import { toast } from "sonner";
+
 
 export default function UserHome() {
     const navigate = useNavigate();
@@ -123,7 +124,7 @@ export default function UserHome() {
 
     return (
         <>
-            <NavClient />
+            <NavCustomer />
 
             <div className="w-full bg-stone-100 min-h-screen pb-10 pt-1">
                 <div className="max-w-full mx-auto px-4">
@@ -186,7 +187,7 @@ export default function UserHome() {
                                             : `Productos ${brand.charAt(0).toUpperCase() + brand.slice(1)}`
                                         : selectedCategory
                                             ? selectedCategory.replace(/-/g, ' ')
-                                            : 'Productos destacados'}
+                                            : 'Todos los productos'}
                                 </h1>
                             </div>
                             <div className="bg-gray-100 min-h-[90vh] rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full mx-auto flex-grow">

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { FaStore, FaBars, FaTimes } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button"; // Suponiendo que el botón es de tu librería
@@ -8,9 +8,31 @@ import { GrUserWorker } from "react-icons/gr";
 import { SlLocationPin } from "react-icons/sl";
 import { MapPin } from 'lucide-react';
 import DrawerCategories from "./drawerCategories";
+import { getAllBrandsWithCategories } from "@/services/public/brandService";
 
-const NavClient = () => {
+const NavCustomer = () => {
   const drawerRef = useRef(null);
+
+  const [brands, setBrands] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedBrandId, setSelectedBrandId] = useState("");
+
+  // Efecto para cargar marcas al montar
+  useEffect(() => {
+    const loadBrands = async () => {
+      try {
+        setLoading(true);
+        const { result = [] } = await getAllBrandsWithCategories();
+        // Filtra las activas si quieres
+        setBrands(result.filter(b => b.status === "ACTIVE"));
+      } catch (err) {
+        console.error("Error cargando marcas:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadBrands();
+  }, []);
 
   // Función para manejar el cambio de marca en el selector móvil
   const handleBrandChange = (brandId) => {
@@ -39,8 +61,9 @@ const NavClient = () => {
     <nav className="bg-blue-950  dark:bg-gray-800 shadow-lg py-4 px-12 flex justify-between items-center fixed top-0 w-full z-20">
       {/* Logo */}
       <div className="flex items-center gap-5">
-        <img src="/Tipografia_LIBAMAQ_legulab_color_hor.png" alt="logo" className="max-h-12" />
-
+        <Link to="/user-home">
+          <img src="/Tipografia_LIBAMAQ_legulab_color_hor.png" alt="logo" className="max-h-12" />
+        </Link>
         {/* Botón "Ubicación" */}
         <button className="h-12 bg-transparent text-white">
           <Link to="/location" className="flex items-center gap-1 text-white hover:text-yellow-500 transition-colors duration-600">
@@ -99,7 +122,7 @@ const NavClient = () => {
 
         {/* Botón "Perfil" */}
         <Link
-          to="/perfil"
+          to="/user-profile"
           className="group inline-flex items-center"
         >
           <div className="relative">
@@ -131,4 +154,4 @@ const NavClient = () => {
   );
 };
 
-export default NavClient;
+export default NavCustomer;
