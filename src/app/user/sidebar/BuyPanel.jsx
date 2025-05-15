@@ -18,7 +18,7 @@ export default function BuyPanel() {
         <>
             <div className="w-full bg-stone-100 min-h-screen pb-10 pt-1">
                 <div className="max-w-6xl mx-auto px-4 mt-32 sticky top-16 z-10 bg-stone-200 shadow-md rounded-lg mb-6 p-3">
-                    Compras
+                    Compras aquí
                 </div>
             </div>
         </>
