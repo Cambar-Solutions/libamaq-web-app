@@ -712,7 +712,7 @@ export default function CategoryPage() {
           </div>
         )}
         <div ref={sectionRef} className="max-w-7xl w-full  mx-auto px-4">
-          <div className="sticky top-20 z-10 bg-white shadow-md rounded-lg mb-6 p-3">
+          <div className="sticky top-20 z-10 bg-white shadow-xl rounded-lg mb-6 p-3">
             <div className="flex flex-row items-center gap-2">
               <div className="relative w-4/5">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -766,14 +766,14 @@ export default function CategoryPage() {
                   : `Productos ${brand.charAt(0).toUpperCase() + brand.slice(1)}`
                 : selectedCategory
                   ? selectedCategory.replace(/-/g, ' ')
-                  : 'Productos destacados'}
+                  : ' '}
             </h1>
           </div>
-          <div className="bg-gray-100 rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full mx-auto flex-grow">
+          <div className="bg-gray-200 rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full mx-auto flex-grow">
             {/* Contenedor principal con ancho ajustado */}
             <div className="w-full mx-auto">
               {filteredProducts.length > 0 ? (
-                <div className="cursor-pointer grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-8 mb-8">
+                <div className="cursor-pointer grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-x-6 gap-y-8 mb-8">
                   {filteredProducts.map((item, index) => (
                     <Link to={`/producto/${item.id}`} key={index} className="w-full">
                       <motion.div

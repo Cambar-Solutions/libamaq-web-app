@@ -108,17 +108,7 @@ const Nav2 = () => {
 
         <div className="flex flex-col items-center space-y-4 mt-12">
           {/* Botón de Tienda (solo se muestra si no estamos ya en la tienda) */}
-          {!isInStore && (
-            <Button
-              asChild
-              className="flex items-center justify-center bg-blue-100 border-2 border-yellow-500 text-blue-700 hover:bg-gray-100 w-full"
-            >
-              <Link to="/tienda">
-                Ir a Tienda
-              </Link>
-            </Button>
-          )}
-
+       
           {/* Selector de marcas para móvil */}
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Explorar por marca</label>
@@ -143,6 +133,13 @@ const Nav2 = () => {
           <Button asChild className="w-full">
             <Link to="/login">Iniciar sesión</Link>
           </Button>
+
+          <Button
+  asChild
+  className="w-full bg-transparent border border-blue-700 text-blue-700 hover:bg-blue-50"
+>
+  <Link to="/register">Crear tu cuenta</Link>
+</Button>
         </div>
       </div>
 
@@ -156,6 +153,14 @@ const Nav2 = () => {
         >
           <Link to="/login">Iniciar sesión</Link>
         </Button>
+
+        
+<Button
+  asChild
+  className="bg-transparent text-white border border-white hover:bg-blue-800  hover:text-white rounded-full transition-all"
+>
+  <Link to="/register">Crea tu cuenta</Link>
+</Button>
 
       </div>
     </nav>

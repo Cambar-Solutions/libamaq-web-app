@@ -195,7 +195,7 @@ const DrawerCategories = forwardRef((props, ref) => {
       <NavigationMenu>
         <NavigationMenuList>
           <NavigationMenuItem>
-            <NavigationMenuTrigger className="bg-blue-500 text-white hover:bg-blue-700 hover:text-white transition-colors duration-600">
+            <NavigationMenuTrigger>
               Ver marcas
             </NavigationMenuTrigger>
             <NavigationMenuContent className="mt-1 bg-stone-100 shadow-lg">
@@ -296,90 +296,89 @@ const DrawerCategories = forwardRef((props, ref) => {
                       </div>
                     );
                   }
-
                   return (
-                    <div className="relative">
-                      <h3 className="text-lg font-semibold mb-4 text-center" style={{ color: selectedBrand.color }}>
-                        {selectedBrand.name} - Categorías
-                      </h3>
-                      
-                      {needsSlider && (
-                        <button
-                          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-2 shadow-md"
-                          onClick={() => {
-                            const slider = document.getElementById(`slider-${selectedBrand.id}`);
-                            if (slider) {
-                              // Calcular el ancho visible del contenedor
-                              const visibleWidth = slider.clientWidth;
-                              // Desplazar una página completa hacia la izquierda
-                              slider.scrollBy({ left: -visibleWidth, behavior: "smooth" });
-                            }
-                          }}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M15 18l-6-6 6-6" />
-                          </svg>
-                        </button>
-                      )}
-                      <div
-                        id={`slider-${selectedBrand.id}`}
-                        className={`flex ${!needsSlider
-                          ? "justify-center flex-wrap gap-4" // Centrado con espacio entre tarjetas cuando no hay slider
-                          : "overflow-x-auto snap-x snap-mandatory"
-                          } scrollbar-hide py-4 ${needsSlider ? "px-8" : "px-2"
-                          } max-w-[1200px] mx-auto`} // Ancho máximo y centrado horizontal
-                        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-                      >
-                        {categories.map((category) => (
-                          <div
-                            key={category.id}
-                            onClick={() => goToCategoryPage(selectedBrand, category)}
-                            className={`flex-none ${needsSlider ? "snap-center" : ""
-                              } cursor-pointer flex flex-col items-center justify-center rounded-lg bg-white p-4 shadow-md transition-transform hover:scale-105 ${needsSlider ? "mx-2" : "m-1"} min-w-[140px] max-w-[140px] sm:min-w-[180px] sm:max-w-[180px] md:min-w-[220px] md:max-w-[220px] lg:min-w-[240px] lg:max-w-[240px]`}
-                            style={{ borderColor: selectedBrand.color, borderWidth: '1px' }}
-                          >
-                            <div className="w-full aspect-square flex items-center justify-center mb-4 h-[120px] sm:h-[140px] md:h-[160px] lg:h-[180px] overflow-hidden">
-                              <div className="relative w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] md:w-[140px] md:h-[140px] lg:w-[160px] lg:h-[160px] flex items-center justify-center">
-                                <img
-                                  src={category.url || `/placeholder-category.png`}
-                                  alt={category.name}
-                                  className="absolute max-h-[100px] max-w-[100px] sm:max-h-[120px] sm:max-w-[120px] md:max-h-[140px] md:max-w-[140px] lg:max-h-[160px] lg:max-w-[160px] w-auto h-auto object-contain"
-                                  onError={(e) => {
-                                    // Evitar bucle infinito
-                                    e.target.onerror = null;
-                                    // Mostrar un placeholder
-                                    e.target.src = '/placeholder-category.png';
-                                  }}
-                                  style={{ objectFit: 'contain' }}
-                                />
-                              </div>
-                            </div>
-                            <span className="text-xs sm:text-sm md:text-base lg:text-lg font-medium text-center w-full truncate">
-                              {category.name}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                      {needsSlider && (
-                        <button
-                          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white rounded-full p-2 shadow-md"
-                          onClick={() => {
-                            const slider = document.getElementById(`slider-${selectedBrand.id}`);
-                            if (slider) {
-                              // Calcular el ancho visible del contenedor
-                              const visibleWidth = slider.clientWidth;
-                              // Desplazar una página completa hacia la derecha
-                              slider.scrollBy({ left: visibleWidth, behavior: "smooth" });
-                            }
-                          }}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M9 18l6-6-6-6" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  );
+  <div className="relative">
+    <h3 className="text-lg font-semibold mb-4 text-center text-gray-800">
+      {selectedBrand.name} - Categorías
+    </h3>
+
+    <div className="w-full flex items-center justify-center gap-2 px-4">
+      {needsSlider && (
+        <button
+          className="z-10 bg-white/80 hover:bg-white rounded-full p-2 shadow-md"
+          onClick={() => {
+            const slider = document.getElementById(`slider-${selectedBrand.id}`);
+            if (slider) {
+              const visibleWidth = slider.clientWidth;
+              slider.scrollBy({ left: -visibleWidth, behavior: "smooth" });
+            }
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+      )}
+
+      <div
+        id={`slider-${selectedBrand.id}`}
+        className={`flex ${!needsSlider
+          ? "justify-center flex-wrap gap-4"
+          : "overflow-x-auto snap-x snap-mandatory"
+        } scrollbar-hide py-4 px-1 max-w-[1200px]`}
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
+        {categories.map((category) => (
+          <div
+            key={category.id}
+            onClick={() => goToCategoryPage(selectedBrand, category)}
+            className={`flex-none ${needsSlider ? "snap-center" : ""
+              } cursor-pointer flex flex-col items-center justify-center rounded-lg bg-white p-4 shadow-md transition-transform hover:scale-105 ${needsSlider ? "mx-2" : "m-1"} min-w-[140px] max-w-[140px] sm:min-w-[180px] sm:max-w-[180px] md:min-w-[220px] md:max-w-[220px] lg:min-w-[240px] lg:max-w-[240px]`}
+            style={{ borderColor: selectedBrand.color, borderWidth: '1px' }}
+          >
+            <div className="w-full aspect-square flex items-center justify-center mb-4 h-[120px] sm:h-[140px] md:h-[160px] lg:h-[180px] overflow-hidden">
+              <div className="relative w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] md:w-[140px] md:h-[140px] lg:w-[160px] lg:h-[160px] flex items-center justify-center">
+                <img
+                  src={category.url || `/placeholder-category.png`}
+                  alt={category.name}
+                  className="absolute max-h-[100px] max-w-[100px] sm:max-h-[120px] sm:max-w-[120px] md:max-h-[140px] md:max-w-[140px] lg:max-h-[160px] lg:max-w-[160px] w-auto h-auto object-contain"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = '/placeholder-category.png';
+                  }}
+                  style={{ objectFit: 'contain' }}
+                />
+              </div>
+            </div>
+            <span className="text-xs sm:text-sm md:text-base lg:text-lg font-medium text-center w-full truncate">
+              {category.name}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {needsSlider && (
+        <button
+          className="z-10 bg-white/80 hover:bg-white rounded-full p-2 shadow-md"
+          onClick={() => {
+            const slider = document.getElementById(`slider-${selectedBrand.id}`);
+            if (slider) {
+              const visibleWidth = slider.clientWidth;
+              slider.scrollBy({ left: visibleWidth, behavior: "smooth" });
+            }
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
+      )}
+    </div>
+  </div>
+);
+
+
+                 
                 })()}
               </div>
               <DrawerFooter />

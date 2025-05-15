@@ -93,30 +93,35 @@ const DetalleProducto = () => {
       
       <div className="max-w-7xl mx-auto px-4">
         {/* Migas de pan y navegación con el componente Breadcrumb */}
-        <div className="py-4 mt-4">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/" className="flex items-center">
-                  <Home size={16} className="mr-1" />
-                  Inicio
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/tienda" onClick={(e) => { e.preventDefault(); handleBack(); }}>
-                  Tienda
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage className={`truncate transition-colors duration-300 ${highlightActive ? 'text-blue-700 font-medium' : 'text-gray-500'}`}>
-                  {product?.name}
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
+        <div className="py-4 mt-4 text-sm lg:text-base">
+  <Breadcrumb>
+    <BreadcrumbList>
+      <BreadcrumbItem>
+        <BreadcrumbLink href="/" className="flex items-center text-gray-700 hover:text-blue-700">
+          <Home size={18} className="mr-1" />
+          Inicio
+        </BreadcrumbLink>
+      </BreadcrumbItem>
+      <BreadcrumbSeparator />
+      <BreadcrumbItem>
+        <BreadcrumbLink
+          href="/tienda"
+          onClick={(e) => { e.preventDefault(); handleBack(); }}
+          className="text-gray-700 hover:text-blue-700"
+        >
+          Tienda
+        </BreadcrumbLink>
+      </BreadcrumbItem>
+      <BreadcrumbSeparator />
+      <BreadcrumbItem>
+        <BreadcrumbPage className={`truncate transition-colors duration-300 font-semibold ${highlightActive ? 'text-blue-700' : 'text-gray-600'}`}>
+          {product?.name}
+        </BreadcrumbPage>
+      </BreadcrumbItem>
+    </BreadcrumbList>
+  </Breadcrumb>
+</div>
+
 
         {/* Contenido principal */}
         <div className="flex flex-col md:flex-row gap-4 bg-white rounded-lg shadow-sm mt-2">
@@ -229,7 +234,7 @@ const DetalleProducto = () => {
             )}
             
             {/* Botones de acción - Verticales en móvil, horizontales en desktop */}
-            <div className="mt-6">
+            <div className="mt-8">
               {/* Botones verticales para móvil */}
               <div className="flex flex-col space-y-3 md:hidden">
                 <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-2">
@@ -270,42 +275,50 @@ const DetalleProducto = () => {
             </div>
           </div>
         </div>
+
+        {/* Contenedor combinado: Características destacadas + info */}
+<div className="mt-6 flex flex-col lg:flex-row gap-6">
+  {/* Características destacadas al lado izquierdo */}
+  {product?.description?.destacados && (
+    <div
+      className="p-6 rounded-lg text-white w-full lg:w-1/2"
+      style={{ backgroundColor: product?.color || '#2968c8' }}
+    >
+      <h3 className="text-lg lg:text-xl font-bold mb-3 text-white">Características destacadas</h3>
+      <p className="whitespace-pre-line text-sm lg:text-base leading-relaxed text-white">{product.description.destacados}</p>
+    </div>
+  )}
+
+  {/* Características principales + Usos recomendados */}
+  <div className="w-full lg:w-1/2 flex flex-col gap-4">
+    <div className="bg-white rounded-lg shadow-sm p-4">
+      <h2 className="text-lg lg:text-2xl font-medium text-gray-900 mb-4">Características principales</h2>
+      {product?.description?.caracteristicas ? (
+        <ul className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-6">
+          {product.description.caracteristicas.split('\n').map((feature, index) => (
+            <li key={index} className="flex items-start">
+              <div className="min-w-2 h-2 w-2 bg-blue-500 rounded-full mt-2 mr-2"></div>
+              <span className="text-gray-700 text-sm lg:text-base">{feature}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-gray-500 text-sm">No hay características disponibles</p>
+      )}
+    </div>
+
+    {product?.description?.aplicaciones && (
+      <div className="bg-white rounded-lg shadow-sm p-4">
+        <h2 className="text-lg lg:text-2xl font-medium text-gray-900 mb-4">Usos recomendados</h2>
+        <p className="text-gray-700 whitespace-pre-line text-sm lg:text-base">{product.description.aplicaciones}</p>
+      </div>
+    )}
+  </div>
+</div>
+
         
 
 
-        {/* Características principales - Estilo Mercado Libre */}
-        <div className="mt-6 bg-white rounded-lg shadow-sm p-4">
-          <h2 className="text-2xl font-medium text-gray-900 mb-4">Características principales</h2>
-          
-          {product?.description?.caracteristicas ? (
-            <ul className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-6">
-              {product.description.caracteristicas.split('\n').map((feature, index) => (
-                <li key={index} className="flex items-start">
-                  <div className="min-w-2 h-2 w-2 bg-blue-500 rounded-full mt-2 mr-2"></div>
-                  <span className="text-gray-700">{feature}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500">No hay características disponibles</p>
-          )}
-        </div>
-        
-        {/* Usos recomendados */}
-        {product?.description?.aplicaciones && (
-          <div className="mt-6 bg-white rounded-lg shadow-sm p-4">
-            <h2 className="text-2xl font-medium text-gray-900 mb-4">Usos recomendados</h2>
-            <p className="text-gray-700 whitespace-pre-line">{product?.description?.aplicaciones}</p>
-          </div>
-        )}
-        
-        {/* Sección destacada con fondo de color */}
-        {product?.description?.destacados && (
-          <div className="mt-6 p-6 rounded-lg text-white" style={{ backgroundColor: product?.color || '#2968c8' }}>
-            <h3 className="text-xl font-bold mb-3 text-white">Características destacadas</h3>
-            <p className="whitespace-pre-line text-white leading-relaxed">{product?.description?.destacados}</p>
-          </div>
-        )}
 
         {/* Especificaciones técnicas - Estilo Mercado Libre */}
         {(product?.technicalData || product?.functionalities) && (
