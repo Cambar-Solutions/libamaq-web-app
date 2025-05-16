@@ -30,9 +30,20 @@ import BuyPanel from "@/app/user/sidebar/BuyPanel";
 import OrderPanel from "@/app/user/sidebar/OrderPanel";
 import RentalPanel from "@/app/user/sidebar/RentalPanel";
 import CarPanel from "@/app/user/sidebar/CarPanel";
+import { useLocation } from "react-router-dom";
+
 
 export default function Account() {
-    const [activeSection, setActiveSection] = useState("perfil");
+    const location = useLocation();
+    const initial = location.state?.openSection || "perfil";
+    const [activeSection, setActiveSection] = useState(initial);
+
+    // Opcional: limpia el state para no reaparecer si recargas
+  useEffect(() => {
+    if (location.state?.openSection) {
+      window.history.replaceState({}, document.title);
+    }
+  }, []);
 
     const panels = {
         perfil: <ProfilePanel />,

@@ -122,6 +122,11 @@ export default function UserHome() {
         requestAnimationFrame(animate);
     };
 
+    const goToCart = () => {
+    // Le indicas a Account que active "carrito"
+    navigate("/account", { state: { openSection: "carrito" } });
+  };
+
     return (
         <>
             <NavCustomer />

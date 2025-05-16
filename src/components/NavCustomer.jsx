@@ -138,17 +138,10 @@ const NavCustomer = () => {
           </div>
         </Link>
 
-
-
         {/* Botón "Carrito" */}
-        <button asChild className="flex h-12 w-12 justify-center items-center rounded-2x text-white hover:text-yellow-500 transition-colors duration-600">
-          <Link to="/carrito">
+          <Link to="/user-profile" state={{openSection: "carrito"}} className="flex h-12 w-12 justify-center items-center rounded-2x text-white hover:text-yellow-500 transition-colors duration-600">
             <RiShoppingCartFill size={24} className="justify-items-center" />
-
           </Link>
-        </button>
-
-
       </div>
     </nav>
   );
