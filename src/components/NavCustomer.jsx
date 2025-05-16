@@ -65,12 +65,12 @@ const NavCustomer = () => {
           <img src="/Tipografia_LIBAMAQ_legulab_color_hor.png" alt="logo" className="max-h-12" />
         </Link>
         {/* Botón "Ubicación" */}
-        <button className="h-12 bg-transparent text-white">
-          <Link to="/location" className="flex items-center gap-1 text-white hover:text-yellow-500 transition-colors duration-600">
+        <button className="h-8 bg-transparent text-white">
+          <Link to="/location" className="flex items-center gap-1 text-white hover:text-yellow-500 transition-colors duration-600 t max-h-1">
             <MapPin size={28} />
             <div className="justify-items-start">
               <p className="text-sm">San Antón</p>
-              <p className="text-lg">Actualizar ubicación</p>
+              <p className="text-base">Actualizar ubicación</p>
             </div>
           </Link>
         </button>
