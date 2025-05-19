@@ -66,7 +66,7 @@ const NavCustomer = () => {
         </Link>
         {/* Botón "Ubicación" */}
         <button className="h-8 bg-transparent text-white">
-          <Link to="/location" className="flex items-center gap-1 text-white hover:text-yellow-500 transition-colors duration-600 t max-h-1">
+          <Link to="/user-profile" className="flex items-center gap-1 text-white hover:text-yellow-500 transition-colors duration-600 t max-h-1">
             <MapPin size={28} />
             <div className="justify-items-start">
               <p className="text-sm">San Antón</p>

@@ -81,7 +81,7 @@ export default function CarPanel() {
             <div className="flex min-h-full bg-stone-100 pb-10 pt-1">
                 <div className="w-[80%] mt-32 flex flex-col ml-10 px-6 bg-stone-100 rounded-lg p-3">
                     <div className="border-b border-gray-400 mb-6">
-                        <h1 className="text-3xl font-semibold">Carrito</h1>
+                        <h1 className="text-3xl font-semibold">Carritomaq</h1>
                         <label className="inline-flex items-center text-blue-600 hover:underline cursor-pointer w-[20em] text-sm mb-6">
                             <Input
                                 type="checkbox"
@@ -125,8 +125,8 @@ export default function CarPanel() {
                                             <p className="text-gray-700 line-clamp-2 overflow-hidden">
                                                 {prod.description}
                                             </p>
-                                            <button className="mt-2 text-blue-600 hover:underline self-start">
-                                                <FiTrash2 className="inline-block mr-1" />
+                                            <button className="items-center justify-items-center cursor-pointer mt-2 text-blue-600 hover:underline self-start">
+                                                <FiTrash2 size={18} className="inline-block mr-1" />
                                                 Eliminar
                                             </button>
                                         </div>
@@ -145,40 +145,46 @@ export default function CarPanel() {
                     })}
                 </div>
 
-                {anySelected ? (
-                    <div className="w-[20%] mx-10 px-4 mt-32 sticky top-16 z-10 bg-yellow-50 shadow-md rounded-lg mb-6 p-3">
-                        <div className="border-b border-gray-400 pb-6">
-                            <h1 className="text-lg text-gray-800">Resumen de la compra</h1>
-                            {selectedProducts.map((prod) => {
-                                const qty = quantities[prod.id];
-                                return (
-                                    <div key={prod.id} className="flex justify-between mb-2">
-                                        <span>
-                                            {prod.name} x {qty}
-                                        </span>
-                                        <span>${(prod.price * qty).toLocaleString()}</span>
-                                    </div>
-                                );
-                            })}
+                <div className="w-[20%] mx-10 px-4 mt-32 sticky top-16 z-10 bg-yellow-50 shadow-md rounded-lg mb-6 p-3">
+                    <h1 className="text-lg text-gray-800 mb-4">Resumen de la compra</h1>
+                    {anySelected ? (
+                        <div>
+                            <div className="border-b border-gray-400 pb-6">
+                                
+                                {selectedProducts.map((prod) => {
+                                    const qty = quantities[prod.id];
+                                    return (
+                                        <div key={prod.id} className="flex justify-between mb-2">
+                                            <span>
+                                                {prod.name} x {qty}
+                                            </span>
+                                            <span>${(prod.price * qty).toLocaleString()}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <div className="flex gap-3 text-lg font-semibold py-6">
+                                <span>Total:</span>
+                                <span>
+                                    $
+                                    {selectedProducts
+                                        .reduce((sum, p) => sum + p.price * quantities[p.id], 0)
+                                        .toLocaleString()}
+                                </span>
+                            </div>
+                            <div className="">
+                                <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1">
+                                    <CreditCard className="h-4 w-4 lg:h-5 lg:w-5" />
+                                    <span className="text-sm lg:text-base">Comprar</span>
+                                </Button>
+                            </div>
                         </div>
-                        <div className="flex gap-3 text-lg font-semibold py-6">
-                            <span>Total:</span>
-                            <span>
-                                $
-                                {selectedProducts
-                                    .reduce((sum, p) => sum + p.price * quantities[p.id], 0)
-                                    .toLocaleString()}
-                            </span>
-                        </div>
-                        <div className="">
-                            <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1">
-                                <CreditCard className="h-4 w-4 lg:h-5 lg:w-5" />
-                                <span className="text-sm lg:text-base">Comprar</span>
-                            </Button>
-                        </div>
-                    </div>
-                ) : (<p className="text-gray-600 italic">Selecciona al menos un producto</p>)}
+                    ) : (<p className="text-gray-600 italic">Seleccione los productos deseados para calcular el total a pagar.</p>)}
+                </div>
             </div>
+
+
+
         </>
     );
 }
