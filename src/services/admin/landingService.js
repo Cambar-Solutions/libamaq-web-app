@@ -12,7 +12,7 @@ import apiClient from "../apiClient";
 export const createLanding = async (landingData) => {
   try {
     // Verificar la estructura exacta de la URL en las imágenes de Postman
-    const { data } = await apiClient.post("/admin/landing/create", landingData);
+    const { data } = await apiClient.post("/l/landings", landingData);
     return data.result || data;
   } catch (error) {
     console.error("Error al crear landing:", error);
@@ -30,7 +30,7 @@ export const uploadLandingFile = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
 
-    const { data } = await apiClient.post("/admin/landing/upload", formData, {
+    const { data } = await apiClient.post("/l/cloudflare/upload", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         "Accept": "application/json",
@@ -55,7 +55,7 @@ export const updateLanding = async (landingData) => {
     
     // Usar exactamente la misma ruta que funciona en Postman
     // https://libamaq.com/api/admin/landing/update (sin ID al final)
-    const { data } = await apiClient.put(`/admin/landing/update`, landingData);
+    const { data } = await apiClient.put(`/l/landings`, landingData);
     console.log('Respuesta de actualización:', data);
     return data.result || data;
   } catch (error) {
@@ -71,7 +71,7 @@ export const updateLanding = async (landingData) => {
  */
 export const getLandingById = async (id) => {
   try {
-    const { data } = await apiClient.get(`/admin/landing/${id}`);
+    const { data } = await apiClient.get(`/l/landings/${id}`);
     return data.result || data;
   } catch (error) {
     console.error(`Error al obtener landing con ID ${id}:`, error);
@@ -85,7 +85,7 @@ export const getLandingById = async (id) => {
  */
 export const getAllActiveLandings = async () => {
   try {
-    const { data } = await apiClient.get("/public/landing/all");
+    const { data } = await apiClient.get("/l/landings/active");
     return data;
   } catch (error) {
     console.error("Error al obtener landings activos:", error);
@@ -111,7 +111,7 @@ export const getLandings = async (options = {}) => {
     if (status) params.append('status', status);
     if (search) params.append('search', search);
     
-    const { data } = await apiClient.get(`/admin/landing/list?${params.toString()}`);
+    const { data } = await apiClient.get(`/l/landings?${params.toString()}`);
     return data;
   } catch (error) {
     console.error("Error al obtener landings:", error);
@@ -126,7 +126,7 @@ export const getLandings = async (options = {}) => {
  */
 export const deleteLanding = async (id) => {
   try {
-    const { data } = await apiClient.delete(`/admin/landing/delete/${id}`);
+    const { data } = await apiClient.delete(`/l/landings/${id}`);
     return data.result || data;
   } catch (error) {
     console.error(`Error al eliminar landing con ID ${id}:`, error);
@@ -147,7 +147,7 @@ export const changeLandingStatus = async (landingData) => {
     
     // Usar la misma URL que updateLanding: /admin/landing/update
     // Enviamos todos los campos requeridos
-    const { data } = await apiClient.put(`/admin/landing/update`, landingData);
+    const { data } = await apiClient.put(`/l/landings`, landingData);
     
     console.log('Respuesta de cambio de estado:', data);
     return data.result || data;

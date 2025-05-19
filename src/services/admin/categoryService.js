@@ -7,7 +7,7 @@ import apiClient from "../apiClient";
 export const getAllCategories = async () => {
   try {
     console.log('Obteniendo todas las categorías...');
-    const { data } = await apiClient.get("/admin/category/all");
+    const { data } = await apiClient.get("/l/categories");
     console.log('Respuesta de categorías:', data);
     return data; // Devolver el objeto completo con type y result
   } catch (error) {
@@ -31,7 +31,7 @@ export const createCategory = async (categoryData) => {
     };
     
     console.log('Creando nueva categoría:', payload);
-    const { data } = await apiClient.post("/admin/category/create", payload);
+    const { data } = await apiClient.post("/l/categories", payload);
     console.log('Respuesta de creación de categoría:', data);
     return data;
   } catch (error) {
@@ -48,7 +48,7 @@ export const createCategory = async (categoryData) => {
 export const updateCategory = async (categoryData) => {
   try {
     console.log('Actualizando categoría:', categoryData);
-    const { data } = await apiClient.put("/admin/category/update", categoryData);
+    const { data } = await apiClient.put("/l/categories", categoryData);
     console.log('Respuesta de actualización de categoría:', data);
     return data;
   } catch (error) {
@@ -74,7 +74,7 @@ export const changeCategoryStatus = async (id, currentStatus) => {
       status: newStatus
     };
     
-    const { data } = await apiClient.put("/admin/category/update", categoryData);
+    const { data } = await apiClient.put("/l/categories", categoryData);
     console.log('Respuesta de cambio de estado de categoría:', data);
     return data;
   } catch (error) {
@@ -91,7 +91,7 @@ export const changeCategoryStatus = async (id, currentStatus) => {
 export const getCategoriesByBrand = async (brandId) => {
   try {
     console.log(`Obteniendo categorías para la marca ${brandId}...`);
-    const { data } = await apiClient.get(`/admin/category/brand/${brandId}`);
+    const { data } = await apiClient.get(`/l/brand-categories/brand/${brandId}`);
     console.log('Respuesta de categorías por marca:', data);
     return data;
   } catch (error) {

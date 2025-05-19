@@ -2,7 +2,7 @@ import apiClient from "../apiClient";
 
 export const createUser = async (userData) => {
   try {
-    const { data } = await apiClient.post("/public/user/create", userData);
+    const { data } = await apiClient.post("/l/users/register", userData);
     return data;
   } catch (error) {
     throw error.response?.data || error.message;
@@ -11,7 +11,7 @@ export const createUser = async (userData) => {
 
 export const sendCodeToEmail = async (email) => {
   try {
-    const { data } = await apiClient.post("/public/user/sendCodeToEmail", null, {
+    const { data } = await apiClient.post("/l/users/send-code-email", null, {
       params: { email }
     });
     return data;
@@ -22,7 +22,7 @@ export const sendCodeToEmail = async (email) => {
 
 export const verifyResetCode = async (email, code) => {
   try {
-    const { data } = await apiClient.post("/public/user/verifyResetCode", null, {
+    const { data } = await apiClient.post("/l/users/verify-code", null, {
       params: { email, code }
     });
     return data;
@@ -33,7 +33,7 @@ export const verifyResetCode = async (email, code) => {
 
 export const resetPassword = async (email, code, newPassword) => {
   try {
-    const { data } = await apiClient.post("/public/user/resetPassword", null, {
+    const { data } = await apiClient.post("/l/users/reset-password-with-code", null, {
       params: { email, code, newPassword }
     });
     return data;

@@ -5,7 +5,7 @@ export const createMultimedia = async (file) => {
     const formData = new FormData();
     formData.append('file', file);
     
-    const { data } = await apiClient.post("/admin/multimedia/create", formData, {
+    const { data } = await apiClient.post("/l/media/upload", formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
         'Accept': 'application/json'

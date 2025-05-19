@@ -9,7 +9,7 @@ import { createMultimedia } from "./multimediaService";
  */
 export const getAllSpareParts = async (page = 1, size = 10) => {
   try {
-    const { data } = await apiClient.get("/admin/sparePart/all", {
+    const { data } = await apiClient.get("/l/spare-parts", {
       params: { page, size }
     });
     return data;
@@ -27,7 +27,7 @@ export const getAllSpareParts = async (page = 1, size = 10) => {
 export const getSparePartsByProduct = async (productId) => {
   try {
     console.log(`Obteniendo repuestos para el producto con ID ${productId}`);
-    const { data } = await apiClient.get(`/admin/spares/product/${productId}`);
+    const { data } = await apiClient.get(`/l/product-spare-parts/product/${productId}`);
     return data.result || [];
   } catch (error) {
     console.error(`Error al obtener repuestos para el producto con ID ${productId}:`, error);
@@ -43,7 +43,7 @@ export const getSparePartsByProduct = async (productId) => {
 export const getActiveSparePartsByProduct = async (productId) => {
   try {
     console.log(`Obteniendo repuestos activos para el producto con ID ${productId}`);
-    const { data } = await apiClient.get(`/public/spares/product/${productId}`);
+    const { data } = await apiClient.get(`/l/product-spare-parts/product/${productId}/active`);
     return data.result || [];
   } catch (error) {
     console.error(`Error al obtener repuestos activos para el producto con ID ${productId}:`, error);
@@ -58,7 +58,7 @@ export const getActiveSparePartsByProduct = async (productId) => {
  */
 export const getSparePartById = async (id) => {
   try {
-    const { data } = await apiClient.get(`/admin/sparePart/${id}`);
+    const { data } = await apiClient.get(`/l/spare-parts/${id}`);
     return data;
   } catch (error) {
     console.error(`Error al obtener repuesto con ID ${id}:`, error);
@@ -103,7 +103,7 @@ export const getSparePartImages = async (sparePartId) => {
  */
 export const createSparePart = async (sparePartData) => {
   try {
-    const { data } = await apiClient.post("/admin/sparePart/create", sparePartData);
+    const { data } = await apiClient.post("/l/spare-parts", sparePartData);
     return data;
   } catch (error) {
     console.error("Error al crear repuesto:", error);
@@ -118,7 +118,7 @@ export const createSparePart = async (sparePartData) => {
  */
 export const updateSparePart = async (sparePartData) => {
   try {
-    const { data } = await apiClient.put("/admin/sparePart/update", sparePartData);
+    const { data } = await apiClient.put("/l/spare-parts", sparePartData);
     return data;
   } catch (error) {
     console.error("Error al actualizar repuesto:", error);

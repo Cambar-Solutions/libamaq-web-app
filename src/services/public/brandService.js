@@ -3,7 +3,7 @@ import apiClient from "../apiClient";
 // Obtener todas las marcas con sus categorías activas
 export const getAllBrandsWithCategories = async () => {
   try {
-    const { data } = await apiClient.get("/admin/brand/all/with-categories");
+    const { data } = await apiClient.get("/l/brands/categories");
     console.log('Respuesta completa de marcas con categorías:', data);
     return data;
   } catch (error) {
@@ -15,7 +15,7 @@ export const getAllBrandsWithCategories = async () => {
 // Obtener todas las marcas activas
 export const getAllActiveBrands = async () => {
   try {
-    const { data } = await apiClient.get("/public/brand/all");
+    const { data } = await apiClient.get("/l/brands/active");
     console.log('Respuesta completa de marcas activas:', data);
     return data;
   } catch (error) {

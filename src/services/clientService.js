@@ -2,7 +2,7 @@ import apiClient from "./apiClient";
 
 export const createClient = async (clientData) => {
   try {
-    const { data } = await apiClient.post("/admin/user/create", {
+    const { data } = await apiClient.post("/l/users", {
       name: clientData.nombre,
       lastName: clientData.apellido,
       email: clientData.email,
@@ -20,7 +20,7 @@ export const createClient = async (clientData) => {
 
 export const updateClient = async (clientData) => {
   try {
-    const { data } = await apiClient.put("/employee/user/update", {
+    const { data } = await apiClient.put("/l/users", {
       id: clientData.id,
       name: clientData.nombre,
       lastName: clientData.apellido,
@@ -38,7 +38,7 @@ export const updateClient = async (clientData) => {
 
 export const getClients = async () => {
   try {
-    const { data } = await apiClient.get("/admin/user/all");
+    const { data } = await apiClient.get("/l/users");
     const clients = data.result.filter(user => user.role === "FREQUENT_CUSTOMER");
     return clients;
   } catch (error) {

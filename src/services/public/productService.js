@@ -5,7 +5,7 @@ export const getAllPublicProducts = async () => {
   try {
     // No existe un endpoint para todos los productos públicos sin filtro,
     // así que usamos el endpoint de admin y filtramos los activos en el frontend
-    const { data } = await apiClient.get("/admin/product/all");
+    const { data } = await apiClient.get("/l/products/active");
     console.log('Respuesta completa de productos:', data);
     return data;
   } catch (error) {
@@ -17,7 +17,7 @@ export const getAllPublicProducts = async () => {
 // Obtener un producto específico por ID
 export const getProductById = async (id) => {
   try {
-    const { data } = await apiClient.get(`/public/product/${id}`);
+    const { data } = await apiClient.get(`/l/products/active/${id}`);
     console.log('Respuesta de producto por ID:', data);
     return data;
   } catch (error) {
@@ -30,7 +30,7 @@ export const getProductById = async (id) => {
 export const getProductsByBrand = async (brandId) => {
   try {
     // Usamos el endpoint correcto para productos por marca
-    const { data } = await apiClient.get(`/public/product/brand/${brandId}`);
+    const { data } = await apiClient.get(`/l/products/brand/${brandId}`);
     console.log('Respuesta de productos por marca:', data);
     return data;
   } catch (error) {
@@ -43,7 +43,7 @@ export const getProductsByBrand = async (brandId) => {
 export const getProductsByCategoryAndBrand = async (categoryId, brandId) => {
   try {
     // Usamos el endpoint correcto para productos por categoría y marca
-    const { data } = await apiClient.get(`/public/product/category/${categoryId}/brand/${brandId}`);
+    const { data } = await apiClient.get(`/l/products/category/${categoryId}/brand/${brandId}`);
     console.log('Respuesta de productos por categoría y marca:', data);
     return data;
   } catch (error) {

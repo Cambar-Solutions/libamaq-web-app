@@ -5,7 +5,7 @@ import axios from "axios";
 export const getAllProducts = async () => {
   try {
     console.log('Obteniendo todos los productos con información de estado...');
-    const { data } = await apiClient.get("/admin/product/all");
+    const { data } = await apiClient.get("/l/products");
     console.log('Respuesta completa de todos los productos:', data);
     return data;
   } catch (error) {
@@ -17,7 +17,7 @@ export const getAllProducts = async () => {
 // Obtener vista previa de productos
 export const getProductPreviews = async () => {
   try {
-    const { data } = await apiClient.get("/admin/product/preview/all");
+    const { data } = await apiClient.get("/l/products/preview");
     console.log('Respuesta completa de productos:', data);
     return data; // Devolver la respuesta completa con type y result
   } catch (error) {
@@ -33,7 +33,7 @@ export const getProductById = async (id) => {
     
     // Añadir un parámetro de consulta con timestamp para evitar caché
     const timestamp = new Date().getTime();
-    const { data } = await apiClient.get(`/admin/product/${id}?_t=${timestamp}`);
+    const { data } = await apiClient.get(`/l/products/${id}?_t=${timestamp}`);
     
     console.log(`Datos del producto recibidos del servidor:`, data);
     
@@ -86,7 +86,7 @@ export const uploadImage = async (file) => {
     const formData = new FormData();
     formData.append('file', file);
 
-    const { data } = await apiClient.post('/admin/multimedia/create', formData, {
+    const { data } = await apiClient.post('/l/cloudflare/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -166,7 +166,7 @@ export const updateProduct = async (productData) => {
     // Usar axios directamente con la URL completa y correcta, igual que en brandService
     const { data } = await axios({
       method: 'put',
-      url: "https://libamaq.com/api/admin/product/update",
+      url: "https://libamaq.com/l/products",
       data: productDto,
       headers: {
         "Content-Type": "application/json",
@@ -230,7 +230,7 @@ export const createProduct = async (productData) => {
       garanty: Number(productData.garanty || 0)
     };
 
-    const { data } = await apiClient.post("/admin/product/create", productDto);
+    const { data } = await apiClient.post("/l/products", productDto);
     return data;
   } catch (error) {
     console.error('Error creating product:', error);

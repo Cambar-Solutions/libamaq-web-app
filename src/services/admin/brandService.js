@@ -5,7 +5,7 @@ import axios from "axios";
 export const getAllBrands = async () => {
   try {
     console.log('Obteniendo todas las marcas con categorías...');
-    const { data } = await apiClient.get("/admin/brand/all/with-categories");
+    const { data } = await apiClient.get("/l/brands/categories");
     console.log('Respuesta de marcas con categorías:', data);
     return data; // Devolver el objeto completo con type y result
   } catch (error) {
@@ -18,7 +18,7 @@ export const getAllBrands = async () => {
 export const getAllActiveBrands = async () => {
   try {
     console.log('Obteniendo marcas activas...');
-    const { data } = await apiClient.get("/admin/brand/all/active");
+    const { data } = await apiClient.get("/l/brands/active");
     console.log('Respuesta de marcas activas:', data);
     return data;
   } catch (error) {
@@ -31,7 +31,7 @@ export const getAllActiveBrands = async () => {
 export const createBrand = async (brandData) => {
   try {
     console.log('Creando nueva marca:', brandData);
-    const { data } = await apiClient.post("/admin/brand/create", brandData);
+    const { data } = await apiClient.post("/l/brands", brandData);
     console.log('Respuesta de creación de marca:', data);
     return data;
   } catch (error) {
@@ -44,16 +44,7 @@ export const createBrand = async (brandData) => {
 export const updateBrand = async (brandData) => {
   try {
     console.log('Actualizando marca:', JSON.stringify(brandData, null, 2));
-    // Usar axios directamente con la URL completa y correcta
-    const { data } = await axios({
-      method: 'put',
-      url: "https://libamaq.com/api/admin/brand/update",
-      data: brandData,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem("token")}`
-      }
-    });
+    const { data } = await apiClient.put("/l/brands", brandData);
     console.log('Respuesta de actualización de marca:', data);
     return data;
   } catch (error) {
@@ -71,7 +62,7 @@ export const changeBrandStatus = async (id, status) => {
       id: id,
       status: status
     };
-    const { data } = await apiClient.put("/admin/brand/update", brandData);
+    const { data } = await apiClient.put("/l/brands", brandData);
     console.log('Respuesta de cambio de estado:', data);
     return data;
   } catch (error) {
