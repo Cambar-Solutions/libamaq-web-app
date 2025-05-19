@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from "@/components/ui/accordion"
+    Tabs,
+    TabsList,
+    TabsTrigger,
+    TabsContent,
+} from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { GrUserWorker } from "react-icons/gr";
+import { TbPasswordUser } from "react-icons/tb";
+import { FaMapLocationDot } from "react-icons/fa6";
 
 export default function ProfilePanel() {
     const navigate = useNavigate();
@@ -40,10 +42,6 @@ export default function ProfilePanel() {
         setNewLocation("");
     };
 
-    const handleSectionChange = (value) => {
-        setActiveSection(prev => (prev === value ? null : value));
-    };
-
     return (
         <>
             <div className="w-full bg-stone-100 min-h-screen pb-10 pt-1">
@@ -62,77 +60,103 @@ export default function ProfilePanel() {
                     </div>
                 </div>
 
-                <div className="max-w-6xl mx-auto px-4 mt-3 sticky top-16 z-10 bg-stone-200 shadow-md rounded-lg mb-6 p-3">
-                    <Accordion type="single" collapsible onValueChange={handleSectionChange} value={activeSection} className="w-full px-2">
-                        <AccordionItem value="perfil">
-                            <AccordionTrigger
-                                className={`text-xl p-2 transition-colors rounded2xl ${activeSection === "perfil" ? "bg-blue-100 text-blue-800 rounded-t-2xl rounded-b-none" : "hover:bg-blue-50"}`}>
-                                <h1 className="text-xl">Actualizar Perfil</h1>
-                            </AccordionTrigger>
-                            <AccordionContent
-                                className={`p-4 transition-colors rounded-b-2xl ${activeSection === "perfil" ? "bg-blue-100" : ""}`}>
-                                <div className="flex gap-10 justify-center">
-                                    <div>
-                                        <Label className="mb-2">Correo</Label>
-                                        <Input
-                                            value={email}
-                                            onChange={e => setEmail(e.target.value)}
-                                            className="bg-white w-[20em]" />
-                                    </div>
-                                    <div>
-                                        <Label className="mb-2">Contraseña</Label>
-                                        <Input
-                                            type="password"
-                                            value={password}
-                                            onChange={e => setPassword(e.target.value)}
-                                            className="bg-white w-[20em]" />
-                                    </div>
-                                    <div>
-                                        <Label className="mb-2">Confirmar contraseña</Label>
-                                        <Input
-                                            type="password"
-                                            value={confirm}
-                                            onChange={e => setConfirm(e.target.value)}
-                                            className="bg-white w-[20em]" />
-                                    </div>
-                                </div>
-                                <div className="flex gap-3 justify-end mt-5">
-                                    <Button
-                                        onClick={handleCancelProfile}
-                                        className="bg-gray-500 hover:bg-gray-900 text-white py-3 rounded-md flex items-center justify-center transition-colors">Cancelar</Button>
-                                    <Button className="bg-blue-500 hover:bg-blue-800 text-white py-3 rounded-md flex items-center justify-center transition-colors">Confirmar</Button>
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
+                <div className="max-w-6xl mx-auto px-4 mt-3 sticky top-16 z-10 shadow-md rounded-lg mb-6 p-3 bg-stone-200">
+                    <Tabs defaultValue="perfil" className="">
+                        <TabsList className="gap-1 p-1 bg-white">
+                            <TabsTrigger
+                                value="perfil"
+                                className=" cursor-pointer transition-colors hover:bg-blue-100 data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:underline-offset-2">
+                                Actualizar Perfil
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="ubicacion"
+                                className=" cursor-pointer transition-colors hover:bg-blue-100 data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:underline-offset-2">
+                                Actualizar Ubicación
+                            </TabsTrigger>
+                        </TabsList>
 
-                        <AccordionItem value="ubicacion">
-                            <AccordionTrigger
-                                className={`text-xl p-2 transition-colors rounded2xl ${activeSection === "ubicacion" ? "bg-blue-100 text-blue-800 rounded-t-2xl rounded-b-none" : "hover:bg-blue-50"}`}>
-                                <h1 className="text-xl">Actualizar Ubicación</h1>
-                            </AccordionTrigger>
-                            <AccordionContent
-                                className={`p-4 transition-colors rounded-b-2xl ${activeSection === "ubicacion" ? "bg-blue-100" : ""}`}>
-                                <div className="flex gap-10 justify-center">
-                                    <div>
-                                        <Label className="mb-2">Nueva ubicación</Label>
-                                        <Input
-                                            value={newLocation}
-                                            onChange={e => setNewLocation(e.target.value)}
-                                            className="bg-white w-[20em]" />
-                                    </div>
-
+                        <TabsContent value="perfil" className="p-4 bg-white rounded-2xl">
+                            <div className="flex w-[25em] gap-2 items-center ml-5">
+                                <div className="w-10 h-10 rounded-full justify-items-center">
+                                   <TbPasswordUser size={34} /> 
                                 </div>
-                                <div className="flex gap-3 justify-end mt-5">
-                                    <Button
-                                        onClick={handleCancelLocation}
-                                        className="bg-gray-500 hover:bg-gray-900 text-white py-3 rounded-md flex items-center justify-center transition-colors">Cancelar</Button>
-                                    <Button className="bg-blue-500 hover:bg-blue-800 text-white py-3 rounded-md flex items-center justify-center transition-colors">Confirmar</Button>
+                                <div className="border-b-2">
+                                    <h1 className="text-sm">Actualiza los datos de tu cuenta</h1>
                                 </div>
-                            </AccordionContent>
-                        </AccordionItem>
+                            </div>
+                            <div className="flex gap-10 justify-center items-center mt-5">
+                                <div>
+                                    <Label className="mb-1">Correo</Label>
+                                    <Input
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="bg-white w-[20em] border-2"
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="mb-1">Contraseña</Label>
+                                    <Input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="bg-white w-[20em] border-2"
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="mb-1">Confirmar contraseña</Label>
+                                    <Input
+                                        type="password"
+                                        value={confirm}
+                                        onChange={(e) => setConfirm(e.target.value)}
+                                        className="bg-white w-[20em] border-2"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex gap-3 justify-end mt-10">
+                                <Button
+                                    onClick={handleCancelProfile}
+                                    className="cursor-pointer bg-gray-500 hover:bg-gray-900 text-white py-3 rounded-md transition-colors"
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button className="cursor-pointer bg-blue-500 hover:bg-blue-800 text-white py-3 rounded-md transition-colors">
+                                    Confirmar
+                                </Button>
+                            </div>
+                        </TabsContent>
 
-                    </Accordion>
-
+                        <TabsContent value="ubicacion"className="p-4 bg-white rounded-2xl">
+                            <div className="flex w-[25em] gap-2 items-center ml-5">
+                                <div className="w-10 h-10 rounded-full justify-items-center">
+                                   <FaMapLocationDot size={34} /> 
+                                </div>
+                                <div className="border-b-2">
+                                    <h1 className="text-sm">Actualiza la ubicación de tu cuenta</h1>
+                                </div>
+                            </div>
+                            <div className="flex gap-10 justify-center mt-5">
+                                <div>
+                                    <Label className="mb-1">Nueva ubicación</Label>
+                                    <Input
+                                        value={newLocation}
+                                        onChange={(e) => setNewLocation(e.target.value)}
+                                        className="bg-white w-[20em] border-2"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex gap-3 justify-end mt-10">
+                                <Button
+                                    onClick={handleCancelLocation}
+                                    className="cursor-pointer bg-gray-500 hover:bg-gray-900 text-white py-3 rounded-md transition-colors"
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button className="cursor-pointer bg-blue-500 hover:bg-blue-800 text-white py-3 rounded-md transition-colors">
+                                    Confirmar
+                                </Button>
+                            </div>
+                        </TabsContent>
+                    </Tabs>
                 </div>
             </div>
         </>
