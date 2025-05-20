@@ -21,6 +21,7 @@ const ProductoDetalle = lazy(() => import('./app/dashboard/ProductoDetalle'));
 const Nosotros = lazy(() => import('./Nosotros.jsx'));
 const UserHome = lazy(() => import('./app/user/UserHome'));
 const Account = lazy(() => import('./app/user/Account')); 
+const PaymentMethod = lazy(() => import('./app/e-commerce/PaymentMethod'));
 
 
 // Componente de layout que envuelve todas las rutas con Suspense
@@ -96,6 +97,11 @@ createRoot(document.getElementById('root')).render(
         <Route path="/producto-detalle" element={
           <AppLayout>
             <ProductoDetalle />
+          </AppLayout>
+        } />
+        <Route path="/payment-method" element={
+          <AppLayout>
+            <PaymentMethod />
           </AppLayout>
         } />
 
