@@ -20,16 +20,16 @@ export const getStaffUsers = async () => {
 
 export const getCustomerUsers = async () => {
   try {
-    const { data } = await apiClient.get("/l/users/customers");
+    const { data } = await apiClient.get("/l/users");
     return data.result || [];
   } catch (error) {
     throw error.response?.data || error.message;
   }
 };
 
-export const getUserById = async (id) => {
+export const getUserById = async (userId) => {
   try {
-    const { data } = await apiClient.get(`/l/users/${id}`);
+    const { data } = await apiClient.get(`/l/users/${userId}`);
     return data;
   } catch (error) {
     throw error.response?.data || error.message;

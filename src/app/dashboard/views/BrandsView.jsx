@@ -104,7 +104,7 @@ export function BrandsView() {
       // Extraer los datos de la respuesta
       const brandsData = Array.isArray(response)
         ? response
-        : (response.result || []);
+        : (response.data || []);
 
       // Asegurarse de que cada marca tenga los campos necesarios
       const processedBrands = brandsData.map(brand => ({
@@ -255,7 +255,7 @@ export function BrandsView() {
         ? await updateBrand(brandData)
         : await createBrand(brandData);
 
-      if (response && (response.type === 'SUCCESS' || response.result)) {
+      if (response && response.status === 200 && response.message === 'success') {
         toast.success(`Marca ${isEditing ? 'actualizada' : 'creada'} correctamente`);
       } else {
         throw new Error(response?.text || 'No se recibió una respuesta válida del servidor');

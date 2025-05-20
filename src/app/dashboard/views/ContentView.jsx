@@ -205,10 +205,11 @@ export function ContentView() {
     try {
       // Formato exacto como se muestra en Postman
       const landingData = {
-        url: link,
-        title,
-        description,
-        type: "TIKTOK"
+        title: title,            
+        description: description,       
+        type: "TIKTOK",            
+        status: "ACTIVE",           
+        url: link
       };
 
       console.log("Enviando datos:", landingData);

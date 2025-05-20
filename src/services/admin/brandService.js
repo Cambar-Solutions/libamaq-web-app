@@ -5,7 +5,7 @@ import axios from "axios";
 export const getAllBrands = async () => {
   try {
     console.log('Obteniendo todas las marcas con categorías...');
-    const { data } = await apiClient.get("/l/brands/categories");
+    const { data } = await apiClient.get("/l/brand-categories");
     console.log('Respuesta de marcas con categorías:', data);
     return data; // Devolver el objeto completo con type y result
   } catch (error) {
@@ -32,6 +32,7 @@ export const createBrand = async (brandData) => {
   try {
     console.log('Creando nueva marca:', brandData);
     const { data } = await apiClient.post("/l/brands", brandData);
+    console.log('BODY de respuesta:', data);
     console.log('Respuesta de creación de marca:', data);
     return data;
   } catch (error) {
@@ -45,6 +46,7 @@ export const updateBrand = async (brandData) => {
   try {
     console.log('Actualizando marca:', JSON.stringify(brandData, null, 2));
     const { data } = await apiClient.put("/l/brands", brandData);
+    console.log('BODY de respuesta:', data);
     console.log('Respuesta de actualización de marca:', data);
     return data;
   } catch (error) {

@@ -15,24 +15,34 @@ const TikTokGallery = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchLandings = async () => {
-      try {
-        setLoading(true);
-        const data = await getAllActiveLandings();
-        // Filtramos solo los que son de tipo TIKTOK
-        const tiktokLandings = data.result ? data.result.filter(item => item.type === 'TIKTOK') : [];
-        setLandings(tiktokLandings);
-        setError(null);
-      } catch (err) {
-        console.error('Error al cargar TikToks:', err);
-        setError('No se pudieron cargar los TikToks. Por favor, intenta más tarde.');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchLandings = async () => {
+    try {
+      setLoading(true);
+      const all = await getAllActiveLandings();
+      console.log("Payload de landings:", all);
 
-    fetchLandings();
-  }, []);
+      // Primero extraigo el array correcto:
+      const list = Array.isArray(all)
+        ? all
+        : Array.isArray(all.result)
+          ? all.result
+          : [];
+
+      // Ahora filtro los TIKTOK:
+      const tiktokLandings = list.filter(item => item.type === 'TIKTOK');
+      setLandings(tiktokLandings);
+      setError(null);
+    } catch (err) {
+      console.error('Error al cargar TikToks:', err);
+      setError('No se pudieron cargar los TikToks. Por favor, intenta más tarde.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchLandings();
+}, []);
+
   return (
     <section className="py-12 bg-gray-50">
       <div className="max-w-6xl mx-auto px-4">
@@ -52,13 +62,13 @@ const TikTokGallery = () => {
             spaceBetween={20}
             slidesPerView={1}
             breakpoints={{
-              0:    { slidesPerView: 1 },
-              640:  { slidesPerView: 1 },
-              768:  { slidesPerView: 2 },
+              0: { slidesPerView: 1 },
+              640: { slidesPerView: 1 },
+              768: { slidesPerView: 2 },
               1024: { slidesPerView: 3 },
             }}
             navigation                            // flechas activas
-            pagination={{ clickable: false}}      // bullets clicables
+            pagination={{ clickable: false }}      // bullets clicables
             // ¡sin autoplay! así solo avanza al hacer click en flechas o bullets
             className="rounded-lg"
           >
@@ -69,7 +79,7 @@ const TikTokGallery = () => {
               >
                 <div className="rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow bg-white">
                   <TikTokEmbed videoUrl={landing.url} />
-                  
+
                 </div>
               </SwiperSlide>
             ))}

@@ -69,7 +69,7 @@ export default function NuevoProducto() {
         // Verificar si la respuesta de marcas tiene la estructura esperada
         const brandsData = Array.isArray(brandsResponse) 
           ? brandsResponse 
-          : (brandsResponse?.result || []);
+          : (brandsResponse?.data || []);
 
         // Verificar si la respuesta de categorías tiene la estructura esperada
         const categoriesData = Array.isArray(categoriesResponse) 
