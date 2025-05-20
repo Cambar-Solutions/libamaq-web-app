@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const baseURL = "https://libamaq.com/l";
+const baseURL = "https://libamaq.com/";
 
 const apiClient = axios.create({
   baseURL,
