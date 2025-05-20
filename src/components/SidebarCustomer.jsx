@@ -9,6 +9,9 @@ import {
     FiShoppingBag
 } from "react-icons/fi";
 import { MdOutlineShoppingBag } from "react-icons/md";
+import { Power } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
+
 
 
 const menuItems = [
@@ -20,20 +23,26 @@ const menuItems = [
 ];
 
 export default function SidebarCustomer({ activeKey, onSelect, children }) {
+    const navigate = useNavigate();
 
     // Inicializa desde localStorage (si no existe, default false)
-  const [isOpen, setIsOpen] = React.useState(() => {
-    const stored = localStorage.getItem("sidebarOpen");
-    return stored === null ? false : JSON.parse(stored);
-  });
-
-  const toggle = () => {
-    setIsOpen(o => {
-      const next = !o;
-      localStorage.setItem("sidebarOpen", JSON.stringify(next));
-      return next;
+    const [isOpen, setIsOpen] = React.useState(() => {
+        const stored = localStorage.getItem("sidebarOpen");
+        return stored === null ? false : JSON.parse(stored);
     });
-  };
+
+    const toggle = () => {
+        setIsOpen(o => {
+            const next = !o;
+            localStorage.setItem("sidebarOpen", JSON.stringify(next));
+            return next;
+        });
+    };
+
+    const handleLogout = () => {
+        // localStorage.removeItem("authToken");
+        navigate("/", { replace: true });
+    };
 
     return (
         <div className="flex h-screen">
@@ -44,7 +53,7 @@ export default function SidebarCustomer({ activeKey, onSelect, children }) {
                     className={`p-2 m-2 mb-4
                         ${isOpen ? "self-end" : "self-center"} 
                         rounded hover:bg-gray-400 flex items-center justify-center text-white`}>
-                        {isOpen ? <FiChevronLeft size={20} /> : <FiChevronRight size={20} />}
+                    {isOpen ? <FiChevronLeft size={20} /> : <FiChevronRight size={20} />}
                 </button>
                 {isOpen && (
                     <div className="px-4 mb-5">
@@ -61,7 +70,7 @@ export default function SidebarCustomer({ activeKey, onSelect, children }) {
                                     <button
                                         onClick={() => onSelect(item.key)}
                                         className={`flex items-center w-full p-2 mb-5 rounded hover:bg-gray-400
-                                            ${isActive? "bg-blue-50 text-blue-600": "text-white"}
+                                            ${isActive ? "bg-blue-50 text-blue-600" : "text-white"}
                                             ${isOpen ? "justify-start" : "justify-center"}`}>
                                         <span className="text-xl">{item.icon}</span>
                                         {isOpen && <span className="ml-3">{item.label}</span>}
@@ -71,7 +80,11 @@ export default function SidebarCustomer({ activeKey, onSelect, children }) {
                         })}
                     </ul>
                 </nav>
-
+                <div className="items-center justify-items-center">
+                    <button onClick={handleLogout} className="ml-4 mb-4 bg-red-700 hover:bg-red-900 text-gray-100 cursor-pointer rounded-full w-8 h-8 items-center justify-items-center">
+                        <Power size={20} />
+                    </button>
+                </div>
             </aside>
 
             {/* Aquí se renderea todo lo que le pases como children */}
