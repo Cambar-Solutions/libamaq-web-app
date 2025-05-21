@@ -11,6 +11,14 @@ import {
 import { MdOutlineShoppingBag } from "react-icons/md";
 import { Power } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 
 
@@ -47,7 +55,7 @@ export default function SidebarCustomer({ activeKey, onSelect, children }) {
     return (
         <div className="flex h-screen">
             <aside className={`mt-20 bg-gradient-to-b from-blue-950 to-gray-100 border-r
-                ${isOpen ? "w-50" : "w-16"} transition-width duration-300 flex flex-col`}>
+                ${isOpen ? "w-50" : "w-16"} transition-width duration-300 flex flex-col justify-between`}>
                 <button
                     onClick={toggle}
                     className={`p-2 m-2 mb-4
@@ -80,10 +88,36 @@ export default function SidebarCustomer({ activeKey, onSelect, children }) {
                         })}
                     </ul>
                 </nav>
-                <div className="items-center justify-items-center">
-                    <button onClick={handleLogout} className="ml-4 mb-4 bg-red-700 hover:bg-red-900 text-gray-100 cursor-pointer rounded-full w-8 h-8 items-center justify-items-center">
-                        <Power size={20} />
-                    </button>
+                <div>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <button
+
+                                className={`flex items-center w-full p-2 mb-5 rounded transition-colors duration-500 hover:bg-red-800 hover:text-white text-red-600
+                                ${isOpen ? "justify-start" : "justify-center"}`}>
+                                <Power size={20} />
+                                {isOpen && <span className="ml-3">Cerrar sesión</span>}
+                            </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-72 --translate translate-x-[1.5em]">
+                            <div className="grid">
+                                <div className="space-y-2 w-full">
+                                    <div className="flex">
+                                        <h4 className="font-medium leading-none mb-2 ml-auto">¿Seguro que quieres cerrar sesión?</h4>
+                                    </div>
+
+                                    <div className="flex">
+                                        <Button
+                                            onClick={handleLogout}
+                                            className="ml-auto transition-colors duration-500 hover:bg-red-900 bg-red-500 hover:text-white">
+                                            Aceptar
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+
                 </div>
             </aside>
 

@@ -73,7 +73,7 @@ export default function PaymentMethod() {
 
     return (
         <>
-            <div className="w-full bg-gray-100 min-h-screen pt-20 pb-8">
+            <div className="w-full bg-gray-100 min-h-screen pt-20 pb-0">
                 <Nav2 />
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="py-4 mt-4 text-sm lg:text-base">
@@ -98,9 +98,10 @@ export default function PaymentMethod() {
                                 <BreadcrumbSeparator />
                                 <BreadcrumbItem>
                                     <BreadcrumbPage className={`truncate transition-colors duration-300 font-semibold ${highlightActive ? 'text-blue-700' : 'text-gray-600'}`}>
-                                        {product?.name}
+                                        {product?.name} Martillo
                                     </BreadcrumbPage>
                                 </BreadcrumbItem>
+                                <BreadcrumbSeparator />
                                 <BreadcrumbItem>
                                     <BreadcrumbPage className="text-gray-700 hover:text-blue-700 select-none">
                                         Método de pago
@@ -110,7 +111,7 @@ export default function PaymentMethod() {
                         </Breadcrumb>
 
                         <div className="">
-                            <div className="flex flex-col md:flex-row gap-4 bg-white rounded-lg shadow-sm mt-6 w-full h-[75vh]">
+                            <div className="flex flex-col md:flex-row gap-4 bg-white rounded-lg shadow-sm mt-6 w-full h-[70vh]">
                                 {/* Galería de imágenes */}
                                 <div className="w-full md:w-1/2 lg:w-3/5 p-4">
                                     <div className="flex flex-row gap-4">
@@ -178,17 +179,17 @@ export default function PaymentMethod() {
                                 {/* Información del producto */}
                                 <div className="w-full md:w-1/2 lg:w-2/5 p-4">
                                     <div className="flex items-center mb-1">
-                                        <span className="text-sm text-gray-500">Nuevo | ID: {product?.externalId}</span>
+                                        <span className="text-sm text-gray-500">Nuevo | ID:777 {product?.externalId}</span>
                                         {product?.stock > 0 && (
                                             <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-md">En stock</span>
                                         )}
                                     </div>
 
-                                    <h1 className="text-xl sm:text-2xl font-medium text-gray-900 mb-3">{product?.name}</h1>
+                                    <h1 className="text-xl sm:text-2xl font-medium text-gray-900 mb-3">{product?.name} Martillo</h1>
 
                                     <div className="mb-4">
                                         <div className="flex items-baseline">
-                                            <span className="text-3xl font-semibold text-gray-900">${product?.price?.toLocaleString()}</span>
+                                            <span className="text-3xl font-semibold text-gray-900">${product?.price?.toLocaleString()}77.777</span>
                                             {product?.discount > 0 && (
                                                 <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded-md">{product.discount}% OFF</span>
                                             )}
@@ -219,7 +220,7 @@ export default function PaymentMethod() {
 
 
                                 </div>
-                                <div className="flex justify-around w-full">
+                                <div className="flex justify-around w-full bg-amber-100">
                                     <div className="">
                                         <h1>Compras en efectivo acurdir a sucursal</h1>
                                         <p>ubicacion</p>
