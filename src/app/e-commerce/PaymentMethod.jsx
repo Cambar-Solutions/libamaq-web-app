@@ -15,7 +15,8 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Link } from "react-router-dom";
-
+import { MapPin, MapPinHouse, MapPinPlus, Captions, Banknote } from 'lucide-react';
+import { motion, AnimatePresence } from "framer-motion"
 
 export default function PaymentMethod() {
     const navigate = useNavigate();
@@ -26,9 +27,34 @@ export default function PaymentMethod() {
     const [favorite, setFavorite] = useState(false);
     const [highlightActive, setHighlightActive] = useState(false);
 
+    const [shippingOption, setShippingOption] = useState(null);
+    const [history, setHistory] = useState([]);
+
+    const [selectedLocation, setSelectedLocation] = useState(null);
+
+
+    // Función genérica para cambiar de pantalla
+    const goTo = (next) => {
+        setHistory((h) => [...h, shippingOption]); // apilar
+        setShippingOption(next);
+    };
+    // Función de “volver”
+    const goBack = () => {
+        setHistory((h) => {
+            const prev = h[h.length - 1] ?? null;       // última opción
+            const newStack = h.slice(0, -1);            // desapilar
+            setShippingOption(prev);
+            return newStack;
+        });
+    };
+
     // Función para regresar a la página de categorías
     const handleBack = () => {
         navigate("/tienda", { replace: true });
+    };
+
+    const handleProfile = () => {
+        navigate("/user-profile", { replace: true });
     };
 
     // Efecto para activar el resaltado del nombre del producto
@@ -70,6 +96,18 @@ export default function PaymentMethod() {
         // Al montar el componente, hacer scroll al inicio de la página
         window.scrollTo(0, 0);
     }, [id]);
+
+    const location = {
+        loc1: "Blvd. Paseo Cuauhnáhuac Jiutepec, Mor.",
+        loc2: "Carr Federal México-Cuautla Cuautla, Mor."
+    };
+
+    // Variants para reusar
+    const slideVariants = {
+        initial: { x: 300, opacity: 0 },
+        animate: { x: 0, opacity: 1 },
+        exit: { x: -300, opacity: 0 },
+    };
 
     return (
         <>
@@ -217,23 +255,173 @@ export default function PaymentMethod() {
                                             )}
                                         </div>
                                     )}
-
-
                                 </div>
-                                <div className="flex justify-around w-full bg-amber-100">
-                                    <div className="">
-                                        <h1>Compras en efectivo acurdir a sucursal</h1>
-                                        <p>ubicacion</p>
-                                    </div>
-                                    <div className="">
-                                        <h1>Tarjeta / transferencia bancaria</h1>
-                                        <p>datos de cuenta bancaria</p>
-                                        <p>card estática de los datos</p>
-                                    </div>
+
+
+                                {/* Inicio de sección que se va a mover */}
+                                <div className="flex flex-col justify-center w-full rounded-2xl shadow-sm bg-amber-100 my-5 mx-5">
+                                    <AnimatePresence initial={false} mode="wait">
+                                        <motion.div
+                                            key={shippingOption ?? "choose"}        // 🍃 cambia al hacer goTo o goBack
+                                            variants={slideVariants}
+                                            initial="initial"
+                                            animate="animate"
+                                            exit="exit"
+                                            transition={{ duration: 0.3, ease: "easeInOut" }}
+                                            className=""
+                                        >
+                                            {!shippingOption ? (
+                                                // Primera vista: elegir método
+                                                <div className="flex flex-col gap-10">
+                                                    <div className="justify-items-center">
+                                                        <h2 className="text-xl font-semibold w-[70%] text-center">¿Prefieres recoger en tienda o recibir tu compra en casa?</h2>
+                                                    </div>
+                                                    <div className="flex gap-5 justify-center">
+                                                        <Button
+                                                            onClick={() => goTo("tienda")}
+                                                            className="cursor-pointer shadow-md bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-500 py-3">
+                                                            Recoger en tienda
+                                                        </Button>
+                                                        <Button
+                                                            onClick={() => goTo("casa")}
+                                                            className="cursor-pointer shadow-md border-2 border-blue-500 bg-white hover:bg-blue-100 text-blue-500 transition-colors duration-500 py-3">
+                                                            Recibir en casa
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ) : shippingOption === "tienda" ? (
+                                                // Vista de "Recoger en tienda"
+                                                <div className="relative justify-items-center">
+                                                    <Button onClick={goBack} className="absolute top-18 left-2 p-2 rounded-full shadow cursor-pointer">
+                                                        ←
+                                                    </Button>
+
+                                                    <h3 className="text-xl font-medium mb-4">Selecciona una sucursal</h3>
+                                                    <div className="w-[80%] flex flex-col gap-5">
+                                                        <Button
+                                                            onClick={() => { setSelectedLocation(location.loc1); goTo("metodoPago") }}
+                                                            className="cursor-pointer shadow-md bg-blue-500 hover:bg-white text-white hover:text-blue-500 transition-colors duration-500 py-3">
+                                                            <MapPin />
+                                                            {location.loc1}
+                                                        </Button>
+                                                        <Button
+                                                            onClick={() => { setSelectedLocation(location.loc2); goTo("metodoPago") }}
+                                                            className="cursor-pointer shadow-md bg-blue-500 hover:bg-white text-white hover:text-blue-500 transition-colors duration-500 py-3">
+                                                            <MapPin />
+                                                            {location.loc2}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ) : shippingOption === "casa" ? (
+                                                // Vista de "Recoger en casa"
+                                                <div className="relative justify-items-center">
+                                                    <Button onClick={goBack} className="cursor-pointer absolute top-18 left-2 p-2 rounded-full shadow">
+                                                        ←
+                                                    </Button>
+
+                                                    <h3 className="text-xl font-medium mb-4">¿Quieres cambiar de ubicación?</h3>
+                                                    <div className="w-[80%] flex flex-col gap-5">
+                                                        <Button
+                                                            onClick={() => goTo("metodoPago")}
+                                                            className="cursor-pointer shadow-md bg-blue-500 hover:bg-white text-white hover:text-blue-500 transition-colors duration-500 py-3">
+                                                            <MapPinHouse />
+                                                            Mantener ubicación
+                                                        </Button>
+                                                        <Button
+                                                            onClick={() => handleProfile()}
+                                                            className="cursor-pointer shadow-md bg-blue-500 hover:bg-white text-white hover:text-blue-500 transition-colors duration-500 py-3">
+                                                            <MapPinPlus />
+                                                            Cambiar ubicación
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ) : shippingOption === "metodoPago" ? (
+                                                // Vista de "Metodo de pago"
+                                                <div className="relative justify-items-center">
+                                                    <Button onClick={goBack} className="cursor-pointer absolute top-18 left-2 p-2 rounded-full shadow">
+                                                        ←
+                                                    </Button>
+
+                                                    <h3 className="text-xl font-medium">Selecciona el método de pago de tu preferencia</h3>
+                                                    <p className="text-sm mb-4 text-gray-500">Sucursal seleccionada: <strong>{selectedLocation}</strong></p>
+                                                    <div className="w-full justify-center flex gap-5 mt-10">
+                                                        <Button
+                                                            onClick={() => goTo("transferencia")}
+                                                            className="cursor-pointer w-[30%] shadow-md bg-blue-500 hover:bg-white text-white hover:text-blue-500 transition-colors duration-500 py-3">
+                                                            <Captions />
+                                                            Transferencia
+                                                        </Button>
+                                                        <Button
+                                                            onClick={() => goTo("efectivo")}
+                                                            className="cursor-pointer w-[30%] shadow-md bg-blue-500 hover:bg-white text-white hover:text-blue-500 transition-colors duration-500 py-3">
+                                                            <Banknote />
+                                                            Efectivo
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ) : shippingOption === "transferencia" ? (
+                                                <div className="relative justify-items-center">
+                                                    <Button onClick={goBack} className="cursor-pointer absolute top-34 left-2 p-2 rounded-full shadow">
+                                                        ←
+                                                    </Button>
+
+                                                    <h3 className="text-2xl font-medium">Transferencia</h3>
+                                                    <div className="w-[90%] mx-auto mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4 px-4">
+                                                        {/* Card 1 */}
+                                                        <div className="bg-gray-50 p-4 rounded-2xl shadow-sm">
+                                                            <dt className="text-sm font-medium text-gray-600">Nombre del beneficiario</dt>
+                                                            <dd className="mt-1 text-gray-900">Juan Pérez García</dd>
+                                                        </div>
+
+                                                        {/* Card 2 */}
+                                                        <div className="bg-gray-50 p-4 rounded-2xl shadow-sm">
+                                                            <dt className="text-sm font-medium text-gray-600">Número de cuenta</dt>
+                                                            <dd className="mt-1 text-gray-900">1234 5678 9012 3456</dd>
+                                                        </div>
+
+                                                        {/* Card 3 */}
+                                                        <div className="bg-gray-50 p-4 rounded-2xl shadow-sm">
+                                                            <dt className="text-sm font-medium text-gray-600">Banco</dt>
+                                                            <dd className="mt-1 text-gray-900">Banco Nacional de México</dd>
+                                                        </div>
+
+                                                        {/* Card 4 */}
+                                                        <div className="bg-gray-50 p-4 rounded-2xl shadow-sm">
+                                                            <dt className="text-sm font-medium text-gray-600">CLABE</dt>
+                                                            <dd className="mt-1 text-gray-900">002180012345678901</dd>
+                                                        </div>
+
+                                                        {/* Última card ocupa todo el ancho en sm+ */}
+                                                        <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-2">
+                                                            <dt className="text-sm font-medium text-gray-600">Concepto / Referencia</dt>
+                                                            <dd className="mt-1 text-gray-900">Pago de servicios profesionales</dd>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : shippingOption === "efectivo" ? (
+                                                <div className="relative justify-items-center">
+                                                    <Button onClick={goBack} className="cursor-pointer absolute top-34 left-2 p-2 rounded-full shadow">
+                                                        ←
+                                                    </Button>
+                                                    
+                                                    <h3 className="text-2xl font-medium">Efectivo</h3>
+                                                    <p className="text-gray-500">Acude a la sucursal más cercana</p>
+                                                    <div className="w-[90%] mx-auto mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4 px-4">
+                                                        <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-2">
+                                                            <dt className="text-sm font-medium text-gray-600">Sucursal Jiutepec</dt>
+                                                            <dd className="mt-1 text-gray-900">Blvd. Paseo Cuauhnáhuac 1742, Puente Blanco, 62577 Jiutepec, Mor.</dd>
+                                                        </div>
+                                                        <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-2">
+                                                            <dt className="text-sm font-medium text-gray-600">Sucursal Cuautla</dt>
+                                                            <dd className="mt-1 text-gray-900">Carr Federal México-Cuautla 1617, Empleado Postal, 62747 Cuautla, Mor.</dd>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ) : null}
+                                        </motion.div>
+                                    </AnimatePresence>
                                 </div>
                             </div>
-
-
                         </div>
                     </div>
                 </div>

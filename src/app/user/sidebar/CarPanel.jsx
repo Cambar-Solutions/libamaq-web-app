@@ -81,7 +81,7 @@ export default function CarPanel() {
             <div className="flex min-h-full bg-stone-100 pb-10 pt-1">
                 <div className="w-[80%] mt-32 flex flex-col ml-10 px-6 bg-stone-100 rounded-lg p-3">
                     <div className="border-b border-gray-400 mb-6">
-                        <h1 className="text-3xl font-semibold">Carritomaq</h1>
+                        <h1 className="text-3xl font-semibold">CarritoMAQ</h1>
                         <label className="inline-flex items-center text-blue-600 hover:underline cursor-pointer w-[20em] text-sm mb-6">
                             <Input
                                 type="checkbox"
