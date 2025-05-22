@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, CreditCard, Clock, ArrowLeft, Share2, Shield, Home } from "lucide-react";
-import { getProductById } from "@/services/public/productService";
 import ShareProduct from "@/components/ShareProduct";
 import { toast } from "sonner";
+import { useProductById } from "@/hooks/useProductQueries";
 import Nav2 from "@/components/Nav2";
 import {
   Breadcrumb,
@@ -20,11 +20,19 @@ import { Link } from "react-router-dom";
 const DetalleProducto = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [mainImage, setMainImage] = useState("");
   const [favorite, setFavorite] = useState(false);
   const [highlightActive, setHighlightActive] = useState(false);
+  
+  // Usar TanStack Query para obtener los detalles del producto
+  const { 
+    data: productData,
+    isLoading: loading,
+    error
+  } = useProductById(id);
+
+  // Extraer el producto de la respuesta de la API
+  const product = productData?.type === "SUCCESS" ? productData.result : null;
 
   // Función para regresar a la página de categorías
   const handleBack = () => {
@@ -39,37 +47,21 @@ const DetalleProducto = () => {
     }
   }, [product]);
 
-  // Cargar datos del producto
+  // Establecer la imagen principal cuando el producto se carga
   useEffect(() => {
-    const fetchProductDetails = async () => {
-      setLoading(true);
-      try {
-        const response = await getProductById(id);
-        if (response && response.type === "SUCCESS") {
-          console.log('Producto obtenido:', response.result);
-          setProduct(response.result);
-          if (response.result?.multimedia?.length > 0) {
-            setMainImage(response.result.multimedia[0].url);
-          }
-        } else {
-          toast.error("No se pudo cargar el producto");
-          console.error("Respuesta inválida al cargar el producto:", response);
-        }
-      } catch (error) {
-        toast.error("Error al cargar el producto");
-        console.error("Error al cargar el producto:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (id) {
-      fetchProductDetails();
+    if (product?.multimedia?.length > 0) {
+      setMainImage(product.multimedia[0].url);
     }
+  }, [product]);
 
-    // Al montar el componente, hacer scroll al inicio de la página
-    window.scrollTo(0, 0);
-  }, [id]);
+  // Manejar errores de carga
+  useEffect(() => {
+    if (error) {
+      console.error("Error al cargar el producto:", error);
+      toast.error("Error al cargar el producto");
+      navigate("/tienda");
+    }
+  }, [error, navigate]);
 
   // Si está cargando, mostrar indicador de carga
   if (loading) {

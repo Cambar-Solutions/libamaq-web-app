@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { getAllActiveLandings } from '../../services/admin/landingService';
 import { Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import NoContentCard from './NoContentCard';
 
 // Helpers para detectar y formatear URLs de video
 const isYouTubeUrl = url =>
@@ -57,68 +59,59 @@ const getSpanForImage = (width, height) => {
 };
 
 const BentoGrid = () => {
-  const [mediaItems, setMediaItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchMedia = async () => {
-      setLoading(true);
-      try {
-        const response = await getAllActiveLandings();
-        let dataArray = [];
-        if (Array.isArray(response)) {
-          dataArray = response;
-        } else if (response && typeof response === 'object') {
-          const arrProp = Object.keys(response).find(k => Array.isArray(response[k]));
-          dataArray = arrProp ? response[arrProp] : response.result || response.data || [];
-        }
-
-        const filtered = dataArray.filter(
-          item => item && (item.type === 'IMAGE' || item.type === 'VIDEO')
-        );
-
-        const loaded = await Promise.all(
-          filtered.map(item =>
-            new Promise(resolve => {
-              const base = {
-                id: item.id,
-                type: item.type === 'IMAGE' ? 'image' : 'video',
-                src: item.url,
-                alt: item.title || 'Media item',
-                title: item.title || 'Sin título',
-                description: item.description || ''
-              };
-              if (item.type === 'IMAGE') {
-                const img = new Image();
-                img.src = item.url;
-                img.onload = () => {
-                  Object.assign(base, getSpanForImage(img.naturalWidth, img.naturalHeight));
-                  resolve(base);
-                };
-                img.onerror = () => resolve(base);
-              } else {
-                Object.assign(base, {
-                  colSpan: 'col-span-1 md:col-span-2',
-                  rowSpan: 'row-span-1 md:row-span-2'
-                });
-                resolve(base);
-              }
-            })
-          )
-        );
-
-        setMediaItems(loaded);
-        setError(null);
-      } catch (err) {
-        console.error(err);
-        setError('Error al cargar medios.');
-      } finally {
-        setLoading(false);
+  const { 
+    data: mediaItems = [], 
+    isLoading: loading, 
+    error 
+  } = useQuery({
+    queryKey: ['media-items'],
+    queryFn: async () => {
+      const response = await getAllActiveLandings();
+      let dataArray = [];
+      if (Array.isArray(response)) {
+        dataArray = response;
+      } else if (response && typeof response === 'object') {
+        const arrProp = Object.keys(response).find(k => Array.isArray(response[k]));
+        dataArray = arrProp ? response[arrProp] : response.result || response.data || [];
       }
-    };
-    fetchMedia();
-  }, []);
+
+      const filtered = dataArray.filter(
+        item => item && (item.type === 'IMAGE' || item.type === 'VIDEO')
+      );
+
+      return await Promise.all(
+        filtered.map(item =>
+          new Promise(resolve => {
+            const base = {
+              id: item.id,
+              type: item.type === 'IMAGE' ? 'image' : 'video',
+              src: item.url,
+              alt: item.title || 'Media item',
+              title: item.title || 'Sin título',
+              description: item.description || ''
+            };
+            if (item.type === 'IMAGE') {
+              const img = new Image();
+              img.src = item.url;
+              img.onload = () => {
+                Object.assign(base, getSpanForImage(img.naturalWidth, img.naturalHeight));
+                resolve(base);
+              };
+              img.onerror = () => resolve(base);
+            } else {
+              Object.assign(base, {
+                colSpan: 'col-span-1 md:col-span-2',
+                rowSpan: 'row-span-1 md:row-span-2'
+              });
+              resolve(base);
+            }
+          })
+        )
+      );
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    cacheTime: 60 * 60 * 1000, // 1 hora
+  });
 
   const renderGridItem = item => {
     const classes = [
@@ -198,9 +191,14 @@ const BentoGrid = () => {
           <span className="ml-2 text-lg">Cargando contenido...</span>
         </div>
       ) : error ? (
-        <div className="text-center p-8 text-red-500">{error}</div>
+        <div className="text-center p-8 text-red-500">{error.message || 'Error al cargar medios.'}</div>
       ) : mediaItems.length === 0 ? (
-        <div className="text-center p-8 text-gray-500">No hay medios disponibles.</div>
+        <NoContentCard
+          title="No hay medios disponibles"
+          message="En este momento no hay contenido multimedia disponible. Por favor, intenta más tarde."
+          componentName="BentoGrid"
+          className="my-8"
+        />
       ) : (
         <div className="grid grid-flow-row-dense grid-cols-1 sm:grid-cols-2 md:grid-cols-4 auto-rows-auto gap-4 sm:gap-6 md:gap-8 p-4 h-auto md:h-[90vh]">
           {mediaItems.map(renderGridItem)}

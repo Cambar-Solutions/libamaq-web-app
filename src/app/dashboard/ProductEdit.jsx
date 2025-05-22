@@ -318,8 +318,6 @@ export default function ProductEdit() {
           </Card>
         </TabsContent>
 
-
-          </Card>
         <TabsContent value="details">
           <Card className="p-6">
             <div className="space-y-6">
@@ -428,7 +426,7 @@ export default function ProductEdit() {
           </Card>
         </TabsContent>
       </Tabs>
-    </form>
-  </div>
+      </form>
+    </div>
   );
 }

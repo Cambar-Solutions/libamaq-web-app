@@ -1,8 +1,28 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { useFeaturedProducts } from "@/hooks/useFeaturedProducts";
 
-const CardSection = ({ title, description, items }) => {
+const CardSection = ({ title, description, items: propItems }) => {
+  // Utilizamos TanStack Query para obtener los modelos representativos
+  // Si se pasan items como prop, los usamos; de lo contrario, usamos el hook
+  const { data: queryItems, isLoading } = useFeaturedProducts();
+  
+  // Usamos los items de las props si están disponibles, de lo contrario usamos los del query
+  const items = propItems || queryItems;
+  
+  // Si está cargando y no hay items de las props, mostramos un indicador de carga
+  if (isLoading && !propItems) {
+    return (
+      <section className="py-10 px-6 w-full sm:w-3/4 m-auto mb-14">
+        <h2 className="text-3xl font-bold text-center mb-4 select-none">{title}</h2>
+        <p className="text-center mb-10 text-gray-600 select-none">{description}</p>
+        <div className="flex justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </section>
+    );
+  }
   return (
     <section className="py-10 px-6 w-full sm:w-3/4 m-auto mb-14">
       <h2 className="text-3xl font-bold text-center mb-4 select-none">{title}</h2>

@@ -2,8 +2,9 @@
 
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 
+// Definimos las marcas fuera del componente para evitar recreaciones innecesarias
 const brands = [
   { name: "Bosch", slogan: "Innovación para tu vida.", logo: "/logo_bosch.png" },
   { name: "Makita", slogan: "Herramientas electricas.", logo: "/makita.png" },
@@ -16,21 +17,24 @@ const brands = [
 
 const BrandCards = () => {
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
-  const [visibleBrands, setVisibleBrands] = useState([...brands, ...brands, ...brands, ...brands]);
 
+  // Optimizamos la función handleResize con useCallback para evitar recreaciones
+  const handleResize = useCallback(() => {
+    setScreenWidth(window.innerWidth);
+  }, []);
+  
   // Detecta cambios en el tamaño de la ventana
   useEffect(() => {
-    const handleResize = () => setScreenWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [handleResize]);
 
-  // Ajusta la cantidad de marcas visibles en función del tamaño de pantalla
-  useEffect(() => {
+  // Usamos useMemo para calcular las marcas visibles solo cuando cambia el ancho de pantalla
+  const visibleBrands = useMemo(() => {
     if (screenWidth < 768) {
-      setVisibleBrands([...brands, ...brands, ...brands]); // Más repeticiones en móviles
+      return [...brands, ...brands, ...brands]; // Más repeticiones en móviles
     } else {
-      setVisibleBrands([...brands, ...brands, ...brands, ...brands]); // Más repeticiones en pantallas grandes
+      return [...brands, ...brands, ...brands, ...brands]; // Más repeticiones en pantallas grandes
     }
   }, [screenWidth]);
 

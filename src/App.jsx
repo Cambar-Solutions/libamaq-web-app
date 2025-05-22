@@ -204,7 +204,7 @@ export default function App() {
         <CardSection
           title="Modelos representativos"
           description="Una selección de nuestras mejores herramientas"
-          items={items}
+          // No pasamos items, el componente los obtendrá usando TanStack Query
         />
       </div>
 

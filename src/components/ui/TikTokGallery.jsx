@@ -1,23 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper';
+import { useQuery } from '@tanstack/react-query';
 
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
 import TikTokEmbed from './TikTokEmbed';
+import NoContentCard from './NoContentCard';
 import { getAllActiveLandings } from '@/services/admin/landingService';
 
 const TikTokGallery = () => {
-  const [landings, setLandings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-  const fetchLandings = async () => {
-    try {
-      setLoading(true);
+  const { 
+    data: landings = [], 
+    isLoading: loading, 
+    error 
+  } = useQuery({
+    queryKey: ['tiktoks'],
+    queryFn: async () => {
       const all = await getAllActiveLandings();
       console.log("Payload de landings:", all);
 
@@ -29,19 +30,11 @@ const TikTokGallery = () => {
           : [];
 
       // Ahora filtro los TIKTOK:
-      const tiktokLandings = list.filter(item => item.type === 'TIKTOK');
-      setLandings(tiktokLandings);
-      setError(null);
-    } catch (err) {
-      console.error('Error al cargar TikToks:', err);
-      setError('No se pudieron cargar los TikToks. Por favor, intenta más tarde.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchLandings();
-}, []);
+      return list.filter(item => item.type === 'TIKTOK');
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    cacheTime: 60 * 60 * 1000, // 1 hora
+  });
 
   return (
     <section className="py-12 bg-gray-50">
@@ -53,9 +46,14 @@ const TikTokGallery = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
           </div>
         ) : error ? (
-          <div className="text-center p-5 text-red-500">{error}</div>
+          <div className="text-center p-5 text-red-500">{error.message || 'No se pudieron cargar los TikToks. Por favor, intenta más tarde.'}</div>
         ) : landings.length === 0 ? (
-          <div className="text-center p-5 text-gray-500">No hay TikToks disponibles en este momento.</div>
+          <NoContentCard
+            title="TikToks no disponibles"
+            message="En este momento no tenemos TikToks disponibles. Por favor, vuelve a revisar más tarde."
+            componentName="TikTokGallery"
+            className="my-8"
+          />
         ) : (
           <Swiper
             modules={[Navigation, Pagination]}    // solo navegación y paginación
