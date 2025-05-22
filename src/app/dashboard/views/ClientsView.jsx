@@ -193,71 +193,145 @@ export function ClientsView() {
             <p className="text-red-500">Error al cargar los clientes. Intenta de nuevo.</p>
           </div>
         ) : (
-          <Table className="bg-white">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Teléfono</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Fecha de registro</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <>
+            {/* Vista de tabla solo para pantallas grandes */}
+            <div className="hidden lg:block">
+              <Table className="bg-white">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Teléfono</TableHead>
+                    <TableHead>Rol</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Fecha de registro</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {clients.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-6 text-gray-500">
+                        No hay clientes registrados
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    clients.map((client) => (
+                      <TableRow key={client.id} className="cursor-pointer hover:bg-gray-50">
+                        <TableCell className="font-medium">
+                          {`${client.name} ${client.lastName}`}
+                        </TableCell>
+                        <TableCell>{client.email}</TableCell>
+                        <TableCell>{client.phoneNumber}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            client.role === "GENERAL_CUSTOMER" || client.role === "CUSTOMER" 
+                              ? "bg-blue-100 text-blue-800" 
+                              : "bg-purple-100 text-purple-800"
+                          }`}>
+                            {client.role === "GENERAL_CUSTOMER" || client.role === "CUSTOMER" ? "Cliente General" : 
+                             client.role === "FREQUENT_CUSTOMER" ? "Cliente Frecuente" : 
+                             client.role}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            client.status === 'ACTIVE' 
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {client.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </TableCell>
+                        <TableCell>{formatDate(client.createdAt)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(client);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            
+            {/* Vista de tarjetas para dispositivos móviles y tablets */}
+            <div className="lg:hidden">
               {clients.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-6 text-gray-500">
-                    No hay clientes registrados
-                  </TableCell>
-                </TableRow>
+                <div className="text-center py-6 text-gray-500">
+                  No hay clientes registrados
+                </div>
               ) : (
-                clients.map((client) => (
-              <TableRow key={client.id} className="cursor-pointer hover:bg-gray-50">
-                <TableCell className="font-medium">
-                  {`${client.name} ${client.lastName}`}
-                </TableCell>
-                <TableCell>{client.email}</TableCell>
-                <TableCell>{client.phoneNumber}</TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    client.role === "GENERAL_CUSTOMER" || client.role === "CUSTOMER" 
-                      ? "bg-blue-100 text-blue-800" 
-                      : "bg-purple-100 text-purple-800"
-                  }`}>
-                    {client.role === "GENERAL_CUSTOMER" || client.role === "CUSTOMER" ? "Cliente General" : 
-                     client.role === "FREQUENT_CUSTOMER" ? "Cliente Frecuente" : 
-                     client.role}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    client.status === 'ACTIVE' 
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {client.status}
-                  </span>
-                </TableCell>
-                <TableCell>{formatDate(client.createdAt)}</TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEdit(client);
-                    }}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            )))
-              }
-            </TableBody>
-          </Table>
+                <div className="grid grid-cols-1 gap-4 p-4">
+                  {clients.map((client) => (
+                    <div 
+                      key={client.id} 
+                      className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all"
+                    >
+                      <div className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-semibold text-lg">{`${client.name} ${client.lastName}`}</h3>
+                          <div className="flex space-x-2">
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              client.status === 'ACTIVE' 
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {client.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
+                            </span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              client.role === "GENERAL_CUSTOMER" || client.role === "CUSTOMER" 
+                                ? "bg-blue-100 text-blue-800" 
+                                : "bg-purple-100 text-purple-800"
+                            }`}>
+                              {client.role === "GENERAL_CUSTOMER" || client.role === "CUSTOMER" ? "Cliente General" : 
+                               client.role === "FREQUENT_CUSTOMER" ? "Cliente Frecuente" : 
+                               client.role}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 gap-2 text-sm">
+                          <div className="flex items-center">
+                            <span className="text-gray-500 w-24">Email:</span>
+                            <span className="text-gray-900 truncate">{client.email}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="text-gray-500 w-24">Teléfono:</span>
+                            <span className="text-gray-900">{client.phoneNumber}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="text-gray-500 w-24">Registrado:</span>
+                            <span className="text-gray-900">{formatDate(client.createdAt)}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-4 flex justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            onClick={() => handleEdit(client)}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Editar
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
 

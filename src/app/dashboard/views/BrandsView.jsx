@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import {
-  getAllBrands,
-  getAllActiveBrands,
-  createBrand,
-  updateBrand,
-  changeBrandStatus
-} from "@/services/admin/brandService";
+  useAllBrands,
+  useActiveBrands,
+  useCreateBrand,
+  useUpdateBrand,
+  useChangeBrandStatus
+} from "@/hooks/useBrands";
 import { getAllCategories } from "@/services/admin/categoryService";
 import CategoryManager from "@/components/admin/CategoryManager";
 import {
@@ -72,39 +73,24 @@ export function BrandsView() {
   const [categories, setCategories] = useState([]);
   // Las variables de estado para la gestión de categorías ahora están en el componente CategoryManager
 
-  // Cargar marcas al iniciar
+  // Obtener marcas usando Tanstack Query
+  const { data: allBrandsData, isLoading: isLoadingAllBrands } = useAllBrands();
+  const { data: activeBrandsData, isLoading: isLoadingActiveBrands } = useActiveBrands();
+  
+  // Mutaciones para crear, actualizar y cambiar estado
+  const createBrandMutation = useCreateBrand();
+  const updateBrandMutation = useUpdateBrand();
+  const changeBrandStatusMutation = useChangeBrandStatus();
+  
+  // Cliente de consulta para invalidar consultas y forzar recargas
+  const queryClient = useQueryClient();
+
+  // Procesar datos de marcas cuando se cargan
   useEffect(() => {
-    fetchBrands();
-  }, []);
-
-  // Filtrar marcas cuando cambia el término de búsqueda
-  useEffect(() => {
-    // Primero filtrar solo las marcas activas
-    const activeBrands = brands.filter(brand => brand.status === "ACTIVE");
-    
-    // Luego aplicar el filtro de búsqueda si existe
-    if (searchTerm.trim() === "") {
-      setFilteredBrands(activeBrands);
-    } else {
-      const filtered = activeBrands.filter(brand =>
-        brand.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        brand.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredBrands(filtered);
-    }
-  }, [brands, searchTerm]);
-
-  // Obtener todas las marcas y filtrar las activas
-  const fetchBrands = async () => {
-    try {
-      setIsLoading(true);
-      const response = await getAllBrands();
-      console.log("Respuesta de marcas:", response);
-
-      // Extraer los datos de la respuesta
-      const brandsData = Array.isArray(response)
-        ? response
-        : (response.data || []);
+    if (allBrandsData) {
+      const brandsData = Array.isArray(allBrandsData)
+        ? allBrandsData
+        : (allBrandsData.data || []);
 
       // Asegurarse de que cada marca tenga los campos necesarios
       const processedBrands = brandsData.map(brand => ({
@@ -114,22 +100,68 @@ export function BrandsView() {
         url: brand.url || "",
         color: brand.color || "#000000",
         status: brand.status || "ACTIVE",
-        // Manejar tanto categories como brandCategories
         categories: brand.categories || brand.brandCategories || []
       }));
       
-      // Filtrar solo las marcas activas
-      const activeBrands = processedBrands.filter(brand => brand.status === "ACTIVE");
-
-      setBrands(processedBrands); // Mantener todas las marcas en el estado
-      setFilteredBrands(activeBrands); // Mostrar solo las activas
-    } catch (error) {
-      console.error("Error al obtener marcas:", error);
-      toast.error("Error al cargar las marcas");
-    } finally {
-      setIsLoading(false);
+      setBrands(processedBrands);
     }
-  };
+  }, [allBrandsData]);
+  
+  // Procesar datos de marcas activas cuando se cargan
+  useEffect(() => {
+    if (activeBrandsData) {
+      const brandsData = Array.isArray(activeBrandsData)
+        ? activeBrandsData
+        : (activeBrandsData.data || []);
+
+      // Asegurarse de que cada marca tenga los campos necesarios
+      const processedBrands = brandsData.map(brand => ({
+        id: brand.id,
+        name: brand.name,
+        description: brand.description || "",
+        url: brand.url || "",
+        color: brand.color || "#000000",
+        status: "ACTIVE", // Todas las marcas de este endpoint son activas
+        categories: brand.categories || brand.brandCategories || []
+      }));
+      
+      setFilteredBrands(processedBrands);
+    }
+  }, [activeBrandsData]);
+  
+  // Filtrar marcas cuando cambia el término de búsqueda
+  useEffect(() => {
+    if (!activeBrandsData) return;
+    
+    const brandsData = Array.isArray(activeBrandsData)
+      ? activeBrandsData
+      : (activeBrandsData.data || []);
+    
+    const processedBrands = brandsData.map(brand => ({
+      id: brand.id,
+      name: brand.name,
+      description: brand.description || "",
+      url: brand.url || "",
+      color: brand.color || "#000000",
+      status: "ACTIVE",
+      categories: brand.categories || brand.brandCategories || []
+    }));
+    
+    if (searchTerm.trim() === "") {
+      setFilteredBrands(processedBrands);
+    } else {
+      const filtered = processedBrands.filter(brand =>
+        brand.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        brand.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredBrands(filtered);
+    }
+  }, [activeBrandsData, searchTerm]);
+
+  // Configurar el estado de carga
+  useEffect(() => {
+    setIsLoading(isLoadingAllBrands || isLoadingActiveBrands);
+  }, [isLoadingAllBrands, isLoadingActiveBrands]);
 
   // Manejar cambios en el formulario
   const handleInputChange = (e) => {
@@ -252,18 +284,13 @@ export function BrandsView() {
 
       console.log('Enviando datos de marca:', brandData);
       
-      const response = isEditing
-        ? await updateBrand(brandData)
-        : await createBrand(brandData);
-
-      if (response && response.status === 200 && response.message === 'success') {
-        toast.success(`Marca ${isEditing ? 'actualizada' : 'creada'} correctamente`);
+      if (isEditing) {
+        // Usar la mutación de Tanstack Query para actualizar
+        await updateBrandMutation.mutateAsync(brandData);
       } else {
-        throw new Error(response?.text || 'No se recibió una respuesta válida del servidor');
+        // Usar la mutación de Tanstack Query para crear
+        await createBrandMutation.mutateAsync(brandData);
       }
-
-      // Recargar lista de marcas
-      await fetchBrands();
 
       // Cerrar diálogo
       closeDialog();
@@ -298,28 +325,12 @@ export function BrandsView() {
       // Determinar el nuevo estado (inverso al actual)
       const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
       
-      // Llamar directamente a la función de cambio de estado con solo el ID y el nuevo estado
-      // La función ahora obtendrá automáticamente los datos completos de la marca
-      const response = await updateBrand({
-        id: brandId,
-        status: newStatus
-      });
+      console.log(`Cambiando estado de marca ${brandId} de ${currentStatus} a ${newStatus}`);
       
-      if (response && (response.type === 'SUCCESS' || response.result)) {
-        toast.success(`Estado de la marca cambiado a ${newStatus === 'ACTIVE' ? 'activo' : 'inactivo'}`);
-        
-        // Si se desactivó una marca, eliminarla del estado local inmediatamente
-        if (newStatus === 'INACTIVE') {
-          setBrands(prevBrands => prevBrands.map(brand => 
-            brand.id === brandId ? {...brand, status: 'INACTIVE'} : brand
-          ));
-          setFilteredBrands(prevFiltered => prevFiltered.filter(brand => brand.id !== brandId));
-        } else {
-          fetchBrands(); // Recargar todas las marcas si se activó
-        }
-      } else {
-        throw new Error(response?.text || 'No se recibió una respuesta válida del servidor');
-      }
+      // Usar la mutación de Tanstack Query para cambiar el estado
+      await changeBrandStatusMutation.mutateAsync({ id: brandId, newStatus });
+      
+      // La actualización de la interfaz se maneja automáticamente por la invalidación de consultas
     } catch (error) {
       console.error('Error al cambiar estado de la marca:', error);
       toast.error(`Error al cambiar estado: ${error.response?.data ? JSON.stringify(error.response.data) : (error.message || 'Error desconocido')}`);
@@ -576,7 +587,11 @@ export function BrandsView() {
             variant="outline"
             size="icon"
             className="cursor-pointer"
-            onClick={fetchBrands}
+            onClick={() => {
+              // Invalidar todas las consultas relacionadas con marcas para forzar una recarga
+              queryClient.invalidateQueries({ queryKey: ['brands'] });
+              toast.success('Recargando marcas...');
+            }}
             title="Recargar marcas"
           >
             <RefreshCcw className="h-4 w-4" />

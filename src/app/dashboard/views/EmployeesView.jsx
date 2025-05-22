@@ -198,64 +198,132 @@ export function EmployeesView() {
             <p className="text-red-500">Error al cargar los empleados. Intenta de nuevo.</p>
           </div>
         ) : (
-          <Table className="bg-white">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Teléfono</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Fecha de registro</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {employees.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-6 text-gray-500">
-                    No hay empleados registrados
-                  </TableCell>
-                </TableRow>
-              ) : (
-                employees.map((employee) => (
-                  <TableRow key={employee.id} className="hover:bg-gray-50">
-                    <TableCell className="font-medium">
-                      {`${employee.name} ${employee.lastName}`}
-                    </TableCell>
-                    <TableCell>{employee.email}</TableCell>
-                    <TableCell>{employee.phoneNumber}</TableCell>
-                    <TableCell>
-                      <span className="capitalize">{employee.role}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        employee.status === 'ACTIVE' 
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {employee.status}
-                      </span>
-                    </TableCell>
-                    <TableCell>{formatDate(employee.createdAt)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="cursor-pointer hover:bg-gray-200"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(employee);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+          <>
+            {/* Vista de tabla solo para pantallas grandes */}
+            <div className="hidden lg:block">
+              <Table className="bg-white">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Teléfono</TableHead>
+                    <TableHead>Rol</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Fecha de registro</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
-                ))
+                </TableHeader>
+                <TableBody>
+                  {employees.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-6 text-gray-500">
+                        No hay empleados registrados
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    employees.map((employee) => (
+                      <TableRow key={employee.id} className="hover:bg-gray-50">
+                        <TableCell className="font-medium">
+                          {`${employee.name} ${employee.lastName}`}
+                        </TableCell>
+                        <TableCell>{employee.email}</TableCell>
+                        <TableCell>{employee.phoneNumber}</TableCell>
+                        <TableCell>
+                          <span className="capitalize">{employee.role}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            employee.status === 'ACTIVE' 
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {employee.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </TableCell>
+                        <TableCell>{formatDate(employee.createdAt)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="cursor-pointer hover:bg-gray-200"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(employee);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            
+            {/* Vista de tarjetas para dispositivos móviles y tablets */}
+            <div className="lg:hidden">
+              {employees.length === 0 ? (
+                <div className="text-center py-6 text-gray-500">
+                  No hay empleados registrados
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 p-4">
+                  {employees.map((employee) => (
+                    <div 
+                      key={employee.id} 
+                      className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all"
+                    >
+                      <div className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-semibold text-lg">{`${employee.name} ${employee.lastName}`}</h3>
+                          <div className="flex space-x-2">
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              employee.status === 'ACTIVE' 
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {employee.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
+                            </span>
+                            <span className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 capitalize">
+                              {employee.role}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 gap-2 text-sm">
+                          <div className="flex items-center">
+                            <span className="text-gray-500 w-24">Email:</span>
+                            <span className="text-gray-900 truncate">{employee.email}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="text-gray-500 w-24">Teléfono:</span>
+                            <span className="text-gray-900">{employee.phoneNumber}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <span className="text-gray-500 w-24">Registrado:</span>
+                            <span className="text-gray-900">{formatDate(employee.createdAt)}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-4 flex justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            onClick={() => handleEdit(employee)}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Editar
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
-            </TableBody>
-          </Table>
+            </div>
+          </>
         )}
       </div>
 

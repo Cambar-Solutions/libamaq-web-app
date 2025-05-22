@@ -11,11 +11,39 @@ import apiClient from "../apiClient";
  */
 export const createLanding = async (landingData) => {
   try {
-    // Verificar la estructura exacta de la URL en las imágenes de Postman
-    const { data } = await apiClient.post("/l/landing", landingData);
+    // Asegurarse de que todos los campos requeridos están presentes
+    if (!landingData.title) {
+      throw new Error('El título es obligatorio');
+    }
+    if (!landingData.url) {
+      throw new Error('La URL es obligatoria');
+    }
+    if (!landingData.type) {
+      throw new Error('El tipo es obligatorio');
+    }
+    
+    // Limpiar la URL de TikTok si es necesario
+    let cleanUrl = landingData.url;
+    if (landingData.type === 'TIKTOK' && cleanUrl.includes('?')) {
+      // Eliminar parámetros de consulta que podrían causar problemas
+      cleanUrl = cleanUrl.split('?')[0];
+    }
+    
+    // Crear el objeto con la estructura exacta que espera la API
+    // Según la documentación de Swagger
+    const payload = {
+      title: landingData.title.trim(),
+      description: (landingData.description || "").trim(),
+      type: landingData.type,
+      status: landingData.status || "ACTIVE",
+      url: cleanUrl
+    };
+    
+    console.log('Enviando payload a /l/landing:', payload);
+    const { data } = await apiClient.post("/l/landing", payload);
     return data.result || data;
   } catch (error) {
-    console.error("Error al crear landing:", error.response?.data || error);
+    console.error("Error al crear landing:", error);
     throw error.response?.data || error.message;
   }
 };
@@ -23,23 +51,61 @@ export const createLanding = async (landingData) => {
 /**
  * Subir archivo multimedia (por separado)
  * @param {File} file - Archivo a subir
- * @returns {Promise<Object>} - Información del archivo subido
+ * @returns {Promise<Object>} - Información del archivo subido con la URL
  */
 export const uploadLandingFile = async (file) => {
   try {
+    console.log('Subiendo archivo:', file.name, 'Tipo:', file.type);
+    
     const formData = new FormData();
     formData.append("file", file);
 
-    const { data } = await apiClient.post("/l/cloudflare/upload", formData, {
+    const { data } = await apiClient.post("/l/media/upload", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         "Accept": "application/json",
       },
     });
 
-    return data.result || data;
+    console.log('Respuesta de subida de archivo:', data);
+    
+    // Asegurarse de que la respuesta contiene una URL
+    if (!data.data?.[0]?.url && !data.url) {
+      throw new Error('La respuesta del servidor no contiene una URL válida');
+    }
+    
+    // Devolver la URL del archivo subido
+    return {
+      url: data.data?.[0]?.url || data.url,
+      fileId: data.data?.[0]?.fileId || null
+    };
   } catch (error) {
     console.error("Error al subir archivo:", error);
+    throw error.response?.data || error.message;
+  }
+};
+
+/**
+ * Eliminar un archivo multimedia de Cloudflare
+ * @param {string} fileUrl - URL del archivo a eliminar
+ * @returns {Promise<Object>} - Resultado de la operación
+ */
+export const deleteLandingFile = async (fileUrl) => {
+  try {
+    console.log('Eliminando archivo:', fileUrl);
+    
+    const payload = { fileUrl };
+    
+    const { data } = await apiClient.post("/l/media/delete", payload, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    
+    console.log('Respuesta de eliminación de archivo:', data);
+    return data;
+  } catch (error) {
+    console.error("Error al eliminar archivo:", error);
     throw error.response?.data || error.message;
   }
 };
@@ -54,7 +120,6 @@ export const updateLanding = async (landingData) => {
     console.log(`Actualizando landing con ID ${landingData.id}:`, landingData);
     
     // Usar exactamente la misma ruta que funciona en Postman
-    // https://libamaq.com/api/admin/landing/update (sin ID al final)
     const { data } = await apiClient.put(`/l/landing`, landingData);
     console.log('Respuesta de actualización:', data);
     return data.result || data;
@@ -134,8 +199,6 @@ export const deleteLanding = async (id) => {
   }
 };
 
-
-
 /**
  * Cambiar el estado de un landing (activar/desactivar)
  * @param {Object} landingData - Datos del landing incluyendo id, title, description, url, type y status
@@ -145,8 +208,7 @@ export const changeLandingStatus = async (landingData) => {
   try {
     console.log(`Cambiando estado del landing ID ${landingData.id} a ${landingData.status}`);
     
-    // Usar la misma URL que updateLanding: /admin/landing/update
-    // Enviamos todos los campos requeridos
+    // Usar la misma URL que updateLanding
     const { data } = await apiClient.put(`/l/landing`, landingData);
     
     console.log('Respuesta de cambio de estado:', data);

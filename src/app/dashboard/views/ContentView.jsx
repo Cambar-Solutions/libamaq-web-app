@@ -13,29 +13,22 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import "../../../index.css";
 
-import {
-  FileVideo2,
-  Trash2,
-  Edit,
-  Loader2,
-  SquareMousePointer,
-  Image as ImageIcon,
-  Upload
-} from "lucide-react";
-
 import TikTokEmbed from "./../../../components/ui/TikTokEmbed";
-import { createLanding, updateLanding, deleteLanding, getAllActiveLandings, changeLandingStatus } from "@/services/admin/landingService";
+import { uploadLandingFile, deleteLandingFile } from "@/services/admin/landingService";
 
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
+// Importar los hooks personalizados de Tanstack Query
+import { 
+  useActiveLandings, 
+  useCreateLanding, 
+  useUpdateLanding, 
+  useChangeLandingStatus, 
+  useDeleteLanding,
+  useUploadLandingFile,
+  useLandingWithFile
+} from "../../../hooks/useLandings";
+
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { MobileDialog, MobileDialogTrigger, MobileDialogContent, MobileDialogHeader, MobileDialogTitle, MobileDialogDescription, MobileDialogFooter } from "@/components/ui/mobile-dialog";
 
 // Funciones auxiliares para detectar y formatear URLs de video
 const isYouTubeUrl = (url) => {
@@ -113,10 +106,28 @@ const VideoPlayer = ({ url, title = "Video", className = "" }) => {
 };
 
 export function ContentView() {
-  // Estados para la lista de landings
-  const [landings, setLandings] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  // Usar hooks de Tanstack Query para landings
+  const { 
+    data: landingsData, 
+    isLoading: loadingLandings, 
+    error: landingsError,
+    refetch: refetchLandings 
+  } = useActiveLandings();
+  
+  // Extraer los landings de tipo TIKTOK
+  const landings = landingsData ? 
+    (Array.isArray(landingsData.result) 
+      ? landingsData.result.filter(item => item.type === "TIKTOK")
+      : (landingsData.result?.type === "TIKTOK" ? [landingsData.result] : [])) 
+    : [];
+    
+  // Hooks para mutaciones
+  const createLandingMutation = useCreateLanding();
+  const updateLandingMutation = useUpdateLanding();
+  const changeLandingStatusMutation = useChangeLandingStatus();
+  const deleteLandingMutation = useDeleteLanding();
+  const uploadFileMutation = useUploadLandingFile();
+  const { createLandingWithFile, updateLandingWithFile } = useLandingWithFile();
 
   // Estados para el formulario de creación/edición
   const [title, setTitle] = useState("");
@@ -132,7 +143,21 @@ export function ContentView() {
   const [imageTitle, setImageTitle] = useState("");
   const [imageDescription, setImageDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [imageFile, setImageFile] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [submittingImage, setSubmittingImage] = useState(false);
+  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
+  const imageFileInputRef = useRef(null);
+
+  // Estados para el formulario de video
+  const [videoTitle, setVideoTitle] = useState("");
+  const [videoDescription, setVideoDescription] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [videoFile, setVideoFile] = useState(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [submittingVideo, setSubmittingVideo] = useState(false);
+  const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false);
+  const videoFileInputRef = useRef(null);
 
   // Estados para diálogo de confirmación
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
@@ -140,12 +165,8 @@ export function ContentView() {
   const [updateType, setUpdateType] = useState(""); // "TIKTOK", "IMAGE", "VIDEO"
 
   // Estados para videos
-  const [videoTitle, setVideoTitle] = useState("");
-  const [videoDescription, setVideoDescription] = useState("");
-  const [videoUrl, setVideoUrl] = useState("");
   const [videos, setVideos] = useState([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
-  const [submittingVideo, setSubmittingVideo] = useState(false);
 
   // Estado para el diálogo
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -156,90 +177,84 @@ export function ContentView() {
     return match ? `https://www.tiktok.com/embed/${match[1]}` : "";
   };
 
-  // Cargar landings al iniciar el componente
-  useEffect(() => {
-    loadLandings();
-    loadImages();
-    loadVideos();
-  }, []);
+  // No necesitamos useEffect para cargar datos iniciales
+  // Tanstack Query maneja la carga automáticamente
+  // Solo necesitamos cargar imágenes y videos
+  // useEffect(() => {
+  //   loadImages();
+  //   loadVideos();
+  // }, []);
 
-  // Función para cargar landings desde el servicio
-  const loadLandings = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Usar getAllActiveLandings en lugar de getLandings como se muestra en Postman
-      const response = await getAllActiveLandings();
-      console.log("Respuesta de getAllActiveLandings:", response);
-
-      // Basado en la estructura de respuesta de Postman
-      if (response && response.result) {
-        // Filtrar solo los elementos de tipo TIKTOK
-        const tiktoks = Array.isArray(response.result)
-          ? response.result.filter(item => item.type === "TIKTOK")
-          : (response.result.type === "TIKTOK" ? [response.result] : []);
-        setLandings(tiktoks);
-      } else if (Array.isArray(response)) {
-        const tiktoks = response.filter(item => item.type === "TIKTOK");
-        setLandings(tiktoks);
-      } else {
-        setLandings([]);
-        console.warn("No se encontraron TikToks o la estructura de respuesta es diferente:", response);
-      }
-    } catch (err) {
-      console.error("Error al cargar landings:", err);
-      setError(`No se pudieron cargar los TikToks: ${err.message || 'Error de conexión'}`);
-    } finally {
-      setLoading(false);
-    }
+  // Ya no necesitamos esta función porque usamos Tanstack Query
+  // La refactorizamos para usar refetchLandings cuando sea necesario
+  const loadLandings = () => {
+    refetchLandings();
   };
 
-  // Función para crear un nuevo landing
+  // Función para crear un nuevo landing usando Tanstack Query
   const handleCreateLanding = async () => {
     if (!link || !title) {
-      alert("El título y el link son obligatorios");
+      toast.error("El título y el link son obligatorios");
+      return;
+    }
+
+    // Validar que el link sea una URL válida
+    try {
+      new URL(link); // Esto lanzará un error si no es una URL válida
+    } catch (e) {
+      toast.error("Por favor ingresa una URL válida");
       return;
     }
 
     setSubmitting(true);
     try {
+      // Limpiar la URL si tiene parámetros de consulta
+      let cleanUrl = link;
+      if (link.includes('?')) {
+        cleanUrl = link.split('?')[0];
+      }
+
       // Formato exacto como se muestra en Postman
       const landingData = {
-        title: title,            
-        description: description,       
+        title: title.trim(),            
+        description: description ? description.trim() : "",       
         type: "TIKTOK",            
         status: "ACTIVE",           
-        url: link
+        url: cleanUrl
       };
 
       console.log("Enviando datos:", landingData);
 
       if (isEditing && currentLandingId) {
-        // Actualizar landing existente
-        const updatedLanding = await updateLanding({ ...landingData, id: currentLandingId });
-        console.log("Landing actualizado:", updatedLanding);
+        // Actualizar landing existente usando la mutación
+        await updateLandingMutation.mutateAsync({ ...landingData, id: currentLandingId });
+        toast.success("TikTok actualizado correctamente");
       } else {
-        // Crear nuevo landing
-        const newLanding = await createLanding(landingData);
-        console.log("Nuevo landing creado:", newLanding);
+        // Crear nuevo landing usando la mutación
+        await createLandingMutation.mutateAsync(landingData);
+        toast.success("TikTok creado correctamente");
       }
 
-      // Resetear formulario y recargar landings
+      // Resetear formulario (no necesitamos recargar manualmente)
       resetForm();
-      loadLandings();
-      console.log(isEditing ? "TikTok actualizado correctamente" : "TikTok creado correctamente");
     } catch (err) {
       console.error("Error al guardar landing:", err);
-      console.error(`Ocurrió un error al ${isEditing ? 'actualizar' : 'crear'} el TikTok: ${err.message || 'Error de conexión'}`);
+      let errorMessage = err.message || 'Error desconocido';
+      
+      // Mostrar un mensaje más amigable para el error SQL
+      if (errorMessage === 'UNHANDLED_SQL_ERROR') {
+        errorMessage = 'Error en la base de datos. Verifica que los datos sean correctos y no haya duplicados.';
+      }
+      
+      toast.error(`Ocurrió un error al ${isEditing ? 'actualizar' : 'crear'} el TikTok: ${errorMessage}`);
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Función para eliminar un landing (cambiando su estado a INACTIVE)
+  // Función para eliminar un landing (cambiando su estado a INACTIVE) usando Tanstack Query
   const handleDeleteLanding = async (landingId) => {
     if (window.confirm("¿Estás seguro que deseas eliminar este TikTok?")) {
-      setLoading(true);
       try {
         // Encontrar el landing completo en el estado actual
         const landingToDelete = landings.find(landing => landing.id === landingId);
@@ -248,28 +263,17 @@ export function ContentView() {
           throw new Error(`No se encontró el TikTok con ID ${landingId}`);
         }
 
-        console.log('TikTok a eliminar:', landingToDelete);
-
-        // Cambiar estado a INACTIVE - pasar todos los campos requeridos
-        const response = await changeLandingStatus({
-          id: landingToDelete.id,
-          title: landingToDelete.title,
-          description: landingToDelete.description || '',
-          url: landingToDelete.url,
-          type: landingToDelete.type || 'TIKTOK',
-          status: 'INACTIVE'
+        // Cambiar el estado a INACTIVE usando la mutación
+        await changeLandingStatusMutation.mutateAsync({
+          ...landingToDelete,
+          status: "INACTIVE"
         });
 
-        console.log('Respuesta de eliminación:', response);
-
-        // Recargar la lista de landings
-        await loadLandings();
-        console.log("TikTok eliminado correctamente");
+        console.log(`TikTok con ID ${landingId} desactivado correctamente`);
+        // No necesitamos recargar manualmente, Tanstack Query lo hace por nosotros
       } catch (err) {
-        console.error("Error al eliminar landing:", err);
-        setError(`No se pudo eliminar el TikTok: ${err.message || 'Error de conexión'}`);
-      } finally {
-        setLoading(false);
+        console.error(`Error al eliminar TikTok con ID ${landingId}:`, err);
+        toast.error(`Error al eliminar TikTok: ${err.message || 'Error desconocido'}`);
       }
     }
   };
@@ -359,18 +363,26 @@ export function ContentView() {
     setIsDialogOpen(false);
   };
 
-  // Resetear formulario de imágenes
+  // Resetear formulario de imagen
   const resetImageForm = () => {
     setImageTitle("");
     setImageDescription("");
     setImageUrl("");
+    setImageFile(null);
+    if (imageFileInputRef.current) {
+      imageFileInputRef.current.value = "";
+    }
   };
 
-  // Resetear formulario de videos
+  // Resetear formulario de video
   const resetVideoForm = () => {
     setVideoTitle("");
     setVideoDescription("");
     setVideoUrl("");
+    setVideoFile(null);
+    if (videoFileInputRef.current) {
+      videoFileInputRef.current.value = "";
+    }
   };
 
   // Función para cargar imágenes
@@ -423,21 +435,75 @@ export function ContentView() {
     }
   };
 
+  // Función para manejar la selección de archivo de imagen
+  const handleImageFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      // Crear una URL temporal para previsualización
+      const objectUrl = URL.createObjectURL(file);
+      setImageUrl(objectUrl);
+    }
+  };
+
+  // Función para subir el archivo de imagen a Cloudflare
+  const handleImageUpload = async () => {
+    if (!imageFile) {
+      alert("Debes seleccionar una imagen para subir");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      // Subir el archivo al servidor
+      const uploadResponse = await uploadLandingFile(imageFile);
+      console.log("Imagen subida:", uploadResponse);
+
+      // Obtener la URL del archivo subido
+      const fileUrl = uploadResponse.url || uploadResponse.result?.url;
+      if (!fileUrl) {
+        throw new Error("No se recibió una URL válida del servidor");
+      }
+
+      // Actualizar el estado con la URL real
+      setImageUrl(fileUrl);
+      return fileUrl;
+    } catch (err) {
+      console.error("Error al subir imagen:", err);
+      alert(`Error al subir la imagen: ${err.message || 'Error de conexión'}`);
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   // Función para crear una nueva imagen
   const handleCreateImage = async () => {
-    if (!imageUrl || !imageTitle) {
-      alert("El título y la URL de la imagen son obligatorios");
+    if (!imageTitle) {
+      alert("El título de la imagen es obligatorio");
       return;
     }
 
     setSubmittingImage(true);
     try {
+      let finalImageUrl = imageUrl;
+
+      // Si hay un archivo seleccionado, subirlo primero
+      if (imageFile) {
+        finalImageUrl = await handleImageUpload();
+        if (!finalImageUrl) return;
+      } else if (!imageUrl) {
+        alert("Debes proporcionar una URL de imagen o subir un archivo");
+        return;
+      }
+
       // Crear landing con tipo IMAGE
       const landingData = {
-        url: imageUrl,
+        url: finalImageUrl,
         title: imageTitle,
         description: imageDescription,
-        type: "IMAGE"
+        type: "IMAGE",
+        status: "ACTIVE"
       };
 
       const newLanding = await createLanding(landingData);
@@ -455,21 +521,75 @@ export function ContentView() {
     }
   };
 
+  // Función para manejar la selección de archivo de video
+  const handleVideoFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setVideoFile(file);
+      // Crear una URL temporal para previsualización
+      const objectUrl = URL.createObjectURL(file);
+      setVideoUrl(objectUrl);
+    }
+  };
+
+  // Función para subir el archivo de video a Cloudflare
+  const handleVideoUpload = async () => {
+    if (!videoFile) {
+      alert("Debes seleccionar un video para subir");
+      return;
+    }
+
+    setUploadingVideo(true);
+    try {
+      // Subir el archivo al servidor
+      const uploadResponse = await uploadLandingFile(videoFile);
+      console.log("Video subido:", uploadResponse);
+
+      // Obtener la URL del archivo subido
+      const fileUrl = uploadResponse.url || uploadResponse.result?.url;
+      if (!fileUrl) {
+        throw new Error("No se recibió una URL válida del servidor");
+      }
+
+      // Actualizar el estado con la URL real
+      setVideoUrl(fileUrl);
+      return fileUrl;
+    } catch (err) {
+      console.error("Error al subir video:", err);
+      alert(`Error al subir el video: ${err.message || 'Error de conexión'}`);
+      return null;
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
   // Función para crear un nuevo video
   const handleCreateVideo = async () => {
-    if (!videoUrl || !videoTitle) {
-      alert("El título y la URL del video son obligatorios");
+    if (!videoTitle) {
+      alert("El título del video es obligatorio");
       return;
     }
 
     setSubmittingVideo(true);
     try {
+      let finalVideoUrl = videoUrl;
+
+      // Si hay un archivo seleccionado, subirlo primero
+      if (videoFile) {
+        finalVideoUrl = await handleVideoUpload();
+        if (!finalVideoUrl) return;
+      } else if (!videoUrl) {
+        alert("Debes proporcionar una URL de video o subir un archivo");
+        return;
+      }
+
       // Crear landing con tipo VIDEO
       const landingData = {
-        url: videoUrl,
+        url: finalVideoUrl,
         title: videoTitle,
         description: videoDescription,
-        type: "VIDEO"
+        type: "VIDEO",
+        status: "ACTIVE"
       };
 
       const newLanding = await createLanding(landingData);
@@ -550,13 +670,13 @@ export function ContentView() {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-gradient-to-b from-gray-100 to-blue-300 rounded-2xl">
+    <div className="flex flex-col gap-4 p-4 bg-gradient-to-b from-gray-100 to-blue-300 rounded-2xl min-h-[100dvh] text-sm md:text-base">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between rounded shadow p-4 bg-white">
         <div>
-          <h1 className="text-2xl font-semibold select-none">
+          <h1 className="text-xl md:text-2xl font-semibold select-none">
             En esta sección se puede agregar contenido multimedia
           </h1>
-          <p className="text-gray-700 select-none">
+          <p className="text-sm md:text-base text-gray-700 select-none">
             Da clic en el botón "Agregar contenido" dependiendo cada sección de
             contenido multimedia
           </p>
@@ -564,15 +684,19 @@ export function ContentView() {
 
         {/* Añadimos un margen top sólo en móvil para separar del texto */}
         <div className="mt-4 md:mt-0">
-          <a
-            href="https://www.tiktok.com/@libamaqherramientas"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-2 px-4 rounded-2xl inline-flex items-center cursor-pointer"
+          <Button
+            asChild
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs md:text-sm py-1 md:py-2 px-3 md:px-4 rounded-2xl inline-flex items-center"
           >
-            Ver perfil de TikTok
-            <FileVideo2 className="ml-2" />
-          </a>
+            <a
+              href="https://www.tiktok.com/@libamaqherramientas"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Ver perfil de TikTok
+              <FileVideo2 className="ml-2 h-4 w-4" />
+            </a>
+          </Button>
         </div>
       </div>
 
@@ -629,20 +753,20 @@ export function ContentView() {
                     </Button>
                   </DialogTrigger>
 
-                  <DialogContent className="w-full max-w-[80vw] md:max-w-[800px] mx-auto">
+                  <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto p-3 md:p-6 md:max-w-[800px] mx-auto">
                     <Card className="border-0 m-2">
-                      <CardHeader>
-                        <CardTitle className="text-2xl font-semibold select-none">
+                      <CardHeader className="p-3 md:p-6">
+                        <CardTitle className="text-xl md:text-2xl font-semibold select-none">
                           Contenido
                         </CardTitle>
-                        <CardDescription className="select-none">
+                        <CardDescription className="text-xs md:text-sm select-none">
                           Llena los campos para agregar tu TikTok
                         </CardDescription>
                       </CardHeader>
 
-                      <CardContent className="flex flex-col md:flex-row gap-20">
+                      <CardContent className="flex flex-col md:flex-row gap-4 md:gap-10 p-3 md:p-6">
                         {/* IZQUIERDA: campos de entrada */}
-                        <div className="flex-1 space-y-6">
+                        <div className="flex-1 space-y-3 md:space-y-6">
                           <div className="space-y-1">
                             <Label htmlFor="title">Título</Label>
                             <Input
@@ -676,7 +800,7 @@ export function ContentView() {
                         </div>
 
                         {/* DERECHA: vista previa de TikTok */}
-                        <div className="md:w-1/3">
+                        <div className="w-full md:w-1/3 mt-4 md:mt-0 max-h-[300px] md:max-h-none overflow-hidden">
                           {link ? (
                             <TikTokEmbed videoUrl={link} aspectRatio="177%" />
                           ) : (
@@ -687,7 +811,7 @@ export function ContentView() {
                         </div>
                       </CardContent>
 
-                      <CardFooter className="flex space-x-2 mt-5">
+                      <CardFooter className="flex space-x-2 mt-2 md:mt-5 p-3 md:p-6">
 
                         <Button
                           className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
@@ -712,21 +836,21 @@ export function ContentView() {
               </div>
 
               <section className="w-full h-full pb-4">
-                {loading ? (
-                  <div className="flex justify-center items-center p-10">
-                    <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
+                {loadingLandings ? (
+                  <div className="flex justify-center items-center h-40">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
                   </div>
-                ) : error ? (
-                  <div className="text-center p-5 text-red-500">{error}</div>
+                ) : landingsError ? (
+                  <div className="text-red-500 text-center p-4">{landingsError.message || 'Error al cargar los TikToks'}</div>
                 ) : landings.length === 0 ? (
                   <div className="text-center p-5 text-gray-500">
                     No hay TikToks disponibles. ¡Agrega uno nuevo!
                   </div>
                 ) : (
-                  <div className="flex flex-wrap justify-around gap-4">
+                  <div className="flex flex-col items-center gap-4 w-full">
                     {landings.map((landing) => (
-                      <div key={landing.id} className="bg-gradient-to-l from-red-500 to-blue-500 p-2 rounded-2xl w-[300px] mt-4">
-                        <Card className="p-5 relative group h-[220px] flex flex-col">
+                      <div key={landing.id} className="bg-gradient-to-l from-red-500 to-blue-500 p-2 rounded-2xl w-full max-w-[300px] mt-4">
+                        <Card className="p-3 md:p-5 relative group h-[220px] flex flex-col">
                           <div className="absolute top-2 right-2 flex gap-2 transition-opacity">
                             <Button
                               size="icon"
@@ -738,8 +862,8 @@ export function ContentView() {
                             </Button>
                           </div>
                           <CardHeader className="flex-1 overflow-hidden">
-                            <CardTitle className="text-lg font-bold truncate select-none" title={landing.title}>{landing.title}</CardTitle>
-                            <CardDescription className="line-clamp-3 h-[60px] overflow-hidden select-none" title={landing.description}>
+                            <CardTitle className="text-base md:text-lg font-bold truncate select-none" title={landing.title}>{landing.title}</CardTitle>
+                            <CardDescription className="text-xs md:text-sm line-clamp-3 h-[60px] overflow-hidden select-none" title={landing.description}>
                               {landing.description}
                             </CardDescription>
                           </CardHeader>
@@ -752,7 +876,7 @@ export function ContentView() {
                               </div>
                             </DialogTrigger>
 
-                            <DialogContent className="w-full max-w-[80vw] md:max-w-[800px] mx-auto">
+                            <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto p-3 md:p-6 md:max-w-[800px] mx-auto">
                               <Tabs defaultValue="details" className="w-full mt-2">
                                 <TabsList className="grid w-[20em] grid-cols-2 gap-2">
                                   <TabsTrigger
@@ -787,9 +911,9 @@ export function ContentView() {
                                       </CardDescription>
                                     </CardHeader>
 
-                                    <CardContent className="flex flex-col md:flex-row gap-20">
+                                    <CardContent className="flex flex-col md:flex-row gap-4 md:gap-10 p-3 md:p-6">
                                       {/* IZQUIERDA: campos de solo lectura */}
-                                      <div className="flex-1 space-y-6">
+                                      <div className="flex-1 space-y-3 md:space-y-6">
                                         <div className="space-y-1">
                                           <Label htmlFor={`view-title-${landing.id}`}>Título</Label>
                                           <Input
@@ -829,7 +953,7 @@ export function ContentView() {
                                       </div>
 
                                       {/* DERECHA: vista previa de TikTok */}
-                                      <div className="md:w-1/3">
+                                      <div className="w-full md:w-1/3 mt-4 md:mt-0 max-h-[300px] md:max-h-none overflow-hidden">
                                         <TikTokEmbed videoUrl={landing.url} aspectRatio="177%" />
                                       </div>
                                     </CardContent>
@@ -848,9 +972,9 @@ export function ContentView() {
                                       </CardDescription>
                                     </CardHeader>
 
-                                    <CardContent className="flex flex-col md:flex-row gap-20">
+                                    <CardContent className="flex flex-col md:flex-row gap-4 md:gap-10 p-3 md:p-6">
                                       {/* IZQUIERDA: campos de edición */}
-                                      <div className="flex-1 space-y-6">
+                                      <div className="flex-1 space-y-3 md:space-y-6">
                                         <div className="space-y-1">
                                           <Label htmlFor={`edit-title-${landing.id}`}>Título</Label>
                                           <Input
@@ -905,7 +1029,7 @@ export function ContentView() {
                                       </div>
 
                                       {/* DERECHA: vista previa de TikTok */}
-                                      <div className="md:w-1/3">
+                                      <div className="w-full md:w-1/3 mt-4 md:mt-0 max-h-[300px] md:max-h-none overflow-hidden">
                                         <TikTokEmbed videoUrl={landing.url} aspectRatio="177%" />
                                       </div>
                                     </CardContent>
@@ -952,7 +1076,7 @@ export function ContentView() {
                     </Button>
                   </DialogTrigger>
 
-                  <DialogContent className="w-full max-w-[80vw] md:max-w-[800px] mx-auto">
+                  <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto p-3 md:p-6 md:max-w-[800px] mx-auto">
                     <Card className="border-0 m-2">
                       <CardHeader className="select-none">
                         <CardTitle className="text-2xl font-semibold">
@@ -963,9 +1087,9 @@ export function ContentView() {
                         </CardDescription>
                       </CardHeader>
 
-                      <CardContent className="flex flex-col md:flex-row gap-20">
+                      <CardContent className="flex flex-col md:flex-row gap-4 md:gap-10 p-3 md:p-6">
                         {/* IZQUIERDA: campos de entrada */}
-                        <div className="flex-1 space-y-6">
+                        <div className="flex-1 space-y-3 md:space-y-6">
                           <div className="space-y-1">
                             <Label htmlFor="image-title">Título</Label>
                             <Input
@@ -986,6 +1110,18 @@ export function ContentView() {
                             />
                           </div>
                           <div className="space-y-1">
+                            <Label htmlFor="image-file">Subir imagen</Label>
+                            <Input
+                              id="image-file"
+                              type="file"
+                              accept="image/*"
+                              ref={imageFileInputRef}
+                              onChange={handleImageFileChange}
+                              className="cursor-pointer"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">O ingresa una URL directamente:</p>
+                          </div>
+                          <div className="space-y-1">
                             <Label htmlFor="image-url">URL de la imagen</Label>
                             <Input
                               id="image-url"
@@ -993,13 +1129,12 @@ export function ContentView() {
                               value={imageUrl}
                               onChange={(e) => setImageUrl(e.target.value)}
                               onFocus={(e) => e.currentTarget.select()}
-                              required
                             />
                           </div>
                         </div>
 
                         {/* DERECHA: vista previa de Imagen */}
-                        <div className="md:w-1/3">
+                        <div className="w-full md:w-1/3 mt-4 md:mt-0 max-h-[300px] md:max-h-none overflow-hidden">
                           {imageUrl ? (
                             <img
                               src={imageUrl}
@@ -1019,7 +1154,7 @@ export function ContentView() {
                         </div>
                       </CardContent>
 
-                      <CardFooter className="flex space-x-2 mt-5">
+                      <CardFooter className="flex space-x-2 mt-2 md:mt-5 p-3 md:p-6">
 
                         <Button
                           className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
@@ -1051,10 +1186,10 @@ export function ContentView() {
                     No hay imágenes disponibles. ¡Agrega una nueva!
                   </div>
                 ) : (
-                  <div className="flex flex-wrap justify-around gap-4 p-4">
+                  <div className="flex flex-col items-center gap-4 p-4 w-full">
                     {images.map((image) => (
-                      <div className="bg-gradient-to-l from-blue-700 to-zinc-500 p-2 rounded-2xl">
-                        <Card key={image.id} className="p-5 relative group w-[300px] bg-stone-100 ">
+                      <div key={image.id} className="bg-gradient-to-l from-blue-700 to-zinc-500 p-2 rounded-2xl w-full max-w-[300px]">
+                        <Card className="p-3 md:p-5 relative group w-full bg-stone-100">
                           <div className="absolute top-2 right-2 flex gap-2 transition-opacity">
                             <Button
                               size="icon"
@@ -1066,8 +1201,8 @@ export function ContentView() {
                             </Button>
                           </div>
                           <CardHeader className="select-none">
-                            <CardTitle>{image.title}</CardTitle>
-                            <CardDescription>
+                            <CardTitle className="text-base md:text-lg">{image.title}</CardTitle>
+                            <CardDescription className="text-xs md:text-sm">
                               {image.description}
                             </CardDescription>
                           </CardHeader>
@@ -1086,7 +1221,7 @@ export function ContentView() {
                               </div>
                             </DialogTrigger>
 
-                            <DialogContent className="w-full max-w-[80vw] md:max-w-[800px] mx-auto">
+                            <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto p-3 md:p-6 md:max-w-[800px] mx-auto">
                               <Tabs defaultValue="details" className="w-full mt-2">
                                 <TabsList className="grid w-[20em] grid-cols-2 gap-2">
                                   <TabsTrigger
@@ -1121,9 +1256,9 @@ export function ContentView() {
                                       </CardDescription>
                                     </CardHeader>
 
-                                    <CardContent className="flex flex-col md:flex-row gap-20">
+                                    <CardContent className="flex flex-col md:flex-row gap-4 md:gap-10 p-3 md:p-6">
                                       {/* IZQUIERDA: campos de solo lectura */}
-                                      <div className="flex-1 space-y-6">
+                                      <div className="flex-1 space-y-3 md:space-y-6">
                                         <div className="space-y-1">
                                           <Label htmlFor={`view-title-${image.id}`}>Título</Label>
                                           <Input
@@ -1164,7 +1299,7 @@ export function ContentView() {
                                       </div>
 
                                       {/* DERECHA: vista previa de imagen */}
-                                      <div className="md:w-1/3">
+                                      <div className="w-full md:w-1/3 mt-4 md:mt-0 max-h-[300px] md:max-h-none overflow-hidden">
                                         <img
                                           src={image.url}
                                           alt={image.title}
@@ -1187,9 +1322,9 @@ export function ContentView() {
                                       </CardDescription>
                                     </CardHeader>
 
-                                    <CardContent className="flex flex-col md:flex-row gap-20">
+                                    <CardContent className="flex flex-col md:flex-row gap-4 md:gap-10 p-3 md:p-6">
                                       {/* IZQUIERDA: campos de edición */}
-                                      <div className="flex-1 space-y-6">
+                                      <div className="flex-1 space-y-3 md:space-y-6">
                                         <div className="space-y-1">
                                           <Label htmlFor={`edit-title-${image.id}`}>Título</Label>
                                           <Input
@@ -1245,7 +1380,7 @@ export function ContentView() {
                                       </div>
 
                                       {/* DERECHA: vista previa de imagen */}
-                                      <div className="md:w-1/3">
+                                      <div className="w-full md:w-1/3 mt-4 md:mt-0 max-h-[300px] md:max-h-none overflow-hidden">
                                         <img
                                           src={image.url}
                                           alt={image.title}
@@ -1254,7 +1389,7 @@ export function ContentView() {
                                       </div>
                                     </CardContent>
 
-                                    <CardFooter className="flex space-x-2 mt-5">
+                                    <CardFooter className="flex space-x-2 mt-2 md:mt-5 p-3 md:p-6">
                                       <Button
                                         className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
                                         onClick={() => handleSaveImageEdits(image)}
@@ -1296,7 +1431,7 @@ export function ContentView() {
                     </Button>
                   </DialogTrigger>
 
-                  <DialogContent className="w-full max-w-[80vw] md:max-w-[800px] mx-auto">
+                  <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto p-3 md:p-6 md:max-w-[800px] mx-auto">
                     <Card className="border-0 m-2">
                       <CardHeader className="select-none">
                         <CardTitle className="text-2xl font-semibold">
@@ -1307,9 +1442,9 @@ export function ContentView() {
                         </CardDescription>
                       </CardHeader>
 
-                      <CardContent className="flex flex-col md:flex-row gap-20">
+                      <CardContent className="flex flex-col md:flex-row gap-4 md:gap-10 p-3 md:p-6">
                         {/* IZQUIERDA: campos de entrada */}
-                        <div className="flex-1 space-y-6">
+                        <div className="flex-1 space-y-3 md:space-y-6">
                           <div className="space-y-1">
                             <Label htmlFor="video-title">Título</Label>
                             <Input
@@ -1330,20 +1465,31 @@ export function ContentView() {
                             />
                           </div>
                           <div className="space-y-1">
+                            <Label htmlFor="video-file">Subir video</Label>
+                            <Input
+                              id="video-file"
+                              type="file"
+                              accept="video/*"
+                              ref={videoFileInputRef}
+                              onChange={handleVideoFileChange}
+                              className="cursor-pointer"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">O ingresa una URL directamente:</p>
+                          </div>
+                          <div className="space-y-1">
                             <Label htmlFor="video-url">URL del video</Label>
                             <Input
                               id="video-url"
-                              placeholder="https://ejemplo.com/video.mp4"
+                              placeholder="https://ejemplo.com/video.mp4 o YouTube/Vimeo"
                               value={videoUrl}
                               onChange={(e) => setVideoUrl(e.target.value)}
                               onFocus={(e) => e.currentTarget.select()}
-                              required
                             />
                           </div>
                         </div>
 
                         {/* DERECHA: vista previa de Video */}
-                        <div className="md:w-1/3">
+                        <div className="w-full md:w-1/3 mt-4 md:mt-0 max-h-[300px] md:max-h-none overflow-hidden">
                           {videoUrl ? (
                             <VideoPlayer
                               url={videoUrl}
@@ -1359,7 +1505,7 @@ export function ContentView() {
                         </div>
                       </CardContent>
 
-                      <CardFooter className="flex space-x-2 mt-5">
+                      <CardFooter className="flex space-x-2 mt-2 md:mt-5 p-3 md:p-6">
 
                         <Button
                           className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
@@ -1391,10 +1537,10 @@ export function ContentView() {
                     No hay videos disponibles. ¡Agrega uno nuevo!
                   </div>
                 ) : (
-                  <div className="flex flex-wrap justify-around gap-4 p-4">
+                  <div className="flex flex-col items-center gap-4 p-4 w-full">
                     {videos.map((video) => (
-                      <div className="bg-gradient-to-l from-orange-500 to-zinc-500 p-2 rounded-2xl">
-                        <Card key={video.id} className="p-5 relative group w-[300px] bg-stone-100">
+                      <div key={video.id} className="bg-gradient-to-l from-orange-500 to-zinc-500 p-2 rounded-2xl w-full max-w-[300px]">
+                        <Card className="p-3 md:p-5 relative group w-full bg-stone-100">
                           <div className="absolute top-2 right-2 flex gap-2 transition-opacity">
                             <Button
                               size="icon"
@@ -1406,8 +1552,8 @@ export function ContentView() {
                             </Button>
                           </div>
                           <CardHeader className="select-none">
-                            <CardTitle>{video.title}</CardTitle>
-                            <CardDescription>
+                            <CardTitle className="text-base md:text-lg">{video.title}</CardTitle>
+                            <CardDescription className="text-xs md:text-sm">
                               {video.description}
                             </CardDescription>
                           </CardHeader>
@@ -1462,7 +1608,7 @@ export function ContentView() {
 
                                     <CardContent className="flex flex-col md:flex-row gap-10">
                                       {/* IZQUIERDA: campos de solo lectura */}
-                                      <div className="flex-1 space-y-6">
+                                      <div className="flex-1 space-y-3 md:space-y-6">
                                         <div className="space-y-1">
                                           <Label htmlFor={`view-title-${video.id}`}>Título</Label>
                                           <Input
@@ -1526,9 +1672,9 @@ export function ContentView() {
                                       </CardDescription>
                                     </CardHeader>
 
-                                    <CardContent className="flex flex-col md:flex-row gap-20">
+                                    <CardContent className="flex flex-col md:flex-row gap-4 md:gap-10 p-3 md:p-6">
                                       {/* IZQUIERDA: campos de edición */}
-                                      <div className="flex-1 space-y-6">
+                                      <div className="flex-1 space-y-3 md:space-y-6">
                                         <div className="space-y-1">
                                           <Label htmlFor={`edit-title-${video.id}`}>Título</Label>
                                           <Input
@@ -1593,7 +1739,7 @@ export function ContentView() {
                                       </div>
                                     </CardContent>
 
-                                    <CardFooter className="flex space-x-2 mt-5">
+                                    <CardFooter className="flex space-x-2 mt-2 md:mt-5 p-3 md:p-6">
 
                                       <Button
                                         className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
