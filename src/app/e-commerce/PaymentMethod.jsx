@@ -142,7 +142,7 @@ export default function PaymentMethod() {
                                 <BreadcrumbSeparator />
                                 <BreadcrumbItem>
                                     <BreadcrumbPage className="text-gray-700 hover:text-blue-700 select-none">
-                                        Método de pago
+                                        Compra
                                     </BreadcrumbPage>
                                 </BreadcrumbItem>
                             </BreadcrumbList>
@@ -382,12 +382,10 @@ export default function PaymentMethod() {
                                                         </div>
 
                                                         <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-1">
-
                                                             <dt className="text-sm font-medium text-gray-600">Nombre del Producto</dt>
                                                             <dd className="mt-1 text-gray-900">GSH 16-28 Professional</dd>
                                                             <dt className="text-sm font-medium text-gray-600">Precio del Producto</dt>
                                                             <dd className="mt-1 text-gray-900">$14,500</dd>
-
                                                         </div>
 
 
