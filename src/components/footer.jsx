@@ -18,7 +18,7 @@ export default function Footer() {
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
             />
-           
+
           </div>
 
           {/* Información de contacto y enlaces */}
@@ -32,35 +32,35 @@ export default function Footer() {
 
             {/* Información de contacto */}
             {/* Información de contacto */}
-<div className="space-y-4">
-  {/* Primera ubicación */}
-  <div className="flex items-center gap-3 justify-center lg:justify-start">
-    <MapPin className="h-5 w-5 text-blue-600 flex-shrink-0" />
-    <p className="text-gray-600 select-all">
-      Blvd. Paseo Cuauhnáhuac 1742, Puente Blanco, 62577 Jiutepec, Mor.
-    </p>
-  </div>
+            <div className="space-y-4">
+              {/* Primera ubicación */}
+              <div className="flex items-center gap-3 justify-center lg:justify-start">
+                <MapPin className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                <p className="text-gray-600 select-all">
+                  Blvd. Paseo Cuauhnáhuac 1742, Puente Blanco, 62577 Jiutepec, Mor.
+                </p>
+              </div>
 
-  {/* Segunda ubicación */}
-  <div className="flex items-center gap-3 justify-center lg:justify-start">
-    <MapPin className="h-5 w-5 text-blue-600 flex-shrink-0" />
-    <p className="text-gray-600 select-all">
-      Carr Federal México-Cuautla 1617, Empleado Postal, 62747 Cuautla, Mor.
-    </p>
-  </div>
+              {/* Segunda ubicación */}
+              <div className="flex items-center gap-3 justify-center lg:justify-start">
+                <MapPin className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                <p className="text-gray-600 select-all">
+                  Carr Federal México-Cuautla 1617, Empleado Postal, 62747 Cuautla, Mor.
+                </p>
+              </div>
 
-  {/* Teléfono */}
-  <div className="flex items-center gap-3 justify-center lg:justify-start">
-    <Phone className="h-5 w-5 text-blue-600 flex-shrink-0" />
-    <p className="text-gray-600 select-all">+52 735 102 3279</p>
-  </div>
+              {/* Teléfono */}
+              <div className="flex items-center gap-3 justify-center lg:justify-start">
+                <Phone className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                <p className="text-gray-600 select-all">+52 735 102 3279</p>
+              </div>
 
-  {/* Email */}
-  <div className="flex items-center gap-3 justify-center lg:justify-start">
-    <Mail className="h-5 w-5 text-blue-600 flex-shrink-0" />
-    <p className="text-gray-600 select-all">soporte@libamaq.com</p>
-  </div>
-</div>
+              {/* Email */}
+              <div className="flex items-center gap-3 justify-center lg:justify-start">
+                <Mail className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                <p className="text-gray-600 select-all">soporte@libamaq.com</p>
+              </div>
+            </div>
 
 
             {/* Enlaces */}
