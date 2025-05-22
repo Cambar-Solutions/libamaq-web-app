@@ -1,4 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { toast } from "sonner";
+import {
+  FileVideo2,
+  Trash2,
+  Edit,
+  Loader2,
+  SquareMousePointer,
+  Image as ImageIcon,
+  Upload
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -12,7 +22,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import "../../../index.css";
-
 import TikTokEmbed from "./../../../components/ui/TikTokEmbed";
 import { uploadLandingFile, deleteLandingFile } from "@/services/admin/landingService";
 
@@ -106,20 +115,62 @@ const VideoPlayer = ({ url, title = "Video", className = "" }) => {
 };
 
 export function ContentView() {
-  // Usar hooks de Tanstack Query para landings
+  // Usar hooks de Tanstack Query para landings con manejo de errores
   const { 
     data: landingsData, 
     isLoading: loadingLandings, 
     error: landingsError,
     refetch: refetchLandings 
-  } = useActiveLandings();
+  } = useActiveLandings() || { data: null, isLoading: false, error: null, refetch: () => {} };
   
-  // Extraer los landings de tipo TIKTOK
-  const landings = landingsData ? 
-    (Array.isArray(landingsData.result) 
-      ? landingsData.result.filter(item => item.type === "TIKTOK")
-      : (landingsData.result?.type === "TIKTOK" ? [landingsData.result] : [])) 
-    : [];
+  // Función para determinar si una URL es de TikTok
+  const isTikTokUrl = (url) => {
+    if (!url) return false;
+    return url.includes('tiktok.com');
+  };
+
+  // Función para determinar si una URL es de una imagen
+  const isImageUrl = (url) => {
+    if (!url) return false;
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+    return imageExtensions.some(ext => url.toLowerCase().endsWith(ext));
+  };
+
+  // Función para determinar si una URL es de un video
+  const isVideoUrl = (url) => {
+    if (!url) return false;
+    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi'];
+    return videoExtensions.some(ext => url.toLowerCase().endsWith(ext)) || 
+           url.includes('youtube.com') || url.includes('youtu.be') || 
+           url.includes('vimeo.com');
+  };
+
+  // Extraer todos los landings disponibles
+  const allLandingItems = React.useMemo(() => {
+    if (!landingsData) return [];
+    
+    let items = [];
+    
+    // Manejar diferentes estructuras de respuesta posibles
+    if (Array.isArray(landingsData)) {
+      items = landingsData;
+    } else if (landingsData.data && Array.isArray(landingsData.data)) {
+      items = landingsData.data;
+    } else if (landingsData.result) {
+      if (Array.isArray(landingsData.result)) {
+        items = landingsData.result;
+      } else if (landingsData.result) {
+        items = [landingsData.result];
+      }
+    }
+    
+    return items;
+  }, [landingsData]);
+
+  // Filtrar por tipo de contenido según la URL
+  const landings = React.useMemo(() => {
+    return allLandingItems.filter(item => isTikTokUrl(item.url));
+  }, [allLandingItems]);
     
   // Hooks para mutaciones
   const createLandingMutation = useCreateLanding();
@@ -133,6 +184,7 @@ export function ContentView() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [link, setLink] = useState("");
+  const [contentType, setContentType] = useState("PROMOTION"); // Tipo de contenido (PROMOTION, EVENT, NEWS, PRODUCT_LAUNCH)
   const [currentLandingId, setCurrentLandingId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -191,6 +243,21 @@ export function ContentView() {
     refetchLandings();
   };
 
+  // Función para recargar todos los datos
+  const loadAllContent = () => {
+    refetchLandings();
+    loadImages();
+    loadVideos();
+  };
+  
+  // Actualizar imágenes y videos cuando cambian los landings
+  useEffect(() => {
+    if (allLandingItems && allLandingItems.length > 0) {
+      loadImages();
+      loadVideos();
+    }
+  }, [allLandingItems]);
+
   // Función para crear un nuevo landing usando Tanstack Query
   const handleCreateLanding = async () => {
     if (!link || !title) {
@@ -208,19 +275,15 @@ export function ContentView() {
 
     setSubmitting(true);
     try {
-      // Limpiar la URL si tiene parámetros de consulta
-      let cleanUrl = link;
-      if (link.includes('?')) {
-        cleanUrl = link.split('?')[0];
-      }
-
-      // Formato exacto como se muestra en Postman
+      // Usar los campos requeridos con el tipo seleccionado por el usuario
+      // Según la documentación de Swagger: title, description, type, status, url
+      // Valores permitidos para type: 'PROMOTION', 'EVENT', 'NEWS', 'PRODUCT_LAUNCH'
       const landingData = {
-        title: title.trim(),            
-        description: description ? description.trim() : "",       
-        type: "TIKTOK",            
-        status: "ACTIVE",           
-        url: cleanUrl
+        title: title.trim(),
+        description: description ? description.trim() : "",
+        type: contentType, // Usar el tipo seleccionado por el usuario
+        status: "ACTIVE",
+        url: link // El servicio se encargará de limpiar la URL
       };
 
       console.log("Enviando datos:", landingData);
@@ -231,7 +294,8 @@ export function ContentView() {
         toast.success("TikTok actualizado correctamente");
       } else {
         // Crear nuevo landing usando la mutación
-        await createLandingMutation.mutateAsync(landingData);
+        const result = await createLandingMutation.mutateAsync(landingData);
+        console.log("Resultado de la creación:", result);
         toast.success("TikTok creado correctamente");
       }
 
@@ -389,19 +453,25 @@ export function ContentView() {
   const loadImages = async () => {
     setLoadingImages(true);
     try {
-      const response = await getAllActiveLandings();
-
-      // Filtrar solo los elementos de tipo IMAGE
-      if (response && response.result) {
-        const imageItems = Array.isArray(response.result)
-          ? response.result.filter(item => item.type === "IMAGE")
-          : (response.result.type === "IMAGE" ? [response.result] : []);
-        setImages(imageItems);
-      } else if (Array.isArray(response)) {
-        const imageItems = response.filter(item => item.type === "IMAGE");
+      // Si ya tenemos los datos cargados por Tanstack Query, usamos esos
+      if (allLandingItems && allLandingItems.length > 0) {
+        // Filtrar por URL en lugar de por tipo
+        const imageItems = allLandingItems.filter(item => isImageUrl(item.url));
         setImages(imageItems);
       } else {
-        setImages([]);
+        // Si no tenemos datos, hacemos la petición directamente
+        const response = await getAllActiveLandings();
+        let items = [];
+        
+        if (response && response.result) {
+          items = Array.isArray(response.result) ? response.result : [response.result];
+        } else if (Array.isArray(response)) {
+          items = response;
+        }
+        
+        // Filtrar por URL en lugar de por tipo
+        const imageItems = items.filter(item => isImageUrl(item.url));
+        setImages(imageItems);
       }
     } catch (err) {
       console.error("Error al cargar imágenes:", err);
@@ -414,19 +484,25 @@ export function ContentView() {
   const loadVideos = async () => {
     setLoadingVideos(true);
     try {
-      const response = await getAllActiveLandings();
-
-      // Filtrar solo los elementos de tipo VIDEO
-      if (response && response.result) {
-        const videoItems = Array.isArray(response.result)
-          ? response.result.filter(item => item.type === "VIDEO")
-          : (response.result.type === "VIDEO" ? [response.result] : []);
-        setVideos(videoItems);
-      } else if (Array.isArray(response)) {
-        const videoItems = response.filter(item => item.type === "VIDEO");
+      // Si ya tenemos los datos cargados por Tanstack Query, usamos esos
+      if (allLandingItems && allLandingItems.length > 0) {
+        // Filtrar por URL en lugar de por tipo
+        const videoItems = allLandingItems.filter(item => isVideoUrl(item.url));
         setVideos(videoItems);
       } else {
-        setVideos([]);
+        // Si no tenemos datos, hacemos la petición directamente
+        const response = await getAllActiveLandings();
+        let items = [];
+        
+        if (response && response.result) {
+          items = Array.isArray(response.result) ? response.result : [response.result];
+        } else if (Array.isArray(response)) {
+          items = response;
+        }
+        
+        // Filtrar por URL en lugar de por tipo
+        const videoItems = items.filter(item => isVideoUrl(item.url));
+        setVideos(videoItems);
       }
     } catch (err) {
       console.error("Error al cargar videos:", err);
@@ -497,12 +573,12 @@ export function ContentView() {
         return;
       }
 
-      // Crear landing con tipo IMAGE
+      // Crear landing con el tipo seleccionado por el usuario
       const landingData = {
         url: finalImageUrl,
         title: imageTitle,
         description: imageDescription,
-        type: "IMAGE",
+        type: contentType, // Usar el tipo seleccionado en el formulario
         status: "ACTIVE"
       };
 
@@ -583,16 +659,17 @@ export function ContentView() {
         return;
       }
 
-      // Crear landing con tipo VIDEO
+      // Crear landing con el tipo seleccionado por el usuario
       const landingData = {
         url: finalVideoUrl,
         title: videoTitle,
         description: videoDescription,
-        type: "VIDEO",
+        type: contentType, // Usar el tipo seleccionado en el formulario
         status: "ACTIVE"
       };
 
-      const newLanding = await createLanding(landingData);
+      // Usar la mutación de Tanstack Query
+      const newLanding = await createLandingMutation.mutateAsync(landingData);
       console.log("Nuevo video creado:", newLanding);
 
       // Resetear formulario y recargar videos
@@ -644,8 +721,8 @@ export function ContentView() {
           throw new Error(`No se encontró el video con ID ${videoId}`);
         }
 
-        // Pasar todos los campos requeridos
-        await changeLandingStatus({
+        // Pasar todos los campos requeridos y usar la mutación de Tanstack Query
+        await changeLandingStatusMutation.mutateAsync({
           id: videoToDelete.id,
           title: videoToDelete.title,
           description: videoToDelete.description || '',
@@ -785,6 +862,20 @@ export function ContentView() {
                               value={description}
                               onChange={(e) => setDescription(e.target.value)}
                             />
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor="contentType">Tipo de contenido</Label>
+                            <select
+                              id="contentType"
+                              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              value={contentType}
+                              onChange={(e) => setContentType(e.target.value)}
+                            >
+                              <option value="PROMOTION">Promoción</option>
+                              <option value="EVENT">Evento</option>
+                              <option value="NEWS">Noticia</option>
+                              <option value="PRODUCT_LAUNCH">Lanzamiento de producto</option>
+                            </select>
                           </div>
                           <div className="space-y-1">
                             <Label htmlFor="link">Link</Label>
@@ -1108,6 +1199,20 @@ export function ContentView() {
                               value={imageDescription}
                               onChange={(e) => setImageDescription(e.target.value)}
                             />
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor="image-contentType">Tipo de contenido</Label>
+                            <select
+                              id="image-contentType"
+                              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              value={contentType}
+                              onChange={(e) => setContentType(e.target.value)}
+                            >
+                              <option value="PROMOTION">Promoción</option>
+                              <option value="EVENT">Evento</option>
+                              <option value="NEWS">Noticia</option>
+                              <option value="PRODUCT_LAUNCH">Lanzamiento de producto</option>
+                            </select>
                           </div>
                           <div className="space-y-1">
                             <Label htmlFor="image-file">Subir imagen</Label>
@@ -1463,6 +1568,20 @@ export function ContentView() {
                               value={videoDescription}
                               onChange={(e) => setVideoDescription(e.target.value)}
                             />
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor="video-contentType">Tipo de contenido</Label>
+                            <select
+                              id="video-contentType"
+                              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              value={contentType}
+                              onChange={(e) => setContentType(e.target.value)}
+                            >
+                              <option value="PROMOTION">Promoción</option>
+                              <option value="EVENT">Evento</option>
+                              <option value="NEWS">Noticia</option>
+                              <option value="PRODUCT_LAUNCH">Lanzamiento de producto</option>
+                            </select>
                           </div>
                           <div className="space-y-1">
                             <Label htmlFor="video-file">Subir video</Label>

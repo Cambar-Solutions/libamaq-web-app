@@ -16,8 +16,19 @@ import { toast } from 'sonner';
 export const useActiveLandings = () => {
   return useQuery({
     queryKey: ['landings', 'active'],
-    queryFn: getAllActiveLandings,
+    queryFn: async () => {
+      try {
+        const data = await getAllActiveLandings();
+        console.log('Datos obtenidos de getAllActiveLandings:', data);
+        return data;
+      } catch (error) {
+        console.error('Error en useActiveLandings:', error);
+        throw error;
+      }
+    },
     staleTime: 5 * 60 * 1000, // 5 minutos
+    retry: 1, // Solo reintentar una vez
+    refetchOnWindowFocus: false,
     onError: (error) => {
       console.error('Error al obtener landings activos:', error);
       toast.error('Error al cargar los contenidos activos');
