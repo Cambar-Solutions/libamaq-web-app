@@ -114,7 +114,8 @@ export function BrandsView() {
         url: brand.url || "",
         color: brand.color || "#000000",
         status: brand.status || "ACTIVE",
-        categories: brand.categories || []
+        // Manejar tanto categories como brandCategories
+        categories: brand.categories || brand.brandCategories || []
       }));
       
       // Filtrar solo las marcas activas
@@ -229,15 +230,15 @@ export function BrandsView() {
       if (isEditing) {
         // Para actualización, usar EXACTAMENTE la estructura que espera la API
         brandData = {
-          id: formData.id,
+          id: Number(formData.id),
+          updatedBy: "1",
+          updatedAt: new Date().toISOString(),
           name: formData.name,
           url: formData.url,
           color: formData.color,
           description: formData.description || "",
           status: formData.status || "ACTIVE",
-          categories: allCategoryIds.map(categoryId => ({
-            id: parseInt(categoryId)
-          }))
+          categoryIds: allCategoryIds.map(id => Number(id))
         };
       } else {
         // Para creación, usar la estructura original
@@ -276,33 +277,33 @@ export function BrandsView() {
   const fetchCategories = async () => {
     try {
       const response = await getAllCategories();
+      console.log('Respuesta de categorías:', response);
+      
+      // Extraer los datos de la respuesta según su estructura
       const cats = Array.isArray(response)
         ? response
-        : (response.result || []);
+        : (response.data || response.result || []);
+      
+      console.log('Categorías procesadas:', cats);
       setCategories(cats);
     } catch (error) {
+      console.error('Error al cargar categorías:', error);
       toast.error("Error al cargar categorías");
     }
   };
 
-  // Cambiar estado de marca (activar/desactivar)
-  const handleChangeBrandStatus = async (brandId, newStatus) => {
+  // Cambiar estado de una marca (activar/desactivar)
+  const handleChangeBrandStatus = async (brandId, currentStatus) => {
     try {
-      // Encontrar la marca completa en el estado
-      const brandToUpdate = brands.find(brand => brand.id === brandId);
+      // Determinar el nuevo estado (inverso al actual)
+      const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
       
-      if (!brandToUpdate) {
-        throw new Error('Marca no encontrada');
-      }
-      
-      // Crear una copia con el nuevo estado
-      const updatedBrand = {
-        ...brandToUpdate,
+      // Llamar directamente a la función de cambio de estado con solo el ID y el nuevo estado
+      // La función ahora obtendrá automáticamente los datos completos de la marca
+      const response = await updateBrand({
+        id: brandId,
         status: newStatus
-      };
-      
-      // Usar updateBrand en lugar de changeBrandStatus para enviar todos los datos
-      const response = await updateBrand(updatedBrand);
+      });
       
       if (response && (response.type === 'SUCCESS' || response.result)) {
         toast.success(`Estado de la marca cambiado a ${newStatus === 'ACTIVE' ? 'activo' : 'inactivo'}`);
@@ -539,8 +540,7 @@ export function BrandsView() {
                         <SheetClose asChild>
                           <Button
                             onClick={() => {
-                              const newStatus = isActive ? "INACTIVE" : "ACTIVE";
-                              handleChangeBrandStatus(brand.id, newStatus);
+                              handleChangeBrandStatus(brand.id, brand.status);
                             }}
                           >
                             {isActive ? "Desactivar" : "Activar"}

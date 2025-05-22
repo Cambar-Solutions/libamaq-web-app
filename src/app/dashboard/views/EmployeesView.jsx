@@ -4,15 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useEffect } from "react";
-import { getStaffUsers, createUser, updateUser } from "@/services/admin/userService";
+import { useState } from "react";
+import { getAllUsers, createUser, updateUser } from "@/services/admin/userService";
 import { toast } from "sonner";
 import { Pencil } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function EmployeesView() {
+  const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [employees, setEmployees] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [newEmployee, setNewEmployee] = useState({
     id: null,
@@ -22,22 +22,27 @@ export function EmployeesView() {
     telefono: "",
     password: "",
     status: "ACTIVE",
-    role: "EMPLOYEE"
+    role: "DIRECTOR" // Rol predeterminado para empleados
   });
 
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
-
-  const fetchEmployees = async () => {
-    try {
-      const data = await getStaffUsers();
-      setEmployees(data);
-    } catch (error) {
-      toast.error("Error al cargar empleados");
-      console.error(error);
+  // Consulta para obtener todos los usuarios y filtrar solo los empleados
+  const { 
+    data: allUsers = [], 
+    isLoading: isLoadingUsers,
+    error: usersError 
+  } = useQuery({
+    queryKey: ['users'],
+    queryFn: getAllUsers,
+    onError: (error) => {
+      toast.error("Error al cargar usuarios");
+      console.error('Error al cargar usuarios:', error);
     }
-  };
+  });
+  
+  // Filtrar solo los empleados (DIRECTOR, PROVIDER, DELIVERY, ADMIN)
+  const employees = allUsers.filter(user => 
+    ["DIRECTOR", "PROVIDER", "DELIVERY", "ADMIN"].includes(user.role)
+  );
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -65,6 +70,7 @@ export function EmployeesView() {
   };
 
   const handleEdit = (employee) => {
+    console.log('Editando empleado:', employee);
     setIsEditing(true);
     setNewEmployee({
       id: employee.id,
@@ -74,7 +80,7 @@ export function EmployeesView() {
       telefono: employee.phoneNumber,
       password: "",
       status: employee.status,
-      role: "EMPLOYEE"
+      role: employee.role // Usar el rol actual del empleado
     });
     setIsModalOpen(true);
   };
@@ -88,7 +94,7 @@ export function EmployeesView() {
       telefono: "",
       password: "",
       status: "ACTIVE",
-      role: "EMPLOYEE"
+      role: "DIRECTOR"
     });
     setIsEditing(false);
   };
@@ -98,33 +104,77 @@ export function EmployeesView() {
     resetForm();
   };
 
+  // Mutación para crear un empleado
+  const createEmployeeMutation = useMutation({
+    mutationFn: createUser,
+    onSuccess: () => {
+      toast.success("Empleado registrado exitosamente");
+      setIsModalOpen(false);
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (error) => {
+      toast.error("Error al registrar empleado");
+      console.error(error);
+    }
+  });
+
+  // Mutación para actualizar un empleado
+  const updateEmployeeMutation = useMutation({
+    mutationFn: updateUser,
+    onSuccess: () => {
+      toast.success("Empleado actualizado exitosamente");
+      setIsModalOpen(false);
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+    onError: (error) => {
+      toast.error("Error al actualizar empleado");
+      console.error(error);
+    }
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    try {
-      const userData = {
-        ...newEmployee,
-        name: newEmployee.nombre,
-        lastName: newEmployee.apellido,
-        phoneNumber: newEmployee.telefono,
-        role: "EMPLOYEE"
-      };
+    
+    // Datos base para crear o actualizar
+    const userData = {
+      email: newEmployee.email,
+      name: newEmployee.nombre,
+      lastName: newEmployee.apellido,
+      phoneNumber: newEmployee.telefono,
+      role: newEmployee.role,
+      status: newEmployee.status
+    };
+    
+    // Verificar que el rol sea uno de los permitidos
+    if (!['ADMIN', 'DIRECTOR', 'USER', 'CUSTOMER', 'PROVIDER', 'DELIVERY'].includes(userData.role)) {
+      toast.error(`Rol no válido: ${userData.role}. Roles permitidos: ADMIN, DIRECTOR, USER, CUSTOMER, PROVIDER, DELIVERY`);
+      return;
+    }
 
-      if (isEditing) {
-        await updateUser(userData);
-        toast.success("Empleado actualizado exitosamente");
-      } else {
-        await createUser(userData);
-        toast.success("Empleado registrado exitosamente");
-      }
-      setIsModalOpen(false);
-      await fetchEmployees();
-      resetForm();
-    } catch (error) {
-      toast.error(isEditing ? "Error al actualizar empleado" : "Error al registrar empleado");
-      console.error(error);
-    } finally {
-      setIsLoading(false);
+    if (isEditing) {
+      // Para actualización, incluir el ID como número
+      const updateData = {
+        ...userData,
+        id: Number(newEmployee.id), // Convertir a número
+        // No incluir password si está vacío
+        ...(newEmployee.password ? { password: newEmployee.password } : {})
+      };
+      
+      console.log('Datos del empleado a actualizar:', updateData);
+      updateEmployeeMutation.mutate(updateData);
+    } else {
+      // Para creación, incluir campos adicionales
+      const createData = {
+        ...userData,
+        createdBy: "1", // ID del usuario administrador
+        createdAt: new Date().toISOString(),
+        password: newEmployee.password // Password es obligatorio para crear
+      };
+      
+      console.log('Datos del empleado a crear:', createData);
+      createEmployeeMutation.mutate(createData);
     }
   };
 
@@ -139,52 +189,74 @@ export function EmployeesView() {
         </button>
       </div>
       <div className="rounded-md border">
-        <Table className="bg-white">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Teléfono</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead>Fecha de registro</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {employees.map((employee) => (
-              <TableRow key={employee.id} className="hover:bg-gray-50">
-                <TableCell className="font-medium">
-                  {`${employee.name} ${employee.lastName}`}
-                </TableCell>
-                <TableCell>{employee.email}</TableCell>
-                <TableCell>{employee.phoneNumber}</TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    employee.status === 'ACTIVE' 
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {employee.status}
-                  </span>
-                </TableCell>
-                <TableCell>{formatDate(employee.createdAt)}</TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="cursor-pointer hover:bg-gray-200"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEdit(employee);
-                    }}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                </TableCell>
+        {isLoadingUsers ? (
+          <div className="flex justify-center items-center h-40">
+            <p className="text-gray-500">Cargando empleados...</p>
+          </div>
+        ) : usersError ? (
+          <div className="flex justify-center items-center h-40">
+            <p className="text-red-500">Error al cargar los empleados. Intenta de nuevo.</p>
+          </div>
+        ) : (
+          <Table className="bg-white">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Teléfono</TableHead>
+                <TableHead>Rol</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Fecha de registro</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {employees.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-6 text-gray-500">
+                    No hay empleados registrados
+                  </TableCell>
+                </TableRow>
+              ) : (
+                employees.map((employee) => (
+                  <TableRow key={employee.id} className="hover:bg-gray-50">
+                    <TableCell className="font-medium">
+                      {`${employee.name} ${employee.lastName}`}
+                    </TableCell>
+                    <TableCell>{employee.email}</TableCell>
+                    <TableCell>{employee.phoneNumber}</TableCell>
+                    <TableCell>
+                      <span className="capitalize">{employee.role}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        employee.status === 'ACTIVE' 
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {employee.status}
+                      </span>
+                    </TableCell>
+                    <TableCell>{formatDate(employee.createdAt)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="cursor-pointer hover:bg-gray-200"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(employee);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={handleCloseModal}>
@@ -195,6 +267,11 @@ export function EmployeesView() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
+            {(createEmployeeMutation.isPending || updateEmployeeMutation.isPending) && (
+              <div className="mb-4 p-2 bg-blue-50 text-blue-700 rounded">
+                Procesando solicitud...
+              </div>
+            )}
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="nombre" className="text-right">
@@ -265,6 +342,26 @@ export function EmployeesView() {
                   placeholder={isEditing ? "Dejar vacío para mantener la actual" : ""}
                 />
               </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="role" className="text-right">
+                  Rol
+                </Label>
+                <Select
+                  value={newEmployee.role}
+                  onValueChange={(value) => setNewEmployee(prev => ({ ...prev, role: value }))}
+                >
+                  <SelectTrigger className="col-span-3 cursor-pointer">
+                    <SelectValue placeholder="Seleccionar rol" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DIRECTOR">Director</SelectItem>
+                    <SelectItem value="PROVIDER">Proveedor</SelectItem>
+                    <SelectItem value="DELIVERY">Repartidor</SelectItem>
+                    <SelectItem value="ADMIN">Administrador</SelectItem>
+                    <SelectItem value="USER">Usuario</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               {isEditing && (
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="status" className="text-right">
@@ -294,8 +391,11 @@ export function EmployeesView() {
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading} className="cursor-pointer">
-                {isLoading ? "Guardando..." : (isEditing ? "Actualizar" : "Guardar empleado")}
+              <Button 
+                type="submit" 
+                disabled={createEmployeeMutation.isPending || updateEmployeeMutation.isPending}
+              >
+                {isEditing ? "Actualizar" : "Registrar"}
               </Button>
             </DialogFooter>
           </form>

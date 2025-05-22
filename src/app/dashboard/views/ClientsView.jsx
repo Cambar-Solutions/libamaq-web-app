@@ -4,15 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { getCustomerUsers, createUser, updateUser } from "@/services/admin/userService";
 import { toast } from "sonner";
 import { Pencil } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function ClientsView() {
+  const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [clients, setClients] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [newClient, setNewClient] = useState({
     id: null,
@@ -22,22 +22,22 @@ export function ClientsView() {
     telefono: "",
     password: "",
     status: "ACTIVE",
-    role: "GENERAL_CUSTOMER"
+    role: "CUSTOMER"
   });
 
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
-  const fetchClients = async () => {
-    try {
-      const data = await getCustomerUsers();
-      setClients(data);
-    } catch (error) {
+  // Consulta para obtener los clientes
+  const { 
+    data: clients = [], 
+    isLoading: isLoadingClients,
+    error: clientsError 
+  } = useQuery({
+    queryKey: ['clients'],
+    queryFn: getCustomerUsers,
+    onError: (error) => {
       toast.error("Error al cargar clientes");
-      console.error(error);
+      console.error('Error al cargar clientes:', error);
     }
-  };
+  });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -95,7 +95,7 @@ export function ClientsView() {
       telefono: "",
       password: "",
       status: "ACTIVE",
-      role: "GENERAL_CUSTOMER"
+      role: "CUSTOMER"
     });
     setIsEditing(false);
   };
@@ -105,32 +105,71 @@ export function ClientsView() {
     resetForm();
   };
 
+  // Mutación para crear un cliente
+  const createClientMutation = useMutation({
+    mutationFn: createUser,
+    onSuccess: () => {
+      toast.success("Cliente registrado exitosamente");
+      setIsModalOpen(false);
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    },
+    onError: (error) => {
+      toast.error("Error al registrar cliente");
+      console.error(error);
+    }
+  });
+
+  // Mutación para actualizar un cliente
+  const updateClientMutation = useMutation({
+    mutationFn: updateUser,
+    onSuccess: () => {
+      toast.success("Cliente actualizado exitosamente");
+      setIsModalOpen(false);
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    },
+    onError: (error) => {
+      toast.error("Error al actualizar cliente");
+      console.error(error);
+    }
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    try {
-      const userData = {
-        ...newClient,
-        name: newClient.nombre,
-        lastName: newClient.apellido,
-        phoneNumber: newClient.telefono
-      };
+    
+    // Datos base para crear o actualizar
+    const userData = {
+      email: newClient.email,
+      name: newClient.nombre,
+      lastName: newClient.apellido,
+      phoneNumber: newClient.telefono,
+      role: newClient.role,
+      status: newClient.status
+    };
 
-      if (isEditing) {
-        await updateUser(userData);
-        toast.success("Cliente actualizado exitosamente");
-      } else {
-        await createUser(userData);
-        toast.success("Cliente registrado exitosamente");
-      }
-      setIsModalOpen(false);
-      await fetchClients();
-      resetForm();
-    } catch (error) {
-      toast.error(isEditing ? "Error al actualizar cliente" : "Error al registrar cliente");
-      console.error(error);
-    } finally {
-      setIsLoading(false);
+    if (isEditing) {
+      // Para actualización, incluir el ID como número
+      const updateData = {
+        ...userData,
+        id: Number(newClient.id), // Convertir a número
+        // No incluir password si está vacío
+        ...(newClient.password ? { password: newClient.password } : {})
+      };
+      
+      console.log('Datos del usuario a actualizar:', updateData);
+      updateClientMutation.mutate(updateData);
+    } else {
+      // Para creación, incluir campos adicionales
+      const createData = {
+        ...userData,
+        createdBy: "1", // ID del usuario administrador
+        createdAt: new Date().toISOString(),
+        password: newClient.password // Password es obligatorio para crear
+      };
+      
+      console.log('Datos del usuario a crear:', createData);
+      createClientMutation.mutate(createData);
     }
   };
 
@@ -145,20 +184,36 @@ export function ClientsView() {
         </button>
       </div>
       <div className="rounded-md border">
-        <Table className="bg-white">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Teléfono</TableHead>
-              <TableHead>Rol</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead>Fecha de registro</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {clients.map((client) => (
+        {isLoadingClients ? (
+          <div className="flex justify-center items-center h-40">
+            <p className="text-gray-500">Cargando clientes...</p>
+          </div>
+        ) : clientsError ? (
+          <div className="flex justify-center items-center h-40">
+            <p className="text-red-500">Error al cargar los clientes. Intenta de nuevo.</p>
+          </div>
+        ) : (
+          <Table className="bg-white">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Teléfono</TableHead>
+                <TableHead>Rol</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Fecha de registro</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {clients.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-6 text-gray-500">
+                    No hay clientes registrados
+                  </TableCell>
+                </TableRow>
+              ) : (
+                clients.map((client) => (
               <TableRow key={client.id} className="cursor-pointer hover:bg-gray-50">
                 <TableCell className="font-medium">
                   {`${client.name} ${client.lastName}`}
@@ -167,11 +222,11 @@ export function ClientsView() {
                 <TableCell>{client.phoneNumber}</TableCell>
                 <TableCell>
                   <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    client.role === "GENERAL_CUSTOMER" 
+                    client.role === "GENERAL_CUSTOMER" || client.role === "CUSTOMER" 
                       ? "bg-blue-100 text-blue-800" 
                       : "bg-purple-100 text-purple-800"
                   }`}>
-                    {client.role === "GENERAL_CUSTOMER" ? "Cliente General" : 
+                    {client.role === "GENERAL_CUSTOMER" || client.role === "CUSTOMER" ? "Cliente General" : 
                      client.role === "FREQUENT_CUSTOMER" ? "Cliente Frecuente" : 
                      client.role}
                   </span>
@@ -199,9 +254,11 @@ export function ClientsView() {
                   </Button>
                 </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            )))
+              }
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={handleCloseModal}>
@@ -212,6 +269,11 @@ export function ClientsView() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
+            {(createClientMutation.isPending || updateClientMutation.isPending) && (
+              <div className="mb-4 p-2 bg-blue-50 text-blue-700 rounded">
+                Procesando solicitud...
+              </div>
+            )}
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="nombre" className="text-right">
@@ -279,7 +341,7 @@ export function ClientsView() {
                     <SelectValue placeholder="Seleccionar rol" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="GENERAL_CUSTOMER">Cliente General</SelectItem>
+                    <SelectItem value="CUSTOMER">Cliente General</SelectItem>
                     <SelectItem value="FREQUENT_CUSTOMER">Cliente Frecuente</SelectItem>
                   </SelectContent>
                 </Select>
@@ -320,15 +382,14 @@ export function ClientsView() {
               )}
             </div>
             <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={handleCloseModal}
-              >
+              <Button type="button" variant="outline" onClick={handleCloseModal}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Guardando..." : (isEditing ? "Actualizar" : "Guardar cliente")}
+              <Button 
+                type="submit" 
+                disabled={createClientMutation.isPending || updateClientMutation.isPending}
+              >
+                {isEditing ? "Actualizar" : "Registrar"}
               </Button>
             </DialogFooter>
           </form>
