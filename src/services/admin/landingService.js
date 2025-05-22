@@ -18,24 +18,22 @@ export const createLanding = async (landingData) => {
     if (!landingData.url) {
       throw new Error('La URL es obligatoria');
     }
-    if (!landingData.type) {
-      throw new Error('El tipo es obligatorio');
-    }
     
     // Limpiar la URL de TikTok si es necesario
     let cleanUrl = landingData.url;
-    if (landingData.type === 'TIKTOK' && cleanUrl.includes('?')) {
+    if (cleanUrl.includes('?')) {
       // Eliminar parámetros de consulta que podrían causar problemas
       cleanUrl = cleanUrl.split('?')[0];
     }
     
-    // Crear el objeto con la estructura exacta que espera la API
-    // Según la documentación de Swagger
+    // Crear el objeto con la estructura exacta que espera la API según Swagger
+    // CreateLandingDto: title, description, type, status, url
+    // Valores permitidos para type: 'PROMOTION', 'EVENT', 'NEWS', 'PRODUCT_LAUNCH'
     const payload = {
       title: landingData.title.trim(),
       description: (landingData.description || "").trim(),
-      type: landingData.type,
-      status: landingData.status || "ACTIVE",
+      type: landingData.type || "PROMOTION", // Usar PROMOTION como valor por defecto
+      status: "ACTIVE",  // Siempre usar ACTIVE como valor por defecto
       url: cleanUrl
     };
     

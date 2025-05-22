@@ -11,6 +11,25 @@ import TikTokEmbed from './TikTokEmbed';
 import NoContentCard from './NoContentCard';
 import { getAllActiveLandings } from '@/services/admin/landingService';
 
+// Funciones para detectar diferentes tipos de URLs
+const isTikTokUrl = (url) => {
+  if (!url) return false;
+  return url.includes('tiktok.com');
+};
+
+const isYouTubeUrl = (url) => {
+  if (!url) return false;
+  return url.includes('youtube.com') || url.includes('youtu.be');
+};
+
+const isVideoUrl = (url) => {
+  if (!url) return false;
+  const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi'];
+  return videoExtensions.some(ext => url.toLowerCase().endsWith(ext)) || 
+         isYouTubeUrl(url) || 
+         url.includes('vimeo.com');
+};
+
 const TikTokGallery = () => {
   const { 
     data: landings = [], 
@@ -19,18 +38,44 @@ const TikTokGallery = () => {
   } = useQuery({
     queryKey: ['tiktoks'],
     queryFn: async () => {
-      const all = await getAllActiveLandings();
-      console.log("Payload de landings:", all);
+      const response = await getAllActiveLandings();
+      console.log("Payload de landings:", response);
 
-      // Primero extraigo el array correcto:
-      const list = Array.isArray(all)
-        ? all
-        : Array.isArray(all.result)
-          ? all.result
-          : [];
-
-      // Ahora filtro los TIKTOK:
-      return list.filter(item => item.type === 'TIKTOK');
+      // Manejar diferentes estructuras de respuesta posibles
+      let items = [];
+      
+      if (response && response.data && Array.isArray(response.data)) {
+        // Estructura: { data: [...] }
+        items = response.data;
+      } else if (Array.isArray(response)) {
+        // Estructura: [...]
+        items = response;
+      } else if (response && response.result) {
+        // Estructura: { result: [...] } o { result: {...} }
+        if (Array.isArray(response.result)) {
+          items = response.result;
+        } else {
+          items = [response.result];
+        }
+      } else if (response && typeof response === 'object') {
+        // Intentar extraer cualquier array que pueda contener
+        const possibleArrays = Object.values(response).filter(val => Array.isArray(val));
+        if (possibleArrays.length > 0) {
+          // Usar el primer array encontrado
+          items = possibleArrays[0];
+        }
+      }
+      
+      console.log("Items procesados:", items);
+      
+      // Filtrar SOLO contenido de TikTok
+      const tiktokContent = items.filter(item => {
+        // Verificar si la URL es de TikTok
+        return isTikTokUrl(item.url);
+      });
+      
+      console.log("Contenido de TikTok filtrado:", tiktokContent);
+      return tiktokContent;
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
     cacheTime: 60 * 60 * 1000, // 1 hora
