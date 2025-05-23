@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { getAllActiveLandings } from '../../services/admin/landingService';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ExternalLink, Play, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import NoContentCard from './NoContentCard';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Helpers para detectar y formatear URLs de contenido multimedia
 const isYouTubeUrl = url => {
@@ -20,7 +21,7 @@ const getYouTubeEmbedUrl = url => {
   if (isYouTubeShortUrl(url)) {
     const shortId = url.split('/shorts/')[1]?.split('?')[0];
     if (shortId) {
-      return `https://www.youtube.com/embed/${shortId}?autoplay=0&rel=0`;
+      return `https://www.youtube.com/embed/${shortId}?autoplay=1&rel=0&modestbranding=1`;
     }
   }
   
@@ -29,7 +30,7 @@ const getYouTubeEmbedUrl = url => {
     /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/
   );
   return match && match[1]
-    ? `https://www.youtube.com/embed/${match[1]}?autoplay=0&rel=0`
+    ? `https://www.youtube.com/embed/${match[1]}?autoplay=1&rel=0&modestbranding=1`
     : url;
 };
 
@@ -98,6 +99,11 @@ const getSpanForImage = (width, height) => {
       row = Math.max(row, 2);
     }
   }
+  
+  // Asegurar que los shorts de YouTube tengan suficiente espacio vertical
+  if (height > width * 1.5) {
+    row = Math.max(row, 3); // Asignar al menos 3 filas para contenido vertical como shorts
+  }
 
   return {
     colSpan: `col-span-1 md:col-span-${col}`,
@@ -105,7 +111,31 @@ const getSpanForImage = (width, height) => {
   };
 };
 
-const BentoGrid = () => {
+// Renombramos el componente a MasonryGallery para reflejar el nuevo diseño
+const MasonryGallery = () => {
+  // Estado para el modal de visualización
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  // Estado para reproducir shorts en la card
+  const [playingInCardId, setPlayingInCardId] = useState(null);
+  // Estado para controlar el overlay en dispositivos móviles
+  const [touchedItemId, setTouchedItemId] = useState(null);
+  // Detectar si es un dispositivo móvil
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Detectar si es un dispositivo móvil al cargar el componente
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    };
+    
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
+  }, []);
   const { 
     data: mediaItems = [], 
     isLoading: loading, 
@@ -204,12 +234,19 @@ const BentoGrid = () => {
     cacheTime: 60 * 60 * 1000, // 1 hora
   });
 
-  const renderGridItem = item => {
+  const renderMasonryItem = item => {
+    if (!item) return null;
+    
+    // Verificar si es un YouTube Short
+    const isYouTubeShort = item.type === 'video' && isYouTubeShortUrl(item.src);
+    
     const classes = [
-      'rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow relative',
+      'overflow-hidden shadow-lg hover:shadow-xl transition-shadow relative',
+      // Eliminar bordes redondeados para todos los shorts
+      isYouTubeShort ? 'rounded-none' : 'rounded-xl',
       item.colSpan,
       item.rowSpan
-    ].join(' ');
+    ].filter(Boolean).join(' ');
 
     let mediaContent;
     if (item.type === 'image') {
@@ -217,21 +254,25 @@ const BentoGrid = () => {
         <img
           src={item.src}
           alt={item.alt}
-          className="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
+          className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500"
+          loading="lazy"
         />
       );
     } else if (item.type === 'video') {
       // Verificar si es un YouTube Short
       if (isYouTubeShortUrl(item.src)) {
+        // Para shorts de YouTube, usamos la URL directa a YouTube para mejor interactividad
+        const shortId = item.src.split('/shorts/')[1]?.split('?')[0];
         mediaContent = (
-          <div className="relative w-full h-full" style={{ paddingBottom: '177.77%' }}>
+          <div className="relative w-full overflow-hidden bg-black" style={{ aspectRatio: '9/16' }}>
             <iframe
               className="absolute top-0 left-0 w-full h-full"
-              src={getYouTubeEmbedUrl(item.src)}
-              title={item.title}
+              src={`https://www.youtube.com/embed/${shortId}?autoplay=1&loop=1&rel=0&modestbranding=1&controls=1&showinfo=0&fs=1&playsinline=1`}
+              title={item.title || 'YouTube Short'}
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
+              loading="lazy"
             />
           </div>
         );
@@ -239,7 +280,7 @@ const BentoGrid = () => {
       // Verificar si es un video normal de YouTube
       else if (isYouTubeUrl(item.src)) {
         mediaContent = (
-          <div className="relative w-full h-full" style={{ paddingBottom: '56.25%' }}>
+          <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
             <iframe
               className="absolute top-0 left-0 w-full h-full"
               src={getYouTubeEmbedUrl(item.src)}
@@ -247,6 +288,7 @@ const BentoGrid = () => {
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
+              loading="lazy"
             />
           </div>
         );
@@ -292,40 +334,282 @@ const BentoGrid = () => {
       );
     }
 
+    // El contenido a mostrar es simplemente el mediaContent
+    const displayContent = mediaContent;
+
     return (
-      <div key={item.id} className={classes}>
-        {mediaContent}
-        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white p-2 transform translate-y-full hover:translate-y-0 transition-transform duration-300">
-          <h3 className="font-bold text-sm md:text-base truncate">{item.title}</h3>
-          {item.description && <p className="text-xs md:text-sm line-clamp-2">{item.description}</p>}
+      <motion.div 
+        key={item.id} 
+        className="break-inside-avoid mb-4 group relative rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+        variants={itemVariants}
+        onClick={() => {
+          // En dispositivos móviles, al hacer clic en un item:
+          if (isMobile) {
+            // Si es un short de YouTube, no hacemos nada (los controles nativos de YouTube se encargan)
+            if (item.type === 'video' && isYouTubeShortUrl(item.src)) {
+              return;
+            }
+            
+            // Para otros tipos, alternamos el estado de tocado
+            if (touchedItemId === item.id) {
+              // Si ya está tocado, abrimos el modal
+              if (item.type === 'video' && !isYouTubeShortUrl(item.src)) {
+                setSelectedItem(item);
+                setIsPlaying(true);
+              } else if (item.type === 'image') {
+                setSelectedItem(item);
+                setIsPlaying(false);
+              }
+              setTouchedItemId(null);
+            } else {
+              // Si no está tocado, lo marcamos como tocado para mostrar el overlay
+              setTouchedItemId(item.id);
+            }
+          }
+        }}
+      >
+        <div className="relative overflow-hidden">
+          {/* Para los shorts de YouTube, usamos un contenedor especial */}
+          {item && item.type === 'video' && isYouTubeShortUrl(item.src) ? (
+            <div className="w-full h-full" style={{ pointerEvents: 'none' }}>
+              <div style={{ pointerEvents: 'auto' }}>
+                {displayContent}
+              </div>
+            </div>
+          ) : (
+            displayContent
+          )}
+          
+          {/* Overlay con botones de acción - visible en hover (PC) o después de tocar (móvil) */}
+          {/* No mostramos el overlay para shorts de YouTube para permitir la interacción con los controles */}
+          {!(item.type === 'video' && isYouTubeShortUrl(item.src)) && (
+            <div 
+              className={`absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4 transition-all duration-300 ${isMobile ? 
+                (touchedItemId === item.id ? 'opacity-100' : 'opacity-0') : 
+                'opacity-0 group-hover:opacity-100'}`}
+            >
+              <div className="flex justify-end space-x-2">
+                {/* Solo mostramos botones para videos normales e imágenes, no para shorts */}
+                {item.type === 'video' && !isYouTubeShortUrl(item.src) && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedItem(item);
+                      setIsPlaying(true);
+                    }} 
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 flex items-center text-xs font-medium"
+                  >
+                    <ExternalLink size={14} className="mr-1" /> Ver completo
+                  </button>
+                )}
+                
+                {item.type === 'image' && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedItem(item);
+                      setIsPlaying(false);
+                    }} 
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 flex items-center text-xs font-medium"
+                  >
+                    <ExternalLink size={14} className="mr-1" /> Ver imagen
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      </motion.div>
     );
   };
 
+  // Filtros para la galería
+  const [filter, setFilter] = useState('all');
+  
+  // Filtrar elementos según el tipo seleccionado
+  const filteredItems = filter === 'all' 
+    ? mediaItems 
+    : mediaItems.filter(item => item && item.type === filter);
+  
+  // Variantes para animaciones con Framer Motion
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+  
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: 'spring',
+        stiffness: 100,
+        damping: 12
+      }
+    }
+  };
+  
+  // Función para cerrar el modal
+  const closeModal = () => {
+    setSelectedItem(null);
+    setIsPlaying(false);
+  };
+  
+  // Función para verificar si un elemento es un YouTube Short
+  const isItemYouTubeShort = (item) => {
+    return item && item.type === 'video' && isYouTubeShortUrl(item.src);
+  };
+
   return (
-    <div className="w-full max-w-6xl mx-auto my-16">
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
-          <span className="ml-2 text-lg">Cargando contenido...</span>
+    <div className="w-full py-12 bg-gradient-to-t from-slate-100 to-slate-300">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold text-slate-800 mb-4 text-center">Contenido Multimedia</h2>
+        <p className="text-slate-600 text-center mb-8">Explora nuestros videos, shorts e imágenes</p>
+        
+        {/* Filtros */}
+        <div className="flex justify-center mb-10">
+          <div className="flex flex-wrap justify-center gap-2 bg-white/70 backdrop-blur-sm p-2 rounded-full">
+            <button 
+              onClick={() => setFilter('all')} 
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filter === 'all' ? 'bg-blue-600 text-white' : 'text-black hover:bg-blue-700/40'}`}
+            >
+              Todos
+            </button>
+            <button 
+              onClick={() => setFilter('video')} 
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filter === 'video' ? 'bg-blue-600 text-white' : 'text-black hover:bg-blue-700/40'}`}
+            >
+              Videos
+            </button>
+            <button 
+              onClick={() => setFilter('image')} 
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filter === 'image' ? 'bg-blue-600 text-white' : 'text-black hover:bg-blue-700/40'}`}
+            >
+              Imágenes
+            </button>
+          </div>
         </div>
-      ) : error ? (
-        <div className="text-center p-8 text-red-500">{error.message || 'Error al cargar medios.'}</div>
-      ) : mediaItems.length === 0 ? (
-        <NoContentCard
-          title="No hay medios disponibles"
-          message="En este momento no hay contenido multimedia disponible. Por favor, intenta más tarde."
-          componentName="BentoGrid"
-          className="my-8"
-        />
-      ) : (
-        <div className="grid grid-flow-row-dense grid-cols-1 sm:grid-cols-2 md:grid-cols-4 auto-rows-auto gap-4 sm:gap-6 md:gap-8 p-4 h-auto md:h-[90vh]">
-          {mediaItems.map(renderGridItem)}
-        </div>
-      )}
+        
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-slate-700" />
+            <span className="ml-2 text-slate-700">Cargando contenido...</span>
+          </div>
+        ) : error ? (
+          <div className="text-center text-red-700 bg-red-100 p-6 rounded-xl shadow-sm">
+            <p>Error al cargar el contenido multimedia.</p>
+            <p className="text-sm">{error.message}</p>
+          </div>
+        ) : mediaItems.length === 0 ? (
+          <div className="bg-white/80 shadow-sm rounded-xl p-8 text-center">
+            <h3 className="text-xl font-bold text-slate-800 mb-2">No hay contenido multimedia</h3>
+            <p className="text-slate-600">No se ha encontrado contenido multimedia para mostrar.</p>
+          </div>
+        ) : (
+          <motion.div 
+            className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            {filteredItems.filter(item => item).map(renderMasonryItem)}
+          </motion.div>
+        )}
+      </div>
+      
+      {/* Modal para visualización de contenido */}
+      {/* Modal para visualizar contenido en pantalla completa - No se muestra para shorts de YouTube */}
+      <AnimatePresence>
+        {selectedItem && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
+            onClick={() => {
+              setSelectedItem(null);
+              setIsPlaying(false);
+            }}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="relative max-w-5xl w-full max-h-[90dvh] overflow-hidden rounded-xl bg-white"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Botón de cierre */}
+              <button 
+                className="absolute top-2 right-2 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-2"
+                onClick={() => {
+                  setSelectedItem(null);
+                  setIsPlaying(false);
+                }}
+              >
+                <X size={20} />
+              </button>
+              
+              {/* Contenido del modal - No mostramos shorts de YouTube aquí */}
+              <div className="w-full h-full">
+                {selectedItem.type === 'image' ? (
+                  <img 
+                    src={selectedItem.src} 
+                    alt={selectedItem.alt || 'Imagen'} 
+                    className="w-full h-full object-contain"
+                  />
+                ) : selectedItem.type === 'video' && !isYouTubeShortUrl(selectedItem.src) ? (
+                  isYouTubeUrl(selectedItem.src) ? (
+                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                      <iframe
+                        className="absolute top-0 left-0 w-full h-full"
+                        src={getYouTubeEmbedUrl(selectedItem.src)}
+                        title={selectedItem.title || 'Video'}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : isVimeoUrl(selectedItem.src) ? (
+                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                      <iframe
+                        className="absolute top-0 left-0 w-full h-full"
+                        src={getVimeoEmbedUrl(selectedItem.src)}
+                        title={selectedItem.title || 'Video'}
+                        frameBorder="0"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                      <video
+                        className="absolute top-0 left-0 w-full h-full"
+                        controls
+                        autoPlay={isPlaying}
+                        playsInline
+                      >
+                        <source src={selectedItem.src} type="video/mp4" />
+                        <source src={selectedItem.src} type="video/webm" />
+                        Tu navegador no soporta video HTML5.
+                      </video>
+                    </div>
+                  )
+                ) : null}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-export default BentoGrid;
+export default MasonryGallery;
