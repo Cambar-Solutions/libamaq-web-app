@@ -1,12 +1,18 @@
 // src/components/ui/StepperDemo.jsx
 import React from "react";
+import { FaBusinessTime  } from "react-icons/fa";
+import { PiSealCheckFill } from "react-icons/pi";
+import { FaTruckFast } from "react-icons/fa6";
+import { LuPackageCheck } from "react-icons/lu";
+
+
 
 // Definición de los pasos del seguimiento de pedido
 const steps = [
-  { id: "pending", title: "Pendiente", icon: "⏱️", description: "Tu pedido está siendo procesado" },
-  { id: "confirmed", title: "Confirmado", icon: "✅", description: "Tu pedido ha sido confirmado" },
-  { id: "shipping", title: "En camino", icon: "🚚", description: "Tu pedido está en camino" },
-  { id: "delivered", title: "Entregado", icon: "📦", description: "Tu pedido ha sido entregado" }
+  { id: "pending", title: "Pendiente", icon: <FaBusinessTime />, description: "Tu pedido está siendo procesado" },
+  { id: "confirmed", title: "Confirmado", icon: <PiSealCheckFill />, description: "Tu pedido ha sido confirmado" },
+  { id: "shipping", title: "En camino", icon: <FaTruckFast />, description: "Tu pedido está en camino" },
+  { id: "delivered", title: "Entregado", icon: <LuPackageCheck />, description: "Tu pedido ha sido entregado" }
 ];
 
 // Componente para renderizar cada paso (siempre vertical en el modal, horizontal/vertical en la vista principal)

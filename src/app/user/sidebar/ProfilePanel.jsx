@@ -12,6 +12,8 @@ import {
     Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
+import { Eye, EyeOff } from 'lucide-react';
+
 
 export default function ProfilePanel() {
     const navigate = useNavigate();
@@ -19,6 +21,8 @@ export default function ProfilePanel() {
 
     const [newName, setNewName] = useState("");
     const [newEmail, setNewEmail] = useState("");
+    const [showCurrent, setShowCurrent] = useState(false);
+    const [showNew, setShowNew] = useState(false);
     const [newPassword, setNewPassword] = useState("");
 
     const currentName = "Jonathan";
@@ -33,7 +37,7 @@ export default function ProfilePanel() {
     return (
         <>
             <div className="w-full bg-neutral-100 min-h-screen pb-10 pt-1">
-                <div className="justify-items-center px-4 mt-32 sticky top-16 z-10 mb-6 p-4">
+                <div className="justify-items-center px-4 mt-32 top-16 z-10 mb-6 p-4">
                     <div className="flex bg-blue-800/80 p-4 rounded-full w-30 h-30 items-center justify-center shadow-md">
                         <GrUserWorker size={80} className="text-white" />
                     </div>
@@ -51,7 +55,8 @@ export default function ProfilePanel() {
                 </div>
 
                 {/* === Sección con animación === */}
-                <div className="max-w-5xl mx-auto mt-3 sticky top-16 z-10">
+                <div className="flex-1 overflow-y-auto max-w-5xl mx-auto mt-3  top-16 z-10"
+                >
                     <AnimatePresence mode="wait" initial={false}>
                         {!editing ? (
                             <motion.div
@@ -114,7 +119,7 @@ export default function ProfilePanel() {
                                             </div>
                                         </div>
                                         <DialogFooter>
-                                            <Button className="bg-blue-600 hover:bg-blue-700">Guardar</Button>
+                                            <Button className="cursor-pointer bg-blue-600 hover:bg-blue-700">Guardar</Button>
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
@@ -186,24 +191,24 @@ export default function ProfilePanel() {
                                 animate="animate"
                                 exit="exit"
                                 transition={{ duration: 0.3 }}
-                                className="h-full relative flex flex-col w-full shadow-md rounded-lg bg-stone-50 p-6"
+                                className="h-full relative flex flex-col w-full rounded-lg  p-6"
                             >
                                 {/* Botón volver en form */}
                                 <button
                                     onClick={() => setEditing(false)}
-                                    className="absolute top-3 left-3 p-1 hover:bg-stone-100 rounded-full"
+                                    className="cursor-pointer absolute top-3 left-3 p-1 hover:bg-stone-200 rounded-full"
                                     aria-label="Volver"
                                 >
                                     <ArrowLeft size={18} className="text-gray-600" />
                                 </button>
 
-                                <h2 className="text-2xl font-semibold text-center mb-4">Editar Perfil</h2>
+                                <h2 className="text-2xl font-semibold text-center mb-4 text-gray-500">Editar Perfil</h2>
 
                                 <div className="space-y-4">
                                     {/* Nombre */}
-                                    <div className="flex flex-col">
-                                        <Label className="text-sm text-gray-600 mb-1">Nombre actual:</Label>
-                                        <span className="font-medium">{currentName}</span>
+                                    <div className="flex flex-col bg-white p-5 rounded-lg leading-none">
+                                        <Label className="text-sm text-gray-600 mb-1 ">Nombre actual:</Label>
+                                        <span className="font-medium mb-3">{currentName}</span>
                                         <Label className="text-sm text-gray-600 mt-2 mb-1">Nombre nuevo:</Label>
                                         <Input
                                             value={newName}
@@ -212,9 +217,9 @@ export default function ProfilePanel() {
                                         />
                                     </div>
                                     {/* Correo */}
-                                    <div className="flex flex-col">
+                                    <div className="flex flex-col bg-white p-5 rounded-lg leading-none">
                                         <Label className="text-sm text-gray-600 mb-1">Correo actual:</Label>
-                                        <span className="font-medium">{currentEmail}</span>
+                                        <span className="font-medium mb-3">{currentEmail}</span>
                                         <Label className="text-sm text-gray-600 mt-2 mb-1">Correo nuevo:</Label>
                                         <Input
                                             type="email"
@@ -224,29 +229,54 @@ export default function ProfilePanel() {
                                         />
                                     </div>
                                     {/* Contraseña */}
-                                    <div className="flex flex-col">
-                                        <Label className="text-sm text-gray-600 mb-1">Contraseña actual:</Label>
-                                        <Input type="password" placeholder="••••••••" disabled />
-                                        <Label className="text-sm text-gray-600 mt-2 mb-1">Contraseña nueva:</Label>
-                                        <Input
-                                            type="password"
-                                            value={newPassword}
-                                            onChange={(e) => setNewPassword(e.target.value)}
-                                            placeholder="Ingresa la nueva contraseña"
-                                        />
+                                    <div className="flex flex-col bg-white p-5 rounded-lg leading-none space-y-4">
+                                        {/* Contraseña actual */}
+                                        <div className="relative">
+                                            <Label className="text-sm text-gray-600 mb-1">Contraseña actual:</Label>
+                                            <Input
+                                                type={showCurrent ? "text" : "password"}
+                                                placeholder="dawdwadaw"
+                                                disabled
+                                                className="pr-10 mb-3"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowCurrent(v => !v)}
+                                                className="absolute inset-y-0 right-3 flex items-center pt-3 text-gray-500 hover:text-gray-700"
+                                                aria-label={showCurrent ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                            >
+                                                {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+
+                                        {/* Contraseña nueva */}
+                                        <div className="relative">
+                                            <Label className="text-sm text-gray-600 mb-1">Contraseña nueva:</Label>
+                                            <Input
+                                                type={showNew ? "text" : "password"}
+                                                value={newPassword}
+                                                onChange={e => setNewPassword(e.target.value)}
+                                                placeholder="Ingresa la nueva contraseña"
+                                                className="pr-10"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowNew(v => !v)}
+                                                className="absolute inset-y-0 right-3 flex items-center pt-6 text-gray-500 hover:text-gray-700"
+                                                aria-label={showNew ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                            >
+                                                {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div className="flex justify-end space-x-3 mt-6">
-                                    <Button variant="secondary" onClick={() => setEditing(false)}>
+                                    <Button onClick={() => setEditing(false)} className="">
                                         Cancelar
                                     </Button>
-                                    <Button
-                                        onClick={() => {
-                                            /* lógica de guardado */
-                                            setEditing(false);
-                                        }}
-                                    >
+                                    <Button onClick={() => { setEditing(false); }}
+                                        className="cursor-pointer bg-blue-600 hover:bg-blue-700">
                                         Guardar
                                     </Button>
                                 </div>

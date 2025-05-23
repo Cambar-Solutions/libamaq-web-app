@@ -94,7 +94,7 @@ export default function OrderPanel() {
                                         </div>
                                     </div>
                                 </DialogTrigger>
-                                <DialogContent className="sm:max-w-[450px] max-h-[90vh] overflow-y-auto">
+                                <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
                                     <DialogHeader>
                                         <DialogTitle><h2 className="text-xl sm:text-2xl font-semibold">{prod.name}</h2></DialogTitle>
                                         <DialogDescription>
@@ -137,8 +137,7 @@ export default function OrderPanel() {
                                         </div>
                                     </div>
                                     
-                                    <DialogFooter className="mt-6">
-                                        <Button variant="outline" className="w-full">Ver detalles completos</Button>
+                                    <DialogFooter className="">
                                     </DialogFooter>
                                 </DialogContent>
                             </Dialog>

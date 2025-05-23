@@ -145,7 +145,7 @@ export default function CarPanel() {
                     })}
                 </div>
 
-                <div className="w-[20%] mx-10 px-4 mt-32 sticky top-16 z-10 bg-yellow-50 shadow-md rounded-lg mb-6 p-3">
+                <div className="w-[20%] mx-10 px-4 mt-32 sticky top-16 z-10 bg-white shadow-md rounded-lg mb-6 p-3">
                     <h1 className="text-lg text-gray-800 mb-4">Resumen de la compra</h1>
                     {anySelected ? (
                         <div>
