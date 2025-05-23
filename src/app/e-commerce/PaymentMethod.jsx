@@ -176,7 +176,7 @@ export default function PaymentMethod() {
 
                                                     {/* Columna 2: Texto y botones */}
                                                     <div className="flex flex-col items-center">
-                                                        <h3 className="text-xl font-medium mb-6 text-center">
+                                                        <h3 className="text-2xl font-medium mb-6 text-center">
                                                             Selecciona el método de pago de tu preferencia
                                                         </h3>
 
@@ -201,52 +201,61 @@ export default function PaymentMethod() {
 
                                             ) : shippingOption === "tienda" ? (
                                                 // Vista de "Recoger en tienda"
-                                                <div className="relative flex flex-col items-center">
+                                                <div className="relative w-full h-[70vh] justify-items-center">
                                                     <button
                                                         onClick={goBack}
-                                                        className="absolute top-0 left-2 p-2 rounded-full bg-white shadow hover:bg-gray-100 transition"
+                                                        className="cursor-pointer absolute top-2 left-2 p-2 rounded-full bg-white shadow hover:bg-gray-100 transition"
                                                         aria-label="Volver"
                                                     >
                                                         <ChevronLeft size={20} className="text-gray-600" />
                                                     </button>
 
-                                                    <h3 className="text-xl font-medium mb-8">Selecciona una sucursal</h3>
-
-                                                    <div className="w-[90%] grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                                    <h3 className="text-2xl font-medium  pt-[2em]">Selecciona sucursal</h3>
+                                                    <p className="text-gray-500 mb-8">Escoge la sucursal más cercana</p>
+                                                    <div className="w-[90%] h-[65%] grid grid-cols-1 sm:grid-cols-2 gap-8">
                                                         {/* Card Jiutepec */}
                                                         <button
-                                                            onClick={() => { setSelectedLocation(location.loc1); goTo("efectivo") }}
-                                                            className="cursor-pointer h-full flex flex-col items-center bg-white shadow rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                                                            onClick={() => { setSelectedLocation(location.loc1); goTo("efectivo"); }}
+                                                            className="group relative w-full h-full cursor-pointer overflow-hidden rounded-lg shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl"
                                                         >
-                                                            <div className="w-full h-48 overflow-hidden">
-                                                                <img
-                                                                    src="libamaqJiute.png"
-                                                                    alt="Sucursal Jiutepec"
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                            </div>
-                                                            <div className="p-4">
-                                                                <span className="flex items-center text-lg font-medium text-gray-800">
+                                                            {/* Imagen de fondo */}
+                                                            <img
+                                                                src="libamaqJiute.png"
+                                                                alt="Sucursal Jiutepec"
+                                                                className="w-full h-full object-cover"
+                                                            />
+
+                                                            {/* Degradado para mejorar legibilidad */}
+                                                            <div className="absolute inset-0 bg-gradient-to-t from-blue-500/50 via-transparent to-transparent" />
+
+                                                            {/* Texto sobre la imagen */}
+                                                            <div className="absolute bottom-4 left-4 right-4 text-white">
+                                                                <span className="flex items-center text-lg font-semibold">
                                                                     <MapPin className="mr-2" /> {location.loc1}
                                                                 </span>
                                                             </div>
                                                         </button>
 
+
                                                         {/* Card Cuautla */}
                                                         <button
-                                                            onClick={() => { setSelectedLocation(location.loc2); goTo("efectivo") }}
-                                                            className="cursor-pointerh-full flex flex-col items-center bg-white shadow rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                                                            onClick={() => { setSelectedLocation(location.loc2); goTo("efectivo"); }}
+                                                            className="group relative w-full h-full cursor-pointer overflow-hidden rounded-lg shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl"
                                                         >
-                                                            <div className="w-full h-48 overflow-hidden">
-                                                                <img
-                                                                    src="libamaqCuatla.png"
-                                                                    alt="Sucursal Cuautla"
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                            </div>
-                                                            <div className="p-4">
-                                                                <span className="flex items-center text-lg font-medium text-gray-800">
-                                                                    <MapPin className="mr-2" /> {location.loc2}
+                                                            {/* Imagen de fondo */}
+                                                            <img
+                                                                src="libamaqCuautla.png"
+                                                                alt="Sucursal Cuautla"
+                                                                className="w-full h-full object-cover"
+                                                            />
+
+                                                            {/* Degradado para mejorar legibilidad */}
+                                                            <div className="absolute inset-0 bg-gradient-to-t from-blue-500/50 via-transparent to-transparent" />
+
+                                                            {/* Texto sobre la imagen */}
+                                                            <div className="absolute bottom-4 left-4 right-4 text-white transition-colors duration-500">
+                                                                <span className="flex items-center text-lg font-semibold">
+                                                                    <MapPin className="mr-2 " /> {location.loc2}
                                                                 </span>
                                                             </div>
                                                         </button>
@@ -257,13 +266,13 @@ export default function PaymentMethod() {
                                                 <div className="relative w-full h-[70vh] mx-auto grid grid-cols-1 md:grid-cols-2 gap-20 items-center p-6">
                                                     <button
                                                         onClick={goBack}
-                                                        className="absolute top-2 left-2 p-2 rounded-full bg-white shadow hover:bg-gray-100 transition"
+                                                        className="group absolute top-2 left-2 p-2 rounded-full bg-white shadow hover:bg-gray-100 transition"
                                                         aria-label="Volver"
                                                     >
                                                         <ChevronLeft size={20} className="text-gray-600" />
                                                     </button>
                                                     <div className="flex flex-col items-center">
-                                                        <h3 className="text-xl font-medium mb-4">¿Quieres cambiar de ubicación?</h3>
+                                                        <h3 className="text-2xl font-medium mb-4">¿Quieres cambiar de ubicación?</h3>
 
                                                         <div className="w-full flex flex-col sm:flex-row justify-center gap-5">
                                                             <Button
@@ -319,16 +328,16 @@ export default function PaymentMethod() {
                                                     </div>
                                                 </div>
                                             ) : shippingOption === "transferencia" ? (
-                                                <div className="relative justify-items-center">
+                                                <div className="relative w-full h-[70vh] justify-items-center">
                                                     <button
                                                         onClick={goBack}
-                                                        className="absolute top-0 left-2 p-2 rounded-full bg-white shadow hover:bg-gray-100 transition"
+                                                        className="cursor-pointer absolute top-2 left-2 p-2 rounded-full bg-white shadow hover:bg-gray-100 transition"
                                                         aria-label="Volver"
                                                     >
                                                         <ChevronLeft size={20} className="text-gray-600" />
                                                     </button>
 
-                                                    <h3 className="text-2xl font-medium">Transferencia</h3>
+                                                    <h3 className="text-2xl font-medium pt-[3em]">Transferencia</h3>
                                                     <div className="w-[90%] mx-auto mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4 px-4">
                                                         {/* Card 1 */}
                                                         <div className="bg-gray-50 p-4 rounded-2xl shadow-sm">
@@ -362,17 +371,17 @@ export default function PaymentMethod() {
                                                     </div>
                                                 </div>
                                             ) : shippingOption === "efectivo" ? (
-                                                <div className="relative justify-items-center">
+                                                <div className="relative w-full h-[70vh] justify-items-center">
                                                     <button
                                                         onClick={goBack}
-                                                        className="absolute top-0 left-2 p-2 rounded-full bg-white shadow hover:bg-gray-100 transition"
+                                                        className="cursor-pointer absolute top-2 left-2 p-2 rounded-full bg-white shadow hover:bg-gray-100 transition"
                                                         aria-label="Volver"
                                                     >
                                                         <ChevronLeft size={20} className="text-gray-600" />
                                                     </button>
 
-                                                    <h3 className="text-2xl font-medium">Pago en Efectivo</h3>
-                                                    <p className="text-gray-500">Información de la compra</p>
+                                                    <h3 className="text-2xl font-medium pt-[3em]">Historial de la compra</h3>
+                                                    <p className="text-gray-500">Acude a la sucursal para realizar el pago de los productos</p>
                                                     <div className="w-[90%] mx-auto mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4 px-4">
                                                         <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-1">
                                                             <dt className="text-sm font-medium text-gray-600">Número de pedido</dt>
@@ -387,8 +396,6 @@ export default function PaymentMethod() {
                                                             <dt className="text-sm font-medium text-gray-600">Precio del Producto</dt>
                                                             <dd className="mt-1 text-gray-900">$14,500</dd>
                                                         </div>
-
-
 
                                                         {/* Última card ocupa todo el ancho en sm+ */}
                                                         <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-2">

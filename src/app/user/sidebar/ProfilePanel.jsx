@@ -37,7 +37,7 @@ export default function ProfilePanel() {
                     <div className="flex bg-blue-800/80 p-4 rounded-full w-30 h-30 items-center justify-center shadow-md">
                         <GrUserWorker size={80} className="text-white" />
                     </div>
-                    <div className="relative flex flex-col bg-stone-50 mt-5 w-[30%] text-center rounded-2xl shadow-sm p-4">
+                    <div className="relative flex flex-col bg-white mt-5 w-[30%] text-center rounded-2xl shadow-sm p-4">
                         <button
                             onClick={() => setEditing(true)}
                             className="absolute top-2 right-2 p-1 hover:bg-stone-100 rounded-full cursor-pointer"
@@ -70,7 +70,7 @@ export default function ProfilePanel() {
                                             <div className="flex items-center space-x-4">
                                                 <MapPin className="w-8 h-8 ml-5 text-blue-500" />
                                                 <div>
-                                                    <h3 className="font-medium text-gray-800 text-lg">Direcciones</h3>
+                                                    <h3 className="font-medium text-gray-800 text-lg text-start">Direcciones</h3>
                                                     <p className="text-sm text-gray-500">
                                                         Agrega y administra tus direcciones de envío
                                                     </p>
