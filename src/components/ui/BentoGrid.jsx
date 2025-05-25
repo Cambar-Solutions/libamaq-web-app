@@ -513,7 +513,7 @@ const MasonryGallery = () => {
   }, []);
 
   return (
-    <div className="w-full py-12 bg-gradient-to-t from-slate-100 to-slate-300">
+    <div className="w-full py-12 bg-gradient-to-t from-gray-50 to-gray-100">
       <div className="container mx-auto px-4">
         <h2 className="text-3xl font-bold text-slate-800 mb-4 text-center">Contenido Multimedia</h2>
         <p className="text-slate-600 text-center mb-8">Explora nuestros videos, shorts e imágenes</p>
@@ -523,19 +523,19 @@ const MasonryGallery = () => {
           <div className="flex flex-wrap justify-center gap-2 bg-white/70 backdrop-blur-sm p-2 rounded-full">
             <button 
               onClick={() => handleFilterChange('all')} 
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filter === 'all' ? 'bg-blue-600 text-white' : 'text-black hover:bg-blue-700/40'}`}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filter === 'all' ? 'bg-blue-600 text-white' : 'text-black hover:bg-blue-200/40'}`}
             >
               Todos
             </button>
             <button 
               onClick={() => handleFilterChange('video')} 
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filter === 'video' ? 'bg-blue-600 text-white' : 'text-black hover:bg-blue-700/40'}`}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filter === 'video' ? 'bg-blue-600 text-white' : 'text-black hover:bg-blue-200/40'}`}
             >
               Videos
             </button>
             <button 
               onClick={() => handleFilterChange('image')} 
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filter === 'image' ? 'bg-blue-600 text-white' : 'text-black hover:bg-blue-700/40'}`}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filter === 'image' ? 'bg-blue-600 text-white' : 'text-black hover:bg-blue-200/40'}`}
             >
               Imágenes
             </button>

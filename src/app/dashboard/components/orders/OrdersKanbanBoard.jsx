@@ -52,7 +52,7 @@ const OrdersKanbanBoard = ({ orders }) => {
   // porque ahora lo maneja el componente padre con el DndContext unificado
 
   return (
-    <div className="w-full">
+    <div className="">
       <h2 className="text-2xl font-bold mb-4">Tablero de Pedidos</h2>
       
       {/* Ya no necesitamos el DndContext aquí */}

@@ -747,9 +747,9 @@ export function ContentView() {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-gradient-to-b from-gray-100 to-blue-300 rounded-2xl min-h-[100dvh] text-sm md:text-base">
+    <div className="flex flex-col gap-4 p-4 bg-gradient-to-b from-gray-100 to-blue-300 rounded-2xl min-h-[100dvh] h-full text-sm md:text-base">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between rounded shadow p-4 bg-white">
-        <div>
+        <div >
           <h1 className="text-xl md:text-2xl font-semibold select-none">
             En esta sección se puede agregar contenido multimedia
           </h1>
@@ -778,14 +778,14 @@ export function ContentView() {
       </div>
 
 
-      <div className="border border-gray-200 rounded p-4 mt-5 bg-gradient-to-b from-gray-100 to-blue-100 shadow-md">
+      <div className="border border-gray-200 rounded p-4 mt-5 bg-gradient-to-b from-gray-100 to-blue-100 shadow-md flex-1 min-h-[calc(100vh-200px)]">
         <Tabs defaultValue="multimedia">
           <TabsList className="grid grid-cols-3 gap-2 bg-white">
             <TabsTrigger
               className="cursor-pointer
       transition-colors
        hover:bg-blue-100
-      data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:underline-offset-2"
+      data-[state=active]:bg-blue-500 data-[state=active]:text-white "
               value="multimedia"
             >
               Tik toks
@@ -794,7 +794,7 @@ export function ContentView() {
               className="cursor-pointer
       transition-colors
        hover:bg-blue-100
-      data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:underline-offset-3"
+      data-[state=active]:bg-blue-500 data-[state=active]:text-white"
               value="images"
             >
               Imagenes
@@ -803,15 +803,15 @@ export function ContentView() {
               className="cursor-pointer
       transition-colors
        hover:bg-blue-100
-      data-[state=active]:underline data-[state=active]:decoration-blue-500 data-[state=active]:text-blue-500 data-[state=active]:underline-offset-2"
+      data-[state=active]:bg-blue-500 data-[state=active]:text-white"
               value="facebook"
             >
               Videos
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="multimedia">
-            <Card>
+          <TabsContent value="multimedia" className="h-full min-h-[calc(100vh-300px)]">
+            <Card className="h-full flex flex-col min-h-full">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-10 gap-5">
                 <div className="flex gap-3 items-center">
                   <img src="/logo_Tiktok.png" className="w-12" />
@@ -926,9 +926,9 @@ export function ContentView() {
                 </Dialog>
               </div>
 
-              <section className="w-full h-full pb-4">
+              <section className="w-full min-h-[calc(100vh-200px)] pb-4">
                 {loadingLandings ? (
-                  <div className="flex justify-center items-center h-40">
+                  <div className="flex justify-center items-center ">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
                   </div>
                 ) : landingsError ? (
@@ -938,10 +938,10 @@ export function ContentView() {
                     No hay TikToks disponibles. ¡Agrega uno nuevo!
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center gap-4 w-full">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full p-4">
                     {landings.map((landing) => (
-                      <div key={landing.id} className="bg-gradient-to-l from-red-500 to-blue-500 p-2 rounded-2xl w-full max-w-[300px] mt-4">
-                        <Card className="p-3 md:p-5 relative group h-[220px] flex flex-col">
+                      <div key={landing.id} className="bg-gradient-to-l from-red-500 to-blue-500 p-2 rounded-2xl w-full h-full">
+                        <Card className="p-3 md:p-5 relative group h-full flex flex-col min-h-[250px]">
                           <div className="absolute top-2 right-2 flex gap-2 transition-opacity">
                             <Button
                               size="icon"
@@ -1148,8 +1148,8 @@ export function ContentView() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="images">
-            <Card>
+          <TabsContent value="images" className="h-full min-h-[calc(100vh-300px)]">
+            <Card className="h-full flex flex-col min-h-full">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-10 gap-5">
                 <div className="flex gap-3 items-center">
                   <ImageIcon className="w-12 h-12" />
@@ -1281,7 +1281,7 @@ export function ContentView() {
                 </Dialog>
               </div>
 
-              <section className="w-full h-full pb-4">
+              <section className="w-full min-h-[calc(100vh-200px)] pb-4">
                 {loadingImages ? (
                   <div className="flex justify-center items-center p-10">
                     <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
@@ -1517,8 +1517,8 @@ export function ContentView() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="facebook">
-            <Card>
+          <TabsContent value="facebook" className="h-full min-h-[calc(100vh-300px)]">
+            <Card className="h-full flex flex-col min-h-full">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-10 gap-5">
                 <div className="flex gap-3 items-center">
                   <FileVideo2 className="w-12 h-12" />
@@ -1660,7 +1660,7 @@ export function ContentView() {
                 </Dialog>
               </div>
 
-              <section className="w-full h-full pb-4">
+              <section className="w-full min-h-[calc(100vh-200px)] pb-4">
                 {loadingVideos ? (
                   <div className="flex justify-center items-center p-10">
                     <Loader2 className="h-10 w-10 animate-spin text-blue-500" />

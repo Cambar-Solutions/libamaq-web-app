@@ -82,7 +82,7 @@ const TikTokGallery = () => {
   });
 
   return (
-    <section className="py-12 bg-gray-50">
+    <section className="py-12 bg-gray-100">
       <div className="max-w-6xl mx-auto px-4">
         <h2 className="text-3xl font-bold mb-8 select-none">TikToks Destacados</h2>
 

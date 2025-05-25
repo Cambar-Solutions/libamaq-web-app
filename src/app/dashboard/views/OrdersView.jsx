@@ -14,12 +14,18 @@ import { OrderDetailDialogs } from "../components/orders/OrderDetailDialogs";
 import { orderData } from "../data/orderData";
 
 export function OrdersView() {
-  const [orders, setOrders] = useState(orderData);
+  const [orders, setOrders] = useState(orderData); // Esta es tu lista completa de pedidos
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilters, setActiveFilters] = useState({});
+  // Eliminamos searchQuery, ya que vendrá de activeFilters
+  const [activeFilters, setActiveFilters] = useState({
+    search: undefined, // Inicializamos search como undefined
+    type: null,
+    payment: null,
+    status: null, // El filtro de estado global, si es necesario además del Kanban
+    period: 'todos'
+  });
   const [viewMode, setViewMode] = useState("kanban"); // kanban o tabla
   
   // Detectamos si estamos en móvil
@@ -39,26 +45,78 @@ export function OrdersView() {
 
   // Filtrar pedidos según los filtros activos
   const filteredOrders = orders.filter(order => {
-    // Filtro por búsqueda
-    if (searchQuery && !(
-      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.cliente.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.producto.toLowerCase().includes(searchQuery.toLowerCase())
-    )) {
-      return false;
+    let passesFilters = true;
+
+    // 1. Filtro por búsqueda (search ya viene con la lógica de >= 2 caracteres o undefined)
+    if (activeFilters.search) {
+      const searchTermLower = activeFilters.search.toLowerCase();
+      const searchInId = order.id?.toString().toLowerCase().includes(searchTermLower);
+      // Asumo que 'cliente' es un string con el nombre. Si es un objeto, ajusta el acceso.
+      const searchInCliente = order.cliente?.toLowerCase().includes(searchTermLower);
+      // Asumo que 'producto' es un string. Si es una lista de productos, necesitarás iterar.
+      const searchInProducto = order.producto?.toLowerCase().includes(searchTermLower);
+      // Puedes añadir más campos aquí, por ejemplo:
+      // const searchInNotes = order.notes?.toLowerCase().includes(searchTermLower);
+
+      if (!(searchInId || searchInCliente || searchInProducto)) {
+        passesFilters = false;
+      }
     }
     
-    // Filtro por tipo (compra/renta)
-    if (activeFilters.tipo && order.tipo.toLowerCase() !== activeFilters.tipo.toLowerCase()) {
-      return false;
+    // 2. Filtro por tipo (ej. 'renta', 'compra')
+    if (passesFilters && activeFilters.type) {
+      if (order.tipo?.toLowerCase() !== activeFilters.type.toLowerCase()) {
+        passesFilters = false;
+      }
     }
     
-    // Filtro por estado
-    if (activeFilters.estado && order.estado.toLowerCase() !== activeFilters.estado.toLowerCase()) {
-      return false;
+    // 3. Filtro por método de pago (ej. 'efectivo', 'transferencia')
+    // Asumo que tienes un campo como 'metodoPago' en tu orderData
+    if (passesFilters && activeFilters.payment) {
+      if (order.metodoPago?.toLowerCase() !== activeFilters.payment.toLowerCase()) {
+        passesFilters = false;
+      }
+    }
+
+    // 4. Filtro por estado global (si es necesario además de las columnas Kanban)
+    // El estado de la orden (order.estado) ya se usa para las columnas del Kanban.
+    // Si OrdersFilters también puede filtrar por estado de forma global, aquí iría la lógica.
+    // Por ejemplo, si FILTER_OPTIONS en OrdersFilters tiene 'status' y lo usas:
+    if (passesFilters && activeFilters.status) {
+      if (order.estado?.toLowerCase() !== activeFilters.status.toLowerCase()) {
+        passesFilters = false;
+      }
+    }
+
+    // 5. Filtro por período (requiere lógica de fechas más compleja)
+    // Ejemplo conceptual (necesitarás adaptar esto con librerías de fechas si es necesario):
+    if (passesFilters && activeFilters.period && activeFilters.period !== 'todos') {
+      const orderDate = new Date(order.fecha); // Asume que 'order.fecha' existe y es parseable
+      const today = new Date();
+      let startDate, endDate = new Date(today);
+
+      if (activeFilters.period === 'hoy') {
+        startDate = new Date(today.setHours(0,0,0,0));
+        endDate = new Date(today.setHours(23,59,59,999));
+      } else if (activeFilters.period === 'semana') {
+        const firstDayOfWeek = today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1); // Lunes como primer día
+        startDate = new Date(today.setDate(firstDayOfWeek));
+        startDate.setHours(0,0,0,0);
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+        endDate.setHours(23,59,59,999);
+      } else if (activeFilters.period === 'mes') {
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        endDate.setHours(23,59,59,999);
+      }
+      
+      if (startDate && !(orderDate >= startDate && orderDate <= endDate)) {
+        passesFilters = false;
+      }
     }
     
-    return true;
+    return passesFilters;
   });
 
   const handleOrderClick = (order) => {
@@ -131,7 +189,7 @@ export function OrdersView() {
   };
 
   return (
-    <div className="container mx-auto py-4 px-4 md:px-6">
+    <div className="container mx-auto py-4 px-2 md:px-4 w-full">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <h1 className="text-2xl md:text-3xl font-bold">Gestión de Pedidos</h1>
         

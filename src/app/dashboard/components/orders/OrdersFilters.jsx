@@ -36,7 +36,7 @@ export const OrdersFilters = ({ onFilterChange }) => {
   // Handler for explicit search (button click or Enter)
   const handleSearchExecute = (currentSearchText) => {
     onFilterChange?.({
-      search: currentSearchText || undefined,
+      search: currentSearchText && currentSearchText.length >= 2 ? currentSearchText : undefined,
       ...filters
     });
   };
@@ -47,7 +47,7 @@ export const OrdersFilters = ({ onFilterChange }) => {
     // An explicit search via button/Enter calls onFilterChange immediately via handleSearchExecute.
     const timer = setTimeout(() => {
       onFilterChange?.({
-        search: searchTerm || undefined,
+        search: searchTerm && searchTerm.length >= 2 ? searchTerm : undefined,
         ...filters
       });
     }, 300);
@@ -73,7 +73,7 @@ export const OrdersFilters = ({ onFilterChange }) => {
   };
 
   const activeFiltersCount = [
-    searchTerm ? 1 : 0,
+    // searchTerm ? 1 : 0, // Excluido del conteo de filtros activos
     filters.type ? 1 : 0,
     filters.payment ? 1 : 0,
     filters.status ? 1 : 0,
@@ -201,17 +201,7 @@ export const OrdersFilters = ({ onFilterChange }) => {
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-gray-500 mr-1">Filtros activos:</span>
             
-            {searchTerm && (
-              <Badge className="flex items-center gap-1 bg-white border">
-                Búsqueda: "{searchTerm}"
-                <button 
-                  onClick={() => setSearchTerm('')}
-                  className="ml-1 text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            )}
+            {/* searchTerm ya no se muestra como un badge de filtro activo aquí */}
             
             {Object.entries(filters).map(([key, value]) => {
               if (!value || value === 'todos') return null;
