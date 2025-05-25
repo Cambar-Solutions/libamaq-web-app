@@ -89,14 +89,24 @@ export const useUpdateLanding = () => {
   
   return useMutation({
     mutationFn: updateLanding,
-    onSuccess: () => {
-      toast.success('Contenido actualizado correctamente');
-      // Invalidar consultas para refrescar los datos
+    onSuccess: (data, variables) => {
+      console.log('Landing actualizado con éxito:', data);
+      console.log('Variables utilizadas:', variables);
+      
+      // Invalidar todas las consultas relacionadas con landings para asegurar que los datos se actualicen
+      queryClient.invalidateQueries({ queryKey: ['landings', 'active'] });
       queryClient.invalidateQueries({ queryKey: ['landings'] });
+      
+      // Si tenemos el ID del landing actualizado, también invalidamos esa consulta específica
+      if (variables && variables.id) {
+        queryClient.invalidateQueries({ queryKey: ['landings', variables.id] });
+      }
+      
+      // No mostramos toast aquí porque ya lo manejamos en el componente
     },
     onError: (error) => {
       console.error('Error al actualizar landing:', error);
-      toast.error(`Error al actualizar el contenido: ${error.message || 'Error desconocido'}`);
+      // No mostramos toast aquí porque ya lo manejamos en el componente
     }
   });
 };

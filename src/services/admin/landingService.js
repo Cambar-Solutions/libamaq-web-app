@@ -117,8 +117,26 @@ export const updateLanding = async (landingData) => {
   try {
     console.log(`Actualizando landing con ID ${landingData.id}:`, landingData);
     
+    // Crear un objeto con solo los campos necesarios
+    const payload = {
+      id: Number(landingData.id), // Convertir a número para cumplir con las restricciones del backend
+      title: landingData.title,
+      description: landingData.description || "",
+      type: landingData.type || "PROMOTION",
+      status: landingData.status || "ACTIVE",
+      url: landingData.url
+    };
+    
+    console.log('Enviando payload de actualización:', payload);
+    
     // Usar exactamente la misma ruta que funciona en Postman
-    const { data } = await apiClient.put(`/l/landing`, landingData);
+    const { data } = await apiClient.put(`/l/landing`, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+    
     console.log('Respuesta de actualización:', data);
     return data.result || data;
   } catch (error) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { toast } from "sonner";
+import toast, { Toaster } from "react-hot-toast";
 import {
   FileVideo2,
   Trash2,
@@ -211,10 +211,7 @@ export function ContentView() {
   const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false);
   const videoFileInputRef = useRef(null);
 
-  // Estados para diálogo de confirmación
-  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-  const [itemToUpdate, setItemToUpdate] = useState(null);
-  const [updateType, setUpdateType] = useState(""); // "TIKTOK", "IMAGE", "VIDEO"
+  // Ya no necesitamos estados para diálogo de confirmación
 
   // Estados para videos
   const [videos, setVideos] = useState([]);
@@ -243,18 +240,25 @@ export function ContentView() {
     refetchLandings();
   };
 
-  // Función para recargar todos los datos
+  // Función para recargar todos los datos usando Tanstack Query
   const loadAllContent = () => {
+    // Utilizar refetchLandings de Tanstack Query
     refetchLandings();
+    
+    // También recargar imágenes y videos
     loadImages();
     loadVideos();
+    
+    console.log('Recargando todos los datos con Tanstack Query');
   };
   
   // Actualizar imágenes y videos cuando cambian los landings
   useEffect(() => {
     if (allLandingItems && allLandingItems.length > 0) {
+      // Cargar imágenes y videos cuando cambian los landings
       loadImages();
       loadVideos();
+      console.log('Landings actualizados, recargando imágenes y videos');
     }
   }, [allLandingItems]);
 
@@ -352,69 +356,71 @@ export function ContentView() {
     setIsDialogOpen(true);
   };
 
-  // Función para preparar la actualización y mostrar el diálogo de confirmación
-  const prepareUpdate = (item, type) => {
-    setItemToUpdate(item);
-    setUpdateType(type);
-    setIsConfirmDialogOpen(true);
-  };
-
-  // Función para confirmar y realizar la actualización
-  const confirmUpdate = async () => {
+  // Función para actualizar directamente sin diálogo de confirmación
+  const updateContent = (item, type) => {
     try {
-      if (!itemToUpdate) return;
-
       // Preparar los datos para la actualización
       const updatedData = {
-        id: itemToUpdate.id,
-        title: itemToUpdate.title,
-        description: itemToUpdate.description || "",
-        url: itemToUpdate.url,
-        type: itemToUpdate.type || updateType,
-        status: itemToUpdate.status || "ACTIVE" // Añadir el campo status requerido por la API
+        id: item.id,
+        title: item.title,
+        description: item.description || "",
+        url: item.url,
+        type: item.type || type,
+        status: item.status || "ACTIVE" // Añadir el campo status requerido por la API
       };
 
       console.log("Enviando datos actualizados:", updatedData);
 
-      // Llamar al servicio de actualización
-      const result = await updateLanding(updatedData);
-      console.log("Resultado de la actualización:", result);
-
-      // Recargar los datos según el tipo
-      if (updateType === "TIKTOK") {
-        await loadLandings();
-      } else if (updateType === "IMAGE") {
-        await loadImages();
-      } else if (updateType === "VIDEO") {
-        await loadVideos();
-      }
-
-      // Cerrar el diálogo de confirmación
-      setIsConfirmDialogOpen(false);
-      setItemToUpdate(null);
-
-      // Operación completada con éxito
-      console.log(`${updateType === "TIKTOK" ? "TikTok" : updateType === "IMAGE" ? "Imagen" : "Video"} actualizado correctamente`);
+      // Llamar a la mutación de actualización existente
+      updateLandingMutation.mutate(updatedData, {
+        onSuccess: () => {
+          console.log("Actualización exitosa");
+          
+          // Forzar la recarga de todos los datos para asegurar que la UI se actualice
+          // Esto es importante especialmente para los TikToks
+          refetchLandings();
+          
+          // También recargar los datos específicos según el tipo
+          if (type === "TIKTOK") {
+            // Para TikToks, ya llamamos a refetchLandings arriba
+            // Cerrar el diálogo de edición si está abierto
+            setIsDialogOpen(false);
+          } else if (type === "IMAGE") {
+            loadImages();
+            // Cerrar el diálogo de edición de imágenes si está abierto
+            setIsImageDialogOpen(false);
+          } else if (type === "VIDEO") {
+            loadVideos();
+            // Cerrar el diálogo de edición de videos si está abierto
+            setIsVideoDialogOpen(false);
+          }
+          
+          toast.success(`${type === "TIKTOK" ? "TikTok" : type === "IMAGE" ? "Imagen" : "Video"} actualizado correctamente`);
+        },
+        onError: (error) => {
+          console.error(`Error al actualizar ${type}:`, error);
+          toast.error(`Error al actualizar: ${error.message || 'Error de conexión'}`);
+        }
+      });
     } catch (error) {
-      console.error(`Error al actualizar ${updateType}:`, error);
-      alert(`Error al actualizar: ${error.message || 'Error de conexión'}`);
-      setIsConfirmDialogOpen(false);
+      console.error(`Error al actualizar ${type}:`, error);
+      toast.error(`Error al actualizar: ${error.message || 'Error de conexión'}`);
     }
   };
 
   // Función para guardar los cambios de edición desde el modal (TikTok)
   const handleSaveEdits = (landing) => {
-    prepareUpdate(landing, "TIKTOK");
+    updateContent(landing, "TIKTOK");
   };
 
   // Función para guardar los cambios de edición de imágenes
   const handleSaveImageEdits = (image) => {
-    prepareUpdate(image, "IMAGE");
+    updateContent(image, "IMAGE");
   };
 
   // Función para guardar los cambios de edición de videos
   const handleSaveVideoEdits = (video) => {
-    prepareUpdate(video, "VIDEO");
+    updateContent(video, "VIDEO");
   };
 
   // Resetear formulario
@@ -525,7 +531,7 @@ export function ContentView() {
   // Función para subir el archivo de imagen a Cloudflare
   const handleImageUpload = async () => {
     if (!imageFile) {
-      alert("Debes seleccionar una imagen para subir");
+      toast.error("Debes seleccionar una imagen para subir");
       return;
     }
 
@@ -546,7 +552,7 @@ export function ContentView() {
       return fileUrl;
     } catch (err) {
       console.error("Error al subir imagen:", err);
-      alert(`Error al subir la imagen: ${err.message || 'Error de conexión'}`);
+      toast.error(`Error al subir la imagen: ${err.message || 'Error de conexión'}`);
       return null;
     } finally {
       setUploadingImage(false);
@@ -556,7 +562,7 @@ export function ContentView() {
   // Función para crear una nueva imagen
   const handleCreateImage = async () => {
     if (!imageTitle) {
-      alert("El título de la imagen es obligatorio");
+      toast.error("El título de la imagen es obligatorio");
       return;
     }
 
@@ -569,7 +575,7 @@ export function ContentView() {
         finalImageUrl = await handleImageUpload();
         if (!finalImageUrl) return;
       } else if (!imageUrl) {
-        alert("Debes proporcionar una URL de imagen o subir un archivo");
+        toast.error("Debes proporcionar una URL de imagen o subir un archivo");
         return;
       }
 
@@ -1075,11 +1081,9 @@ export function ContentView() {
                                               // Crear una copia temporal del landing para edición
                                               const updatedLanding = { ...landing };
                                               updatedLanding.title = e.target.value;
-                                              // Actualizar el estado local
-                                              const updatedLandings = landings.map(l =>
-                                                l.id === landing.id ? updatedLanding : l
-                                              );
-                                              setLandings(updatedLandings);
+                                              // No necesitamos actualizar el estado local aquí
+                                              // Solo actualizamos el objeto que vamos a enviar al backend
+                                              landing.title = e.target.value;
                                             }}
                                           />
                                         </div>
@@ -1089,14 +1093,8 @@ export function ContentView() {
                                             id={`edit-description-${landing.id}`}
                                             defaultValue={landing.description}
                                             onChange={(e) => {
-                                              // Crear una copia temporal del landing para edición
-                                              const updatedLanding = { ...landing };
-                                              updatedLanding.description = e.target.value;
-                                              // Actualizar el estado local
-                                              const updatedLandings = landings.map(l =>
-                                                l.id === landing.id ? updatedLanding : l
-                                              );
-                                              setLandings(updatedLandings);
+                                              // Actualizar directamente el objeto landing
+                                              landing.description = e.target.value;
                                             }}
                                           />
                                         </div>
@@ -1106,14 +1104,8 @@ export function ContentView() {
                                             id={`edit-url-${landing.id}`}
                                             defaultValue={landing.url}
                                             onChange={(e) => {
-                                              // Crear una copia temporal del landing para edición
-                                              const updatedLanding = { ...landing };
-                                              updatedLanding.url = e.target.value;
-                                              // Actualizar el estado local
-                                              const updatedLandings = landings.map(l =>
-                                                l.id === landing.id ? updatedLanding : l
-                                              );
-                                              setLandings(updatedLandings);
+                                              // Actualizar directamente el objeto landing
+                                              landing.url = e.target.value;
                                             }}
                                           />
                                         </div>
@@ -1898,25 +1890,36 @@ export function ContentView() {
         </Tabs>
       </div>
 
-      {/* Diálogo de confirmación para actualización */}
-      <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Confirmar actualización</DialogTitle>
-            <DialogDescription>
-              ¿Estás seguro que deseas actualizar este {updateType === "TIKTOK" ? "TikTok" : updateType === "IMAGE" ? "imagen" : "video"}?
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button variant="outline" onClick={() => setIsConfirmDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700" onClick={confirmUpdate}>
-              Confirmar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* El diálogo de confirmación ha sido eliminado para mejorar la experiencia de usuario */}
+      {/* Componente Toaster para mostrar notificaciones */}
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          // Estilos por defecto para todos los toasts
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          // Estilos específicos para toasts de éxito
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10B981',
+              secondary: '#fff',
+            },
+          },
+          // Estilos específicos para toasts de error
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#EF4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
     </div>
   );
 }
