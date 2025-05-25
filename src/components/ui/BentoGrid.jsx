@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getAllActiveLandings } from '../../services/admin/landingService';
 import { Loader2, ExternalLink, Play, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import NoContentCard from './NoContentCard';
 import { motion, AnimatePresence } from 'framer-motion';
+import VideoPlayer from './VideoPlayer';
+import { useVideoStore } from '../../stores/useVideoStore';
 
 // Helpers para detectar y formatear URLs de contenido multimedia
 const isYouTubeUrl = url => {
@@ -74,41 +76,41 @@ const getContentTypeFromUrl = url => {
   return 'unknown';
 };
 
-// Determina el span en el grid según dimensiones reales y tamaño absoluto
-const getSpanForImage = (width, height) => {
-  let col = 1;
-  let row = 1;
-
-  // Primer, imágenes muy pequeñas ocupan al menos 2x2
-  if (width < 800 && height < 800) {
-    col = 1;
-    row = 2;
-  } else {
-    // Verticales ocupan al menos 2 filas
-    if (height > width) row = 3;
-    // Umbrales de ancho para columnas
-    if (width > 1600) {
-      col = 3;
-    } else if (width > 800) {
-      col = 2;
-    }
-    // Umbrales de alto para filas
-    if (height > 1600) {
-      row = Math.max(row, 3);
-    } else if (height > 800) {
-      row = Math.max(row, 2);
-    }
+// Determina el span en el grid según el tipo de contenido
+const getSpanForImage = (width, height, type, src) => {
+  // Para YouTube Shorts, usar un diseño más alto
+  if (type === 'video' && src && src.includes('youtube.com/shorts/')) {
+    return { col: 1, row: 2 }; // 1 columna, 2 filas de alto
   }
   
-  // Asegurar que los shorts de YouTube tengan suficiente espacio vertical
-  if (height > width * 1.5) {
-    row = Math.max(row, 3); // Asignar al menos 3 filas para contenido vertical como shorts
+  // Para videos verticales
+  if (type === 'video' && height > width) {
+    return { col: 1, row: 2 }; // 1 columna, 2 filas de alto
   }
-
-  return {
-    colSpan: `col-span-1 md:col-span-${col}`,
-    rowSpan: `row-span-1 md:row-span-${row}`
-  };
+  
+  // Para videos horizontales
+  if (type === 'video') {
+    return { col: 2, row: 1 }; // 2 columnas, 1 fila de alto
+  }
+  
+  // Para imágenes, mantener la lógica anterior
+  // Imágenes pequeñas ocupan al menos 1x1
+  if (width < 800 && height < 800) {
+    return { col: 1, row: 1 };
+  }
+  
+  // Imágenes verticales ocupan 1 columna x 2 filas
+  if (height > width * 1.2) {
+    return { col: 1, row: 2 };
+  }
+  
+  // Imágenes horizontales ocupan 2 columnas x 1 fila
+  if (width > height * 1.2) {
+    return { col: 2, row: 1 };
+  }
+  
+  // Cuadradas o casi cuadradas ocupan 1x1
+  return { col: 1, row: 1 };
 };
 
 // Renombramos el componente a MasonryGallery para reflejar el nuevo diseño
@@ -334,8 +336,40 @@ const MasonryGallery = () => {
       );
     }
 
-    // El contenido a mostrar es simplemente el mediaContent
-    const displayContent = mediaContent;
+    // Validar que el item exista
+    if (!item) return null;
+    
+    // Usar el nuevo VideoPlayer para el contenido multimedia
+    const displayContent = (
+      <div className="w-full h-full">
+        {item.type === 'video' && isYouTubeUrl(item.src) ? (
+          <VideoPlayer
+            id={item.id}
+            src={getYouTubeEmbedUrl(item.src)}
+            type="youtube"
+            className="rounded-lg"
+          />
+        ) : item.type === 'video' && isVimeoUrl(item.src) ? (
+          <VideoPlayer
+            id={item.id}
+            src={getVimeoEmbedUrl(item.src)}
+            type="vimeo"
+            className="rounded-lg"
+          />
+        ) : item.type === 'video' ? (
+          <VideoPlayer
+            id={item.id}
+            src={item.src}
+            type="video"
+            thumbnail={item.thumbnail}
+            className="rounded-lg"
+            controls
+          />
+        ) : (
+          mediaContent
+        )}
+      </div>
+    );
 
     return (
       <motion.div 
@@ -427,9 +461,13 @@ const MasonryGallery = () => {
   const [filter, setFilter] = useState('all');
   
   // Filtrar elementos según el tipo seleccionado
-  const filteredItems = filter === 'all' 
-    ? mediaItems 
-    : mediaItems.filter(item => item && item.type === filter);
+  const filteredItems = React.useMemo(() => {
+    if (!Array.isArray(mediaItems)) return [];
+    
+    return filter === 'all' 
+      ? mediaItems.filter(item => item && item.id) // Solo items válidos
+      : mediaItems.filter(item => item && item.id && item.type === filter);
+  }, [mediaItems, filter]);
   
   // Variantes para animaciones con Framer Motion
   const containerVariants = {
@@ -458,13 +496,21 @@ const MasonryGallery = () => {
   // Función para cerrar el modal
   const closeModal = () => {
     setSelectedItem(null);
-    setIsPlaying(false);
+    // Limpiar el video que se está reproduciendo al cerrar el modal
+    useVideoStore.getState().clearPlayingVideo();
   };
   
   // Función para verificar si un elemento es un YouTube Short
   const isItemYouTubeShort = (item) => {
     return item && item.type === 'video' && isYouTubeShortUrl(item.src);
   };
+  
+  // Manejar el cambio de filtro para detener cualquier reproducción
+  const handleFilterChange = useCallback((newFilter) => {
+    setFilter(newFilter);
+    // Detener la reproducción al cambiar de filtro
+    useVideoStore.getState().clearPlayingVideo();
+  }, []);
 
   return (
     <div className="w-full py-12 bg-gradient-to-t from-slate-100 to-slate-300">
@@ -476,19 +522,19 @@ const MasonryGallery = () => {
         <div className="flex justify-center mb-10">
           <div className="flex flex-wrap justify-center gap-2 bg-white/70 backdrop-blur-sm p-2 rounded-full">
             <button 
-              onClick={() => setFilter('all')} 
+              onClick={() => handleFilterChange('all')} 
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filter === 'all' ? 'bg-blue-600 text-white' : 'text-black hover:bg-blue-700/40'}`}
             >
               Todos
             </button>
             <button 
-              onClick={() => setFilter('video')} 
+              onClick={() => handleFilterChange('video')} 
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filter === 'video' ? 'bg-blue-600 text-white' : 'text-black hover:bg-blue-700/40'}`}
             >
               Videos
             </button>
             <button 
-              onClick={() => setFilter('image')} 
+              onClick={() => handleFilterChange('image')} 
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${filter === 'image' ? 'bg-blue-600 text-white' : 'text-black hover:bg-blue-700/40'}`}
             >
               Imágenes

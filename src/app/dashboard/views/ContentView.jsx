@@ -1536,20 +1536,20 @@ export function ContentView() {
                     </Button>
                   </DialogTrigger>
 
-                  <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto p-3 md:p-6 md:max-w-[800px] mx-auto">
+                  <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto p-3 md:p-6 md:max-w-[900px] mx-auto">
                     <Card className="border-0 m-2">
                       <CardHeader className="select-none">
                         <CardTitle className="text-2xl font-semibold">
-                          Contenido
+                          Crear Video
                         </CardTitle>
                         <CardDescription>
-                          Llena los campos para agregar tu Video
+                          Ingresa los campos para agregar tu video
                         </CardDescription>
                       </CardHeader>
 
-                      <CardContent className="flex flex-col md:flex-row gap-4 md:gap-10 p-3 md:p-6">
+                      <CardContent className="flex flex-col md:flex-row gap-6 md:gap-10 p-3 md:p-6">
                         {/* IZQUIERDA: campos de entrada */}
-                        <div className="flex-1 space-y-3 md:space-y-6">
+                        <div className="flex-1 space-y-4 md:space-y-6">
                           <div className="space-y-1">
                             <Label htmlFor="video-title">Título</Label>
                             <Input
@@ -1584,7 +1584,7 @@ export function ContentView() {
                             </select>
                           </div>
                           <div className="space-y-1">
-                            <Label htmlFor="video-file">Subir video</Label>
+                            <Label htmlFor="video-file">Subir video (opcional)</Label>
                             <Input
                               id="video-file"
                               type="file"
@@ -1608,24 +1608,38 @@ export function ContentView() {
                         </div>
 
                         {/* DERECHA: vista previa de Video */}
-                        <div className="w-full md:w-1/3 mt-4 md:mt-0 max-h-[300px] md:max-h-none overflow-hidden">
+                        <div className="w-full md:w-3/5 mt-4 md:mt-0 overflow-hidden">
                           {videoUrl ? (
-                            <VideoPlayer
-                              url={videoUrl}
-                              title="Vista previa del video"
-                              className="w-full h-auto object-contain"
-                            />
+                            <div className={`w-full ${videoUrl.includes('youtube.com/shorts/') ? 'max-w-[400px] mx-auto' : ''}`}>
+                              {videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be') ? (
+                                <div className="relative w-full" style={{ 
+                                  paddingBottom: videoUrl.includes('youtube.com/shorts/') ? '177.78%' : '56.25%',
+                                  height: 0
+                                }}>
+                                  <VideoPlayer
+                                    url={videoUrl}
+                                    title="Vista previa del video"
+                                    className="absolute top-0 left-0 w-full h-full"
+                                  />
+                                </div>
+                              ) : (
+                                <VideoPlayer
+                                  url={videoUrl}
+                                  title="Vista previa del video"
+                                  className="w-full min-h-[300px]"
+                                />
+                              )}
+                            </div>
                           ) : (
-                            <div className="flex flex-col items-center justify-center h-full border rounded p-4 text-gray-400 select-none">
-                              <FileVideo2 size={48} className="mb-2" />
-                              <p>Ingresa la URL de un video</p>
+                            <div className="flex flex-col items-center justify-center h-full min-h-[300px] border rounded p-4 text-gray-400 select-none">
+                              <FileVideo2 size={64} className="mb-4" />
+                              <p className="text-center">Ingresa la URL de un video o sube un archivo para ver la vista previa</p>
                             </div>
                           )}
                         </div>
                       </CardContent>
-
+                      
                       <CardFooter className="flex space-x-2 mt-2 md:mt-5 p-3 md:p-6">
-
                         <Button
                           className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
                           onClick={handleCreateVideo}
