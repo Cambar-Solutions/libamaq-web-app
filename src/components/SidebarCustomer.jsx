@@ -43,7 +43,7 @@ const data = {
 export default function SidebarCustomer({ activeKey, onSelect, ...props }) {
   return (
     <Sidebar
-      className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
+      className="pt-4 top-(--header-height) h-[calc(100svh-var(--header-height))]!"
       {...props}>
       <SidebarHeader>
         <SidebarMenu>

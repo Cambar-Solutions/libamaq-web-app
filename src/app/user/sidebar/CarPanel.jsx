@@ -6,6 +6,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { FiTrash2 } from "react-icons/fi";
 import NumberStepper from "@/components/ui/NumberStepper";
 import { CreditCard } from "lucide-react";
+import { FaRegEye } from "react-icons/fa6";
+
 
 
 export default function CarPanel() {
@@ -79,7 +81,7 @@ export default function CarPanel() {
     return (
         <>
             <div className="flex min-h-full bg-stone-100 pb-10 pt-1">
-                <div className="w-[80%] mt-32 flex flex-col ml-10 px-6 bg-stone-100 rounded-lg p-3">
+                <div className="w-[80%] mt-32 flex flex-col px-6 bg-stone-100 rounded-lg p-3">
                     <div className="border-b border-gray-400 mb-6">
                         <h1 className="text-3xl font-semibold">CarritoMAQ</h1>
                         <label className="inline-flex items-center text-blue-600 hover:underline cursor-pointer w-[20em] text-sm mb-6">
@@ -100,7 +102,7 @@ export default function CarPanel() {
                         return (
                             <div
                                 key={prod.id}
-                                className="w-full h-auto flex items-start p-5 bg-white"
+                                className="w-full h-auto flex items-start p-5 bg-white rounded-2xl mb-3"
                             >
                                 {/* Checkbox de la tarjeta */}
                                 <div className="mr-4 pt-2">
@@ -125,10 +127,17 @@ export default function CarPanel() {
                                             <p className="text-gray-700 line-clamp-2 overflow-hidden">
                                                 {prod.description}
                                             </p>
-                                            <button className="items-center justify-items-center cursor-pointer mt-2 text-blue-600 hover:underline self-start">
-                                                <FiTrash2 size={18} className="inline-block mr-1" />
-                                                Eliminar
-                                            </button>
+                                            <div className="flex justify-around">
+                                                <button className="items-center justify-items-center cursor-pointer mt-2 text-blue-600 hover:underline self-start">
+                                                    <FiTrash2 size={18} className="inline-block mr-1" />
+                                                    Eliminar
+                                                </button>
+                                                <button className="items-center justify-items-center cursor-pointer mt-2 text-blue-600 hover:underline self-start">
+                                                    <FaRegEye  size={18} className="inline-block mr-1" />
+                                                    Ver producto
+                                                </button>
+                                            </div>
+
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-10">
@@ -145,12 +154,12 @@ export default function CarPanel() {
                     })}
                 </div>
 
-                <div className="w-[20%] mx-10 px-4 mt-32 sticky top-16 z-10 bg-white shadow-md rounded-lg mb-6 p-3">
-                    <h1 className="text-lg text-gray-800 mb-4">Resumen de la compra</h1>
+                <div className="relative w-[25%] ml-3 px-4 mt-15 top-16 z-10 bg-white shadow-md rounded-lg mb-15 p-3">
+                    <h1 className="mt-3 text-lg text-gray-800 mb-4">Resumen de la compra</h1>
                     {anySelected ? (
                         <div>
                             <div className="border-b border-gray-400 pb-6">
-                                
+
                                 {selectedProducts.map((prod) => {
                                     const qty = quantities[prod.id];
                                     return (
@@ -172,8 +181,8 @@ export default function CarPanel() {
                                         .toLocaleString()}
                                 </span>
                             </div>
-                            <div className="">
-                                <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1">
+                            <div className="absolute bottom-4 left-0 px-3 w-full mb-3">
+                                <Button className="cursor-pointer w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1">
                                     <CreditCard className="h-4 w-4 lg:h-5 lg:w-5" />
                                     <span className="text-sm lg:text-base">Comprar</span>
                                 </Button>

@@ -21,13 +21,13 @@ export default function NumberStepper({
   };
 
   return (
-    <div className="inline-flex items-center space-x-2 rounded-2xl border-2 border-blue-900 px-3 py-1">
+    <div className="inline-flex items-center justify-items-center space-x-0 rounded-2xl border-1 border-blue-600 px-0 py-0">
       <Button
         variant="ghost"
         size="sm"
         onClick={decrement}
         disabled={value <= min}
-        className="p-1"
+        className="p-1 hover:rounded-full"
       >
         <Minus size={16} />
       </Button>
@@ -35,14 +35,14 @@ export default function NumberStepper({
         type="number"
         value={value}
         onChange={handleInput}
-        className="w-12 p-0 text-center focus:outline-none"
+        className="w-8 p-0 text-center focus:outline-none border-0"
       />
       <Button
         variant="ghost"
         size="sm"
         onClick={increment}
         disabled={value >= max}
-        className="p-1"
+        className="p-1 hover:rounded-full"
       >
         <Plus size={16} />
       </Button>
