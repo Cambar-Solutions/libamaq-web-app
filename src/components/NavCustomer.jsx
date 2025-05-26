@@ -1,16 +1,18 @@
 import { useRef, useState, useEffect } from "react";
-import { FaStore, FaBars, FaTimes } from "react-icons/fa";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button"; // Suponiendo que el botón es de tu librería
+import { Link, useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { RiShoppingCartFill } from "react-icons/ri";
 import { TfiShoppingCartFull } from "react-icons/tfi";
 import { GrUserWorker } from "react-icons/gr";
 import { SlLocationPin } from "react-icons/sl";
-import { MapPin } from 'lucide-react';
+import { FaBars, FaStore, FaTimes } from "react-icons/fa";
+import { Menu, MapPin, SidebarIcon } from 'lucide-react';
+import { useSidebar } from "@/components/ui/sidebar";
 import DrawerCategories from "./drawerCategories";
 import { getAllBrandsWithCategories } from "@/services/public/brandService";
 
 const NavCustomer = () => {
+  const { toggleSidebar } = useSidebar();
   const drawerRef = useRef(null);
 
   const [brands, setBrands] = useState([]);
@@ -59,8 +61,16 @@ const NavCustomer = () => {
 
   return (
     <nav className="bg-blue-950  dark:bg-gray-800 shadow-lg py-4 px-12 flex justify-between items-center fixed top-0 w-full z-20">
-      {/* Logo */}
+      {/* Logo y Toggle Sidebar */}
       <div className="flex items-center gap-5">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-white hover:text-white hover:bg-white/10"
+          onClick={toggleSidebar}
+        >
+          <SidebarIcon className="h-5 w-5 text-[#FFB547]" />
+        </Button>
         <Link to="/user-home">
           <img src="/Tipografia_LIBAMAQ_legulab_color_hor.png" alt="logo" className="max-h-12" />
         </Link>

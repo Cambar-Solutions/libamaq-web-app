@@ -1,37 +1,15 @@
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import NavCustomer from "@/components/NavCustomer";
-import React, { useState, useEffect, useRef } from "react";
-import { ArrowLeft, Search, Filter } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { getAllPublicProducts } from "@/services/public/productService";
-import { getAllBrandsWithCategories } from "@/services/public/brandService";
-import { toast } from "sonner";
-import { GrUserWorker } from "react-icons/gr";
 import SidebarCustomer from '@/components/SidebarCustomer';
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+
+// Importar los paneles (verifica que las rutas sean correctas)
 import ProfilePanel from "@/app/user/sidebar/ProfilePanel";
 import BuyPanel from "@/app/user/sidebar/BuyPanel";
 import OrderPanel from "@/app/user/sidebar/OrderPanel";
 import RentalPanel from "@/app/user/sidebar/RentalPanel";
 import CarPanel from "@/app/user/sidebar/CarPanel";
-import { useLocation } from "react-router-dom";
-
 
 export default function Account() {
     const location = useLocation();
@@ -39,30 +17,45 @@ export default function Account() {
     const [activeSection, setActiveSection] = useState(initial);
 
     // Opcional: limpia el state para no reaparecer si recargas
-  useEffect(() => {
-    if (location.state?.openSection) {
-      window.history.replaceState({}, document.title);
-    }
-  }, []);
+    useEffect(() => {
+        if (location.state?.openSection) {
+            window.history.replaceState({}, document.title);
+        }
+    }, []);
 
-    const panels = {
-        perfil: <ProfilePanel />,
-        compras: <BuyPanel />,
-        pedidos: <OrderPanel />,
-        rentas: <RentalPanel />,
-        carrito: <CarPanel />,
+    const renderPanel = () => {
+        switch(activeSection) {
+            case "perfil":
+                return <ProfilePanel />;
+            case "compras":
+                return <BuyPanel />;
+            case "pedidos":
+                return <OrderPanel />;
+            case "rentas":
+                return <RentalPanel />;
+            case "carrito":
+                return <CarPanel />;
+            default:
+                return <ProfilePanel />;
+        }
     };
 
     return (
-        <>
-            <NavCustomer />
-
-            <SidebarCustomer
-                activeKey={activeSection}
-                onSelect={setActiveSection}
-            >
-                {panels[activeSection]}
-            </SidebarCustomer>
-        </>
+        <div className="[--header-height:calc(theme(spacing.14))]">
+            <SidebarProvider className="flex flex-col">
+                <NavCustomer />
+                <div className="flex flex-1">
+                    <SidebarCustomer 
+                        activeKey={activeSection}
+                        onSelect={setActiveSection}
+                    />
+                    <SidebarInset>
+                        <div className="flex flex-1 flex-col gap-4 p-4">
+                            {renderPanel()}
+                        </div>
+                    </SidebarInset>
+                </div>
+            </SidebarProvider>
+        </div>
     );
 }
