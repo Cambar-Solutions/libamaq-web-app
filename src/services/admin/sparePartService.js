@@ -1,9 +1,12 @@
 import apiClient from "../apiClient";
 
 // Configuración base para las peticiones
-const API_PREFIX = '/l';
-const SPARE_PARTS_ENDPOINT = `${API_PREFIX}/spare-parts`;
-const MEDIA_ENDPOINT = `${API_PREFIX}/media`;
+const SPARE_PARTS_ENDPOINT = '/l/spare-parts';
+const MEDIA_ENDPOINT = '/l/media';
+
+// Constantes para tipos de entidad y archivo
+const ENTITY_TYPE_SPARE_PART = 'SPARE_PART';
+const FILE_TYPE_IMAGE = 'IMAGE';
 
 /**
  * Obtiene todos los repuestos con paginación
@@ -14,11 +17,17 @@ const MEDIA_ENDPOINT = `${API_PREFIX}/media`;
  */
 export const getAllSpareParts = async (page = 1, size = 10, filters = {}) => {
   try {
-    const response = await apiClient.get(SPARE_PARTS_ENDPOINT, {
+    // Usar el endpoint de repuestos activos por defecto, a menos que se especifique lo contrario
+    const endpoint = filters.status === 'ALL' ? SPARE_PARTS_ENDPOINT : `${SPARE_PARTS_ENDPOINT}/active`;
+    
+    // Eliminar el filtro de estado para el endpoint de activos
+    const { status, ...otherFilters } = filters;
+    
+    const response = await apiClient.get(endpoint, {
       params: { 
         page: page - 1, // Ajuste para la paginación basada en 0
         size,
-        ...filters
+        ...(status === 'ALL' ? filters : otherFilters)
       }
     });
     
@@ -90,21 +99,7 @@ export const getSparePartById = async (id) => {
   }
 };
 
-/**
- * Obtiene las imágenes asociadas a un repuesto
- * @param {number} sparePartId - ID del repuesto
- * @returns {Promise<Array>} - Array de imágenes asociadas al repuesto
- */
-export const getSparePartImages = async (sparePartId) => {
-  try {
-    console.log(`Obteniendo imágenes para el repuesto con ID ${sparePartId}`);
-    const { data } = await apiClient.get(`${SPARE_PARTS_ENDPOINT}/${sparePartId}/media`);
-    return data || [];
-  } catch (error) {
-    console.error(`Error al obtener imágenes para el repuesto con ID ${sparePartId}:`, error);
-    return [];
-  }
-};
+
 
 /**
  * Crea un nuevo repuesto con sus imágenes y relaciones a productos
@@ -129,11 +124,66 @@ export const createSparePart = async (sparePartData) => {
 export const updateSparePart = async (sparePartData) => {
   try {
     const { id, ...updateData } = sparePartData;
-    const { data } = await apiClient.put(`${SPARE_PARTS_ENDPOINT}/${id}`, updateData);
-    return { result: data };
+    
+    // Crear el objeto de solicitud con los campos requeridos
+    const requestData = {
+      id: parseInt(id, 10),
+      externalId: updateData.externalId || '',
+      code: updateData.code || '',
+      name: updateData.name || '',
+      description: updateData.description || '',
+      material: updateData.material || '',
+      price: parseFloat(updateData.price) || 0,
+      stock: parseInt(updateData.stock, 10) || 0,
+      variant: parseInt(updateData.variant, 10) || 1,
+      rentable: updateData.rentable || false,
+      status: updateData.status || 'ACTIVE',
+      media: []
+    };
+    
+    // Asegurarse de que el campo media tenga la estructura correcta
+    if (updateData.media && Array.isArray(updateData.media)) {
+      requestData.media = updateData.media.map(media => ({
+        id: media.id || 0,
+        url: media.url,
+        fileType: 'IMAGE',
+        entityId: media.entityId || id,
+        entityType: 'SPARE_PART',
+        displayOrder: media.displayOrder || 0
+      }));
+    }
+    
+    // Agregar campos de auditoría si no están presentes
+    if (!updateData.updatedBy) {
+      requestData.updatedBy = '1'; // Deberías obtener esto del usuario autenticado
+    }
+    
+    if (!updateData.updatedAt) {
+      requestData.updatedAt = new Date().toISOString();
+    }
+    
+    console.log('Enviando datos al servidor para actualizar:', requestData);
+    
+    // Asegurarnos de que la URL sea correcta
+    const url = `${SPARE_PARTS_ENDPOINT}`;
+    console.log('URL de la solicitud:', url);
+    
+    const response = await apiClient.put(url, requestData);
+    console.log('Respuesta del servidor:', response);
+    
+    return { result: response.data };
   } catch (error) {
     console.error("Error al actualizar repuesto:", error);
-    throw error.response?.data?.message || error.message;
+    if (error.response) {
+      console.error('Datos de la respuesta de error:', error.response.data);
+      console.error('Estado de la respuesta:', error.response.status);
+      console.error('Cabeceras de la respuesta:', error.response.headers);
+    } else if (error.request) {
+      console.error('No se recibió respuesta del servidor:', error.request);
+    } else {
+      console.error('Error al configurar la solicitud:', error.message);
+    }
+    throw error.response?.data?.message || error.message || 'Error al actualizar el repuesto';
   }
 };
 
@@ -184,24 +234,40 @@ export const softDeleteSparePart = async (id) => {
 export const uploadMediaFile = async (file, onUploadProgress = null) => {
   try {
     const formData = new FormData();
-    // Usar 'media' como nombre del campo
-    formData.append('media', file);
+    formData.append('file', file);
 
     const config = {
       headers: { 'Content-Type': 'multipart/form-data' },
       onUploadProgress
     };
 
+    // Subir el archivo
     const response = await apiClient.post(
-      `${API_PREFIX}/media/upload`,
+      `${MEDIA_ENDPOINT}/upload`,
       formData,
       config
     );
 
-    return response.data;
+    console.log('Respuesta completa de subida de archivo:', response);
+
+    // Verificar que la respuesta tenga la estructura esperada
+    if (!response.data || !response.data.data || !Array.isArray(response.data.data) || response.data.data.length === 0) {
+      console.error('Estructura de respuesta inesperada:', response.data);
+      throw new Error('La respuesta del servidor no tiene el formato esperado');
+    }
+
+    const uploadedFile = response.data.data[0];
+    
+    if (!uploadedFile.url) {
+      console.error('URL no encontrada en la respuesta:', uploadedFile);
+      throw new Error('No se recibió una URL válida en la respuesta');
+    }
+
+    console.log('Archivo subido exitosamente. URL:', uploadedFile.url);
+    return { url: uploadedFile.url };
   } catch (error) {
-    console.error("Error al subir archivo:", error);
-    throw error.response?.data?.message || error.message;
+    console.error('Error al subir archivo multimedia:', error);
+    throw error.response?.data?.message || error.message || 'Error al subir el archivo';
   }
 };
 
@@ -245,19 +311,24 @@ export const createSparePartWithImages = async (sparePartData, imageFiles = [], 
         const uploadResult = await uploadMediaFile(file, progressCallback);
         
         // Preparar el objeto de media para el repuesto
+        // Usar el formato UpdateMediaDTO esperado por el backend
         uploadedMedia.push({
           id: 0, // ID temporal, el backend lo asignará
-          url: uploadResult.url,
-          fileType: file.type.startsWith('image/') ? 'IMAGE' : 'OTHER',
-          entityType: 'SPARE_PART',
-          displayOrder: i
+          url: uploadResult.url || uploadResult.data?.[0]?.url, // Ajustar según la respuesta real
+          fileType: FILE_TYPE_IMAGE,
+          entityType: ENTITY_TYPE_SPARE_PART,
+          displayOrder: i,
+          status: 'ACTIVE'
         });
       }
     }
     
-    // 4. Agregar los medios al payload
+    // 4. Agregar los medios al payload según el formato esperado
     if (uploadedMedia.length > 0) {
       sparePartPayload.media = uploadedMedia;
+    } else {
+      // Si no hay imágenes, asegurarse de que el campo media sea un array vacío
+      sparePartPayload.media = [];
     }
     
     // 5. Crear el repuesto con todas sus relaciones
@@ -265,7 +336,7 @@ export const createSparePartWithImages = async (sparePartData, imageFiles = [], 
     return result;
   } catch (error) {
     console.error("Error al crear repuesto con imágenes:", error);
-    throw error.response?.data?.message || error.message;
+    throw error.response?.data?.message || error.message || 'Error al crear el repuesto';
   }
 };
 
@@ -285,53 +356,59 @@ export const updateSparePartWithImages = async (sparePartData, newImageFiles = [
     // 2. Si hay asignación a producto, agregarla al payload
     if (productAssignment && productAssignment.productId) {
       sparePartPayload.productSparePartDto = {
+        id: productAssignment.id || 0, // Incluir ID si existe
         productId: productAssignment.productId,
         compatibilityNotes: productAssignment.compatibilityNotes || ""
       };
-      
-      // Si existe un ID para la relación, incluirlo
-      if (productAssignment.id) {
-        sparePartPayload.productSparePartDto.id = productAssignment.id;
-      }
     }
     
-    // 3. Preparar las imágenes existentes
-    const allImages = [...existingImages];
+    // 3. Preparar el array de medios actualizado
+    const updatedMedia = [];
     
-    // 4. Subir las nuevas imágenes y obtener sus IDs
+    // 4. Procesar imágenes existentes si las hay
+    if (existingImages && existingImages.length > 0) {
+      existingImages.forEach(img => {
+        updatedMedia.push({
+          id: img.id || 0,
+          url: img.url,
+          fileType: FILE_TYPE_IMAGE,
+          entityType: ENTITY_TYPE_SPARE_PART,
+          entityId: sparePartData.id,
+          displayOrder: img.displayOrder || 0,
+          status: 'ACTIVE'
+        });
+      });
+    }
+    
+    // 5. Subir las nuevas imágenes
     if (newImageFiles && newImageFiles.length > 0) {
       for (let i = 0; i < newImageFiles.length; i++) {
         const file = newImageFiles[i];
-        const response = await createMultimedia(file);
-        if (response && response.id) {
-          allImages.push({
-            multimediaId: response.id,
-            displayOrder: existingImages.length + i + 1,
-            sparePartId: sparePartData.id
+        const uploadResult = await uploadMediaFile(file);
+        
+        if (uploadResult && uploadResult.url) {
+          updatedMedia.push({
+            id: 0, // Nuevo registro
+            url: uploadResult.url || uploadResult.data?.[0]?.url,
+            fileType: FILE_TYPE_IMAGE,
+            entityType: ENTITY_TYPE_SPARE_PART,
+            entityId: sparePartData.id,
+            displayOrder: updatedMedia.length + 1,
+            status: 'ACTIVE'
           });
         }
       }
     }
     
-    // 5. Agregar todas las imágenes al payload
-    if (allImages.length > 0) {
-      sparePartPayload.sparePartMultimediaDto = allImages.map((img, index) => ({
-        multimediaId: img.multimediaId || img.id,
-        displayOrder: img.displayOrder || (index + 1),
-        sparePartId: sparePartData.id,
-        id: img.id // Incluir el ID de la relación si existe
-      }));
-    } else {
-      // Si no hay imágenes, enviar un array vacío para eliminar todas las relaciones existentes
-      sparePartPayload.sparePartMultimediaDto = [];
-    }
+    // 6. Agregar los medios al payload según el formato esperado
+    sparePartPayload.media = updatedMedia;
     
-    // 6. Actualizar el repuesto con todas sus relaciones
-    const { data } = await apiClient.put("/admin/sparePart/update", sparePartPayload);
-    return data;
+    // 7. Actualizar el repuesto con todas sus relaciones
+    const result = await updateSparePart(sparePartPayload);
+    return result;
   } catch (error) {
     console.error("Error al actualizar repuesto con imágenes:", error);
-    throw error.response?.data || error.message;
+    throw error.response?.data?.message || error.message || 'Error al actualizar el repuesto';
   }
 };
 
@@ -344,12 +421,35 @@ export const updateSparePartWithImages = async (sparePartData, newImageFiles = [
  */
 export const deleteSparePartMedia = async (mediaId) => {
   try {
-    // Según las imágenes que mostraste, el endpoint para eliminar medios es /l/media/delete
-    // y acepta un array de IDs en el cuerpo de la petición
-    const { data } = await apiClient.post(`${API_PREFIX}/media/delete`, [mediaId]);
-    return data;
+    // El endpoint para eliminar medios acepta un array de IDs en el cuerpo de la petición
+    const response = await apiClient.post(`${MEDIA_ENDPOINT}/delete`, [mediaId]);
+    return response.data;
   } catch (error) {
     console.error(`Error al eliminar medio con ID ${mediaId}:`, error);
-    throw error.response?.data?.message || error.message;
+    throw error.response?.data?.message || error.message || 'Error al eliminar la imagen';
+  }
+};
+
+/**
+ * Obtiene las imágenes asociadas a un repuesto
+ * @param {number} sparePartId - ID del repuesto
+ * @returns {Promise<Array>} - Array de imágenes asociadas al repuesto
+ */
+export const getSparePartImages = async (sparePartId) => {
+  try {
+    // Obtener el repuesto completo que ya incluye las imágenes
+    const response = await apiClient.get(`${SPARE_PARTS_ENDPOINT}/${sparePartId}`);
+    
+    // Verificar si hay imágenes en la respuesta
+    if (response.data?.result?.images) {
+      return Array.isArray(response.data.result.images) ? response.data.result.images : [response.data.result.images];
+    }
+    
+    // Si no hay imágenes, devolver array vacío
+    return [];
+  } catch (error) {
+    console.error(`Error al obtener imágenes del repuesto ${sparePartId}:`, error);
+    // En caso de error, devolver un array vacío para no romper la UI
+    return [];
   }
 };
