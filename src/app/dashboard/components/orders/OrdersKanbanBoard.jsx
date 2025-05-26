@@ -52,11 +52,13 @@ const OrdersKanbanBoard = ({ orders }) => {
   // porque ahora lo maneja el componente padre con el DndContext unificado
 
   return (
-    <div className="">
-      <h2 className="text-2xl font-bold mb-4">Tablero de Pedidos</h2>
+    <div className="w-full px-2">
+      <h2 className="text-2xl font-bold mb-4 px-2">Tablero de Pedidos</h2>
       
-      {/* Ya no necesitamos el DndContext aquí */}
-      <div className={`${isMobile ? 'flex flex-col' : 'grid grid-cols-5'} gap-4 w-full overflow-x-auto pb-4`}>
+      {/* Contenedor del tablero */}
+      <div className={`${isMobile ? 'flex flex-col' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'} gap-3 w-full`}>
+        {/* Ajustamos el grid para mejor distribución en diferentes tamaños de pantalla */}
+        {/* Columnas del tablero Kanban */}
         {columns.map(column => (
           <KanbanColumn
             key={column.id}

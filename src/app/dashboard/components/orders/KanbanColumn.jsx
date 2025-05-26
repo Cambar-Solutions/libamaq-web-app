@@ -25,7 +25,7 @@ export const KanbanColumn = ({ id, title, color, orders, isMobile }) => {
       ref={setNodeRef}
       style={columnStyle}
       className={`
-        ${isMobile ? 'w-full' : 'w-full min-w-[250px]'}
+        ${isMobile ? 'w-full' : 'w-full min-w-[220px] max-w-[280px]'}
         bg-gray-50 rounded-lg shadow-sm border border-gray-200 flex flex-col
       `}
     >
@@ -38,7 +38,7 @@ export const KanbanColumn = ({ id, title, color, orders, isMobile }) => {
       </div>
       
       {/* Contenido de la columna - lista de pedidos */}
-      <div className="p-2 flex-1 overflow-y-auto max-h-[calc(100vh-250px)]">
+      <div className="p-1.5 flex-1 overflow-y-auto max-h-[calc(100vh-250px)]">
         <SortableContext items={orders.map(order => order.id)} strategy={verticalListSortingStrategy}>
           {orders.length > 0 ? (
             <div className="space-y-2">

@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import apiClient from "@/services/apiClient";
 import { 
   getAllSpareParts, 
   getSparePartById, 
@@ -10,9 +11,10 @@ import {
   createSparePartWithImages,
   updateSparePartWithImages,
   deleteSparePart,
-  getSparePartImages
+  getSparePartImages,
+  uploadMediaFile,
+  deleteSparePartMedia
 } from "@/services/admin/sparePartService";
-import { getAllProducts } from "@/services/admin/productService";
 import { createMultimedia } from "@/services/admin/multimediaService";
 import { toast } from "sonner";
 import { 
@@ -426,15 +428,31 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
     try {
       setIsUploading(true);
       console.log('Subiendo imagen:', selectedImage.name);
-      const response = await createMultimedia(selectedImage);
-      console.log('Respuesta de subida de imagen:', response);
       
-      if (response && response.id) {
+      // Crear un FormData directamente aquí
+      const formData = new FormData();
+      formData.append('files', selectedImage); // Probar con 'files' como nombre del campo
+      
+      // Hacer la petición directamente
+      const { data } = await apiClient.post("/l/cloudflare/upload", formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      console.log('Respuesta de subida de imagen:', data);
+      
+      if (data && (data.url || (data[0] && data[0].url))) {
+        // Extraer la URL de la respuesta
+        const url = data.url || data[0]?.url || '';
+        
         // Crear objeto de imagen con todos los campos necesarios
         const newImage = {
-          id: response.id,
-          multimediaId: response.id, // Añadimos multimediaId para compatibilidad
-          displayOrder: uploadedImages.length + 1,
+          id: data.id || data[0]?.id || 0,
+          url: url,
+          fileType: selectedImage.type.startsWith('image/') ? 'IMAGE' : 'OTHER',
+          entityType: 'SPARE_PART',
+          displayOrder: uploadedImages.length,
           // Crear una URL para previsualización inmediata
           previewUrl: URL.createObjectURL(selectedImage)
         };
@@ -450,29 +468,46 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
         
         toast.success("Imagen subida correctamente");
       } else {
-        throw new Error('No se recibió un ID válido para la imagen');
+        throw new Error('No se recibió una URL válida en la respuesta');
       }
     } catch (error) {
       console.error('Error al subir imagen:', error);
-      toast.error("Error al subir la imagen: " + (error.message || "Error desconocido"));
+      toast.error("Error al subir la imagen: " + (error.response?.data?.message || error.message || "Error desconocido"));
     } finally {
       setIsUploading(false);
     }
   };
 
-  const handleRemoveImage = (imageId) => {
-    const updatedImages = uploadedImages.filter(img => img.id !== imageId);
-    setUploadedImages(updatedImages);
-    
-    // Actualizar el formData sin la imagen eliminada
-    setFormData(prev => ({
-      ...prev,
-      sparePartMultimediaDto: updatedImages.map((img, index) => ({
-        multimediaId: img.id,
-        displayOrder: index + 1,
-        sparePartId: formData.id || 0
-      }))
-    }));
+  const handleRemoveImage = async (imageId) => {
+    try {
+      // Confirmar con el usuario antes de eliminar
+      if (window.confirm('¿Estás seguro de que deseas eliminar esta imagen? Esta acción no se puede deshacer.')) {
+        // Si la imagen ya está guardada en el servidor, eliminarla
+        if (imageId && sparePartId) {
+          await deleteSparePartMedia(imageId);
+          toast.success("Imagen eliminada correctamente");
+        }
+        
+        // Actualizar el estado local
+        const updatedImages = uploadedImages.filter(img => img.id !== imageId);
+        setUploadedImages(updatedImages);
+        
+        // Actualizar el formData sin la imagen eliminada
+        setFormData(prev => ({
+          ...prev,
+          media: updatedImages.map((img, index) => ({
+            id: img.id,
+            url: img.url,
+            fileType: img.fileType || 'IMAGE',
+            entityType: 'SPARE_PART',
+            displayOrder: index
+          }))
+        }));
+      }
+    } catch (error) {
+      console.error('Error al eliminar imagen:', error);
+      toast.error("Error al eliminar la imagen: " + (error.message || "Error desconocido"));
+    }
   };
 
   const handleDelete = (sparePart, e) => {
@@ -537,9 +572,12 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
       }
       
       // Preparar las imágenes para guardar (eliminar campos de previsualización)
-      const cleanedImages = uploadedImages.map(img => ({
-        multimediaId: img.multimediaId || img.id,
-        displayOrder: img.displayOrder || 1
+      const cleanedImages = uploadedImages.map((img, index) => ({
+        id: img.id,
+        url: img.url,
+        fileType: img.fileType || 'IMAGE',
+        entityType: 'SPARE_PART',
+        displayOrder: index
       }));
       
       console.log('Imágenes preparadas para guardar:', cleanedImages);
@@ -553,10 +591,10 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
         
         // Actualizar repuesto existente con sus imágenes
         if (cleanedImages.length > 0) {
-          saveData.sparePartMultimediaDto = cleanedImages;
+          saveData.media = cleanedImages;
         } else {
           // Si no hay imágenes, enviar un array vacío para eliminar todas las relaciones existentes
-          saveData.sparePartMultimediaDto = [];
+          saveData.media = [];
         }
         
         // Si hay asignación a producto, agregarla al payload
@@ -565,15 +603,31 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
         }
         
         console.log('Datos completos para actualizar:', JSON.stringify(saveData, null, 2));
-        response = await updateSparePart(saveData);
+        
+        // Usar la función updateSparePartWithImages para manejar correctamente las imágenes
+        const onProgress = (index, progress, fileName) => {
+          console.log(`Subiendo imagen ${index + 1}: ${fileName} - ${progress}%`);
+        };
+        
+        // Separar las imágenes ya subidas de las nuevas
+        const existingMedia = cleanedImages.filter(img => img.id !== 0);
+        const newImageFiles = []; // Aquí irían los nuevos archivos si los hubiera
+        
+        response = await updateSparePartWithImages(
+          saveData,
+          newImageFiles,
+          existingMedia,
+          productAssignment,
+          onProgress
+        );
+        
         console.log('Respuesta de actualización:', response);
       } else {
         console.log('Creando nuevo repuesto');
         
-        // Crear nuevo repuesto
-        // Agregar las imágenes al repuesto
+        // Crear nuevo repuesto con imágenes
         if (cleanedImages.length > 0) {
-          saveData.sparePartMultimediaDto = cleanedImages;
+          saveData.media = cleanedImages;
         }
         
         // Si hay asignación a producto, agregarla al payload
@@ -582,7 +636,20 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
         }
         
         console.log('Datos completos para crear:', JSON.stringify(saveData, null, 2));
-        response = await createSparePart(saveData);
+        
+        // Usar la función createSparePartWithImages para manejar correctamente las imágenes
+        const onProgress = (index, progress, fileName) => {
+          console.log(`Subiendo imagen ${index + 1}: ${fileName} - ${progress}%`);
+        };
+        
+        // En este caso, todas las imágenes ya están subidas, así que no necesitamos pasar nuevos archivos
+        response = await createSparePartWithImages(
+          saveData,
+          [], // No hay nuevos archivos para subir
+          productAssignment,
+          onProgress
+        );
+        
         console.log('Respuesta de creación:', response);
       }
       
@@ -977,16 +1044,23 @@ export function SparePartsView() {
       let data = [];
       let totalPagesCount = 1;
       
-      if (response && response.result) {
-        // Formato de respuesta con paginación
+      // Verificar todos los posibles lugares donde podrían estar los datos
+      if (response.data && Array.isArray(response.data)) {
+        // Los datos están directamente en response.data (formato de la API actual)
+        data = response.data;
+        console.log('Datos extraídos de response.data:', data);
+        totalPagesCount = response.totalPages || 1;
+      } else if (response.content && Array.isArray(response.content)) {
+        // Los datos están en response.content (formato alternativo)
+        data = response.content;
+        console.log('Datos extraídos de response.content:', data);
+        totalPagesCount = response.totalPages || 1;
+      } else if (response && response.result) {
+        // Formato de respuesta con result
         if (response.result.content && Array.isArray(response.result.content)) {
           data = response.result.content;
           console.log('Datos extraídos de response.result.content:', data);
-          
-          // Obtener información de paginación
-          if (response.result.totalPages !== undefined) {
-            totalPagesCount = response.result.totalPages;
-          }
+          totalPagesCount = response.result.totalPages || 1;
         } else if (Array.isArray(response.result)) {
           data = response.result;
           console.log('Datos extraídos de response.result (array):', data);

@@ -69,35 +69,35 @@ export const OrderCard = ({ order, columnId }) => {
       {...listeners}
       className="touch-manipulation cursor-grab active:cursor-grabbing"
     >
-      <Card className="border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing">
-        <CardContent className="p-3">
-          <div className="flex justify-between items-start mb-2">
-            <h4 className="font-semibold text-sm truncate">{order.id}</h4>
-            <div className="flex items-center space-x-1">
+      <Card className="border shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing text-xs">
+        <CardContent className="p-2">
+          <div className="flex justify-between items-start">
+            <h4 className="font-semibold truncate max-w-[100px]">{order.id}</h4>
+            <div className="flex items-center gap-1">
               {getPaymentIcon()}
-              <Badge variant="outline" className={`text-xs ${getBadgeColor(order.tipo)}`}>
+              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${getBadgeColor(order.tipo)}`}>
                 {order.tipo}
               </Badge>
             </div>
           </div>
           
-          <div className="text-sm mb-2 truncate">{order.producto}</div>
+          <div className="mt-1 mb-1.5 truncate">{order.producto}</div>
           
-          <div className="flex justify-between items-center text-xs text-gray-500">
-            <div className="truncate">{order.cliente}</div>
+          <div className="flex justify-between items-center text-gray-500">
+            <div className="truncate max-w-[100px]">{order.cliente}</div>
             <div className="font-semibold">{formatPrice(order.total)}</div>
           </div>
         </CardContent>
         
-        <CardFooter className="p-2 pt-0 flex justify-between items-center">
-          <div className="text-xs text-gray-500">
+        <CardFooter className="p-1.5 pt-0 flex justify-between items-center">
+          <div className="text-gray-500 text-[11px]">
             {new Date(order.fecha).toLocaleDateString('es-MX', { 
               day: '2-digit', 
               month: '2-digit' 
             })}
           </div>
-          <button className="p-1 rounded-full hover:bg-gray-100">
-            <Eye className="h-4 w-4 text-gray-500" />
+          <button className="p-0.5 rounded-full hover:bg-gray-100">
+            <Eye className="h-3.5 w-3.5 text-gray-500" />
           </button>
         </CardFooter>
       </Card>
