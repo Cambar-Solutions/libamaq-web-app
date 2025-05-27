@@ -191,7 +191,7 @@ export default function ProfilePanel() {
                                 animate="animate"
                                 exit="exit"
                                 transition={{ duration: 0.3 }}
-                                className="h-full relative flex flex-col w-full rounded-lg  p-6"
+                                className="h-full relative flex flex-col w-[90%] rounded-lg p-6 ml-12"
                             >
                                 {/* Botón volver en form */}
                                 <button
@@ -206,68 +206,84 @@ export default function ProfilePanel() {
 
                                 <div className="space-y-4">
                                     {/* Nombre */}
-                                    <div className="flex flex-col bg-white p-5 rounded-lg leading-none">
-                                        <Label className="text-sm text-gray-600 mb-1 ">Nombre actual:</Label>
-                                        <span className="font-medium mb-3">{currentName}</span>
-                                        <Label className="text-sm text-gray-600 mt-2 mb-1">Nombre nuevo:</Label>
-                                        <Input
-                                            value={newName}
-                                            onChange={(e) => setNewName(e.target.value)}
-                                            placeholder="Ingresa el nuevo nombre"
-                                        />
+                                    <div className="flex bg-white p-5 rounded-lg leading-none gap-20 justify-around">
+                                        <div className="flex flex-col">
+                                            <Label className="text-sm text-gray-600 mb-1">Nombre actual:</Label>
+                                            <span className="font-medium mb-3">{currentName}</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <Label className="text-sm text-gray-600 mb-1">Nombre nuevo:</Label>
+                                            <Input
+                                                value={newName}
+                                                onChange={(e) => setNewName(e.target.value)}
+                                                placeholder="Ingresa el nuevo nombre"
+                                            />
+                                        </div>
                                     </div>
                                     {/* Correo */}
-                                    <div className="flex flex-col bg-white p-5 rounded-lg leading-none">
-                                        <Label className="text-sm text-gray-600 mb-1">Correo actual:</Label>
-                                        <span className="font-medium mb-3">{currentEmail}</span>
-                                        <Label className="text-sm text-gray-600 mt-2 mb-1">Correo nuevo:</Label>
-                                        <Input
-                                            type="email"
-                                            value={newEmail}
-                                            onChange={(e) => setNewEmail(e.target.value)}
-                                            placeholder="Ingresa el nuevo correo"
-                                        />
-                                    </div>
-                                    {/* Contraseña */}
-                                    <div className="flex flex-col bg-white p-5 rounded-lg leading-none space-y-4">
-                                        {/* Contraseña actual */}
-                                        <div className="relative">
-                                            <Label className="text-sm text-gray-600 mb-1">Contraseña actual:</Label>
-                                            <Input
-                                                type={showCurrent ? "text" : "password"}
-                                                placeholder="dawdwadaw"
-                                                disabled
-                                                className="pr-10 mb-3"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowCurrent(v => !v)}
-                                                className="absolute inset-y-0 right-3 flex items-center pt-3 text-gray-500 hover:text-gray-700"
-                                                aria-label={showCurrent ? "Ocultar contraseña" : "Mostrar contraseña"}
-                                            >
-                                                {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
-                                            </button>
+                                    <div className="flex bg-white p-5 rounded-lg leading-none justify-around">
+                                        <div className="flex flex-col">
+                                            <Label className="text-sm text-gray-600 mb-1">Correo actual:</Label>
+                                            <span className="font-medium mb-3">{currentEmail}</span>
                                         </div>
 
-                                        {/* Contraseña nueva */}
-                                        <div className="relative">
-                                            <Label className="text-sm text-gray-600 mb-1">Contraseña nueva:</Label>
+                                        <div className="flex flex-col">
+                                            <Label className="text-sm text-gray-600 mb-1">Correo nuevo:</Label>
                                             <Input
-                                                type={showNew ? "text" : "password"}
-                                                value={newPassword}
-                                                onChange={e => setNewPassword(e.target.value)}
-                                                placeholder="Ingresa la nueva contraseña"
-                                                className="pr-10"
+                                                type="email"
+                                                value={newEmail}
+                                                onChange={(e) => setNewEmail(e.target.value)}
+                                                placeholder="Ingresa el nuevo correo"
                                             />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowNew(v => !v)}
-                                                className="absolute inset-y-0 right-3 flex items-center pt-6 text-gray-500 hover:text-gray-700"
-                                                aria-label={showNew ? "Ocultar contraseña" : "Mostrar contraseña"}
-                                            >
-                                                {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
-                                            </button>
                                         </div>
+
+                                    </div>
+                                    {/* Contraseña */}
+                                    <div className="flex bg-white p-5 rounded-lg leading-none space-y-0 justify-around">
+                                        {/* Contraseña actual */}
+                                        <div className="flex flex-col">
+                                            <div className="relative">
+                                                <Label className="text-sm text-gray-600 mb-1">Contraseña actual:</Label>
+                                                <Input
+                                                    type={showCurrent ? "text" : "password"}
+                                                    placeholder={showCurrent ? "dawdwadaw" : "•••••"}
+                                                    disabled
+                                                    className="pr-10 mb-3"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowCurrent(v => !v)}
+                                                    className="absolute inset-y-0 right-3 flex items-center pt-3 text-gray-500 hover:text-gray-700"
+                                                    aria-label={showCurrent ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                                >
+                                                    {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                </button>
+                                            </div>
+                                        </div>
+
+
+                                        {/* Contraseña nueva */}
+                                        <div className="flex flex-col">
+                                            <div className="relative">
+                                                <Label className="text-sm text-gray-600 mb-1">Contraseña nueva:</Label>
+                                                <Input
+                                                    type={showNew ? "text" : "password"}
+                                                    value={newPassword}
+                                                    onChange={e => setNewPassword(e.target.value)}
+                                                    placeholder="Ingresa la nueva contraseña"
+                                                    className="pr-10"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowNew(v => !v)}
+                                                    className="absolute inset-y-0 right-3 flex items-center pt-6 text-gray-500 hover:text-gray-700"
+                                                    aria-label={showNew ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                                >
+                                                    {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                </button>
+                                            </div>
+                                        </div>
+
                                     </div>
                                 </div>
 

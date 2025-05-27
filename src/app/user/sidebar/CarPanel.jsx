@@ -132,10 +132,13 @@ export default function CarPanel() {
                                                     <FiTrash2 size={18} className="inline-block mr-1" />
                                                     Eliminar
                                                 </button>
-                                                <button className="items-center justify-items-center cursor-pointer mt-2 text-blue-600 hover:underline self-start">
-                                                    <FaRegEye  size={18} className="inline-block mr-1" />
-                                                    Ver producto
-                                                </button>
+                                                <Link to="/tienda">
+                                                    <button className="items-center justify-items-center cursor-pointer mt-2 text-blue-600 hover:underline self-start">
+                                                        <FaRegEye size={18} className="inline-block mr-1" />
+                                                        Ver producto
+                                                    </button>
+                                                </Link>
+
                                             </div>
 
                                         </div>
@@ -154,7 +157,7 @@ export default function CarPanel() {
                     })}
                 </div>
 
-                <div className="relative w-[25%] ml-3 px-4 mt-15 top-16 z-10 bg-white shadow-md rounded-lg mb-15 p-3">
+                <div className="relative w-[25%] ml-3 px-4 mt-13 h-[26em] top-16 z-10 bg-white shadow-md rounded-lg p-3">
                     <h1 className="mt-3 text-lg text-gray-800 mb-4">Resumen de la compra</h1>
                     {anySelected ? (
                         <div>
