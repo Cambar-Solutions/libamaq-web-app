@@ -116,9 +116,10 @@ export default function BuyPanel() {
     }, [filterDate, ordersWithISO]);
 
     return (
-        <div className="w-full bg-stone-100 min-h-screen pb-10 pt-22 overflow-hidden">
+        <div className="w-full bg-stone-100 min-h-screen pb-10 pt-22">
+           <div className=" max-w-7xl mx-auto px-2 sm:px-4 sticky top-16 z-10 p-2 sm:p-3">
             {/* Cabecera + filtro */}
-            <div className="flex flex-col sm:flex-row items-center justify-between mx-4 mb-6 border-b border-gray-400 pb-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between mx-4 mb-6 border-b border-gray-400 pb-3 px-0">
                 <h1 className="text-3xl font-semibold">ComprasMAQ</h1>
                 <div className="mt-4 sm:mt-0 flex items-center">
                     <label className="mr-2 font-medium">Filtrar fecha:</label>
@@ -274,6 +275,8 @@ export default function BuyPanel() {
                     </motion.div>
                 )}
             </AnimatePresence>
+        </div> 
         </div>
+        
     );
 }

@@ -45,8 +45,8 @@ export default function Account() {
                     return <RentalPanel />;
                 case "carrito":
                     return <CarPanel />;
-                case "verCompras":
-                    return <Shopping />;
+                // case "verCompras":
+                //     return <Shopping />;
                 default:
                     return <ProfilePanel />;
             }
