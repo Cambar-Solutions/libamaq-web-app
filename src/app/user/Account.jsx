@@ -10,6 +10,7 @@ import BuyPanel from "@/app/user/sidebar/BuyPanel";
 import OrderPanel from "@/app/user/sidebar/OrderPanel";
 import RentalPanel from "@/app/user/sidebar/RentalPanel";
 import CarPanel from "@/app/user/sidebar/CarPanel";
+import Shopping from "./sidebar/Shopping";
 
 export default function Account() {
     const location = useLocation();
@@ -24,7 +25,7 @@ export default function Account() {
     }, []);
 
     const renderPanel = () => {
-        switch(activeSection) {
+        switch (activeSection) {
             case "perfil":
                 return <ProfilePanel />;
             case "compras":
@@ -35,6 +36,8 @@ export default function Account() {
                 return <RentalPanel />;
             case "carrito":
                 return <CarPanel />;
+            case "verCompras":
+                return <Shopping />;
             default:
                 return <ProfilePanel />;
         }
@@ -45,7 +48,7 @@ export default function Account() {
             <SidebarProvider className="flex flex-col">
                 <NavCustomer />
                 <div className="flex flex-1">
-                    <SidebarCustomer 
+                    <SidebarCustomer
                         activeKey={activeSection}
                         onSelect={setActiveSection}
                     />

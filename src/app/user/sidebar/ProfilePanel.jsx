@@ -71,7 +71,7 @@ export default function ProfilePanel() {
                                 {/* — Card de Direcciones — */}
                                 <Dialog>
                                     <DialogTrigger asChild>
-                                        <button className="h-[50%] flex items-center justify-between bg-white hover:bg-gray-100 transition p-4 w-full rounded-t-lg">
+                                        <button className="h-[50%] flex items-center justify-between bg-white hover:bg-gray-200 transition p-4 w-full rounded-t-lg">
                                             <div className="flex items-center space-x-4">
                                                 <MapPin className="w-8 h-8 ml-5 text-blue-500" />
                                                 <div>
@@ -127,7 +127,7 @@ export default function ProfilePanel() {
                                 {/* — Card de Términos y condiciones — */}
                                 <Sheet>
                                     <SheetTrigger asChild>
-                                        <button className="h-[50%] flex items-center justify-between bg-white hover:bg-gray-100 transition p-4 w-full rounded-b-lg">
+                                        <button className="h-[50%] flex items-center justify-between bg-white hover:bg-gray-200 transition p-4 w-full rounded-b-lg">
                                             <div className="flex items-center space-x-4">
                                                 <FileText className="w-8 h-8 ml-5 text-blue-500" />
                                                 <div>
