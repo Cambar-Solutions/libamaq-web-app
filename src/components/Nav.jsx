@@ -2,6 +2,8 @@ import { useState } from "react";
 import { FaStore, FaBars, FaTimes } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button"; // Suponiendo que el botón es de tu librería
+import { GrMapLocation } from "react-icons/gr";
+
 
 const Nav = () => {
   const [menuOpen, setMenuOpen] = useState(false); // Estado para controlar la visibilidad del menú lateral
@@ -54,7 +56,13 @@ const Nav = () => {
 
 
       {/* Menú principal (solo en pantallas grandes) */}
-      <div className="flex items-center space-x-4 hidden md:flex">
+      <div className="flex items-center space-x-4 md:flex">
+        <Button asChild className="flex items-center bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-600">
+          <Link to="/location" className="flex items-center">
+            Ubicaciones
+            <GrMapLocation  className="mr-2" />
+          </Link>
+        </Button>
         {/* Botón "Explorar Tienda" */}
         <Button asChild className="flex items-center bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-600">
           <Link to="/tienda" className="flex items-center">
