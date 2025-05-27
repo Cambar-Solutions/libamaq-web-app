@@ -12,6 +12,7 @@ const App = lazy(() => import('./App.jsx'));
 
 // Importar los demás componentes usando lazy loading
 const Dashboard = lazy(() => import('./app/dashboard/page.jsx'));
+const Gerente = lazy(() => import('./app/dashboard/Gerente'));
 const Login = lazy(() => import('./app/normal/Login'));
 const DetalleHerramienta = lazy(() => import('./app/e-commerce/DetalleHerramienta'));
 const DetalleProducto = lazy(() => import('./app/e-commerce/DetalleProducto'));
@@ -62,6 +63,11 @@ createRoot(document.getElementById('root')).render(
         <Route path="/dashboard" element={
           <AppLayout>
             <Dashboard />
+          </AppLayout>
+        } />
+        <Route path="/gerente" element={
+          <AppLayout>
+            <Gerente />
           </AppLayout>
         } />
         <Route path="/detalle/:nombre" element={
