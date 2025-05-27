@@ -56,17 +56,17 @@ export default function OrderPanel() {
 
     return (
         <>
-            <div className="w-full bg-stone-100 min-h-screen pb-10 pt-1">
-                <div className="max-w-7xl mx-auto px-2 sm:px-4 mt-24 sm:mt-32 sticky top-16 z-10 mb-6 p-2 sm:p-3">
+            <div className="w-full bg-stone-100 min-h-screen pb-10 pt-22">
+                <div className="max-w-7xl mx-auto px-2 sm:px-4 sticky top-16 z-10 mb-6 p-2 sm:p-3">
                     <div className="m-2 border-b border-gray-400">
-                        <h1 className="text-2xl sm:text-3xl font-semibold mb-3 sm:mb-5">PedidosMAQ Disponibles</h1>
+                        <h1 className="text-3xl font-semibold mb-3">PedidosMAQ Disponibles</h1>
                     </div>
 
                     {products.map((prod) => {
                         return (
                             <Dialog key={prod.id}>
                                 <DialogTrigger asChild>
-                                    <div className="cursor-pointer p-3 mt-4 bg-white shadow-md rounded-2xl">
+                                    <div className="cursor-pointer p-3 mt-4 bg-white shadow-sm hover:shadow-lg duration-500 rounded-2xl">
                                         <div className="flex flex-col md:flex-row items-start md:items-center">
                                             {/* Imagen del producto - Responsive */}
                                             <img
@@ -77,7 +77,7 @@ export default function OrderPanel() {
                                             {/* Información del producto - Responsive */}
                                             <div className="flex flex-col w-full md:w-[20em] px-0 md:px-5 mt-3 md:mt-0">
                                                 <h2 className="text-xl md:text-2xl font-semibold">{prod.name}</h2>
-                                                <p className="text-sm md:text-base text-gray-700 line-clamp-2 md:line-clamp-4 overflow-hidden mt-1">
+                                                <p className="text-sm md:text-base text-gray-700 line-clamp-2 md:line-clamp-4 overflow-hidden mt-1 ">
                                                     {prod.description}
                                                 </p>
                                                 {/* Estado del pedido en móvil */}

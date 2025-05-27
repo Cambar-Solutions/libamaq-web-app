@@ -36,15 +36,15 @@ export default function ProfilePanel() {
 
     return (
         <>
-            <div className="w-full bg-neutral-100 min-h-screen pb-10 pt-1">
-                <div className="justify-items-center px-4 mt-32 top-16 z-10 mb-6 p-4">
+            <div className="w-full bg-neutral-100 min-h-screen pb-10 pt-22">
+                <div className="justify-items-center px-4 top-16 z-10 mb-6 p-4">
                     <div className="flex bg-blue-800/80 p-4 rounded-full w-30 h-30 items-center justify-center shadow-md">
                         <GrUserWorker size={80} className="text-white" />
                     </div>
                     <div className="relative flex flex-col bg-white mt-5 w-[30%] text-center rounded-2xl shadow-sm p-4">
                         <button
                             onClick={() => setEditing(true)}
-                            className="absolute top-2 right-2 p-1 hover:bg-stone-100 rounded-full cursor-pointer"
+                            className="absolute top-2 right-2 p-1 hover:bg-gray-200 rounded-full cursor-pointer transition-colors duration-300"
                             aria-label="Editar"
                         >
                             <SquarePen size={18} className="text-gray-400" />
@@ -71,7 +71,7 @@ export default function ProfilePanel() {
                                 {/* — Card de Direcciones — */}
                                 <Dialog>
                                     <DialogTrigger asChild>
-                                        <button className="h-[50%] flex items-center justify-between bg-white hover:bg-gray-200 transition p-4 w-full rounded-t-lg">
+                                        <button className="h-[50%] flex items-center justify-between bg-white hover:bg-gray-200 transition-colors duration-400 p-4 w-full rounded-t-lg">
                                             <div className="flex items-center space-x-4">
                                                 <MapPin className="w-8 h-8 ml-5 text-blue-500" />
                                                 <div>
@@ -127,7 +127,7 @@ export default function ProfilePanel() {
                                 {/* — Card de Términos y condiciones — */}
                                 <Sheet>
                                     <SheetTrigger asChild>
-                                        <button className="h-[50%] flex items-center justify-between bg-white hover:bg-gray-200 transition p-4 w-full rounded-b-lg">
+                                        <button className="h-[50%] flex items-center justify-between bg-white hover:bg-gray-200 transition-colors duration-400 p-4 w-full rounded-b-lg">
                                             <div className="flex items-center space-x-4">
                                                 <FileText className="w-8 h-8 ml-5 text-blue-500" />
                                                 <div>

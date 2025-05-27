@@ -80,8 +80,8 @@ export default function CarPanel() {
 
     return (
         <>
-            <div className="flex min-h-full bg-stone-100 pb-10 pt-1">
-                <div className="w-[80%] mt-32 flex flex-col px-6 bg-stone-100 rounded-lg p-3">
+            <div className="flex min-h-full bg-stone-100 pb-10 pt-22">
+                <div className="w-[80%] flex flex-col px-6 bg-stone-100 rounded-lg p-3">
                     <div className="border-b border-gray-400 mb-6">
                         <h1 className="text-3xl font-semibold">CarritoMAQ</h1>
                         <label className="inline-flex items-center text-blue-600 hover:underline cursor-pointer w-[20em] text-sm mb-6">
@@ -89,7 +89,7 @@ export default function CarPanel() {
                                 type="checkbox"
                                 checked={allSelected}
                                 onChange={toggleSelectAll}
-                                className="mr-2 w-3 h-3"
+                                className="mr-2 w-3 h-3 cursor-pointer"
                             />
                             Seleccionar todos los productos
                         </label>
@@ -102,7 +102,7 @@ export default function CarPanel() {
                         return (
                             <div
                                 key={prod.id}
-                                className="w-full h-auto flex items-start p-5 bg-white rounded-2xl mb-3"
+                                className="w-full h-auto flex items-start p-5 bg-white rounded-2xl mb-3 shadow-sm hover:shadow-md duration-500"
                             >
                                 {/* Checkbox de la tarjeta */}
                                 <div className="mr-4 pt-2">
@@ -110,7 +110,7 @@ export default function CarPanel() {
                                         type="checkbox"
                                         checked={!!selected[prod.id]}
                                         onChange={() => toggleOne(prod.id)}
-                                        className="w-4 h-4"
+                                        className="w-4 h-4 cursor-pointer"
                                     />
                                 </div>
 
