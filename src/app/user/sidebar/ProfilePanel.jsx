@@ -41,7 +41,7 @@ export default function ProfilePanel() {
                     <div className="flex bg-blue-800/80 p-4 rounded-full w-30 h-30 items-center justify-center shadow-md">
                         <GrUserWorker size={80} className="text-white" />
                     </div>
-                    <div className="relative flex flex-col bg-white mt-5 w-[30%] text-center rounded-2xl shadow-sm p-4">
+                    <div className="relative flex flex-col bg-white mt-5 w-full lg:w-[30%] text-center rounded-2xl shadow-sm p-4">
                         <button
                             onClick={() => setEditing(true)}
                             className="absolute top-2 right-2 p-1 hover:bg-gray-200 rounded-full cursor-pointer transition-colors duration-300"
@@ -55,7 +55,7 @@ export default function ProfilePanel() {
                 </div>
 
                 {/* === Sección con animación === */}
-                <div className="flex-1 overflow-y-auto max-w-5xl mx-auto mt-3  top-16 z-10"
+                <div className="flex-1 overflow-y-auto max-w-5xl mx-auto mt-3 top-16 z-10"
                 >
                     <AnimatePresence mode="wait" initial={false}>
                         {!editing ? (
@@ -91,7 +91,7 @@ export default function ProfilePanel() {
                                                 En esta sección, puede modificar la dirección de entrega.
                                             </DialogDescription>
                                         </DialogHeader>
-                                        <div className="grid grid-cols-2 gap-10 py-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 py-4">
                                             <div className="flex flex-col space-y-4">
                                                 <div className="grid grid-cols-4 items-center gap-4">
                                                     <Label htmlFor="location" className="text-right font-medium">
@@ -145,7 +145,7 @@ export default function ProfilePanel() {
                                                 Es responsabilidad del usuario leer y comprender estos Términos y Condiciones.
                                             </SheetDescription>
                                         </SheetHeader>
-                                        <div className="grid gap-4 px-5 text-sm pt-0 text-justify w-full">
+                                        <div className="grid gap-4 px-5 text-sm pt-0 text-justify w-full justify-between">
                                             <div className="grid grid-cols-3">
                                                 <p className="col-span-3 text-gray-700">
                                                     <strong>1. Aceptación de los Términos:</strong> Al acceder y utilizar los productos y servicios de Libamaq, usted acepta estar sujeto a estos Términos y Condiciones. Si no está de acuerdo con alguno de estos términos, no debe utilizar nuestros productos o servicios.
@@ -206,7 +206,7 @@ export default function ProfilePanel() {
 
                                 <div className="space-y-4">
                                     {/* Nombre */}
-                                    <div className="flex bg-white p-5 rounded-lg leading-none gap-20 justify-around">
+                                    <div className="flex flex-col lg:flex-row bg-white p-5 rounded-lg leading-none gap-y-4 lg:gap-20 justify-around">
                                         <div className="flex flex-col">
                                             <Label className="text-sm text-gray-600 mb-1">Nombre actual:</Label>
                                             <span className="font-medium mb-3">{currentName}</span>
@@ -215,45 +215,45 @@ export default function ProfilePanel() {
                                             <Label className="text-sm text-gray-600 mb-1">Nombre nuevo:</Label>
                                             <Input
                                                 value={newName}
-                                                onChange={(e) => setNewName(e.target.value)}
+                                                onChange={e => setNewName(e.target.value)}
                                                 placeholder="Ingresa el nuevo nombre"
                                             />
                                         </div>
                                     </div>
+
                                     {/* Correo */}
-                                    <div className="flex bg-white p-5 rounded-lg leading-none justify-around">
+                                    <div className="flex flex-col lg:flex-row bg-white p-5 rounded-lg leading-none gap-y-4 lg:gap-20 justify-around">
                                         <div className="flex flex-col">
                                             <Label className="text-sm text-gray-600 mb-1">Correo actual:</Label>
                                             <span className="font-medium mb-3">{currentEmail}</span>
                                         </div>
-
                                         <div className="flex flex-col">
                                             <Label className="text-sm text-gray-600 mb-1">Correo nuevo:</Label>
                                             <Input
                                                 type="email"
                                                 value={newEmail}
-                                                onChange={(e) => setNewEmail(e.target.value)}
+                                                onChange={e => setNewEmail(e.target.value)}
                                                 placeholder="Ingresa el nuevo correo"
                                             />
                                         </div>
-
                                     </div>
+
                                     {/* Contraseña */}
-                                    <div className="flex bg-white p-5 rounded-lg leading-none space-y-0 justify-around">
+                                    <div className="flex flex-col lg:flex-row bg-white p-5 rounded-lg leading-none gap-y-4 lg:gap-20 justify-around">
                                         {/* Contraseña actual */}
                                         <div className="flex flex-col">
-                                            <div className="relative">
-                                                <Label className="text-sm text-gray-600 mb-1">Contraseña actual:</Label>
+                                            <Label className="text-sm text-gray-600 mb-1">Contraseña actual:</Label>
+                                            <div className="relative items-center">
                                                 <Input
                                                     type={showCurrent ? "text" : "password"}
                                                     placeholder={showCurrent ? "dawdwadaw" : "•••••"}
                                                     disabled
-                                                    className="pr-10 mb-3"
+                                                    className="pr-10 w-60"
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowCurrent(v => !v)}
-                                                    className="absolute inset-y-0 right-3 flex items-center pt-3 text-gray-500 hover:text-gray-700"
+                                                    className="absolute inset-y-0 right-3 flex items-center pt-1 text-gray-500 hover:text-gray-700 px-0 "
                                                     aria-label={showCurrent ? "Ocultar contraseña" : "Mostrar contraseña"}
                                                 >
                                                     {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -261,31 +261,30 @@ export default function ProfilePanel() {
                                             </div>
                                         </div>
 
-
                                         {/* Contraseña nueva */}
                                         <div className="flex flex-col">
+                                            <Label className="text-sm text-gray-600 mb-1">Contraseña nueva:</Label>
                                             <div className="relative">
-                                                <Label className="text-sm text-gray-600 mb-1">Contraseña nueva:</Label>
                                                 <Input
                                                     type={showNew ? "text" : "password"}
                                                     value={newPassword}
                                                     onChange={e => setNewPassword(e.target.value)}
                                                     placeholder="Ingresa la nueva contraseña"
-                                                    className="pr-10"
+                                                    className="pr-10 w-60"
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowNew(v => !v)}
-                                                    className="absolute inset-y-0 right-3 flex items-center pt-6 text-gray-500 hover:text-gray-700"
+                                                    className="absolute inset-y-0 right-3 flex items-center pt-1 text-gray-500 hover:text-gray-700"
                                                     aria-label={showNew ? "Ocultar contraseña" : "Mostrar contraseña"}
                                                 >
                                                     {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
                                                 </button>
                                             </div>
                                         </div>
-
                                     </div>
                                 </div>
+
 
                                 <div className="flex justify-end space-x-3 mt-6">
                                     <Button onClick={() => setEditing(false)} className="">
