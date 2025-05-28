@@ -59,38 +59,105 @@ export default function ProductoDetalle() {
 
       console.log('Datos del producto extraídos:', product);
 
-      // Asegurarse de que los campos dinámicos estén inicializados como objetos o strings vacíos
-      if (!product.technicalData) product.technicalData = '';
-      if (!product.functionalities) product.functionalities = '';
-      if (!product.downloads) product.downloads = '';
+      // Asegurarse de que los campos dinámicos estén inicializados correctamente
+      if (!product.technicalData) product.technicalData = [];
+      if (!product.functionalities) product.functionalities = [];
+      if (!product.downloads) product.downloads = [];
       if (!product.description) product.description = '';
 
-      // Procesar campos JSON si son strings y parecen ser JSON
-      if (typeof product.technicalData === 'string' && product.technicalData.trim().startsWith('{')) {
-        try {
-          product.technicalData = JSON.parse(product.technicalData);
-        } catch (e) {
-          console.error('Error al parsear technicalData:', e);
-          // Mantener como string si no es JSON válido
+      // Función para convertir string de pares clave-valor a array de objetos
+      const stringToKeyValueArray = (str) => {
+        if (!str) return [];
+        
+        // Si es un array, devolverlo directamente
+        if (Array.isArray(str)) {
+          return str;
         }
+        
+        // Si es un objeto, convertirlo a array de pares clave-valor
+        if (typeof str === 'object' && str !== null) {
+          return Object.entries(str).map(([key, value]) => ({
+            key: key,
+            value: typeof value === 'object' ? JSON.stringify(value) : String(value)
+          }));
+        }
+        
+        // Si es string, intentar parsear como JSON
+        if (typeof str === 'string') {
+          try {
+            const parsed = JSON.parse(str);
+            if (Array.isArray(parsed)) {
+              return parsed;
+            } else if (typeof parsed === 'object' && parsed !== null) {
+              return Object.entries(parsed).map(([key, value]) => ({
+                key,
+                value: typeof value === 'object' ? JSON.stringify(value) : String(value)
+              }));
+            }
+          } catch (e) {
+            console.log('No es un JSON válido, intentando parsear como texto plano');
+            
+            // Intentar dividir por comas para pares clave:valor
+            try {
+              const lines = str.split('\n').filter(line => line.trim() !== '');
+              return lines.map(line => {
+                const [key, ...valueParts] = line.split(':');
+                return {
+                  key: key ? key.trim() : '',
+                  value: valueParts.length > 0 ? valueParts.join(':').trim() : ''
+                };
+              });
+            } catch (e) {
+              console.error('Error al parsear texto plano:', e);
+            }
+          }
+        }
+        
+        return [];
+      };
+
+      // Procesar campos según su tipo
+      product.technicalData = stringToKeyValueArray(product.technicalData);
+      product.functionalities = stringToKeyValueArray(product.functionalities);
+      
+      // Asegurarse de que siempre sean arrays
+      if (!Array.isArray(product.technicalData)) {
+        product.technicalData = [];
+      }
+      
+      if (!Array.isArray(product.functionalities)) {
+        product.functionalities = [];
       }
 
-      if (typeof product.functionalities === 'string' && product.functionalities.trim().startsWith('{')) {
+      // Procesar descargas
+      if (typeof product.downloads === 'string') {
         try {
-          product.functionalities = JSON.parse(product.functionalities);
+          // Intentar parsear como JSON
+          if (product.downloads.trim().startsWith('{') || product.downloads.trim().startsWith('[')) {
+            product.downloads = JSON.parse(product.downloads);
+          } else {
+            // Si no es un JSON, intentar parsear como texto plano
+            const lines = product.downloads.split('\n').filter(line => line.trim() !== '');
+            const downloadsObj = {};
+            
+            lines.forEach((line, index) => {
+              const [key, ...valueParts] = line.split(':');
+              if (key && valueParts.length > 0) {
+                downloadsObj[key.trim()] = valueParts.join(':').trim();
+              } else if (line.trim()) {
+                // Si no hay dos partes, usamos el índice como clave
+                downloadsObj[`enlace_${index + 1}`] = line.trim();
+              }
+            });
+            
+            product.downloads = downloadsObj;
+          }
         } catch (e) {
-          console.error('Error al parsear functionalities:', e);
-          // Mantener como string si no es JSON válido
+          console.error('Error al procesar descargas:', e);
+          product.downloads = {}; // Valor por defecto en caso de error
         }
-      }
-
-      if (typeof product.downloads === 'string' && product.downloads.trim().startsWith('{')) {
-        try {
-          product.downloads = JSON.parse(product.downloads);
-        } catch (e) {
-          console.error('Error al parsear downloads:', e);
-          // Mantener como string si no es JSON válido
-        }
+      } else if (!product.downloads || typeof product.downloads !== 'object') {
+        product.downloads = {}; // Asegurar que siempre sea un objeto
       }
 
       if (typeof product.description === 'string' && product.description.trim().startsWith('{')) {
@@ -686,16 +753,22 @@ export default function ProductoDetalle() {
                 <div className="overflow-hidden border border-gray-200 rounded-lg">
                   <table className="min-w-full divide-y divide-gray-200">
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {producto.technicalData && Object.entries(producto.technicalData).length > 0 ? (
-                        Object.entries(producto.technicalData).map(([key, value]) => (
-                          <tr key={`tech-${key}`}>
-                            <td className="px-6 py-3 text-sm font-medium text-gray-900 bg-gray-50 w-1/3 capitalize" data-component-name="ProductoDetalle">{key}</td>
-                            <td className="px-6 py-3 text-sm text-gray-500" data-component-name="ProductoDetalle">{value}</td>
+                      {producto.technicalData && producto.technicalData.length > 0 ? (
+                        producto.technicalData.map((item, index) => (
+                          <tr key={`tech-${index}`}>
+                            <td className="px-6 py-3 text-sm font-medium text-gray-900 bg-gray-50 w-1/3 capitalize" data-component-name="ProductoDetalle">
+                              {item.key}
+                            </td>
+                            <td className="px-6 py-3 text-sm text-gray-500" data-component-name="ProductoDetalle">
+                              {item.value}
+                            </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan="2" className="px-6 py-4 text-sm text-gray-500 text-center">No hay especificaciones técnicas disponibles</td>
+                          <td colSpan="2" className="px-6 py-4 text-sm text-gray-500 text-center">
+                            No hay especificaciones técnicas disponibles
+                          </td>
                         </tr>
                       )}
                     </tbody>
@@ -709,16 +782,22 @@ export default function ProductoDetalle() {
                 <div className="overflow-hidden border border-gray-200 rounded-lg">
                   <table className="min-w-full divide-y divide-gray-200">
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {producto.functionalities && Object.entries(producto.functionalities).length > 0 ? (
-                        Object.entries(producto.functionalities).map(([key, value]) => (
-                          <tr key={`func-${key}`}>
-                            <td className="px-6 py-3 text-sm font-medium text-gray-900 bg-gray-50 w-1/3 capitalize">{key}</td>
-                            <td className="px-6 py-3 text-sm text-gray-500">{value}</td>
+                      {producto.functionalities && producto.functionalities.length > 0 ? (
+                        producto.functionalities.map((item, index) => (
+                          <tr key={`func-${index}`}>
+                            <td className="px-6 py-3 text-sm font-medium text-gray-900 bg-gray-50 w-1/3 capitalize">
+                              {item.key}
+                            </td>
+                            <td className="px-6 py-3 text-sm text-gray-500">
+                              {item.value}
+                            </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan="2" className="px-6 py-4 text-sm text-gray-500 text-center">No hay funcionalidades disponibles</td>
+                          <td colSpan="2" className="px-6 py-4 text-sm text-gray-500 text-center">
+                            No hay funcionalidades disponibles
+                          </td>
                         </tr>
                       )}
                     </tbody>
@@ -728,27 +807,54 @@ export default function ProductoDetalle() {
 
 
               {/* Sección de descargas */}
-              {producto.downloads && Object.keys(producto.downloads).length > 0 && (
-                <div className="mt-6">
-                  <h3 className="text-xl font-bold text-gray-800 mb-4">Descargas</h3>
+              <div className="mt-6">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">Descargas</h3>
+                {producto.downloads && Object.keys(producto.downloads).length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {Object.entries(producto.downloads).map(([key, value]) => (
-                      <a
-                        key={key}
-                        href={value}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                      >
-                        <svg className="w-6 h-6 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span className="text-gray-700 font-medium capitalize">{key.replace('_', ' ')}</span>
-                      </a>
-                    ))}
+                    {Object.entries(producto.downloads).map(([key, value], index) => {
+                      // Verificar si la URL es válida
+                      let url = value;
+                      let displayText = key.replace(/_/g, ' ');
+                      
+                      // Si la URL no comienza con http, asumimos que no es una URL válida
+                      if (typeof url === 'string' && !url.startsWith('http')) {
+                        url = `#${key}`;
+                      }
+                      
+                      // Si el texto es muy corto o parece ser un índice, usar un texto más descriptivo
+                      if (displayText.length <= 2 || /^\d+$/.test(displayText) || /^enlace_\d+$/.test(key)) {
+                        displayText = `Descargar ${index + 1}`;
+                      }
+                      
+                      return (
+                        <a
+                          key={`download-${index}`}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                        >
+                          <div className="bg-blue-100 p-2 rounded-full mr-3">
+                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                          </div>
+                          <div className="truncate">
+                            <span className="text-gray-700 font-medium capitalize">{displayText}</span>
+                            {url && url.startsWith('http') && (
+                              <p className="text-xs text-gray-500 truncate">{new URL(url).hostname}</p>
+                            )}
+                          </div>
+                        </a>
+                      );
+                    })}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="bg-gray-50 rounded-lg p-4 text-center text-gray-500">
+                    No hay archivos disponibles para descargar
+                  </div>
+                )}
+              </div>
             </TabsContent>
 
             <TabsContent value="edit" className="mt-0">
@@ -1199,7 +1305,14 @@ export default function ProductoDetalle() {
                       <h3 className="text-xl font-bold text-gray-800">Funcionalidades</h3>
                       <button
                         type="button"
-                        onClick={() => handleAddField('functionalities')}
+                        onClick={() => {
+                          const updatedProduct = { ...editedProduct };
+                          if (!Array.isArray(updatedProduct.functionalities)) {
+                            updatedProduct.functionalities = [];
+                          }
+                          updatedProduct.functionalities.push({ key: '', value: '' });
+                          setEditedProduct(updatedProduct);
+                        }}
                         className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1209,71 +1322,46 @@ export default function ProductoDetalle() {
                       </button>
                     </div>
                     <div className="space-y-3 border border-gray-200 rounded-lg p-4">
-                      {editedProduct.functionalities && Object.entries(editedProduct.functionalities || {}).map(([key, value], index) => {
-                        // Crear un ID único para este par clave-valor
-                        const fieldId = `func-${index}-${key}`;
-                        return (
-                          <div key={fieldId} className="flex items-center gap-2">
-                            <div className="flex-1">
-                              <Input
-                                placeholder="Nombre del campo"
-                                value={key}
-                                onChange={(e) => {
-                                  // Crear una copia profunda del estado actual
-                                  const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
-
-                                  // Obtener el valor actual
-                                  const currentValue = updatedProduct.functionalities[key];
-
-                                  // Eliminar la entrada antigua
-                                  delete updatedProduct.functionalities[key];
-
-                                  // Crear la nueva entrada con la clave actualizada
-                                  updatedProduct.functionalities[e.target.value] = currentValue;
-
-                                  // Actualizar el estado
-                                  setEditedProduct(updatedProduct);
-                                }}
-                                className="mb-1"
-                              />
-                              <Input
-                                placeholder="Valor"
-                                value={value}
-                                onChange={(e) => {
-                                  // Crear una copia profunda del estado actual
-                                  const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
-
-                                  // Actualizar el valor
-                                  updatedProduct.functionalities[key] = e.target.value;
-
-                                  // Actualizar el estado
-                                  setEditedProduct(updatedProduct);
-                                }}
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                // Crear una copia profunda del estado actual
-                                const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
-
-                                // Eliminar la entrada
-                                delete updatedProduct.functionalities[key];
-
-                                // Actualizar el estado
+                      {Array.isArray(editedProduct.functionalities) && editedProduct.functionalities.map((item, index) => (
+                        <div key={`func-${index}`} className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <Input
+                              placeholder="Nombre del campo"
+                              value={item.key || ''}
+                              onChange={(e) => {
+                                const updatedProduct = { ...editedProduct };
+                                updatedProduct.functionalities[index].key = e.target.value;
                                 setEditedProduct(updatedProduct);
                               }}
-                              className="text-red-500 hover:text-red-700 self-center"
-                              title="Eliminar campo"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
+                              className="mb-1"
+                            />
+                            <Input
+                              placeholder="Valor"
+                              value={item.value || ''}
+                              onChange={(e) => {
+                                const updatedProduct = { ...editedProduct };
+                                updatedProduct.functionalities[index].value = e.target.value;
+                                setEditedProduct(updatedProduct);
+                              }}
+                            />
                           </div>
-                        );
-                      })}
-                      {(!editedProduct.functionalities || Object.keys(editedProduct.functionalities).length === 0) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updatedProduct = { ...editedProduct };
+                              updatedProduct.functionalities = updatedProduct.functionalities.filter((_, i) => i !== index);
+                              setEditedProduct(updatedProduct);
+                            }}
+                            className="text-red-500 hover:text-red-700 self-center"
+                            title="Eliminar campo"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                      {(!Array.isArray(editedProduct.functionalities) || editedProduct.functionalities.length === 0) && (
                         <p className="text-gray-500 text-center py-2">No hay funcionalidades. Haz clic en "Agregar campo" para añadir.</p>
                       )}
                     </div>

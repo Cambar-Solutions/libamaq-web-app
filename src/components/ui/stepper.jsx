@@ -47,6 +47,8 @@ const defineStepper = (...steps) => {
         tracking = false,
         children,
         className,
+        initialStep,
+        initialMetadata,
         ...props
       }) => {
         return (
@@ -54,8 +56,8 @@ const defineStepper = (...steps) => {
             value={{ variant, labelOrientation, tracking }}
           >
             <Scoped
-              initialStep={props.initialStep}
-              initialMetadata={props.initialMetadata}
+              initialStep={initialStep}
+              initialMetadata={initialMetadata}
             >
               <StepperContainer className={className} {...props}>
                 {children}
