@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
+import { login } from "@/services/authService";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -21,39 +22,50 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    if (credentials.email === 'libamaq@gmail.com' && credentials.password === 'Cesar1234.') {
-      try {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        toast.success("¡Bienvenido!", {
-          position: 'top-right',
-          style: { background: '#4caf50', color: '#fff', borderRadius: '10px' },
-        });
-        navigate("/dashboard");
-      } catch (error) {
-        toast.error("Error al iniciar sesión");
-      } finally {
-        setIsLoading(false);
-      }
-    } else if (credentials.email === 'jony@gmail.com' && credentials.password === 'Jony1234.') {
-      try {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        toast.success(`¡Bienvenido, ${credentials.email}!`, {
-          position: 'top-right',
-          style: { background: '#4caf50', color: '#fff', borderRadius: '10px' },
-        });
-        navigate("/user-home");
-      } catch (error) {
-        toast.error("Error al iniciar sesión");
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      toast.error("Credenciales incorrectas", {
+    
+    if (!credentials.email || !credentials.password) {
+      toast.error("Por favor ingresa tu correo y contraseña", {
         position: 'top-right',
         style: { background: '#f44336', color: '#fff', borderRadius: '10px' },
       });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await login(credentials.email, credentials.password);
+      
+      if (response && response.result && response.result.user) {
+        const { user } = response.result;
+        
+        // Mostrar mensaje de bienvenida
+        toast.success(`¡Bienvenido, ${user.name || user.email}!`, {
+          position: 'top-right',
+          style: { background: '#4caf50', color: '#fff', borderRadius: '10px' },
+        });
+        
+        // Redirigir según el rol
+        if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+          navigate('/gerente');
+        } else if (user.role === 'USER') {
+          navigate('/user-home');
+        } else {
+          // Redirección por defecto para otros roles
+          navigate('/dashboard');
+        }
+      } else {
+        throw new Error('Respuesta inesperada del servidor');
+      }
+    } catch (error) {
+      console.error('Error en inicio de sesión:', error);
+      const errorMessage = error?.response?.data?.message || 'Error al iniciar sesión. Por favor verifica tus credenciales.';
+      
+      toast.error(errorMessage, {
+        position: 'top-right',
+        style: { background: '#f44336', color: '#fff', borderRadius: '10px' },
+      });
+    } finally {
       setIsLoading(false);
     }
   };
