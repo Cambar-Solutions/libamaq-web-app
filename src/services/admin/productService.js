@@ -49,41 +49,66 @@ export const getProductById = async (id) => {
     
     console.log(`Datos del producto recibidos del servidor:`, response.data);
     
+    // Verificar el formato de la respuesta
+    // Puede ser { data: {...}, status: 200, message: 'success' } (nuevo formato)
+    // o directamente el objeto producto (formato anterior)
+    let productData;
+    
+    if (response.data && response.data.data) {
+      // Nuevo formato de API
+      console.log('Detectado nuevo formato de API en getProductById');
+      productData = response.data;
+    } else {
+      // Formato anterior o respuesta directa
+      console.log('Detectado formato anterior o respuesta directa en getProductById');
+      productData = response.data;
+    }
+    
     // Verificar si los datos recibidos son válidos
-    const productData = response.data;
     if (productData) {
-      // Asegurarse de que los campos dinámicos sean objetos
-      if (typeof productData.technicalData === 'string') {
+      // En el nuevo formato, el producto real está en productData.data
+      const product = productData.data || productData;
+      
+      // Asegurarse de que los campos dinámicos sean objetos si son JSON válido
+      if (typeof product.technicalData === 'string' && product.technicalData.trim().startsWith('{')) {
         try {
-          productData.technicalData = JSON.parse(productData.technicalData);
+          product.technicalData = JSON.parse(product.technicalData);
         } catch (e) {
-          productData.technicalData = {};
+          console.error('Error al parsear technicalData:', e);
+          // Mantener como string si no es JSON válido
         }
       }
       
-      if (typeof productData.functionalities === 'string') {
+      if (typeof product.functionalities === 'string' && product.functionalities.trim().startsWith('{')) {
         try {
-          productData.functionalities = JSON.parse(productData.functionalities);
+          product.functionalities = JSON.parse(product.functionalities);
         } catch (e) {
-          productData.functionalities = {};
+          console.error('Error al parsear functionalities:', e);
+          // Mantener como string si no es JSON válido
         }
       }
       
-      if (typeof productData.downloads === 'string') {
+      if (typeof product.downloads === 'string' && product.downloads.trim().startsWith('{')) {
         try {
-          productData.downloads = JSON.parse(productData.downloads);
+          product.downloads = JSON.parse(product.downloads);
         } catch (e) {
-          productData.downloads = {};
+          console.error('Error al parsear downloads:', e);
+          // Mantener como string si no es JSON válido
         }
       }
       
-      if (typeof productData.description === 'string') {
+      if (typeof product.description === 'string' && product.description.trim().startsWith('{')) {
         try {
-          productData.description = JSON.parse(productData.description);
+          product.description = JSON.parse(product.description);
         } catch (e) {
-          productData.description = {};
+          console.error('Error al parsear description:', e);
+          // Mantener como string si no es JSON válido
         }
       }
+      
+      // Si estamos en el nuevo formato, devolver el objeto completo
+      // Si no, devolver solo el producto
+      return productData;
     }
     
     return productData;
@@ -225,37 +250,31 @@ export const updateProduct = async (productData) => {
 // Crear producto
 export const createProduct = async (productData) => {
   try {
-    // Procesar imágenes primero si existen
-    let multimedia = [];
-    if (productData.images && productData.images.length > 0) {
-      const uploadPromises = productData.images.map(file => uploadImage(file));
-      const uploadResults = await Promise.all(uploadPromises);
-      
-      multimedia = uploadResults
-        .filter(result => result.type === 'SUCCESS')
-        .map((result, index) => ({
-          multimediaId: result.result.id,
-          displayOrder: index + 1
-        }));
-    }
-
-    // Preparar datos del producto
+    console.log('Datos del producto a crear:', productData);
+    
+    // Preparar datos del producto según el formato esperado por la API NestJS
     const productDto = {
       ...productData,
-      productMultimediaDto: multimedia,
-      // Asegurar que los campos requeridos estén presentes
-      status: 'ACTIVE',
-      brandId: Number(productData.brandId),
-      categoryId: Number(productData.categoryId),
-      cost: Number(productData.cost),
-      price: Number(productData.price),
-      discount: Number(productData.discount || 0),
-      stock: Number(productData.stock || 0),
-      garanty: Number(productData.garanty || 0)
+      // Asegurar que los campos numéricos sean números
+      brandId: productData.brandId ? Number(productData.brandId) : null,
+      categoryId: productData.categoryId ? Number(productData.categoryId) : null,
+      price: productData.price ? Number(productData.price) : 0,
+      cost: productData.cost ? Number(productData.cost) : 0,
+      discount: productData.discount ? Number(productData.discount) : 0,
+      stock: productData.stock ? Number(productData.stock) : 0,
+      garanty: productData.garanty ? Number(productData.garanty) : 0,
+      // Asegurar que el estado sea válido
+      status: productData.status || 'ACTIVE',
+      // Fecha de creación si no está presente
+      createdAt: productData.createdAt || new Date().toISOString(),
+      // Asegurar que media sea un array
+      media: Array.isArray(productData.media) ? productData.media : []
     };
 
-    const { data } = await apiClient.post("/l/products", productDto);
-    return data;
+    console.log('DTO del producto a enviar:', productDto);
+    const response = await apiClient.post("/l/products", productDto);
+    console.log('Respuesta de creación de producto:', response.data);
+    return response.data;
   } catch (error) {
     console.error('Error creating product:', error);
     throw error.response?.data || error.message;
@@ -294,6 +313,102 @@ export const getProductsByCategoryAndBrand = async (categoryId, brandId) => {
     return response.data;
   } catch (error) {
     console.error(`Error fetching products for category ${categoryId} and brand ${brandId}:`, error);
+    throw error.response?.data || error.message;
+  }
+};
+
+/**
+ * Crea un producto con imágenes en un solo proceso
+ * @param {Object} productData - Datos básicos del producto
+ * @param {File[]} imageFiles - Archivos de imagen a subir
+ * @param {Function} onProgress - Función para reportar el progreso de la carga
+ * @returns {Promise<Object>} - Producto creado con todas sus relaciones
+ */
+export const createProductWithImages = async (productData, imageFiles = [], onProgress = null) => {
+  try {
+    console.log('Iniciando creación de producto con imágenes');
+    console.log('Datos del producto:', productData);
+    console.log('Archivos de imágenes:', imageFiles);
+    
+    // Paso 1: Crear el producto primero sin imágenes
+    const initialProductData = {
+      ...productData,
+      // Asegurar que los campos numéricos sean números
+      brandId: productData.brandId ? Number(productData.brandId) : null,
+      categoryId: productData.categoryId ? Number(productData.categoryId) : null,
+      price: productData.price ? Number(productData.price) : 0,
+      cost: productData.cost ? Number(productData.cost) : 0,
+      discount: productData.discount ? Number(productData.discount) : 0,
+      stock: productData.stock ? Number(productData.stock) : 0,
+      garanty: productData.garanty ? Number(productData.garanty) : 0,
+      // Asegurar que el estado sea válido
+      status: productData.status || 'ACTIVE',
+      // Fecha de creación si no está presente
+      createdAt: productData.createdAt || new Date().toISOString(),
+      // Inicialmente sin imágenes
+      media: []
+    };
+    
+    console.log('Creando producto inicial sin imágenes...');
+    const createResponse = await apiClient.post('/l/products', initialProductData);
+    console.log('Producto creado inicialmente:', createResponse.data);
+    
+    // Verificar que el producto se haya creado correctamente
+    if (!createResponse.data || !createResponse.data.data || !createResponse.data.data.id) {
+      throw new Error('No se pudo crear el producto correctamente');
+    }
+    
+    const createdProductId = createResponse.data.data.id;
+    console.log(`Producto creado con ID: ${createdProductId}`);
+    
+    // Si no hay imágenes para subir, retornar el producto ya creado
+    if (!imageFiles || imageFiles.length === 0) {
+      return createResponse.data;
+    }
+    
+    // Paso 2: Subir las imágenes
+    console.log(`Subiendo ${imageFiles.length} imágenes para el producto ${createdProductId}...`);
+    
+    // Importar el servicio de media dinámicamente para evitar dependencias circulares
+    const { uploadMedia } = await import('./mediaService');
+    const { updateMediaForEntity } = await import('./mediaService');
+    
+    // Subir todas las imágenes
+    const uploadResponse = await uploadMedia(imageFiles);
+    console.log('Respuesta de subida de imágenes:', uploadResponse);
+    
+    if (uploadResponse && uploadResponse.data) {
+      const uploadedFiles = Array.isArray(uploadResponse.data) 
+        ? uploadResponse.data 
+        : [uploadResponse.data];
+      
+      // Paso 3: Asociar cada imagen al producto
+      for (let i = 0; i < uploadedFiles.length; i++) {
+        const file = uploadedFiles[i];
+        const mediaData = {
+          id: file.id,
+          url: file.url,
+          fileType: 'IMAGE',
+          entityId: createdProductId,
+          entityType: 'PRODUCT',
+          displayOrder: i + 1
+        };
+        
+        console.log(`Asociando imagen ${i + 1} al producto ${createdProductId}:`, mediaData);
+        await updateMediaForEntity(mediaData);
+      }
+      
+      // Paso 4: Obtener el producto actualizado con sus imágenes
+      const updatedProduct = await getProductById(createdProductId);
+      console.log('Producto actualizado con imágenes:', updatedProduct);
+      
+      return updatedProduct;
+    }
+    
+    // Si no se pudieron subir imágenes, retornar el producto sin imágenes
+    return createResponse.data;
+  } catch (error) {
+    console.error('Error al crear producto con imágenes:', error);
     throw error.response?.data || error.message;
   }
 };

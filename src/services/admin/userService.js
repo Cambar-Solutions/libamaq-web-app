@@ -27,7 +27,12 @@ export const getCustomerUsers = async () => {
   try {
     const response = await apiClient.get("/l/users");
     console.log('Respuesta completa getCustomerUsers:', response);
-    return response.data?.data || [];
+    // Filtrar solo los usuarios con rol CUSTOMER
+    const customers = Array.isArray(response.data?.data) 
+      ? response.data.data.filter(user => user.role === 'CUSTOMER') 
+      : [];
+    console.log('Clientes filtrados:', customers);
+    return customers;
   } catch (error) {
     console.error('Error en getCustomerUsers:', error);
     throw error.response?.data || error.message;

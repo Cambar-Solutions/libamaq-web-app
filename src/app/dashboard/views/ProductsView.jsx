@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { getAllProducts, updateProduct } from "@/services/admin/productService";
+import { getAllProducts, updateProduct, getProductPreviews } from "@/services/admin/productService";
 import { getAllBrands } from "@/services/admin/brandService";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -38,7 +38,8 @@ const CardComponent = ({ product, onClick, onDelete }) => {
     return product.brand?.logoUrl || "";
   };
 
-  const bg = product.color || "#e5e7eb";
+  // Para la vista previa, usar un color predeterminado
+  const bg = product.color || "#3b82f6"; // Color azul predeterminado
   const isLight = isLightColor(bg);
   const textColor = isLight ? "text-black" : "text-white";
 
@@ -85,9 +86,9 @@ const CardComponent = ({ product, onClick, onDelete }) => {
           <CardTitle className={`truncate whitespace-nowrap overflow-hidden text-sm md:text-base ${textColor}`} title={product.name}>{product.name}</CardTitle>
           <CardDescription>
             <div className={`flex flex-col ${textColor}`}>
-              <span>ID: {product.externalId}</span>
-              <span>Marca: {product.brand?.name || "Sin marca"}</span>
-              <span>Tipo: {product.type || "Sin tipo"}</span>
+              <span>ID: {product.id}</span>
+              <span>Precio: ${product.price}</span>
+              <span className="truncate">{product.description}</span>
             </div>
           </CardDescription>
         </div>
@@ -178,10 +179,10 @@ export function ProductsView() {
     try {
       // Obtener productos y marcas
       console.log('Obteniendo productos y marcas...');
-      const productsResponse = await getAllProducts(); // Usar getAllProducts en lugar de getProductPreviews
+      const productsResponse = await getProductPreviews(); // Usar getProductPreviews para obtener la vista previa
       const brandsResponse = await getAllBrands();
 
-      console.log('Respuesta de productos:', productsResponse);
+      console.log('Respuesta de productos (preview):', productsResponse);
       console.log('Respuesta de marcas:', brandsResponse);
 
       // Verificar que las respuestas sean válidas
@@ -190,7 +191,8 @@ export function ProductsView() {
       }
 
       // Extraer los datos de las respuestas
-      const allProductsData = productsResponse.result || [];
+      // La estructura de la respuesta es { data: [...], status: 200, message: 'success' }
+      const allProductsData = productsResponse.data || [];
       
       // Filtrar solo los productos activos
       const productsData = allProductsData.filter(product => product.status === "ACTIVE");
@@ -252,8 +254,13 @@ export function ProductsView() {
   };
 
   const handleCardClick = (product) => {
+    // Guardar el ID del producto en localStorage para que ProductoDetalle pueda acceder a él
     localStorage.setItem("selectedProductId", product.id);
+    
+    // Navegar a la vista detallada del producto
     navigate("/producto-detalle");
+    
+    console.log(`Navegando a la vista detallada del producto con ID: ${product.id}`);
   };
   
   // Función para manejar la eliminación (cambio de status) de un producto
@@ -271,7 +278,7 @@ export function ProductsView() {
         id: productId,
         name: productToUpdate.name || 'Producto sin nombre',
         externalId: productToUpdate.externalId || 'ID-' + productId,
-        shortDescription: productToUpdate.shortDescription || productToUpdate.type || 'Descripción no disponible',
+        shortDescription: productToUpdate.description || 'Descripción no disponible', // Usar description de la vista previa
         type: productToUpdate.type || 'PRODUCT',
         status: 'INACTIVE', // Marcar como inactivo
         price: productToUpdate.price || 0,

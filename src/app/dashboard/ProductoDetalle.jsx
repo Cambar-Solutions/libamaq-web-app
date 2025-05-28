@@ -42,78 +42,92 @@ export default function ProductoDetalle() {
       const response = await getProductById(id);
       console.log('Respuesta completa del servidor:', response);
 
-      if (response.type === "SUCCESS" && response.result) {
-        const product = response.result;
-
-        // Asegurarse de que los campos dinámicos estén inicializados como objetos
-        if (!product.technicalData) product.technicalData = {};
-        if (!product.functionalities) product.functionalities = {};
-        if (!product.downloads) product.downloads = {};
-        if (!product.description) product.description = {};
-
-        // Procesar campos JSON si son strings
-        if (typeof product.technicalData === 'string') {
-          try {
-            product.technicalData = JSON.parse(product.technicalData);
-          } catch (e) {
-            console.error('Error al parsear technicalData:', e);
-            product.technicalData = {};
-          }
-        }
-
-        if (typeof product.functionalities === 'string') {
-          try {
-            product.functionalities = JSON.parse(product.functionalities);
-          } catch (e) {
-            console.error('Error al parsear functionalities:', e);
-            product.functionalities = {};
-          }
-        }
-
-        if (typeof product.downloads === 'string') {
-          try {
-            product.downloads = JSON.parse(product.downloads);
-          } catch (e) {
-            console.error('Error al parsear downloads:', e);
-            product.downloads = {};
-          }
-        }
-
-        if (typeof product.description === 'string') {
-          try {
-            product.description = JSON.parse(product.description);
-          } catch (e) {
-            console.error('Error al parsear description:', e);
-            product.description = {};
-          }
-        }
-
-        // Asegurarse de que brandId y categoryId estén presentes
-        product.brandId = product.brandId || product.brand_id;
-        product.categoryId = product.categoryId || product.category_id;
-        product.brand_id = product.brandId;
-        product.category_id = product.categoryId;
-
-        console.log('Producto cargado (procesado):', product);
-        console.log('Datos técnicos:', product.technicalData);
-
-        // Actualizar el estado con los datos procesados
-        setProducto({ ...product });
-        setEditedProduct({ ...product });
-        setUploadedImages(product.multimedia || []);
-        if (product.multimedia && product.multimedia.length > 0) {
-          setMainImage(product.multimedia[0]?.url);
-        }
-
-        return product;
+      // Verificar el formato de la respuesta (puede ser el formato anterior o el nuevo)
+      let product;
+      
+      if (response.data) {
+        // Nuevo formato de API: { data: {...}, status: 200, message: 'success' }
+        console.log('Detectado nuevo formato de API');
+        product = response.data;
+      } else if (response.type === "SUCCESS" && response.result) {
+        // Formato anterior: { type: "SUCCESS", result: {...} }
+        console.log('Detectado formato anterior de API');
+        product = response.result;
       } else {
-        toast.error("Error al cargar el producto");
-        navigate("/dashboard");
-        return null;
+        throw new Error('Formato de respuesta no reconocido');
       }
+
+      console.log('Datos del producto extraídos:', product);
+
+      // Asegurarse de que los campos dinámicos estén inicializados como objetos o strings vacíos
+      if (!product.technicalData) product.technicalData = '';
+      if (!product.functionalities) product.functionalities = '';
+      if (!product.downloads) product.downloads = '';
+      if (!product.description) product.description = '';
+
+      // Procesar campos JSON si son strings y parecen ser JSON
+      if (typeof product.technicalData === 'string' && product.technicalData.trim().startsWith('{')) {
+        try {
+          product.technicalData = JSON.parse(product.technicalData);
+        } catch (e) {
+          console.error('Error al parsear technicalData:', e);
+          // Mantener como string si no es JSON válido
+        }
+      }
+
+      if (typeof product.functionalities === 'string' && product.functionalities.trim().startsWith('{')) {
+        try {
+          product.functionalities = JSON.parse(product.functionalities);
+        } catch (e) {
+          console.error('Error al parsear functionalities:', e);
+          // Mantener como string si no es JSON válido
+        }
+      }
+
+      if (typeof product.downloads === 'string' && product.downloads.trim().startsWith('{')) {
+        try {
+          product.downloads = JSON.parse(product.downloads);
+        } catch (e) {
+          console.error('Error al parsear downloads:', e);
+          // Mantener como string si no es JSON válido
+        }
+      }
+
+      if (typeof product.description === 'string' && product.description.trim().startsWith('{')) {
+        try {
+          product.description = JSON.parse(product.description);
+        } catch (e) {
+          console.error('Error al parsear description:', e);
+          // Mantener como string si no es JSON válido
+        }
+      }
+
+      // Asegurarse de que brandId y categoryId estén presentes
+      product.brandId = product.brandId || product.brand_id;
+      product.categoryId = product.categoryId || product.category_id;
+      product.brand_id = product.brandId;
+      product.category_id = product.categoryId;
+
+      console.log('Producto cargado (procesado):', product);
+      console.log('Datos técnicos:', product.technicalData);
+
+      // Actualizar el estado con los datos procesados
+      setProducto({ ...product });
+      setEditedProduct({ ...product });
+      
+      // Manejar multimedia (puede estar en product.media en el nuevo formato)
+      const multimedia = product.multimedia || product.media || [];
+      setUploadedImages(multimedia);
+      
+      if (multimedia && multimedia.length > 0) {
+        setMainImage(multimedia[0]?.url);
+      }
+
+      return product;
     } catch (error) {
       console.error('Error loading product data:', error);
-      toast.error("Error al cargar los datos del producto: " + (error.message || 'Error desconocido'));
+      toast.error("Error al cargar el producto: " + (error.message || 'Error desconocido'));
+      navigate("/dashboard");
       return null;
     } finally {
       setIsLoading(false);

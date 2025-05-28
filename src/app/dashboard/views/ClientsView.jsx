@@ -33,6 +33,9 @@ export function ClientsView() {
   } = useQuery({
     queryKey: ['clients'],
     queryFn: getCustomerUsers,
+    onSuccess: (data) => {
+      console.log('Clientes cargados:', data);
+    },
     onError: (error) => {
       toast.error("Error al cargar clientes");
       console.error('Error al cargar clientes:', error);
@@ -144,9 +147,11 @@ export function ClientsView() {
       name: newClient.nombre,
       lastName: newClient.apellido,
       phoneNumber: newClient.telefono,
-      role: newClient.role,
+      role: 'CUSTOMER', // Forzar el rol CUSTOMER para clientes
       status: newClient.status
     };
+    
+    console.log('Datos del cliente a guardar:', userData);
 
     if (isEditing) {
       // Para actualización, incluir el ID como número

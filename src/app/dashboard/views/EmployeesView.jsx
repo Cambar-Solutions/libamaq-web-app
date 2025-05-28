@@ -9,6 +9,7 @@ import { getAllUsers, createUser, updateUser } from "@/services/admin/userServic
 import { toast } from "sonner";
 import { Pencil } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
 
 export function EmployeesView() {
   const queryClient = useQueryClient();
@@ -40,9 +41,12 @@ export function EmployeesView() {
   });
   
   // Filtrar solo los empleados (DIRECTOR, PROVIDER, DELIVERY, ADMIN)
-  const employees = allUsers.filter(user => 
-    ["DIRECTOR", "PROVIDER", "DELIVERY", "ADMIN"].includes(user.role)
-  );
+  const employees = Array.isArray(allUsers) 
+    ? allUsers.filter(user => user && ["DIRECTOR", "PROVIDER", "DELIVERY", "ADMIN"].includes(user.role))
+    : [];
+    
+  console.log('Usuarios totales:', allUsers);
+  console.log('Empleados filtrados:', employees);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -229,7 +233,21 @@ export function EmployeesView() {
                         <TableCell>{employee.email}</TableCell>
                         <TableCell>{employee.phoneNumber}</TableCell>
                         <TableCell>
-                          <span className="capitalize">{employee.role}</span>
+                          {employee.role === 'ADMIN' && (
+                            <Badge variant="destructive">Administrador</Badge>
+                          )}
+                          {employee.role === 'DIRECTOR' && (
+                            <Badge variant="default">Director</Badge>
+                          )}
+                          {employee.role === 'PROVIDER' && (
+                            <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">Proveedor</Badge>
+                          )}
+                          {employee.role === 'DELIVERY' && (
+                            <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">Repartidor</Badge>
+                          )}
+                          {employee.role === 'CUSTOMER' && (
+                            <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Cliente</Badge>
+                          )}
                         </TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
@@ -285,9 +303,21 @@ export function EmployeesView() {
                             }`}>
                               {employee.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
                             </span>
-                            <span className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 capitalize">
-                              {employee.role}
-                            </span>
+                            {employee.role === 'ADMIN' && (
+                              <Badge variant="destructive" className="text-xs">Admin</Badge>
+                            )}
+                            {employee.role === 'DIRECTOR' && (
+                              <Badge variant="default" className="text-xs">Director</Badge>
+                            )}
+                            {employee.role === 'PROVIDER' && (
+                              <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200 text-xs">Proveedor</Badge>
+                            )}
+                            {employee.role === 'DELIVERY' && (
+                              <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200 text-xs">Repartidor</Badge>
+                            )}
+                            {employee.role === 'CUSTOMER' && (
+                              <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200 text-xs">Cliente</Badge>
+                            )}
                           </div>
                         </div>
                         
@@ -418,15 +448,15 @@ export function EmployeesView() {
                   value={newEmployee.role}
                   onValueChange={(value) => setNewEmployee(prev => ({ ...prev, role: value }))}
                 >
-                  <SelectTrigger className="col-span-3 cursor-pointer">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Seleccionar rol" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="ADMIN">Administrador</SelectItem>
                     <SelectItem value="DIRECTOR">Director</SelectItem>
                     <SelectItem value="PROVIDER">Proveedor</SelectItem>
                     <SelectItem value="DELIVERY">Repartidor</SelectItem>
-                    <SelectItem value="ADMIN">Administrador</SelectItem>
-                    <SelectItem value="USER">Usuario</SelectItem>
+                    <SelectItem value="CUSTOMER">Cliente</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
