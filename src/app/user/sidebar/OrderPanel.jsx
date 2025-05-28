@@ -59,7 +59,12 @@ export default function OrderPanel() {
             <div className="w-full bg-stone-100 min-h-screen pb-10 pt-22">
                 <div className="max-w-7xl mx-auto px-2 sm:px-4 sticky top-16 z-10 mb-6 p-2 sm:p-3">
                     <div className="m-2 border-b border-gray-400">
-                        <h1 className="text-3xl font-semibold mb-3">PedidosMAQ Disponibles</h1>
+                        <div className="mb-3">
+                            <h1 className="text-3xl font-semibold">Pedidos Disponibles</h1>
+                            <p className="text-base text-gray-400 font-semibold">Aquí puedes ver los pedidos que has hecho en estos días
+                            </p>
+                        </div>
+
                     </div>
 
                     {products.map((prod) => {
@@ -103,7 +108,7 @@ export default function OrderPanel() {
                                             </p>
                                         </DialogDescription>
                                     </DialogHeader>
-                                    
+
                                     {/* Seguimiento de pedido en el modal - Vertical */}
                                     <div className="mt-4 mb-6">
                                         <h3 className="text-lg font-semibold text-gray-800 mb-3">Seguimiento de pedido</h3>
@@ -111,7 +116,7 @@ export default function OrderPanel() {
                                             <StepperDemo status={prod.state} inModal={true} />
                                         </div>
                                     </div>
-                                    
+
                                     {/* Detalles del pedido */}
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
@@ -120,23 +125,23 @@ export default function OrderPanel() {
                                                 <p className="text-xs font-semibold text-white">{prod.state}</p>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
                                             <h3 className="text-sm font-medium text-gray-500">Fecha de pedido:</h3>
                                             <p className="text-sm">19/05/2025</p>
                                         </div>
-                                        
+
                                         <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
                                             <h3 className="text-sm font-medium text-gray-500">Precio:</h3>
                                             <p className="text-sm font-semibold">${prod.price.toLocaleString()}</p>
                                         </div>
-                                        
+
                                         <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
                                             <h3 className="text-sm font-medium text-gray-500">Dirección de entrega:</h3>
                                             <p className="text-sm">Col. Ciudad Chapu arcos 07</p>
                                         </div>
                                     </div>
-                                    
+
                                     <DialogFooter className="">
                                     </DialogFooter>
                                 </DialogContent>
