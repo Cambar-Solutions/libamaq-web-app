@@ -117,166 +117,174 @@ export default function BuyPanel() {
 
     return (
         <div className="w-full bg-stone-100 min-h-screen pb-10 pt-22">
-           <div className=" max-w-7xl mx-auto px-2 sm:px-4 sticky top-16 z-10 p-2 sm:p-3">
-            {/* Cabecera + filtro */}
-            <div className="flex flex-col sm:flex-row items-center justify-between mx-4 mb-6 border-b border-gray-400 pb-3 px-0">
-                <h1 className="text-3xl font-semibold">ComprasMAQ</h1>
-                <div className="mt-4 sm:mt-0 flex items-center">
-                    <label className="mr-2 font-medium">Filtrar fecha:</label>
-                    <input
-                        type="date"
-                        value={filterDate}
-                        onChange={e => setFilterDate(e.target.value)}
-                        className="cursor-text px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
-                    />
-                    {filterDate && (
-                        <button
-                            onClick={() => setFilterDate("")}
-                            className="ml-2 text-sm text-gray-600 hover:underline"
-                        >
-                            Limpiar
-                        </button>
-                    )}
+            <div className=" max-w-7xl mx-auto px-2 sm:px-4 sticky top-16 z-10 p-2 sm:p-3">
+                {/* Cabecera + filtro */}
+                <div className="flex flex-col sm:flex-row items-center justify-between mx-4 mb-6 border-b border-gray-400 pb-3 px-0">
+                    <div>
+                        <h1 className="text-3xl font-semibold text-indigo-950">Mis Compras</h1>
+                        <p className="text-base text-gray-400 font-semibold">Aquí puedes ver tus compras realizadas
+                        </p>
+                    </div>
+
+                    <div className="mt-4 sm:mt-0 flex items-center">
+                        <label className="mr-2 font-medium">Filtrar fecha:</label>
+                        <input
+                            type="date"
+                            value={filterDate}
+                            onChange={e => setFilterDate(e.target.value)}
+                            className="cursor-text px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
+                        />
+                        {filterDate && (
+                            <button
+                                onClick={() => setFilterDate("")}
+                                className="ml-2 text-sm text-gray-600 hover:underline"
+                            >
+                                Limpiar
+                            </button>
+                        )}
+                    </div>
                 </div>
+
+                <AnimatePresence initial={false} custom={direction} mode="wait">
+                    {selected === null ? (
+                        // LISTADO DE CARDS
+                        <motion.div
+                            key="list"
+                            custom={direction}
+                            variants={slideVariants}
+                            initial="initial"
+                            animate="animate"
+                            exit="exit"
+                            transition={{ duration: 0.4, ease: "easeInOut" }}
+                        >
+                            <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-1 gap-6">
+                                {filtered.length === 0 && (
+                                    <p className="col-span-full text-center text-gray-500">
+                                        No hay compras en esa fecha.
+                                    </p>
+                                )}
+                                {filtered.map(order => (
+                                    <div
+                                        key={order.id}
+                                        className="bg-white rounded-lg shadow-sm hover:shadow-lg duration-500 cursor-pointer overflow-hidden"
+                                        onClick={() => setSelected(order)}
+                                    >
+                                        <div className="mt-2 flex items-center text-xl text-gray-600 pl-5 py-3 border-b-2">
+                                            <span className="font-medium">{order.deliveredAt}</span>
+                                        </div>
+                                        <div className="px-10 sm:px-10 py-4 flex flex-col sm:flex-row items-center sm:items-center">
+                                            <img
+                                                src={order.img}
+                                                alt={order.name}
+                                                className="w-40 h-40 sm:h-48 object-cover rounded"
+                                            />
+                                            <div className="flex-1 ml-4 sm:mt-0 sm:ml-4">
+                                                <h2 className="text-2xl font-semibold">{order.name}</h2>
+                                                <p className="text-lg text-gray-600">{order.brand}</p>
+                                                <p className="mt-1 text-gray-700 line-clamp-3 w-[80%] text-justify">
+                                                    {order.description}
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-col items-center sm:mt-0">
+                                                <span className="text-xl font-semibold">
+                                                    ${order.price.toLocaleString()}
+                                                </span>
+                                                <span
+                                                    className={`mt-2 px-2 py-1 rounded-full text-sm font-medium ${order.status === "Entregado"
+                                                        ? "bg-green-100 text-green-800"
+                                                        : "bg-yellow-100 text-yellow-800"
+                                                        }`}
+                                                >
+                                                    {order.status}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    ) : (
+                        // VISTA DE DETALLE INLINE
+                        <motion.div
+                            key="detail"
+                            custom={-direction}
+                            variants={slideVariants}
+                            initial="initial"
+                            animate="animate"
+                            exit="exit"
+                            transition={{ duration: 0.4, ease: "easeInOut" }}
+                            className="absolute inset-0 min-h-screen bg-stone-100 overflow-auto pt-6 sm:pb-30"
+                        >
+                            {/* Breadcrumb “Compras” como volver */}
+                            <div className="max-w-6xl mx-auto px-4 mb-8">
+                                <nav className="flex text-gray-700">
+                                    <button
+                                        onClick={() => setSelected(null)}
+                                        className="cursor-pointer hover:text-blue-600 font-medium"
+                                    >
+                                        Mis Compras
+                                    </button>
+                                    <span className="mx-2">/</span>
+                                    <span className="text-blue-500">Estado de la compra</span>
+                                </nav>
+                            </div>
+
+                            {/* Tres cards de detalle */}
+                            <div className="max-w-6xl mx-auto px-4 grid gap-6 grid-cols-1 md:grid-cols-3">
+                                {/* 1) Cabecera */}
+                                <div className="bg-white rounded-2xl shadow p-6 md:col-span-2">
+                                    <span className="text-sm font-medium text-green-600">{selected.status}</span>
+                                    <h3 className="mt-2 text-2xl font-semibold text-gray-800">
+                                        Llegó el {selected.deliveredAt}
+                                    </h3>
+                                    <p className="mt-4 text-gray-700">
+                                        Entregamos tu paquete en <strong>{selected.address}</strong>
+                                    </p>
+                                </div>
+
+                                {/* 2) Detalle del pedido */}
+                                <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 flex flex-col justify-between">
+                                    <div>
+                                        <h2 className="text-xl font-semibold text-gray-800">{selected.name}</h2>
+                                        <p className="text-sm text-gray-500 mt-1">{selected.description}</p>
+                                        <p className="text-sm text-gray-500 mt-1">Cantidad: 1</p>
+                                    </div>
+
+                                    <div className="mt-6 flex gap-3">
+                                        <Link to="/tienda">
+                                            <button className="cursor-pointer rounded-2xl px-4 py-2 bg-blue-600 text-white hover:bg-blue-700">Volver a comprar</button>
+                                        </Link>
+
+                                    </div>
+                                </div>
+
+                                {/* 3) Resumen de compra */}
+                                <div className="bg-white rounded-2xl shadow p-6 space-y-4">
+                                    <h4 className="text-lg font-semibold text-gray-800">Detalle de la compra</h4>
+                                    <div className="flex justify-between text-gray-600">
+                                        <span>Productos</span>
+                                        <span>${(selected.price).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-green-600">
+                                        <span>Descuento</span>
+                                        <span>– $0</span>
+                                    </div>
+                                    <div className="flex justify-between text-gray-600">
+                                        <span>Envío</span>
+                                        <span>$64</span>
+                                    </div>
+                                    <div className="border-t pt-3 flex justify-between font-semibold text-gray-800">
+                                        <span>Total</span>
+                                        <span>${(selected.price + 64).toLocaleString()}</span>
+                                    </div>
+                                    <p className="text-sm text-gray-500">Método de Pago: {selected.pay}</p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
-
-            <AnimatePresence initial={false} custom={direction} mode="wait">
-                {selected === null ? (
-                    // LISTADO DE CARDS
-                    <motion.div
-                        key="list"
-                        custom={direction}
-                        variants={slideVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        transition={{ duration: 0.4, ease: "easeInOut" }}
-                    >
-                        <div className="max-w-6xl mx-auto px-4 grid gap-6">
-                            {filtered.length === 0 && (
-                                <p className="col-span-full text-center text-gray-500">
-                                    No hay compras en esa fecha.
-                                </p>
-                            )}
-                            {filtered.map(order => (
-                                <div
-                                    key={order.id}
-                                    className="bg-white rounded-lg shadow-sm hover:shadow-lg duration-500 cursor-pointer"
-                                    onClick={() => setSelected(order)}
-                                >
-                                    <div className="mt-2 flex items-center text-xl text-gray-600 pl-5 py-3 border-b-2">
-                                        <span className="font-medium">{order.deliveredAt}</span>
-                                    </div>
-                                    <div className="px-10 py-4 flex items-center">
-                                        <img
-                                            src={order.img}
-                                            alt={order.name}
-                                            className="w-40 h-40 object-cover rounded"
-                                        />
-                                        <div className="flex-1 ml-4">
-                                            <h2 className="text-2xl font-semibold">{order.name}</h2>
-                                            <p className="text-lg text-gray-600">{order.brand}</p>
-                                            <p className="mt-1 text-gray-700 line-clamp-3 w-[80%] text-justify">
-                                                {order.description}
-                                            </p>
-                                        </div>
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-xl font-semibold">
-                                                ${order.price.toLocaleString()}
-                                            </span>
-                                            <span
-                                                className={`mt-2 px-2 py-1 rounded-full text-sm font-medium ${order.status === "Entregado"
-                                                    ? "bg-green-100 text-green-800"
-                                                    : "bg-yellow-100 text-yellow-800"
-                                                    }`}
-                                            >
-                                                {order.status}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </motion.div>
-                ) : (
-                    // VISTA DE DETALLE INLINE
-                    <motion.div
-                        key="detail"
-                        custom={-direction}
-                        variants={slideVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                        transition={{ duration: 0.4, ease: "easeInOut" }}
-                        className="absolute inset-0 bg-stone-100 overflow-auto"
-                    >
-                        {/* Breadcrumb “Compras” como volver */}
-                        <div className="max-w-6xl mx-auto px-4 mb-6 pt-30">
-                            <nav className="flex text-gray-700">
-                                <button
-                                    onClick={() => setSelected(null)}
-                                    className="cursor-pointer hover:text-blue-600 font-medium"
-                                >
-                                    ComprasMAQ
-                                </button>
-                                <span className="mx-2">/</span>
-                                <span className="text-blue-500">Estado de la compra</span>
-                            </nav>
-                        </div>
-
-                        {/* Tres cards de detalle */}
-                        <div className="max-w-6xl mx-auto px-4 grid gap-6 grid-cols-1 md:grid-cols-3">
-                            {/* 1) Cabecera */}
-                            <div className="bg-white rounded-2xl shadow p-6 md:col-span-2">
-                                <span className="text-sm font-medium text-green-600">{selected.status}</span>
-                                <h3 className="mt-2 text-2xl font-semibold text-gray-800">
-                                    Llegó el {selected.deliveredAt}
-                                </h3>
-                                <p className="mt-4 text-gray-700">
-                                    Entregamos tu paquete en <strong>{selected.address}</strong>
-                                </p>
-                            </div>
-
-                            {/* 2) Detalle del pedido */}
-                            <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 flex flex-col">
-                                <h2 className="text-xl font-semibold text-gray-800">{selected.name}</h2>
-                                <p className="text-sm text-gray-500 mt-1">{selected.description}</p>
-                                <p className="text-sm text-gray-500 mt-1">Cantidad: 1</p>
-                                <div className="mt-6 flex gap-3">
-                                    <Link to="/tienda">
-                                        <button className="cursor-pointer rounded-2xl px-4 py-2 bg-blue-600 text-white hover:bg-blue-700">Volver a comprar</button>
-                                    </Link>
-                                    
-                                </div>
-                            </div>
-
-                            {/* 3) Resumen de compra */}
-                            <div className="bg-white rounded-2xl shadow p-6 space-y-4">
-                                <h4 className="text-lg font-semibold text-gray-800">Detalle de la compra</h4>
-                                <div className="flex justify-between text-gray-600">
-                                    <span>Productos</span>
-                                    <span>${(selected.price).toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between text-green-600">
-                                    <span>Descuento</span>
-                                    <span>– $0</span>
-                                </div>
-                                <div className="flex justify-between text-gray-600">
-                                    <span>Envío</span>
-                                    <span>$64</span>
-                                </div>
-                                <div className="border-t pt-3 flex justify-between font-semibold text-gray-800">
-                                    <span>Total</span>
-                                    <span>${(selected.price + 64).toLocaleString()}</span>
-                                </div>
-                                <p className="text-sm text-gray-500">Método de Pago: {selected.pay}</p>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div> 
         </div>
-        
+
     );
 }
