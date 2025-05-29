@@ -6,6 +6,7 @@ import { queryClient } from './lib/queryClient';
 import { SidebarProvider } from './providers/sidebar-provider';
 import './index.css';
 import LoadingScreen from './components/LoadingScreen';
+import AuthRoute from './components/AuthRoute';
 
 // Importar todos los componentes usando lazy loading
 const App = lazy(() => import('./App.jsx'));
@@ -29,7 +30,6 @@ const PaymentMethod = lazy(() => import('./app/e-commerce/PaymentMethod'));
 const Shopping = lazy(() => import('./app/user/sidebar/Shopping'));
 const LocationLibamaq = lazy(() => import('./components/LocationLibamaq'));
 
-
 // Componente de layout que envuelve todas las rutas con Suspense
 const AppLayout = ({ children }) => (
   <Suspense fallback={<LoadingScreen />}>
@@ -42,109 +42,116 @@ createRoot(document.getElementById('root')).render(
     <QueryClientProvider client={queryClient}>
       <SidebarProvider>
         <Router>
-      <Routes>
-        {/* PRINCIPAL */}
-        <Route path="/" element={
-          <AppLayout>
-            <App />
-          </AppLayout>
-        } />
-        <Route path="/login" element={
-          <AppLayout>
-            <Login />
-          </AppLayout>
-        } />
-        <Route path="/nosotros" element={
-          <AppLayout>
-            <Nosotros />
-          </AppLayout>
-        } />
-        <Route path="/location" element={
-          <AppLayout>
-            <LocationLibamaq />
-          </AppLayout>
-        } />
+          <Routes>
+            {/* Rutas públicas */}
+            <Route path="/" element={
+              <AppLayout>
+                <App />
+              </AppLayout>
+            } />
+            <Route path="/login" element={
+              <AppLayout>
+                <AuthRoute isLoginRoute>
+                  <Login />
+                </AuthRoute>
+              </AppLayout>
+            } />
+            <Route path="/nosotros" element={
+              <AppLayout>
+                <Nosotros />
+              </AppLayout>
+            } />
+            <Route path="/location" element={
+              <AppLayout>
+                <LocationLibamaq />
+              </AppLayout>
+            } />
 
-        {/* E-COMMERCE */}
-        <Route path="/dashboard" element={
-          <AppLayout>
-            <Dashboard />
-          </AppLayout>
-        } />
-        <Route path="/gerente" element={
-          <AppLayout>
-            <Gerente />
-          </AppLayout>
-        } />
-        <Route path="/detalle/:nombre" element={
-          <AppLayout>
-            <DetalleHerramienta />
-          </AppLayout>
-        } />
-        <Route path="/producto/:id" element={
-          <AppLayout>
-            <DetalleProducto />
-          </AppLayout>
-        } />
-        <Route path="/e-commerce/rentar/:id" element={
-          <AppLayout>
-            <RentPage />
-          </AppLayout>
-        } />
-        <Route path="/marcas/:brandName" element={
-          <AppLayout>
-            <BrandPage />
-          </AppLayout>
-        } />
-        <Route path="/tienda" element={
-          <AppLayout>
-            <ProductList />
-          </AppLayout>
-        } />
-        
-        <Route path="/productos/:brand/:category" element={
-          <AppLayout>
-            <CategoryPage />
-          </AppLayout>
-        } />
-        <Route path="/nuevo-producto" element={
-          <AppLayout>
-            <NuevoProducto />
-          </AppLayout>
-        } />
-        <Route path="/producto-detalle" element={
-          <AppLayout>
-            <ProductoDetalle />
-          </AppLayout>
-        } />
-        <Route path="/payment-method" element={
-          <AppLayout>
-            <PaymentMethod />
-          </AppLayout>
-        } />
+            {/* Rutas públicas de e-commerce */}
+            <Route path="/detalle/:nombre" element={
+              <AppLayout>
+                <DetalleHerramienta />
+              </AppLayout>
+            } />
+            <Route path="/producto/:id" element={
+              <AppLayout>
+                <DetalleProducto />
+              </AppLayout>
+            } />
+            <Route path="/e-commerce/rentar/:id" element={
+              <AppLayout>
+                <RentPage />
+              </AppLayout>
+            } />
+            <Route path="/marcas/:brandName" element={
+              <AppLayout>
+                <BrandPage />
+              </AppLayout>
+            } />
+            <Route path="/tienda" element={
+              <AppLayout>
+                <ProductList />
+              </AppLayout>
+            } />
+            <Route path="/productos/:brand/:category" element={
+              <AppLayout>
+                <CategoryPage />
+              </AppLayout>
+            } />
+            <Route path="/payment-method" element={
+              <AppLayout>
+                <PaymentMethod />
+              </AppLayout>
+            } />
 
+            {/* Rutas protegidas para ADMIN, DIRECTOR, PROVIDER y DELIVERY */}
+            <Route path="/dashboard" element={
+              <AppLayout>
+                <AuthRoute allowedRoles={['ADMIN', 'DIRECTOR']}>
+                  <Dashboard />
+                </AuthRoute>
+              </AppLayout>
+            } />
 
-        {/* Cliente */}
-        <Route path="/user-home" element={
-          <AppLayout>
-            <UserHome/>
-          </AppLayout>
-        } />
+            {/* Rutas protegidas para ADMIN y DIRECTOR */}
+            <Route path="/nuevo-producto" element={
+              <AppLayout>
+                <AuthRoute allowedRoles={['ADMIN', 'DIRECTOR']}>
+                  <NuevoProducto />
+                </AuthRoute>
+              </AppLayout>
+            } />
+            <Route path="/producto-detalle" element={
+              <AppLayout>
+                <AuthRoute allowedRoles={['ADMIN', 'DIRECTOR']}>
+                  <ProductoDetalle />
+                </AuthRoute>
+              </AppLayout>
+            } />
 
-        <Route path="/user-profile" element={
-          <AppLayout>
-            <Account/>
-          </AppLayout>
-        } />
-
-        <Route path="/user-shopping" element={
-          <AppLayout>
-            <Shopping />
-          </AppLayout>
-        } />
-
-
-      </Routes>
+            {/* Rutas protegidas para USER y CUSTOMER */}
+            <Route path="/user-home" element={
+              <AppLayout>
+                <AuthRoute allowedRoles={['USER', 'CUSTOMER']}>
+                  <UserHome />
+                </AuthRoute>
+              </AppLayout>
+            } />
+            <Route path="/user-profile" element={
+              <AppLayout>
+                <AuthRoute allowedRoles={['USER', 'CUSTOMER']}>
+                  <Account />
+                </AuthRoute>
+              </AppLayout>
+            } />
+            <Route path="/user-shopping" element={
+              <AppLayout>
+                <AuthRoute allowedRoles={['USER', 'CUSTOMER']}>
+                  <Shopping />
+                </AuthRoute>
+              </AppLayout>
+            } />
+          </Routes>
         </Router>
       </SidebarProvider>
     </QueryClientProvider>

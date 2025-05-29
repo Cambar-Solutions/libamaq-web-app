@@ -5,6 +5,7 @@ import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { login } from "@/services/authService";
+import { saveAuthResponse } from "@/utils/storage";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -36,9 +37,10 @@ export default function Login() {
     try {
       const response = await login(credentials.email, credentials.password);
 
-      console.log('Login API Response:', response);
-
       if (response && response.data && response.data.user) {
+        // Guardar datos en localStorage
+        saveAuthResponse(response);
+
         const { user } = response.data;
 
         // Mostrar mensaje de bienvenida
@@ -46,38 +48,19 @@ export default function Login() {
           position: 'top-right',
           style: { background: '#4caf50', color: '#fff', borderRadius: '10px' },
         });
-
-        // Redirigir según el rol del usuario
-        console.log('User role:', user.role);
-        if (user.role === 'ADMIN' || user.role === 'DIRECTOR') {
-          console.log('Navigating to /gerente');
-          console.log(user.role);
-
-          navigate('/gerente');
-        } else if (user.role === 'USER') {
-          console.log('Navigating to /user-home');
-          navigate('/user-home');
-        } else if (user.role === 'CUSTOMER' || user.role === 'PROVIDER' || user.role === 'DELIVERY') {
-          console.log('Navigating to /dashboard (other roles)');
-          navigate('/dashboard');
-        } else {
-          console.log('Navigating to /dashboard (unrecognized role)');
-          navigate('/dashboard');
-        }
+        navigate('/');
       } else {
         throw new Error('Respuesta inesperada del servidor');
       }
     } catch (error) {
       console.error('Error en inicio de sesión:', error);
 
-      // Check for specific status codes 401 or 403 for invalid credentials
       if (error.response && (error.response.status === 401 || error.response.status === 403)) {
         toast.error("credenciales invalidas", {
           position: 'top-right',
           style: { background: '#f44336', color: '#fff', borderRadius: '10px' },
         });
       } else {
-        // General error message for other errors
         const errorMessage = error?.response?.data?.message || 'Error al iniciar sesión. Por favor verifica tus credenciales.';
         toast.error(errorMessage, {
           position: 'top-right',
@@ -88,8 +71,6 @@ export default function Login() {
       setIsLoading(false);
     }
   };
-
-
 
   return (
     <>
