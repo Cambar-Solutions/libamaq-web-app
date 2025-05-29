@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from '@tanstack/react-query';
 import { getAllProducts, updateProduct, getProductPreviews, deleteProduct } from "@/services/admin/productService";
-import { getAllBrands } from "@/services/admin/brandService";
+import { getAllBrands, getAllActiveBrands } from "@/services/admin/brandService";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -152,11 +152,36 @@ export function ProductsView() {
   const [selectedBrand, setSelectedBrand] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingBrands, setIsLoadingBrands] = useState(true);
+  const [brandsError, setBrandsError] = useState(null);
+
+  // Cargar marcas activas
+  const fetchBrands = useCallback(async () => {
+    try {
+      setIsLoadingBrands(true);
+      setBrandsError(null);
+      
+      // Usar el servicio para obtener solo marcas activas
+      const response = await getAllActiveBrands();
+      
+      // Manejar la respuesta según el formato esperado
+      const brandsData = Array.isArray(response) ? response : (response?.data || response?.result || []);
+      
+      setBrands(brandsData);
+      console.log('Marcas activas cargadas:', brandsData);
+    } catch (error) {
+      console.error('Error al cargar marcas activas:', error);
+      setBrandsError('Error al cargar las marcas. Intente de nuevo más tarde.');
+      toast.error('Error al cargar las marcas');
+    } finally {
+      setIsLoadingBrands(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchProducts();
     fetchBrands();
-  }, []);
+  }, [fetchBrands]);
 
   useEffect(() => {
     let filtered = [...products];
@@ -252,24 +277,7 @@ export function ProductsView() {
     }
   };
 
-  // Esta función ya no es necesaria ya que fetchProducts ya obtiene las marcas
-  const fetchBrands = async () => {
-    try {
-      const response = await getAllBrands();
-      console.log('Respuesta de fetchBrands:', response);
-
-      const data = Array.isArray(response) ? response : (response.result || []);
-      console.log('Datos de marcas procesados en fetchBrands:', data);
-
-      setBrands(data);
-    } catch (err) {
-      toast.error("Error al cargar las marcas: " + (err.message || 'Error desconocido'));
-      console.error('Error en fetchBrands:', err);
-      // Establecer marcas vacías para evitar errores de renderizado
-      setBrands([]);
-    }
-  };
-
+  // Función para manejar el cambio de marca seleccionada
   const handleBrandChange = (value) => {
     setSelectedBrand(value === "all" ? null : parseInt(value, 10));
   };
@@ -344,13 +352,35 @@ export function ProductsView() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas las marcas</SelectItem>
-                {brands
-                  .filter(brand => brand.status === 'ACTIVE')
-                  .map((brand) => (
-                    <SelectItem key={brand.id} value={brand.id.toString()} className="cursor-pointer">
-                      {brand.name}
+                {isLoadingBrands ? (
+                  <div className="px-3 py-2 text-sm text-gray-500">Cargando marcas...</div>
+                ) : brandsError ? (
+                  <div className="px-3 py-2 text-sm text-red-500">{brandsError}</div>
+                ) : brands.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-gray-500">No hay marcas disponibles</div>
+                ) : (
+                  brands.map((brand) => (
+                    <SelectItem 
+                      key={brand.id} 
+                      value={brand.id.toString()} 
+                      className="cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        {brand.logoUrl && (
+                          <img 
+                            src={brand.logoUrl} 
+                            alt={brand.name}
+                            className="h-5 w-5 object-contain"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        )}
+                        <span>{brand.name}</span>
+                      </div>
                     </SelectItem>
-                  ))}
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
