@@ -324,52 +324,53 @@ const NuevoProducto = () => {
     const loadingToast = toast.loading('Creando producto...');
     
     try {
-      // Formatear los campos de array a strings
-      const formattedFunctionalities = formatArrayForApi(producto.functionalities);
-      const formattedTechnicalData = formatArrayForApi(producto.technicalData);
-      const formattedDownloads = Array.isArray(producto.downloads) 
-        ? producto.downloads.map(d => d.value).join(', ')
-        : producto.downloads || '';
-      
-      // Preparar datos para la API
-      const datos = {
-        ...producto,
+      // Preparar los datos según el formato esperado por la API (según Swagger)
+      const productData = {
+        createdBy: '1', // Asumiendo que el usuario actual tiene ID 1
+        createdAt: new Date().toISOString(),
+        brandId: String(producto.brandId || "1"),
+        categoryId: String(producto.categoryId || "1"),
+        externalId: producto.externalId || "",
+        name: producto.name || "",
+        shortDescription: producto.shortDescription || "",
+        description: producto.description || "",
+        // Convertir funcionalidades a string separado por comas
+        functionalities: Array.isArray(producto.functionalities) 
+          ? producto.functionalities.map(f => f.value || f).join(", ") 
+          : "",
+        // Convertir datos técnicos a string JSON
+        technicalData: typeof producto.technicalData === 'string'
+          ? producto.technicalData
+          : JSON.stringify(producto.technicalData, null, 2),
+        type: producto.type || "",
+        productUsage: producto.productUsage || "",
         price: parseFloat(producto.price) || 0,
         cost: parseFloat(producto.cost) || 0,
         discount: parseFloat(producto.discount) || 0,
         stock: parseInt(producto.stock) || 0,
         garanty: parseInt(producto.garanty) || 0,
-        brandId: parseInt(producto.brandId),
-        categoryId: parseInt(producto.categoryId),
-        // Asegurar que los campos de texto no sean undefined
-        shortDescription: producto.shortDescription || '',
-        description: producto.description || '',
-        // Formatear campos de array a strings
-        functionalities: formattedFunctionalities,
-        technicalData: formattedTechnicalData,
-        type: producto.type || '',
-        productUsage: producto.productUsage || '',
-        downloads: formattedDownloads,
-        // Asignar el estado activo
+        color: producto.color || "",
+        // Convertir descargas a string con saltos de línea
+        downloads: Array.isArray(producto.downloads)
+          ? producto.downloads.map(d => d.value).filter(Boolean).join("\n")
+          : "",
+        rentable: Boolean(producto.rentable || false),
         status: 'ACTIVE',
-        // Asignar la fecha de creación
-        createdAt: new Date().toISOString(),
-        // Creado por (puedes ajustar esto según tu sistema de autenticación)
-        createdBy: '1',
-        // Incluir las imágenes ya subidas
+        // Procesar multimedia según el formato esperado
         media: uploadedImages.map((img, index) => ({
-          id: img.id || 0,
-          url: img.url,
-          fileType: 'IMAGE',
-          entityType: 'PRODUCT',
+          id: img.id ? Number(img.id) : 0,
+          url: img.url || "",
+          fileType: "IMAGE",
+          entityId: 0, // Se actualizará con el ID del producto
+          entityType: "PRODUCT",
           displayOrder: index
         }))
       };
       
-      console.log('Enviando datos para crear producto:', datos);
+      console.log('Enviando datos para crear producto:', productData);
       
-      // Llamar al servicio para crear el producto con las imágenes ya subidas
-      const response = await createProductWithImages(datos, []);
+      // Llamar al servicio para crear el producto
+      const response = await createProductWithImages(productData, []);
       
       console.log('Respuesta completa del servidor:', response);
       
@@ -1107,24 +1108,29 @@ return (
           </div>
 
           {/* Controles de navegación */}
-          <Stepper.Controls className="flex justify-between">
+          <Stepper.Controls className="flex justify-between gap-2 sm:gap-4">
             <div>
               {methods.current.id !== "info-basica" && (
                 <Button 
                   type="button" 
                   variant="outline" 
+                  size="sm"
+                  className="h-9 px-3 sm:px-4 text-xs sm:text-sm"
                   onClick={methods.prev}
                   disabled={isSubmitting}
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Anterior
+                  <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Anterior</span>
+                  <span className="sm:hidden">Atrás</span>
                 </Button>
               )}
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-2 sm:gap-4">
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
+                className="h-9 px-3 sm:px-4 text-xs sm:text-sm hidden sm:inline-flex"
                 onClick={() => navigate('/dashboard')}
                 disabled={isSubmitting}
               >
@@ -1134,23 +1140,33 @@ return (
               {methods.current.id !== "imagenes" ? (
                 <Button 
                   type="button" 
+                  size="sm"
+                  className="h-9 px-3 sm:px-4 text-xs sm:text-sm"
                   onClick={methods.next}
                   disabled={isSubmitting}
                 >
-                  Siguiente
-                  <ArrowLeft className="h-4 w-4 ml-2 rotate-180" />
+                  <span className="hidden sm:inline">Siguiente</span>
+                  <span className="sm:hidden">Sig.</span>
+                  <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-1 sm:ml-2 rotate-180" />
                 </Button>
               ) : (
-                <Button type="submit" disabled={isSubmitting}>
+                <Button 
+                  type="submit" 
+                  size="sm"
+                  className="h-9 px-3 sm:px-4 text-xs sm:text-sm"
+                  disabled={isSubmitting}
+                >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Guardando...
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4 animate-spin" />
+                      <span className="hidden sm:inline">Guardando</span>
+                      <span className="sm:hidden">Guardando</span>
                     </>
                   ) : (
                     <>
-                      <Check className="mr-2 h-4 w-4" />
-                      Guardar Producto
+                      <Check className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Guardar Producto</span>
+                      <span className="sm:hidden">Guardar</span>
                     </>
                   )}
                 </Button>

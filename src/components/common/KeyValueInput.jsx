@@ -81,46 +81,48 @@ const KeyValueInput = ({
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
+      <div className="space-y-3">
         {inputRows.map((row, index) => (
-          <div key={index} className="flex gap-2 items-center">
-            <Input
-              placeholder={placeholderKey}
-              value={row.key}
-              onChange={(e) => updateRow(index, 'key', e.target.value)}
-              className="flex-1"
-            />
-            <Input
-              placeholder={placeholderValue}
-              value={row.value}
-              onChange={(e) => updateRow(index, 'value', e.target.value)}
-              className="flex-1"
-            />
-            <Button
-              type="button"
-              onClick={() => removeRow(index)}
-              variant="ghost"
-              size="sm"
-              className="text-red-500 hover:text-red-700"
-              disabled={inputRows.length <= 1}
-              title="Eliminar fila"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+          <div key={index} className="flex flex-col sm:flex-row gap-2">
+            <div className="flex-1 flex flex-col sm:flex-row gap-2">
+              <Input
+                placeholder={placeholderKey}
+                value={row.key}
+                onChange={(e) => updateRow(index, 'key', e.target.value)}
+                className="flex-1 min-w-0"
+              />
+              <Input
+                placeholder={placeholderValue}
+                value={row.value}
+                onChange={(e) => updateRow(index, 'value', e.target.value)}
+                className="flex-1 min-w-0"
+              />
+            </div>
+            <div className="flex justify-end sm:justify-start">
+              <Button
+                type="button"
+                onClick={() => removeRow(index)}
+                variant="ghost"
+                size="icon"
+                className="text-destructive hover:text-destructive/90 h-10 w-10"
+                disabled={inputRows.length <= 1}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         ))}
         
-        <div className="flex justify-start mt-2">
-          <Button
-            type="button"
-            onClick={addNewRow}
-            variant="outline"
-            size="sm"
-            className="text-sm"
-          >
-            <Plus className="h-4 w-4 mr-1" /> Agregar más
-          </Button>
-        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-full sm:w-auto mt-2"
+          onClick={addNewRow}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Agregar {placeholderKey}
+        </Button>
       </div>
 
       {safeValues.length > 0 && (

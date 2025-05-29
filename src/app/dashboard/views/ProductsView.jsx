@@ -32,10 +32,12 @@ function isLightColor(hexColor) {
 
 const CardComponent = ({ product, onClick, onDelete }) => {
   const getImageUrl = () => {
-    if (product.multimedia && product.multimedia.length > 0) {
-      return product.multimedia[0].url;
+    // Verificar si hay imágenes en el array media
+    if (product.media && product.media.length > 0) {
+      return product.media[0].url;
     }
-    return product.brand?.logoUrl || "";
+    // Si no hay imágenes, mostrar el logo de la marca si existe
+    return product.brand?.logoUrl || "/placeholder-product.jpg";
   };
 
   // Para la vista previa, usar un color predeterminado

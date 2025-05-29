@@ -1,12 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { uploadMedia, deleteMedia } from '@/services/admin/mediaService';
 import { getProductById, updateProduct, uploadImage } from "@/services/admin/productService";
-import { getAllBrands } from "@/services/admin/brandService";
+import { getAllActiveBrands, getCategoriesByBrand } from "@/services/admin/brandService";
 import { getAllCategories } from "@/services/admin/categoryService";
 import { createMultimedia } from "@/services/admin/multimediaService";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Upload } from "lucide-react";
+import KeyValueInput from "@/components/common/KeyValueInput";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,13 +27,61 @@ function isLightColor(hexColor) {
 export default function ProductoDetalle() {
   const [producto, setProducto] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [mainImage, setMainImage] = useState(null);
+  const [mainImage, setMainImage] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [editedProduct, setEditedProduct] = useState(null);
-  const [brands, setBrands] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [editedProduct, setEditedProduct] = useState({
+    name: '',
+    description: '',
+    shortDescription: '',
+    price: 0,
+    cost: 0,
+    stock: 0,
+    status: 'ACTIVE',
+    brandId: 0,
+    categoryId: 0,
+    media: [],
+    technicalData: [],
+    functionalities: [],
+    downloads: {}
+  });
   const [uploadedImages, setUploadedImages] = useState([]);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [imageUrlInput, setImageUrlInput] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Consulta para obtener marcas activas
+  const { 
+    data: brands = [], 
+    isLoading: isLoadingBrands 
+  } = useQuery({
+    queryKey: ['activeBrands'],
+    queryFn: async () => {
+      const response = await getAllActiveBrands();
+      return Array.isArray(response) ? response : (response?.result || response?.data || []);
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
+
+  // Consulta para obtener categorías por marca
+  const { 
+    data: filteredCategories = [], 
+    isLoading: isLoadingCategories,
+    refetch: refetchCategories 
+  } = useQuery({
+    queryKey: ['categories', editedProduct?.brandId],
+    queryFn: async () => {
+      if (!editedProduct?.brandId) return [];
+      const response = await getCategoriesByBrand(editedProduct.brandId);
+      return response?.data || [];
+    },
+    enabled: !!editedProduct?.brandId, // Solo se ejecuta si hay un brandId
+  });
+
+  // Estado de carga combinado
+  const isLoadingData = isLoading || isLoadingBrands || (editedProduct?.brandId && isLoadingCategories);
 
   // Función para cargar los datos del producto
   const loadProductData = async (id) => {
@@ -178,16 +230,28 @@ export default function ProductoDetalle() {
       console.log('Producto cargado (procesado):', product);
       console.log('Datos técnicos:', product.technicalData);
 
+      // Asegurarse de que el producto tenga un array de media
+      const productWithMedia = {
+        ...product,
+        media: Array.isArray(product.media) ? product.media : []
+      };
+
       // Actualizar el estado con los datos procesados
-      setProducto({ ...product });
-      setEditedProduct({ ...product });
+      setProducto(productWithMedia);
+      setEditedProduct(prev => ({
+        ...prev,
+        ...productWithMedia,
+        media: productWithMedia.media || []
+      }));
       
-      // Manejar multimedia (puede estar en product.media en el nuevo formato)
-      const multimedia = product.multimedia || product.media || [];
-      setUploadedImages(multimedia);
+      // Actualizar imágenes cargadas
+      setUploadedImages(productWithMedia.media || []);
       
-      if (multimedia && multimedia.length > 0) {
-        setMainImage(multimedia[0]?.url);
+      // Establecer la imagen principal si hay imágenes
+      if (productWithMedia.media && productWithMedia.media.length > 0) {
+        setMainImage(productWithMedia.media[0]?.url || '');
+      } else {
+        setMainImage('');
       }
 
       return product;
@@ -254,89 +318,287 @@ export default function ProductoDetalle() {
     fetchData();
   }, [navigate]);
 
-  // Función para manejar el cambio de marca y actualizar el color automáticamente
-  const handleBrandChange = (value) => {
-    const selectedBrand = brands.find(b => b.id === +value);
-    setEditedProduct(prev => ({
-      ...prev,
-      brandId: value,
-      brand_id: value, // Mantener ambos por compatibilidad
-      color: selectedBrand?.color || prev.color
-    }));
-  };
-
-  // Función para manejar el cambio de categoría
-  const handleCategoryChange = (value) => {
-    setEditedProduct(prev => ({
-      ...prev,
-      categoryId: value,
-      category_id: value // Mantener ambos por compatibilidad
-    }));
-  };
-
-
-
-  // Función para manejar la carga de imágenes
-  const handleImageUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-
-    setIsLoading(true);
-    try {
-      const results = await Promise.all(
-        files.map(file => createMultimedia(file))
-      );
-
-      // Actualizar las imágenes cargadas
-      setUploadedImages(prev => [...prev, ...results]);
-
-      // Actualizar el producto editado con las nuevas imágenes
-      setEditedProduct(prev => {
-        const base = prev.multimedia?.length || 0;
-        const newMultimedia = results.map((img, i) => ({
-          id: img.id,
-          url: img.url,
-          displayOrder: base + i + 1
-        }));
-
-        return {
-          ...prev,
-          multimedia: [...(prev.multimedia || []), ...newMultimedia],
-          productMultimediaDto: [...(prev.productMultimediaDto || []), ...newMultimedia.map(m => ({
-            multimediaId: m.id,
-            displayOrder: m.displayOrder,
-            productId: prev.id
-          }))]
-        };
-      });
-
-      toast.success("Imágenes cargadas correctamente");
-    } catch (error) {
-      toast.error("Error al cargar las imágenes");
-      console.error(error);
-    } finally {
-      setIsLoading(false);
+  // Función para manejar la selección de imagen
+  const handleImageSelect = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      // Si solo hay un archivo, usamos la lógica existente
+      if (e.target.files.length === 1) {
+        setSelectedImage(e.target.files[0]);
+      } else {
+        // Si hay múltiples archivos, los procesamos directamente
+        handleImageUpload(e);
+      }
     }
   };
 
-  // Función para eliminar una imagen
-  const handleRemoveImage = (index) => {
-    setUploadedImages(prev => prev.filter((_, i) => i !== index));
-    setEditedProduct(prev => {
-      const updatedMultimedia = prev.multimedia.filter((_, i) => i !== index);
-
-      // Si la imagen eliminada era la principal, actualizamos la imagen principal
-      if (mainImage === prev.multimedia[index]?.url) {
-        setMainImage(updatedMultimedia[0]?.url || '');
+  // Función para subir imágenes al servidor (maneja tanto archivo único como múltiples)
+  const handleImageUpload = useCallback(async (files) => {
+    if (!files || files.length === 0) return;
+    
+    try {
+      setIsUploading(true);
+      
+      // Convertir a array si es necesario
+      const fileList = Array.isArray(files) ? files : [files];
+      
+      // Subir cada archivo individualmente
+      const uploadPromises = fileList.map(file => {
+        console.log('Subiendo archivo:', file.name);
+        return uploadMedia(file);
+      });
+      
+      // Esperar a que todas las subidas terminen
+      const responses = await Promise.all(uploadPromises);
+      console.log('Respuestas de subida de archivos:', responses);
+      
+      // Procesar las respuestas
+      const newImages = [];
+      
+      for (let i = 0; i < responses.length; i++) {
+        const response = responses[i];
+        const file = fileList[i];
+        
+        // Manejar diferentes formatos de respuesta
+        let fileData;
+        
+        if (Array.isArray(response) && response.length > 0) {
+          // Formato: [{ url: '...', id: 1, ... }]
+          fileData = response[0];
+        } else if (response?.data && Array.isArray(response.data) && response.data.length > 0) {
+          // Formato: { data: [{ url: '...', id: 1, ... }] }
+          fileData = response.data[0];
+        } else if (response?.url) {
+          // Formato: { url: '...', id: 1, ... }
+          fileData = response;
+        } else {
+          console.error('Formato de respuesta no reconocido:', response);
+          continue;
+        }
+        
+        if (!fileData?.url) {
+          console.error('No se pudo extraer la URL de la imagen de la respuesta:', response);
+          continue;
+        }
+        
+        const newImage = {
+          id: fileData.id || `temp-${Date.now()}-${i}`,
+          url: fileData.url,
+          previewUrl: URL.createObjectURL(file),
+          fileType: 'IMAGE',
+          entityType: 'PRODUCT',
+          displayOrder: 0, // Se actualizará más adelante
+          isNew: true
+        };
+        
+        newImages.push(newImage);
       }
+      
+      if (newImages.length === 0) {
+        throw new Error('No se pudo subir ninguna imagen. Verifica los formatos soportados.');
+      }
+      
+      // Actualizar el estado con las nuevas imágenes
+      setEditedProduct(prev => {
+        const currentMedia = Array.isArray(prev?.media) ? prev.media : [];
+        const updatedMedia = [
+          ...currentMedia,
+          ...newImages.map((img, idx) => ({
+            ...img,
+            displayOrder: currentMedia.length + idx
+          }))
+        ];
+        
+        return {
+          ...prev,
+          media: updatedMedia
+        };
+      });
+      
+      // Establecer la primera imagen como principal si no hay una principal
+      setMainImage(prevMainImage => {
+        if (!prevMainImage && newImages.length > 0) {
+          return newImages[0].url;
+        }
+        return prevMainImage;
+      });
+      
+      // Actualizar también el estado de las imágenes cargadas
+      setUploadedImages(prev => [...(prev || []), ...newImages]);
+      
+      // Limpiar input de archivo
+      const fileInput = document.getElementById('image-upload');
+      if (fileInput) fileInput.value = '';
+      
+      toast.success(`Se subieron ${newImages.length} imagen(es) correctamente`);
+      
+    } catch (error) {
+      console.error('Error al subir imágenes:', error);
+      toast.error("Error al subir las imágenes: " + (error.response?.data?.message || error.message || "Error desconocido"));
+    } finally {
+      setIsUploading(false);
+    }
+  }, [editedProduct.media, mainImage]);
+  
+  // Efecto para subir la imagen cuando se selecciona
+  useEffect(() => {
+    if (selectedImage) {
+      handleImageUpload();
+    }
+  }, [selectedImage, handleImageUpload]);
 
-      return {
-        ...prev,
-        multimedia: updatedMultimedia,
-        productMultimediaDto: prev.productMultimediaDto?.filter((_, i) => i !== index) || []
+  // Manejar carga de imagen por URL
+  const handleImageUrlSubmit = useCallback(async (url) => {
+    if (!url) return;
+    
+    try {
+      setIsUploading(true);
+      
+      // Validar que sea una URL de imagen válida
+      try {
+        new URL(url);
+      } catch (e) {
+        throw new Error('Por favor ingresa una URL válida');
+      }
+      
+      // Verificar si la URL termina con una extensión de imagen válida
+      const validExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+      const hasValidExtension = validExtensions.some(ext => url.toLowerCase().endsWith(ext));
+      
+      if (!hasValidExtension) {
+        throw new Error('La URL debe apuntar a una imagen (jpg, jpeg, png, webp o gif)');
+      }
+      
+      // Crear un objeto de imagen temporal
+      const tempId = `temp-${Date.now()}`;
+      const newImage = {
+        id: tempId,
+        url: url,
+        previewUrl: url,
+        fileType: 'IMAGE',
+        entityType: 'PRODUCT',
+        displayOrder: editedProduct.media?.length || 0,
+        isNew: true
       };
-    });
+      
+      // Actualizar el estado con la nueva imagen
+      const updatedMedia = [...(editedProduct.media || []), newImage];
+      setEditedProduct(prev => ({
+        ...prev,
+        media: updatedMedia
+      }));
+      
+      // Establecer como imagen principal si es la primera
+      if (!mainImage) {
+        setMainImage(url);
+      }
+      
+      // Limpiar el input
+      setImageUrlInput('');
+      toast.success('Imagen por URL agregada correctamente');
+      
+    } catch (error) {
+      console.error('Error al cargar imagen por URL:', error);
+      toast.error(error.message || 'Error al cargar la imagen por URL');
+    } finally {
+      setIsUploading(false);
+    }
+  }, [editedProduct.media, mainImage, setImageUrlInput]);
+
+  // Manejar eliminación de imagen
+  const handleRemoveImage = useCallback(async (imageId, index) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar esta imagen? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      
+      // Determinar si es una imagen temporal o una guardada en el servidor
+      const isTemporary = imageId.startsWith('temp-');
+      const isFromUrl = uploadedImages[index]?.isFromUrl;
+      
+      // Si no es temporal ni de URL, eliminarla del servidor
+      if (!isTemporary && !isFromUrl) {
+        try {
+          await deleteMedia([imageId]);
+          toast.success("Imagen eliminada del servidor");
+        } catch (error) {
+          console.error('Error al eliminar la imagen del servidor:', error);
+          // Continuar con la eliminación local aunque falle la eliminación en el servidor
+        }
+      }
+      
+      // Actualizar el estado local
+      setEditedProduct(prev => {
+        const currentMedia = Array.isArray(prev.media) ? [...prev.media] : [];
+        const updatedMedia = currentMedia.filter((_, i) => i !== index);
+        
+        // Si la imagen eliminada era la principal, establecer la siguiente como principal
+        const wasMainImage = mainImage === currentMedia[index]?.url;
+        let newMainImage = mainImage;
+        
+        if (wasMainImage) {
+          newMainImage = updatedMedia[0]?.url || '';
+          setMainImage(newMainImage);
+        }
+        
+        return {
+          ...prev,
+          media: updatedMedia
+        };
+      });
+      
+      // Actualizar también el estado de imágenes cargadas
+      setUploadedImages(prev => {
+        const newImages = [...prev];
+        newImages.splice(index, 1);
+        return newImages;
+      });
+      
+      toast.success("Imagen eliminada correctamente");
+      
+    } catch (error) {
+      console.error('Error al eliminar la imagen:', error);
+      toast.error("Error al eliminar la imagen: " + (error.message || "Error desconocido"));
+    } finally {
+      setIsUploading(false);
+    }
+  }, [mainImage, uploadedImages]);
+
+  // Función para manejar el cambio de marca y actualizar el color automáticamente
+  const handleBrandChange = (brandId) => {
+    const selectedBrand = brands.find(brand => brand.id.toString() === brandId);
+    
+    // Actualizar el estado del producto con la nueva marca y reiniciar la categoría
+    setEditedProduct(prev => ({
+      ...prev,
+      brandId: brandId ? parseInt(brandId) : null,
+      brand_id: brandId ? parseInt(brandId) : null, // Mantener ambos por compatibilidad
+      categoryId: '',
+      category_id: '',
+      color: selectedBrand?.color || prev.color || '#000000'
+    }));
+
+    // Invalidar la consulta de categorías para forzar una nueva carga
+    if (brandId) {
+      queryClient.invalidateQueries({ queryKey: ['categories', brandId] });
+    }
   };
+
+  // Función para manejar el cambio de categoría
+  const handleCategoryChange = (categoryId) => {
+    setEditedProduct(prev => ({
+      ...prev,
+      categoryId: categoryId ? parseInt(categoryId) : null,
+      category_id: categoryId ? parseInt(categoryId) : null // Mantener ambos por compatibilidad
+    }));
+  };
+
+
+
+  // La función handleImageUpload ya está definida arriba con useCallback
+
+  // La función handleRemoveImage ya está definida arriba con useCallback
 
   // Funciones para manejar campos dinámicos
   const handleAddField = (section) => {
@@ -447,51 +709,52 @@ export default function ProductoDetalle() {
 
       // Asegurarse de que los campos dinámicos estén presentes y sean objetos
       if (!productToUpdate.technicalData) productToUpdate.technicalData = {};
-      if (!productToUpdate.functionalities) productToUpdate.functionalities = {};
+      if (!productToUpdate.functionalities) productToUpdate.functionalities = [];
       if (!productToUpdate.downloads) productToUpdate.downloads = {};
       if (!productToUpdate.description) productToUpdate.description = {};
 
-      // Preparar los datos del producto para la actualización
+      // Preparar los datos del producto para la actualización según el formato de Swagger
       const productData = {
-        ...productToUpdate,
         id: Number(productToUpdate.id),
-        status: productToUpdate.status || 'ACTIVE',
-        // Asegurarse de que los campos JSON sean objetos, no strings
-        description: typeof productToUpdate.description === 'string'
-          ? JSON.parse(productToUpdate.description)
-          : productToUpdate.description,
+        updatedBy: "1", // Asumiendo que el usuario actual tiene ID 1
+        updatedAt: new Date().toISOString(),
+        brandId: String(productToUpdate.brandId || productToUpdate.brand_id || "1"),
+        categoryId: String(productToUpdate.categoryId || productToUpdate.category_id || "1"),
+        externalId: productToUpdate.externalId || "",
+        name: productToUpdate.name || "",
+        shortDescription: productToUpdate.shortDescription || "",
+        description: typeof productToUpdate.description === 'string' 
+          ? productToUpdate.description 
+          : (productToUpdate.description?.caracteristicas || ""),
+        functionalities: Array.isArray(productToUpdate.functionalities) 
+          ? productToUpdate.functionalities.map(f => f.value || f).join(", ") 
+          : "",
         technicalData: typeof productToUpdate.technicalData === 'string'
-          ? JSON.parse(productToUpdate.technicalData)
-          : productToUpdate.technicalData,
-        functionalities: typeof productToUpdate.functionalities === 'string'
-          ? JSON.parse(productToUpdate.functionalities)
-          : productToUpdate.functionalities,
-        downloads: typeof productToUpdate.downloads === 'string'
-          ? JSON.parse(productToUpdate.downloads)
-          : productToUpdate.downloads,
-        // Asegurarse de que los IDs sean números
-        brandId: Number(productToUpdate.brandId || productToUpdate.brand_id || 0),
-        categoryId: Number(productToUpdate.categoryId || productToUpdate.category_id || 0),
-        // Asegurarse de que los valores numéricos sean números
-        cost: Number(productToUpdate.cost || 0),
+          ? productToUpdate.technicalData
+          : JSON.stringify(productToUpdate.technicalData, null, 2),
+        type: productToUpdate.type || "",
+        productUsage: productToUpdate.productUsage || "",
         price: Number(productToUpdate.price || 0),
+        cost: Number(productToUpdate.cost || 0),
         discount: Number(productToUpdate.discount || 0),
         stock: Number(productToUpdate.stock || 0),
         garanty: Number(productToUpdate.garanty || 0),
-        // Procesar multimedia
-        productMultimediaDto: Array.isArray(productToUpdate.multimedia)
-          ? productToUpdate.multimedia.map((m, index) => ({
-            id: m.id ? Number(m.id) : 0,
-            displayOrder: index + 1,
-            productId: Number(productToUpdate.id),
-            multimediaId: m.id ? Number(m.id) : 0
-          }))
-          : []
+        color: productToUpdate.color || "",
+        downloads: typeof productToUpdate.downloads === 'string' 
+          ? productToUpdate.downloads 
+          : Object.values(productToUpdate.downloads).filter(Boolean).join("\n"),
+        rentable: Boolean(productToUpdate.rentable || false),
+        status: productToUpdate.status || 'ACTIVE',
+        // Procesar multimedia según el formato esperado
+        media: (productToUpdate.media || []).map((media, index) => ({
+          id: media.id ? Number(media.id) : 0,
+          url: media.url || "",
+          fileType: "IMAGE", // Asumiendo que todas son imágenes
+          entityId: Number(productToUpdate.id) || 0,
+          entityType: "PRODUCT",
+          displayOrder: index
+        }))
       };
-
-      // Mantener compatibilidad con brand_id y category_id
-      productData.brand_id = productData.brandId;
-      productData.category_id = productData.categoryId;
 
       console.log('Datos preparados para enviar al servidor:', productData);
 
@@ -574,43 +837,45 @@ export default function ProductoDetalle() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 bg-gray-50">
-      <div className="mb-6 flex justify-between items-center">
-        <Button className="bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md transition-all duration-200 flex items-center gap-2" onClick={handleBack} disabled={isLoading}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></svg>
-          Regresar al Dashboard
-        </Button>
-        {isEditing && (
-          <div className="flex space-x-3">
-            <Button
-              className="bg-gray-400 hover:bg-gray-500 rounded-lg shadow-md transition-all duration-200 flex items-center gap-2"
-              onClick={handleCancel}
-              disabled={isLoading}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></svg>
-              Cancelar
-            </Button>
-            <Button
-              className="bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md transition-all duration-200 flex items-center gap-2"
-              onClick={handleSave}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Guardando...
-                </>
-              ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>
-                  Guardar
-                </>
-              )}
-            </Button>
-          </div>
-        )}
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <Button className="bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md transition-all duration-200 flex items-center gap-2 w-full sm:w-auto" onClick={handleBack} disabled={isLoading}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></svg>
+            Regresar al Dashboard
+          </Button>
+          {isEditing && (
+            <div className="flex flex-row gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
+              <Button
+                className="bg-gray-400 hover:bg-gray-500 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2 px-3 py-1.5 text-sm sm:text-base sm:px-4 sm:py-2"
+                onClick={handleCancel}
+                disabled={isLoading}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></svg>
+                <span className="whitespace-nowrap">Cancelar</span>
+              </Button>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2 px-3 py-1.5 text-sm sm:text-base sm:px-4 sm:py-2"
+                onClick={handleSave}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="whitespace-nowrap">Guardando...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>
+                    <span className="whitespace-nowrap">Guardar</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="relative w-full bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
@@ -638,21 +903,63 @@ export default function ProductoDetalle() {
               <div className="flex flex-col lg:flex-row gap-8">
                 {/* Galería de imágenes */}
                 <div className="w-full lg:w-1/2 flex flex-col items-center">
-                  <div className="w-full max-w-md h-80 flex justify-center items-center">
-                    <img src={mainImage} alt={producto.name} className="w-full h-full object-contain" />
+                  <div className="w-full max-w-md h-96 flex justify-center items-center bg-white rounded-lg shadow-md p-4">
+                    {producto.media && producto.media.length > 0 ? (
+                      <img 
+                        src={mainImage || producto.media[0].url} 
+                        alt={producto.name} 
+                        className="w-full h-full object-contain transition-opacity duration-300"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = 'https://via.placeholder.com/400x400?text=Imagen+no+disponible';
+                        }}
+                      />
+                    ) : (
+                      <div className="text-gray-400 text-center p-6 rounded-lg border-2 border-dashed border-gray-300 w-full h-full flex flex-col items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p className="text-gray-500 font-medium">No hay imágenes disponibles</p>
+                        <p className="text-sm text-gray-400 mt-1">Agrega imágenes para mejorar la visibilidad</p>
+                      </div>
+                    )}
                   </div>
-                  {producto.multimedia?.length > 1 && (
-                    <div className="flex mt-4 space-x-2 overflow-x-auto">
-                      {producto.multimedia.map((media, index) => (
-                        <img
-                          key={index}
-                          src={media.url}
-                          alt={`${producto.name} - ${index}`}
-                          className={`w-16 h-16 object-contain border p-1 cursor-pointer ${mainImage === media.url ? "border-blue-600" : "border-gray-300"
+                  
+                  {/* Miniaturas de imágenes */}
+                  {producto.media && producto.media.length > 0 && (
+                    <div className="w-full mt-4">
+                      <div className="flex space-x-2 overflow-x-auto py-2 px-1">
+                        {producto.media.map((media, index) => (
+                          <div 
+                            key={`${media.id || index}-${index}`}
+                            className={`flex-shrink-0 relative w-16 h-16 border-2 rounded-md overflow-hidden cursor-pointer transition-all duration-200 ${
+                              (mainImage === media.url || (!mainImage && index === 0)) 
+                                ? "border-blue-500 ring-2 ring-blue-200" 
+                                : "border-gray-200 hover:border-gray-400"
                             }`}
-                          onClick={() => setMainImage(media.url)}
-                        />
-                      ))}
+                            onClick={() => setMainImage(media.url)}
+                          >
+                            <img
+                              src={media.url}
+                              alt={`${producto.name} - ${index + 1}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = 'https://via.placeholder.com/100?text=Imagen';
+                              }}
+                            />
+                            {(mainImage === media.url || (!mainImage && index === 0)) && (
+                              <div className="absolute inset-0 bg-blue-500 bg-opacity-20 flex items-center justify-center">
+                                <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -661,10 +968,11 @@ export default function ProductoDetalle() {
                 <div className="w-full lg:w-1/2">
                   <h1 className="text-2xl sm:text-3xl font-bold text-blue-950">{producto.name}</h1>
                   <p className="text-md sm:text-lg text-gray-700 font-bold my-2">{producto.externalId}</p>
-                  <p className="text-gray-600 text-md sm:text-lg font-semibold">{producto.shortDescription}</p>
+                  
+                  <p className="text-gray-600 text-md sm:text-lg font-semibold mb-4">{producto.shortDescription}</p>
 
                   {/* Información básica y técnica del producto */}
-                  <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {producto.price > 0 && (
                       <div className="bg-gray-50 p-2 rounded">
                         <span className="text-gray-600 text-sm">Precio:</span>
@@ -746,6 +1054,39 @@ export default function ProductoDetalle() {
                 </div>
               )}
 
+              {/* Descripción del producto */}
+              {producto.description && (
+                <div 
+                  className="p-5 rounded-lg my-6 shadow-sm transition-all duration-300 transform hover:shadow-md"
+                  style={{ 
+                    backgroundColor: bgColor,
+                    color: isLight ? '#1f2937' : '#f9fafb',
+                    borderLeft: `4px solid ${bgColor}`,
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                  }}
+                >
+                  <h3 className="font-bold text-lg mb-2 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h2a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    Descripción del Producto
+                  </h3>
+                  <div className="prose max-w-none">
+                    {typeof producto.description === 'string' ? (
+                      <p className="leading-relaxed">{producto.description}</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {Object.entries(producto.description).map(([key, value]) => (
+                          <div key={key}>
+                            <h4 className="font-semibold capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</h4>
+                            <p className="text-sm">{value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Especificaciones técnicas */}
               <div className="mt-6" data-component-name="ProductoDetalle">
@@ -891,25 +1232,34 @@ export default function ProductoDetalle() {
                         <Label htmlFor="brand" className="text-sm font-medium text-gray-700">Marca</Label>
                         <Select
                           value={editedProduct.brandId ? editedProduct.brandId.toString() : ""}
-                          onValueChange={(value) => handleBrandChange(parseInt(value))}
+                          onValueChange={handleBrandChange}
+                          disabled={isLoadingBrands}
                         >
-                          <SelectTrigger id="brand">
-                            <SelectValue placeholder="Seleccionar marca" />
+                          <SelectTrigger id="brand" className={isLoadingBrands ? 'opacity-70' : ''}>
+                            <SelectValue placeholder={
+                              isLoadingBrands ? 'Cargando marcas...' : 'Seleccionar marca'
+                            } />
                           </SelectTrigger>
                           <SelectContent>
-                            {brands.map((brand) => (
-                              <SelectItem key={brand.id} value={brand.id.toString()}>
-                                <div className="flex items-center">
-                                  {brand.color && (
-                                    <div
-                                      className="w-3 h-3 rounded-full mr-2"
-                                      style={{ backgroundColor: brand.color }}
-                                    />
-                                  )}
-                                  {brand.name}
-                                </div>
-                              </SelectItem>
-                            ))}
+                            {isLoadingBrands ? (
+                              <div className="py-2 text-center text-sm text-gray-500">
+                                Cargando marcas...
+                              </div>
+                            ) : (
+                              brands.map((brand) => (
+                                <SelectItem key={brand.id} value={brand.id.toString()}>
+                                  <div className="flex items-center">
+                                    {brand.color && (
+                                      <div
+                                        className="w-3 h-3 rounded-full mr-2 border border-gray-300"
+                                        style={{ backgroundColor: brand.color }}
+                                      />
+                                    )}
+                                    {brand.name}
+                                  </div>
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
@@ -918,17 +1268,43 @@ export default function ProductoDetalle() {
                         <Label htmlFor="category" className="text-sm font-medium text-gray-700">Categoría</Label>
                         <Select
                           value={editedProduct.categoryId ? editedProduct.categoryId.toString() : ""}
-                          onValueChange={(value) => handleCategoryChange(parseInt(value))}
+                          onValueChange={handleCategoryChange}
+                          disabled={!editedProduct.brandId || isLoadingCategories}
                         >
-                          <SelectTrigger id="category">
-                            <SelectValue placeholder="Seleccionar categoría" />
+                          <SelectTrigger 
+                            id="category" 
+                            className={!editedProduct.brandId || isLoadingCategories ? 'opacity-70' : ''}
+                          >
+                            <SelectValue 
+                              placeholder={
+                                !editedProduct.brandId 
+                                  ? 'Selecciona una marca primero' 
+                                  : isLoadingCategories 
+                                    ? 'Cargando categorías...' 
+                                    : 'Seleccionar categoría'
+                              } 
+                            />
                           </SelectTrigger>
                           <SelectContent>
-                            {categories.map((category) => (
-                              <SelectItem key={category.id} value={category.id.toString()}>
-                                {category.name}
-                              </SelectItem>
-                            ))}
+                            {!editedProduct.brandId ? (
+                              <div className="py-2 text-center text-sm text-gray-500">
+                                Selecciona una marca primero
+                              </div>
+                            ) : isLoadingCategories ? (
+                              <div className="py-2 text-center text-sm text-gray-500">
+                                Cargando categorías...
+                              </div>
+                            ) : filteredCategories.length === 0 ? (
+                              <div className="py-2 text-center text-sm text-gray-500">
+                                No hay categorías disponibles para esta marca
+                              </div>
+                            ) : (
+                              filteredCategories.map((category) => (
+                                <SelectItem key={category.id} value={category.id.toString()}>
+                                  {category.name}
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
@@ -967,75 +1343,120 @@ export default function ProductoDetalle() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
+                      {/* Precio */}
                       <div>
                         <Label htmlFor="price" className="text-sm font-medium text-gray-700">Precio</Label>
                         <Input
                           id="price"
                           type="number"
                           name="price"
-                          value={editedProduct.price}
+                          value={editedProduct.price || ''}
                           onChange={handleInputChange}
                           className="mt-1"
+                          step="0.01"
+                          min="0"
                         />
                       </div>
 
+                      {/* Costo */}
                       <div>
                         <Label htmlFor="cost" className="text-sm font-medium text-gray-700">Costo</Label>
                         <Input
                           id="cost"
                           type="number"
                           name="cost"
-                          value={editedProduct.cost}
+                          value={editedProduct.cost || ''}
                           onChange={handleInputChange}
                           className="mt-1"
+                          step="0.01"
+                          min="0"
                         />
                       </div>
 
-                      <div>
-                        <Label htmlFor="stock" className="text-sm font-medium text-gray-700">Stock</Label>
-                        <Input
-                          id="stock"
-                          type="number"
-                          name="stock"
-                          value={editedProduct.stock}
-                          onChange={handleInputChange}
-                          className="mt-1"
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="garanty" className="text-sm font-medium text-gray-700">Garantía (meses)</Label>
-                        <Input
-                          id="garanty"
-                          type="number"
-                          name="garanty"
-                          value={editedProduct.garanty}
-                          onChange={handleInputChange}
-                          className="mt-1"
-                        />
-                      </div>
-
+                      {/* Descuento */}
                       <div>
                         <Label htmlFor="discount" className="text-sm font-medium text-gray-700">Descuento (%)</Label>
                         <Input
                           id="discount"
                           type="number"
                           name="discount"
-                          value={editedProduct.discount}
+                          value={editedProduct.discount || 0}
                           onChange={handleInputChange}
                           className="mt-1"
+                          min="0"
+                          max="100"
                         />
                       </div>
 
+                      {/* Stock */}
+                      <div>
+                        <Label htmlFor="stock" className="text-sm font-medium text-gray-700">Stock</Label>
+                        <Input
+                          id="stock"
+                          type="number"
+                          name="stock"
+                          value={editedProduct.stock || 0}
+                          onChange={handleInputChange}
+                          className="mt-1"
+                          min="0"
+                        />
+                      </div>
+
+                      {/* Garantía */}
+                      <div>
+                        <Label htmlFor="garanty" className="text-sm font-medium text-gray-700">Garantía (meses)</Label>
+                        <Input
+                          id="garanty"
+                          type="number"
+                          name="garanty"
+                          value={editedProduct.garanty || 0}
+                          onChange={handleInputChange}
+                          className="mt-1"
+                          min="0"
+                        />
+                      </div>
+                      
+                      {/* Tipo */}
                       <div>
                         <Label htmlFor="type" className="text-sm font-medium text-gray-700">Tipo</Label>
                         <Input
                           id="type"
                           name="type"
-                          value={editedProduct.type}
+                          value={editedProduct.type || ''}
                           onChange={handleInputChange}
                           className="mt-1"
+                          placeholder="Ej: Smartphone, Laptop, etc."
                         />
+                      </div>
+                      
+                      {/* Estado */}
+                      <div>
+                        <Label htmlFor="status" className="text-sm font-medium text-gray-700">Estado</Label>
+                        <Select
+                          value={editedProduct.status || 'ACTIVE'}
+                          onValueChange={(value) => setEditedProduct({ ...editedProduct, status: value })}
+                        >
+                          <SelectTrigger id="status">
+                            <SelectValue placeholder="Seleccionar estado" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ACTIVE">Activo</SelectItem>
+                            <SelectItem value="INACTIVE">Inactivo</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {/* ¿Es rentable? */}
+                      <div className="flex items-center space-x-2 pt-6">
+                        <input
+                          type="checkbox"
+                          id="rentable"
+                          name="rentable"
+                          checked={editedProduct.rentable || false}
+                          onChange={(e) => setEditedProduct({ ...editedProduct, rentable: e.target.checked })}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <Label htmlFor="rentable" className="text-sm font-medium text-gray-700">¿Es rentable?</Label>
                       </div>
                     </div>
 
@@ -1044,12 +1465,20 @@ export default function ProductoDetalle() {
                       <textarea
                         id="productUsage"
                         name="productUsage"
-                        value={editedProduct.productUsage}
+                        value={editedProduct.productUsage || ''}
                         onChange={handleInputChange}
                         className="w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
                         rows="2"
+                        placeholder="Ej: Uso personal, profesional, industrial, etc."
                       />
                     </div>
+                    
+                    {/* Campos ocultos para auditoría */}
+                    <input type="hidden" name="id" value={editedProduct.id} />
+                    <input type="hidden" name="createdBy" value={editedProduct.createdBy || '1'} />
+                    <input type="hidden" name="createdAt" value={editedProduct.createdAt || new Date().toISOString()} />
+                    <input type="hidden" name="updatedBy" value={editedProduct.updatedBy || '1'} />
+                    <input type="hidden" name="updatedAt" value={new Date().toISOString()} />
                   </div>
 
                   {/* Galería de imágenes */}
@@ -1059,18 +1488,157 @@ export default function ProductoDetalle() {
                       <img src={mainImage} alt={editedProduct.name} className="max-h-full max-w-full object-contain" />
                     </div>
 
-                    <div className="mb-4">
-                      <Label htmlFor="imageUpload" className="text-sm font-medium text-gray-700">Agregar imágenes</Label>
-                      <Input
-                        id="imageUpload"
-                        type="file"
-                        multiple
-                        accept="image/*,.webp"
-                        onChange={handleImageUpload}
-                        disabled={isLoading}
-                        className="mt-1"
-                      />
-                      <p className="text-sm text-gray-500 mt-1">Puedes seleccionar múltiples imágenes</p>
+                    <div className="space-y-4">
+                      {/* Sección de arrastrar y soltar */}
+                      <div 
+                        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-400'}`}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDragging(true);
+                          e.currentTarget.classList.add('border-blue-500', 'bg-blue-50');
+                        }}
+                        onDragEnter={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDragging(true);
+                        }}
+                        onDragLeave={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDragging(false);
+                          e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDragging(false);
+                          e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
+                          
+                          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                            const files = Array.from(e.dataTransfer.files);
+                            handleImageUpload(files);
+                          }
+                        }}
+                      >
+                        <label htmlFor="image-upload" className="cursor-pointer block">
+                          <div className="space-y-2">
+                            <Upload className={`h-10 w-10 mx-auto ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} />
+                            <div>
+                              <p className="text-sm text-gray-600">
+                                <span className="font-medium text-blue-600 hover:text-blue-700">Haz clic para cargar</span> o arrastra y suelta
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                PNG, JPG, WEBP (Máx. 5MB por imagen)
+                              </p>
+                            </div>
+                            <input
+                              id="image-upload"
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => handleImageUpload(Array.from(e.target.files))}
+                              multiple
+                              disabled={isUploading}
+                            />
+                          </div>
+                        </label>
+                      </div>
+
+                      {/* Sección de URL de imagen */}
+                      <div className="space-y-2">
+                        <Label htmlFor="image-url">O pega una URL de imagen</Label>
+                        <div className="flex space-x-2">
+                          <Input
+                            id="image-url"
+                            type="url"
+                            placeholder="https://ejemplo.com/imagen.jpg"
+                            className="flex-1"
+                            value={imageUrlInput}
+                            onChange={(e) => setImageUrlInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleImageUrlSubmit(imageUrlInput);
+                              }
+                            }}
+                            disabled={isUploading}
+                          />
+                          <Button
+                            type="button"
+                            onClick={() => handleImageUrlSubmit(imageUrlInput)}
+                            disabled={!imageUrlInput || isUploading}
+                            className="whitespace-nowrap"
+                          >
+                            {isUploading ? 'Cargando...' : 'Agregar'}
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Estado de carga de imágenes */}
+                      {isUploading && (
+                        <div className="mt-2 p-3 bg-blue-50 text-blue-700 rounded-md text-sm flex items-center">
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Subiendo imágenes...
+                        </div>
+                      )}
+                      
+                      {/* Mostrar miniaturas de las imágenes subidas */}
+                      {editedProduct.media && editedProduct.media.length > 0 && (
+                        <div className="mt-4">
+                          <p className="text-sm font-medium text-gray-700 mb-2">Imágenes del producto:</p>
+                          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3">
+                            {editedProduct.media.map((media, index) => (
+                              <div 
+                                key={media.id || `img-${index}`} 
+                                className={`relative group rounded-md overflow-hidden border-2 ${index === 0 ? 'border-blue-500' : 'border-gray-200'}`}
+                              >
+                                <img 
+                                  src={media.url} 
+                                  alt={`Imagen ${index + 1}`} 
+                                  className="w-full h-20 object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveImage(media.id || media.url, index);
+                                    }}
+                                    className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                    title="Eliminar imagen"
+                                    disabled={isUploading}
+                                  >
+                                    {isUploading ? (
+                                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                      </svg>
+                                    ) : (
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                      </svg>
+                                    )}
+                                  </button>
+                                </div>
+                                {index === 0 && (
+                                  <div className="absolute top-1 right-1 bg-blue-500 text-white rounded-full p-1" title="Imagen principal">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          <p className="mt-2 text-xs text-gray-500">
+                            La primera imagen será mostrada como principal
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     {editedProduct.multimedia?.length > 0 && (
@@ -1101,362 +1669,100 @@ export default function ProductoDetalle() {
                 </div>
 
                 {/* Descripción completa */}
-                {editedProduct.description && (
-                  <div className="mt-8">
-                    <h3 className="text-xl font-bold text-gray-800 border-b pb-2 mb-4">Descripción completa</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Características</label>
-                        <textarea
-                          name="caracteristicas"
-                          value={editedProduct.description?.caracteristicas || ''}
-                          onChange={(e) => {
-                            const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
-                            if (!updatedProduct.description) updatedProduct.description = {};
-                            updatedProduct.description.caracteristicas = e.target.value;
-                            setEditedProduct(updatedProduct);
-                          }}
-                          className="w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-                          rows="5"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Detalles</label>
-                        <textarea
-                          name="details"
-                          value={editedProduct.description?.details || ''}
-                          onChange={(e) => {
-                            const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
-                            if (!updatedProduct.description) updatedProduct.description = {};
-                            updatedProduct.description.details = e.target.value;
-                            setEditedProduct(updatedProduct);
-                          }}
-                          className="w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-                          rows="5"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Aplicaciones</label>
-                        <textarea
-                          name="aplicaciones"
-                          value={editedProduct.description?.aplicaciones || ''}
-                          onChange={(e) => {
-                            const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
-                            if (!updatedProduct.description) updatedProduct.description = {};
-                            updatedProduct.description.aplicaciones = e.target.value;
-                            setEditedProduct(updatedProduct);
-                          }}
-                          className="w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-                          rows="5"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Destacados</label>
-                        <textarea
-                          name="destacados"
-                          value={editedProduct.description?.destacados || ''}
-                          onChange={(e) => {
-                            const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
-                            if (!updatedProduct.description) updatedProduct.description = {};
-                            updatedProduct.description.destacados = e.target.value;
-                            setEditedProduct(updatedProduct);
-                          }}
-                          className="w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-                          rows="5"
-                        />
-                      </div>
-                    </div>
+                <div className="mt-8">
+                  <h3 className="text-xl font-bold text-gray-800 border-b pb-2 mb-4">Descripción completa</h3>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Descripción del producto</label>
+                    <textarea
+                      value={typeof editedProduct.description === 'string' 
+                        ? editedProduct.description 
+                        : JSON.stringify(editedProduct.description, null, 2)}
+                      onChange={(e) => {
+                        try {
+                          // Intentar analizar como JSON si parece ser un objeto
+                          if (e.target.value.trim().startsWith('{') && e.target.value.trim().endsWith('}')) {
+                            const parsed = JSON.parse(e.target.value);
+                            setEditedProduct({ ...editedProduct, description: parsed });
+                          } else {
+                            setEditedProduct({ ...editedProduct, description: e.target.value });
+                          }
+                        } catch (error) {
+                          // Si hay un error al parsear, guardar como texto plano
+                          setEditedProduct({ ...editedProduct, description: e.target.value });
+                        }
+                      }}
+                      className="w-full border border-gray-300 rounded-md p-3 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                      rows="10"
+                      placeholder="Escribe la descripción completa del producto aquí..."
+                    />
+                    <p className="mt-1 text-sm text-gray-500">
+                      Puedes escribir texto plano o pegar un objeto JSON con la estructura deseada.
+                    </p>
                   </div>
-                )}
+                </div>
 
                 {/* Especificaciones técnicas */}
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Características técnicas */}
                   <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-xl font-bold text-gray-800">Características técnicas</h3>
-                      <button
-                        type="button"
-                        onClick={() => handleAddField('technicalData')}
-                        className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        Agregar campo
-                      </button>
-                    </div>
-                    <div className="space-y-3 border border-gray-200 rounded-lg p-4">
-                      {editedProduct.technicalData && Object.entries(editedProduct.technicalData || {}).map(([key, value], index) => {
-                        // Crear un ID único para este par clave-valor
-                        const fieldId = `tech-${index}-${key}`;
-                        return (
-                          <div key={fieldId} className="flex items-center gap-2">
-                            <div className="flex-1">
-                              <Input
-                                placeholder="Nombre del campo"
-                                value={key}
-                                onChange={(e) => {
-                                  if (!e.target.value.trim()) return;
-
-                                  // Crear una copia profunda del estado actual
-                                  const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
-
-                                  // Asegurarse de que technicalData existe
-                                  if (!updatedProduct.technicalData) {
-                                    updatedProduct.technicalData = {};
-                                  }
-
-                                  // Obtener el valor actual
-                                  const currentValue = updatedProduct.technicalData[key];
-
-                                  // Eliminar la entrada antigua
-                                  delete updatedProduct.technicalData[key];
-
-                                  // Crear la nueva entrada con la clave actualizada
-                                  updatedProduct.technicalData[e.target.value] = currentValue;
-
-                                  // Actualizar el estado
-                                  setEditedProduct(updatedProduct);
-
-                                  // Log para depuración
-                                  console.log(`Clave cambiada: ${key} -> ${e.target.value}`);
-                                  console.log('Datos técnicos actualizados:', updatedProduct.technicalData);
-                                }}
-                                className="mb-1"
-                                onBlur={(e) => {
-                                  // Forzar la actualización del estado al perder el foco
-                                  const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
-                                  setEditedProduct(updatedProduct);
-                                }}
-                              />
-                              <Input
-                                placeholder="Valor"
-                                value={value}
-                                onChange={(e) => {
-                                  // Crear una copia profunda del estado actual
-                                  const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
-
-                                  // Asegurarse de que technicalData existe
-                                  if (!updatedProduct.technicalData) {
-                                    updatedProduct.technicalData = {};
-                                  }
-
-                                  // Actualizar el valor
-                                  updatedProduct.technicalData[key] = e.target.value;
-
-                                  // Actualizar el estado
-                                  setEditedProduct(updatedProduct);
-
-                                  // Log para depuración
-                                  console.log(`Valor actualizado para ${key}: ${e.target.value}`);
-                                  console.log('Datos técnicos actualizados:', updatedProduct.technicalData);
-                                }}
-                                onBlur={(e) => {
-                                  // Forzar la actualización del estado al perder el foco
-                                  const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
-                                  setEditedProduct(updatedProduct);
-                                }}
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                // Crear una copia profunda del estado actual
-                                const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
-
-                                // Asegurarse de que technicalData existe
-                                if (!updatedProduct.technicalData) {
-                                  updatedProduct.technicalData = {};
-                                }
-
-                                // Eliminar la entrada
-                                delete updatedProduct.technicalData[key];
-
-                                // Actualizar el estado
-                                setEditedProduct(updatedProduct);
-
-                                // Log para depuración
-                                console.log(`Campo eliminado: ${key}`);
-                                console.log('Datos técnicos actualizados:', updatedProduct.technicalData);
-                              }}
-                              className="text-red-500 hover:text-red-700 self-center"
-                              title="Eliminar campo"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </div>
-                        );
-                      })}
-                      {(!editedProduct.technicalData || Object.keys(editedProduct.technicalData).length === 0) && (
-                        <p className="text-gray-500 text-center py-2">No hay características técnicas. Haz clic en "Agregar campo" para añadir.</p>
-                      )}
-                    </div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">Características técnicas</h3>
+                    <KeyValueInput
+                      values={Array.isArray(editedProduct.technicalData) 
+                        ? editedProduct.technicalData 
+                        : Object.entries(editedProduct.technicalData || {}).map(([key, value]) => ({
+                            key,
+                            value: typeof value === 'string' ? value : JSON.stringify(value)
+                          }))}
+                      onChange={(newValues) => {
+                        // Si technicalData era originalmente un objeto, lo mantenemos como objeto
+                        const wasObject = !Array.isArray(editedProduct.technicalData) && editedProduct.technicalData !== null;
+                        
+                        if (wasObject) {
+                          const newData = {};
+                          newValues.forEach(({ key, value }) => {
+                            if (key) newData[key] = value;
+                          });
+                          setEditedProduct({ ...editedProduct, technicalData: newData });
+                        } else {
+                          setEditedProduct({ ...editedProduct, technicalData: newValues });
+                        }
+                      }}
+                      placeholderKey="Nombre del campo"
+                      placeholderValue="Valor"
+                    />
                   </div>
 
                   {/* Funcionalidades */}
                   <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-xl font-bold text-gray-800">Funcionalidades</h3>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updatedProduct = { ...editedProduct };
-                          if (!Array.isArray(updatedProduct.functionalities)) {
-                            updatedProduct.functionalities = [];
-                          }
-                          updatedProduct.functionalities.push({ key: '', value: '' });
-                          setEditedProduct(updatedProduct);
-                        }}
-                        className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        Agregar campo
-                      </button>
-                    </div>
-                    <div className="space-y-3 border border-gray-200 rounded-lg p-4">
-                      {Array.isArray(editedProduct.functionalities) && editedProduct.functionalities.map((item, index) => (
-                        <div key={`func-${index}`} className="flex items-center gap-2">
-                          <div className="flex-1">
-                            <Input
-                              placeholder="Nombre del campo"
-                              value={item.key || ''}
-                              onChange={(e) => {
-                                const updatedProduct = { ...editedProduct };
-                                updatedProduct.functionalities[index].key = e.target.value;
-                                setEditedProduct(updatedProduct);
-                              }}
-                              className="mb-1"
-                            />
-                            <Input
-                              placeholder="Valor"
-                              value={item.value || ''}
-                              onChange={(e) => {
-                                const updatedProduct = { ...editedProduct };
-                                updatedProduct.functionalities[index].value = e.target.value;
-                                setEditedProduct(updatedProduct);
-                              }}
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const updatedProduct = { ...editedProduct };
-                              updatedProduct.functionalities = updatedProduct.functionalities.filter((_, i) => i !== index);
-                              setEditedProduct(updatedProduct);
-                            }}
-                            className="text-red-500 hover:text-red-700 self-center"
-                            title="Eliminar campo"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
-                      {(!Array.isArray(editedProduct.functionalities) || editedProduct.functionalities.length === 0) && (
-                        <p className="text-gray-500 text-center py-2">No hay funcionalidades. Haz clic en "Agregar campo" para añadir.</p>
-                      )}
-                    </div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">Funcionalidades</h3>
+                    <KeyValueInput
+                      values={Array.isArray(editedProduct.functionalities) 
+                        ? editedProduct.functionalities 
+                        : []}
+                      onChange={(newValues) => {
+                        setEditedProduct({ ...editedProduct, functionalities: newValues });
+                      }}
+                      placeholderKey="Nombre del campo"
+                      placeholderValue="Descripción"
+                    />
                   </div>
                 </div>
 
                 {/* Descargas */}
                 <div className="mt-8">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-gray-800">Descargas</h3>
-                    <button
-                      type="button"
-                      onClick={() => handleAddField('downloads')}
-                      className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                      Agregar descarga
-                    </button>
-                  </div>
-                  <div className="space-y-3 border border-gray-200 rounded-lg p-4">
-                    {editedProduct.downloads && Object.entries(editedProduct.downloads || {}).map(([key, value], index) => {
-                      // Crear un ID único para este par clave-valor
-                      const fieldId = `download-${index}-${key}`;
-                      return (
-                        <div key={fieldId} className="flex items-center gap-2">
-                          <div className="flex-1">
-                            <div className="flex items-center mb-1">
-                              <svg className="w-5 h-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                              </svg>
-                              <Input
-                                placeholder="Nombre del documento (ej: manual, ficha_tecnica)"
-                                value={key}
-                                onChange={(e) => {
-                                  // Crear una copia profunda del estado actual
-                                  const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
-
-                                  // Obtener el valor actual
-                                  const currentValue = updatedProduct.downloads[key];
-
-                                  // Eliminar la entrada antigua
-                                  delete updatedProduct.downloads[key];
-
-                                  // Crear la nueva entrada con la clave actualizada
-                                  updatedProduct.downloads[e.target.value] = currentValue;
-
-                                  // Actualizar el estado
-                                  setEditedProduct(updatedProduct);
-                                }}
-                                className="flex-1"
-                              />
-                            </div>
-                            <Input
-                              placeholder="URL del documento"
-                              value={value}
-                              onChange={(e) => {
-                                // Crear una copia profunda del estado actual
-                                const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
-
-                                // Actualizar el valor
-                                updatedProduct.downloads[key] = e.target.value;
-
-                                // Actualizar el estado
-                                setEditedProduct(updatedProduct);
-                              }}
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              // Crear una copia profunda del estado actual
-                              const updatedProduct = JSON.parse(JSON.stringify(editedProduct));
-
-                              // Eliminar la entrada
-                              delete updatedProduct.downloads[key];
-
-                              // Actualizar el estado
-                              setEditedProduct(updatedProduct);
-                            }}
-                            className="text-red-500 hover:text-red-700 self-center"
-                            title="Eliminar descarga"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      );
-                    })}
-                    {(!editedProduct.downloads || Object.keys(editedProduct.downloads).length === 0) && (
-                      <p className="text-gray-500 text-center py-2">No hay descargas. Haz clic en "Agregar descarga" para añadir.</p>
-                    )}
-                  </div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Descargas</h3>
+                  <KeyValueInput
+                    values={Object.entries(editedProduct.downloads || {}).map(([key, value]) => ({ key, value }))}
+                    onChange={(newValues) => {
+                      const downloadsObj = {};
+                      newValues.forEach(({ key, value }) => {
+                        if (key && value) downloadsObj[key] = value;
+                      });
+                      setEditedProduct({ ...editedProduct, downloads: downloadsObj });
+                    }}
+                    placeholderKey="Nombre del archivo"
+                    placeholderValue="URL"
+                  />
                 </div>
               </div>
             </TabsContent>

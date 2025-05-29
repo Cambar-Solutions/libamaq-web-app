@@ -51,9 +51,27 @@ const defineStepper = (...steps) => {
         initialMetadata,
         ...props
       }) => {
+        // Determinar el variant basado en el tamaño de la pantalla
+        const [isMobile, setIsMobile] = React.useState(false);
+
+        React.useEffect(() => {
+          const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768); // md breakpoint
+          };
+          
+          // Verificar al montar
+          checkMobile();
+          
+          // Escuchar cambios de tamaño
+          window.addEventListener('resize', checkMobile);
+          return () => window.removeEventListener('resize', checkMobile);
+        }, []);
+
+        const effectiveVariant = isMobile ? 'vertical' : variant;
+
         return (
           <StepperContext.Provider
-            value={{ variant, labelOrientation, tracking }}
+            value={{ variant: effectiveVariant, labelOrientation, tracking, isMobile }}
           >
             <Scoped
               initialStep={initialStep}
@@ -69,19 +87,46 @@ const defineStepper = (...steps) => {
       Navigation: ({
         children,
         "aria-label": ariaLabel = "Stepper Navigation",
+        className,
         ...props
       }) => {
-        const { variant } = useStepperProvider();
+        const { variant, isMobile } = useStepperProvider();
+        const { current } = useStepper();
+        const totalSteps = rest.steps.length;
+        
+        // En móviles, solo mostramos el paso actual
+        if (isMobile) {
+          const currentIndex = rest.utils.getIndex(current.id);
+          return (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-medium">{current.title || `Paso ${currentIndex + 1}`}</h3>
+                <span className="text-sm text-muted-foreground">
+                  Paso {currentIndex + 1} de {totalSteps}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${((currentIndex + 1) / totalSteps) * 100}%` }}
+                />
+              </div>
+            </div>
+          );
+        }
+
+        // En desktop, mostramos todos los pasos
         return (
           <nav
             date-component="stepper-navigation"
             aria-label={ariaLabel}
             role="tablist"
+            className={cn("mb-8", className)}
             {...props}
           >
             <ol
               date-component="stepper-navigation-list"
-              className={classForNavigationList({ variant: variant })}
+              className={classForNavigationList({ variant })}
             >
               {children}
             </ol>
@@ -365,14 +410,21 @@ const CircleStepIndicator = ({
   );
 };
  
-const classForNavigationList = cva("flex gap-2", {
+const classForNavigationList = cva("flex gap-2 w-full", {
   variants: {
     variant: {
       horizontal: "flex-row items-center justify-between",
-      vertical: "flex-col",
-      circle: "flex-row items-center justify-between",
+      vertical: "flex-col"
+    },
+    labelOrientation: {
+      horizontal: "flex-row items-center gap-2",
+      vertical: "flex-col"
     },
   },
+  defaultVariants: {
+    variant: "horizontal",
+    labelOrientation: "horizontal"
+  }
 });
  
 const classForSeparator = cva(

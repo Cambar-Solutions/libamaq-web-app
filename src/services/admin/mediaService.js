@@ -36,18 +36,34 @@ export const uploadMedia = async (files) => {
 
 /**
  * Elimina archivos multimedia del servidor
- * @param {Array<number>} mediaIds - Array de IDs de archivos multimedia a eliminar
+ * @param {Array<number|string>} mediaIds - Array de IDs de archivos multimedia a eliminar
  * @returns {Promise<Object>} Objeto con la respuesta de la API
  */
 export const deleteMedia = async (mediaIds) => {
   try {
+    if (!Array.isArray(mediaIds) || mediaIds.length === 0) {
+      throw new Error('Se requiere un array de IDs válido');
+    }
+    
+    // Enviar el ID directamente como un array de números/strings
+    const deletePayload = mediaIds;
+    
     console.log('Eliminando archivos multimedia con IDs:', mediaIds);
-    const response = await apiClient.post("/l/media/delete", mediaIds);
+    
+    const response = await apiClient.post("/l/media/delete", deletePayload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+    
     console.log('Respuesta de eliminación de archivos:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error al eliminar archivos multimedia:', error);
-    throw error.response?.data || error.message;
+    const errorMessage = error.response?.data?.message || error.message || 'Error desconocido al eliminar archivos';
+    console.error('Detalles del error:', error.response?.data || error);
+    throw new Error(errorMessage);
   }
 };
 
