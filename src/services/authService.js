@@ -15,9 +15,9 @@ export const login = async (email, password) => {
     const { data } = await apiClient.post("/l/auth/login", { email, password });
     
     // Si la autenticación es exitosa, guardar el token en localStorage
-    if (data.result && data.result.token) {
-      localStorage.setItem("token", data.result.token);
-      localStorage.setItem("user", JSON.stringify(data.result.user));
+    if (data && data.access_token && data.user) {
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("user", JSON.stringify(data.user));
     }
     
     return data;
@@ -62,11 +62,25 @@ export const getCurrentUser = () => {
 
 /**
  * Registra un nuevo usuario
- * @param {Object} userData - Datos del usuario a registrar
+ * @param {Object} userData - Datos del usuario a registrar con la siguiente estructura:
+ * @param {string} userData.createdBy - ID del usuario que crea la cuenta
+ * @param {string} userData.createdAt - Fecha y hora de creación en formato ISO 8601
+ * @param {string} userData.email - Correo electrónico del usuario (único)
+ * @param {string} userData.name - Nombre del usuario
+ * @param {string} userData.lastName - Apellido del usuario
+ * @param {string} userData.password - Contraseña del usuario
+ * @param {string} userData.phoneNumber - Número de teléfono del usuario
+ * @param {string} userData.role - Rol del usuario (ej. 'ADMIN', 'USER', 'DELIVERY', etc.)
+ * @param {string} userData.status - Estado del usuario (ej. 'ACTIVE', 'INACTIVE')
  * @returns {Promise<Object>} - Datos del usuario registrado
  */
 export const register = async (userData) => {
   try {
+    // Basic client-side validation for required fields
+    if (!userData.email || !userData.password || !userData.name || !userData.lastName || !userData.role) {
+      throw new Error("Missing required user data fields (email, password, name, lastName, role)");
+    }
+
     const { data } = await apiClient.post("/l/users/register", userData);
     return data;
   } catch (error) {
