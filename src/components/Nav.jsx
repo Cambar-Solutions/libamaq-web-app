@@ -14,9 +14,13 @@ const Nav = () => {
   return (
     <nav className="bg-blue-950  dark:bg-gray-800 shadow-lg py-4 px-12 flex justify-between items-center fixed top-0 w-full z-20">
       {/* Logo */}
-      <div className="flex items-center">
-        <img src="/Tipografia_LIBAMAQ_legulab_color_hor.png" alt="logo" className="max-h-12" />
-      </div>
+      <Link to="/">
+    <img
+      src="/Tipografia_LIBAMAQ_legulab_color_hor.png"
+      alt="logo"
+      className="max-h-12 cursor-pointer"
+    />
+  </Link>
 
       {/* Menú hamburguesa (solo en pantallas pequeñas) */}
       <div className="md:hidden flex items-center">

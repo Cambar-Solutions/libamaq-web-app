@@ -64,8 +64,8 @@ const NuevoProducto = () => {
     rentable: false,
     status: 'ACTIVE',
     technicalData: [],
-    functionalities: [],
-    downloads: []
+    functionalities: '',
+    downloads: ''
   });
   
   // Consulta para obtener marcas
@@ -334,14 +334,14 @@ const NuevoProducto = () => {
         name: producto.name || "",
         shortDescription: producto.shortDescription || "",
         description: producto.description || "",
-        // Convertir funcionalidades a string separado por comas
-        functionalities: Array.isArray(producto.functionalities) 
-          ? producto.functionalities.map(f => f.value || f).join(", ") 
+        // Funcionalidades como string
+        functionalities: typeof producto.functionalities === 'string' 
+          ? producto.functionalities 
           : "",
-        // Convertir datos técnicos a string JSON
-        technicalData: typeof producto.technicalData === 'string'
-          ? producto.technicalData
-          : JSON.stringify(producto.technicalData, null, 2),
+        // Datos técnicos como string JSON
+        technicalData: Array.isArray(producto.technicalData) 
+          ? JSON.stringify(producto.technicalData, null, 2) 
+          : (typeof producto.technicalData === 'string' ? producto.technicalData : '[]'),
         type: producto.type || "",
         productUsage: producto.productUsage || "",
         price: parseFloat(producto.price) || 0,
@@ -350,9 +350,9 @@ const NuevoProducto = () => {
         stock: parseInt(producto.stock) || 0,
         garanty: parseInt(producto.garanty) || 0,
         color: producto.color || "",
-        // Convertir descargas a string con saltos de línea
-        downloads: Array.isArray(producto.downloads)
-          ? producto.downloads.map(d => d.value).filter(Boolean).join("\n")
+        // Descargas como string
+        downloads: typeof producto.downloads === 'string' 
+          ? producto.downloads 
           : "",
         rentable: Boolean(producto.rentable || false),
         status: 'ACTIVE',
@@ -383,7 +383,7 @@ const NuevoProducto = () => {
         
         // Esperar un momento antes de navegar para que el usuario vea el mensaje de éxito
         setTimeout(() => {
-          navigate('/dashboard/productos');
+          navigate('/dashboard');
         }, 1500);
       } else {
         throw new Error('La respuesta del servidor no contiene el ID del producto creado');
@@ -789,90 +789,21 @@ return (
                   </div>
                 </div>
                 
-                {/* Enlaces de descarga */}
+                {/* Enlace de descarga */}
                 <div className="space-y-3 mb-6">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-base font-medium">Documentos y Descargas</Label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const newDownload = { key: '', value: '' };
-                        setProducto(prev => ({
-                          ...prev,
-                          downloads: [...(Array.isArray(prev.downloads) ? prev.downloads : []), newDownload]
-                        }));
-                      }}
-                      className="flex items-center gap-1 text-sm"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Agregar enlace
-                    </Button>
+                  <div className="space-y-2">
+                    <Label htmlFor="downloads">Enlace de Descarga</Label>
+                    <Input
+                      id="downloads"
+                      type="url"
+                      value={producto.downloads || ''}
+                      onChange={(e) => setProducto({ ...producto, downloads: e.target.value })}
+                      placeholder="https://ejemplo.com/manuales/s21.pdf"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Ingresa la URL del documento descargable (manual, ficha técnica, etc.)
+                    </p>
                   </div>
-                  
-                  <div className="space-y-3">
-                    {Array.isArray(producto.downloads) && producto.downloads.length > 0 ? (
-                      producto.downloads.map((item, index) => (
-                        <div key={index} className="flex items-start gap-2">
-                          <div className="grid grid-cols-1 md:grid-cols-5 gap-2 flex-1">
-                            <div className="md:col-span-2">
-                              <Input
-                                placeholder="Ej: Manual de Usuario"
-                                value={item.key || ''}
-                                onChange={(e) => {
-                                  const newDownloads = [...producto.downloads];
-                                  newDownloads[index].key = e.target.value;
-                                  setProducto(prev => ({
-                                    ...prev,
-                                    downloads: newDownloads
-                                  }));
-                                }}
-                              />
-                            </div>
-                            <div className="md:col-span-3 flex gap-2">
-                              <Input
-                                placeholder="https://ejemplo.com/documento.pdf"
-                                value={item.value || ''}
-                                onChange={(e) => {
-                                  const newDownloads = [...producto.downloads];
-                                  newDownloads[index].value = e.target.value;
-                                  setProducto(prev => ({
-                                    ...prev,
-                                    downloads: newDownloads
-                                  }));
-                                }}
-                                className="flex-1"
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                                onClick={() => {
-                                  const newDownloads = producto.downloads.filter((_, i) => i !== index);
-                                  setProducto(prev => ({
-                                    ...prev,
-                                    downloads: newDownloads
-                                  }));
-                                }}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-sm text-muted-foreground italic">
-                        No se han agregado enlaces de descarga
-                      </div>
-                    )}
-                  </div>
-                  
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Agrega enlaces a documentos como manuales, fichas técnicas o catálogos relacionados con el producto.
-                  </p>
                 </div>
               </Stepper.Panel>
             )}
@@ -908,15 +839,19 @@ return (
                     />
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div className="space-y-2">
-                      <Label>Características y Funcionalidades</Label>
-                      <KeyValueInput
-                        values={Array.isArray(producto.functionalities) ? producto.functionalities : []}
-                        onChange={(newValues) => setProducto({ ...producto, functionalities: newValues })}
-                        placeholderKey="Característica"
-                        placeholderValue="Valor"
+                      <Label htmlFor="functionalities">Funcionalidades</Label>
+                      <Textarea
+                        id="functionalities"
+                        value={producto.functionalities || ''}
+                        onChange={(e) => setProducto({ ...producto, functionalities: e.target.value })}
+                        placeholder="Lista las funcionalidades del producto, separadas por comas o saltos de línea"
+                        rows={4}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Separa cada funcionalidad con una coma o un salto de línea
+                      </p>
                     </div>
 
                     <div className="space-y-2">
@@ -925,8 +860,11 @@ return (
                         values={Array.isArray(producto.technicalData) ? producto.technicalData : []}
                         onChange={(newValues) => setProducto({ ...producto, technicalData: newValues })}
                         placeholderKey="Especificación"
-                        placeholderValue="Detalle"
+                        placeholderValue="Valor"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Agrega las especificaciones técnicas en formato clave-valor
+                      </p>
                     </div>
                   </div>
                 </div>

@@ -2,7 +2,8 @@ import { motion } from "framer-motion";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { getAllProducts, updateProduct, getProductPreviews } from "@/services/admin/productService";
+import { useQueryClient } from '@tanstack/react-query';
+import { getAllProducts, updateProduct, getProductPreviews, deleteProduct } from "@/services/admin/productService";
 import { getAllBrands } from "@/services/admin/brandService";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -143,6 +144,7 @@ const CardComponent = ({ product, onClick, onDelete }) => {
 
 export function ProductsView() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -159,19 +161,36 @@ export function ProductsView() {
   useEffect(() => {
     let filtered = [...products];
 
-    // Filter by brand
+    // Filtrar por marca
     if (selectedBrand) {
       filtered = filtered.filter((p) => p.brandId === selectedBrand);
     }
 
-    // Filter by search term
+    // Filtrar por término de búsqueda
     if (searchTerm.trim()) {
-      const lower = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (p) =>
-          p.name.toLowerCase().includes(lower) ||
-          p.externalId.toLowerCase().includes(lower)
-      );
+      const lower = searchTerm.toLowerCase().trim();
+      filtered = filtered.filter((p) => {
+        // Verificar si el nombre coincide
+        const nameMatch = p.name?.toLowerCase().includes(lower) || false;
+        
+        // Verificar si el ID externo coincide (si existe)
+        const externalIdMatch = p.externalId 
+          ? p.externalId.toString().toLowerCase().includes(lower) 
+          : false;
+        
+        // Verificar si el ID interno coincide
+        const idMatch = p.id 
+          ? p.id.toString().toLowerCase().includes(lower)
+          : false;
+        
+        // Verificar si la descripción coincide (si existe)
+        const descriptionMatch = p.description
+          ? p.description.toLowerCase().includes(lower)
+          : false;
+        
+        // Devolver verdadero si alguna de las condiciones se cumple
+        return nameMatch || externalIdMatch || idMatch || descriptionMatch;
+      });
     }
     
     setFilteredProducts(filtered);
@@ -265,45 +284,32 @@ export function ProductsView() {
     console.log(`Navegando a la vista detallada del producto con ID: ${product.id}`);
   };
   
-  // Función para manejar la eliminación (cambio de status) de un producto
+  // Función para manejar la eliminación de un producto
   const handleDeleteProduct = async (productId) => {
     try {
-      // Encontrar el producto a actualizar en el estado
-      const productToUpdate = products.find(product => product.id === productId);
+      // Llamar al servicio para eliminar el producto
+      const response = await deleteProduct(productId);
       
-      if (!productToUpdate) {
-        throw new Error('Producto no encontrado');
-      }
-      
-      // Crear un payload con los campos requeridos para la actualización
-      const updatePayload = {
-        id: productId,
-        name: productToUpdate.name || 'Producto sin nombre',
-        externalId: productToUpdate.externalId || 'ID-' + productId,
-        shortDescription: productToUpdate.description || 'Descripción no disponible', // Usar description de la vista previa
-        type: productToUpdate.type || 'PRODUCT',
-        status: 'INACTIVE', // Marcar como inactivo
-        price: productToUpdate.price || 0,
-        cost: productToUpdate.cost || 0,
-        discount: productToUpdate.discount || 0,
-        stock: productToUpdate.stock || 0,
-        brandId: productToUpdate.brandId || (productToUpdate.brand?.id || 0),
-        categoryId: productToUpdate.categoryId || 0
-      };
-      
-      console.log('Enviando payload para eliminar producto:', updatePayload);
-      
-      // Usar updateProduct para enviar los datos
-      const response = await updateProduct(updatePayload);
-      
-      if (response && (response.type === 'SUCCESS' || response.result)) {
+      if (response && (response.type === 'SUCCESS' || response.result || response.status === 'success')) {
         toast.success('Producto eliminado correctamente');
         
-        // Actualizar el estado local eliminando el producto
-        setProducts(prevProducts => prevProducts.filter(product => product.id !== productId));
-        setFilteredProducts(prevFiltered => prevFiltered.filter(product => product.id !== productId));
+        // Actualizar el estado local eliminando el producto de ambas listas
+        setProducts(prevProducts => {
+          const updatedProducts = prevProducts.filter(product => product.id !== productId);
+          console.log('Productos después de eliminar:', updatedProducts);
+          return updatedProducts;
+        });
+        
+        setFilteredProducts(prevFiltered => {
+          const updatedFiltered = prevFiltered.filter(product => product.id !== productId);
+          console.log('Productos filtrados después de eliminar:', updatedFiltered);
+          return updatedFiltered;
+        });
+        
+        // Actualizar la caché de React Query si es necesario
+        queryClient.invalidateQueries(['products']);
       } else {
-        throw new Error(response?.text || 'No se recibió una respuesta válida del servidor');
+        throw new Error(response?.message || 'No se recibió una respuesta válida del servidor');
       }
     } catch (error) {
       console.error('Error al eliminar producto:', error);

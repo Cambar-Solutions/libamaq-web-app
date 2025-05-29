@@ -76,12 +76,12 @@ const SparePartCard = ({ sparePart, onClick }) => {
   }, [sparePart.id]);
 
   // Determinar si hay imágenes disponibles
-  const hasImages = detailedSparePart?.sparePartMultimediaDto && 
-                   Array.isArray(detailedSparePart.sparePartMultimediaDto) && 
-                   detailedSparePart.sparePartMultimediaDto.length > 0;
+  const hasImages = sparePart?.media && 
+                   Array.isArray(sparePart.media) && 
+                   sparePart.media.length > 0;
 
-  // Obtener el ID de la primera imagen si existe
-  const firstImageId = hasImages ? detailedSparePart.sparePartMultimediaDto[0].multimediaId : null;
+  // Obtener la URL de la primera imagen si existe
+  const firstImageUrl = hasImages ? sparePart.media[0].url : null;
 
   return (
     <Card
@@ -103,30 +103,36 @@ const SparePartCard = ({ sparePart, onClick }) => {
         <div className="relative w-full h-48 overflow-hidden bg-gray-100 flex items-center justify-center">
           {isLoadingDetails ? (
             <div className="animate-pulse w-full h-full bg-gray-200"></div>
-          ) : firstImageId ? (
+          ) : firstImageUrl ? (
             <img
-              src={`https://libamaq.com/api/multimedia/${firstImageId}`}
+              src={firstImageUrl}
               alt={sparePart.name}
               className="w-full h-full object-contain"
               onError={(e) => {
-                // Evitar bucle infinito estableciendo una bandera
-                if (!e.target.hasAttribute('data-error')) {
-                  e.target.setAttribute('data-error', 'true');
-                  e.target.parentNode.innerHTML = `
-                    <div class="flex flex-col items-center justify-center w-full h-full">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="text-gray-400">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                        <polyline points="21 15 16 10 5 21"></polyline>
-                      </svg>
-                      <span class="text-sm text-gray-400 mt-2">Sin imagen</span>
-                    </div>
+                // Si hay más imágenes, intentar con la siguiente
+                const currentIndex = sparePart.media.findIndex(img => img.url === e.target.src);
+                if (currentIndex < sparePart.media.length - 1) {
+                  e.target.src = sparePart.media[currentIndex + 1].url;
+                } else {
+                  // No hay más imágenes, mostrar placeholder
+                  e.target.onerror = null;
+                  e.target.style.display = 'none';
+                  const placeholder = document.createElement('div');
+                  placeholder.className = 'flex flex-col items-center justify-center w-full h-full';
+                  placeholder.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="text-gray-400">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                      <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                    <span class="text-sm text-gray-400 mt-2">Error al cargar la imagen</span>
                   `;
+                  e.target.parentNode.appendChild(placeholder);
                 }
               }}
             />
           ) : (
-            <div className="flex flex-col items-center justify-center">
+            <div className="flex flex-col items-center justify-center w-full h-full">
               <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-gray-400">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                 <circle cx="8.5" cy="8.5" r="1.5"></circle>

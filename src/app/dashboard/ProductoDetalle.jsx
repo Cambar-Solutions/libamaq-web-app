@@ -3,13 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import DescargasComponente from "@/components/common/DescargasComponente";
 import { uploadMedia, deleteMedia } from '@/services/admin/mediaService';
 import { getProductById, updateProduct, uploadImage } from "@/services/admin/productService";
 import { getAllActiveBrands, getCategoriesByBrand } from "@/services/admin/brandService";
 import { getAllCategories } from "@/services/admin/categoryService";
 import { createMultimedia } from "@/services/admin/multimediaService";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload } from "lucide-react";
+import { Upload, Plus, Trash2 } from "lucide-react";
 import KeyValueInput from "@/components/common/KeyValueInput";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,8 +42,8 @@ export default function ProductoDetalle() {
     categoryId: 0,
     media: [],
     technicalData: [],
-    functionalities: [],
-    downloads: {}
+    functionalities: '',  // Cambiado a string vacío
+    downloads: ''         // Cambiado a string vacío
   });
   const [uploadedImages, setUploadedImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -101,6 +102,22 @@ export default function ProductoDetalle() {
         // Nuevo formato de API: { data: {...}, status: 200, message: 'success' }
         console.log('Detectado nuevo formato de API');
         product = response.data;
+        
+        // Asegurarse de que functionalities y downloads sean strings
+        if (Array.isArray(product.functionalities)) {
+          // Si es un array, convertirlo a string uniendo con saltos de línea
+          product.functionalities = product.functionalities
+            .map(item => typeof item === 'object' ? item.value || item.key || '' : String(item))
+            .filter(Boolean)
+            .join('\n');
+        } else if (typeof product.functionalities !== 'string') {
+          product.functionalities = '';
+        }
+        
+        // Asegurar que downloads sea un string
+        if (typeof product.downloads !== 'string') {
+          product.downloads = '';
+        }
       } else if (response.type === "SUCCESS" && response.result) {
         // Formato anterior: { type: "SUCCESS", result: {...} }
         console.log('Detectado formato anterior de API');
@@ -113,8 +130,8 @@ export default function ProductoDetalle() {
 
       // Asegurarse de que los campos dinámicos estén inicializados correctamente
       if (!product.technicalData) product.technicalData = [];
-      if (!product.functionalities) product.functionalities = [];
-      if (!product.downloads) product.downloads = [];
+      if (!product.functionalities) product.functionalities = '';
+      if (!product.downloads) product.downloads = '';
       if (!product.description) product.description = '';
 
       // Función para convertir string de pares clave-valor a array de objetos
@@ -170,15 +187,10 @@ export default function ProductoDetalle() {
 
       // Procesar campos según su tipo
       product.technicalData = stringToKeyValueArray(product.technicalData);
-      product.functionalities = stringToKeyValueArray(product.functionalities);
       
       // Asegurarse de que siempre sean arrays
       if (!Array.isArray(product.technicalData)) {
         product.technicalData = [];
-      }
-      
-      if (!Array.isArray(product.functionalities)) {
-        product.functionalities = [];
       }
 
       // Procesar descargas
@@ -707,75 +719,126 @@ export default function ProductoDetalle() {
 
       console.log('Estado actual antes de guardar:', productToUpdate);
 
-      // Asegurarse de que los campos dinámicos estén presentes y sean objetos
-      if (!productToUpdate.technicalData) productToUpdate.technicalData = {};
-      if (!productToUpdate.functionalities) productToUpdate.functionalities = [];
-      if (!productToUpdate.downloads) productToUpdate.downloads = {};
-      if (!productToUpdate.description) productToUpdate.description = {};
+      // Asegurarse de que los campos dinámicos estén presentes y con el tipo correcto
+      if (!productToUpdate.technicalData) productToUpdate.technicalData = [];
+      if (typeof productToUpdate.functionalities !== 'string') productToUpdate.functionalities = '';
+      if (typeof productToUpdate.downloads !== 'string') productToUpdate.downloads = '';
+      if (!productToUpdate.description) productToUpdate.description = '';
 
-      // Preparar los datos del producto para la actualización según el formato de Swagger
+      // Preparar los datos técnicos como un objeto plano de clave-valor
+      const technicalDataObj = {};
+      if (Array.isArray(productToUpdate.technicalData)) {
+        productToUpdate.technicalData.forEach(item => {
+          if (item && item.key) {
+            technicalDataObj[item.key] = item.value || '';
+          }
+        });
+      }
+
+      // Convertir el objeto technicalData a string JSON
+      const technicalDataString = JSON.stringify(technicalDataObj);
+
+      // Preparar los datos del producto para la actualización según el formato esperado por la API
       const productData = {
         id: Number(productToUpdate.id),
-        updatedBy: "1", // Asumiendo que el usuario actual tiene ID 1
-        updatedAt: new Date().toISOString(),
-        brandId: String(productToUpdate.brandId || productToUpdate.brand_id || "1"),
-        categoryId: String(productToUpdate.categoryId || productToUpdate.category_id || "1"),
-        externalId: productToUpdate.externalId || "",
         name: productToUpdate.name || "",
         shortDescription: productToUpdate.shortDescription || "",
-        description: typeof productToUpdate.description === 'string' 
-          ? productToUpdate.description 
-          : (productToUpdate.description?.caracteristicas || ""),
-        functionalities: Array.isArray(productToUpdate.functionalities) 
-          ? productToUpdate.functionalities.map(f => f.value || f).join(", ") 
-          : "",
-        technicalData: typeof productToUpdate.technicalData === 'string'
-          ? productToUpdate.technicalData
-          : JSON.stringify(productToUpdate.technicalData, null, 2),
+        description: productToUpdate.description || "",
+        externalId: productToUpdate.externalId || "",
+        price: productToUpdate.price || 0,
+        cost: productToUpdate.cost || 0,
+        stock: productToUpdate.stock || 0,
+        discount: productToUpdate.discount || 0,
+        garanty: productToUpdate.garanty || 0,
+        status: productToUpdate.status || 'ACTIVE',
         type: productToUpdate.type || "",
         productUsage: productToUpdate.productUsage || "",
-        price: Number(productToUpdate.price || 0),
-        cost: Number(productToUpdate.cost || 0),
-        discount: Number(productToUpdate.discount || 0),
-        stock: Number(productToUpdate.stock || 0),
-        garanty: Number(productToUpdate.garanty || 0),
-        color: productToUpdate.color || "",
-        downloads: typeof productToUpdate.downloads === 'string' 
-          ? productToUpdate.downloads 
-          : Object.values(productToUpdate.downloads).filter(Boolean).join("\n"),
-        rentable: Boolean(productToUpdate.rentable || false),
-        status: productToUpdate.status || 'ACTIVE',
-        // Procesar multimedia según el formato esperado
-        media: (productToUpdate.media || []).map((media, index) => ({
-          id: media.id ? Number(media.id) : 0,
-          url: media.url || "",
-          fileType: "IMAGE", // Asumiendo que todas son imágenes
-          entityId: Number(productToUpdate.id) || 0,
-          entityType: "PRODUCT",
-          displayOrder: index
-        }))
+        rentable: productToUpdate.rentable || false,
+        brandId: Number(productToUpdate.brandId || productToUpdate.brand_id || 0),
+        categoryId: Number(productToUpdate.categoryId || productToUpdate.category_id || 0),
+        // Convertir los datos técnicos a string JSON
+        technicalData: technicalDataString,
+        // Asegurar que downloads sea un string válido
+        downloads: typeof productToUpdate.downloads === 'string' ? 
+                  productToUpdate.downloads.trim() : 
+                  (Array.isArray(productToUpdate.downloads) ? 
+                    JSON.stringify(productToUpdate.downloads) : 
+                    String(productToUpdate.downloads || '')),
+        // Otros campos que podrían ser necesarios
+        functionalities: productToUpdate.functionalities || ""
       };
-
+      
+      console.log('Datos de descarga a enviar:', productData.downloads);
+      
+      console.log('Datos técnicos a enviar (formateados):', technicalDataObj);
+      console.log('Datos técnicos a enviar (string JSON):', technicalDataString);
       console.log('Datos preparados para enviar al servidor:', productData);
 
       // Enviar la actualización al servidor
       const response = await updateProduct(productData);
       console.log('Respuesta del servidor:', response);
 
-      if (response && (response.type === "SUCCESS" || response.result)) {
+      if (response && (response.type === "SUCCESS" || response.result || response.data)) {
+        // Obtener los datos actualizados del producto
+        const updatedProduct = response.result || response.data || productData;
+        
+        // Procesar los datos técnicos de la respuesta
+        let formattedTechnicalData = [];
+        try {
+          // Si los datos técnicos vienen como string JSON, convertirlos a objeto
+          const techData = typeof updatedProduct.technicalData === 'string' 
+            ? JSON.parse(updatedProduct.technicalData || '{}')
+            : updatedProduct.technicalData || {};
+          
+          // Convertir el objeto de vuelta al formato de array que espera el componente
+          formattedTechnicalData = Object.entries(techData).map(([key, value]) => ({
+            key,
+            value: value || ''
+          }));
+        } catch (error) {
+          console.error('Error al procesar los datos técnicos de la respuesta:', error);
+          // Si hay un error, mantener los datos técnicos originales
+          formattedTechnicalData = Array.isArray(updatedProduct.technicalData)
+            ? updatedProduct.technicalData
+            : [];
+        }
+        
+        console.log('Datos técnicos recibidos del servidor (procesados):', formattedTechnicalData);
+        
+        // Crear el objeto de producto actualizado con los datos formateados
+        const updatedProductWithFormattedData = {
+          ...updatedProduct,
+          technicalData: formattedTechnicalData,
+          media: Array.isArray(updatedProduct.media) ? updatedProduct.media : []
+        };
+        
+        // Actualizar el estado local con los datos actualizados
+        setProducto(prev => ({
+          ...prev,
+          ...updatedProductWithFormattedData
+        }));
+        
+        // Actualizar también el estado editado para mantener la consistencia
+        setEditedProduct(prev => ({
+          ...prev,
+          ...updatedProductWithFormattedData
+        }));
+        
+        // Mostrar mensaje de éxito
         toast.success("Producto actualizado correctamente");
-
-        // Recargar los datos del producto desde el servidor para asegurar que tenemos la última versión
-        await loadProductData(productData.id);
-
-        // Cambiar a la pestaña de visualización para ver los cambios
+        
+        // Cambiar a la pestaña de visualización
         setIsEditing(false);
+        
+        // Invalidar la caché de React Query para forzar una nueva carga si es necesario
+        queryClient.invalidateQueries({ queryKey: ['product', productData.id] });
+        queryClient.invalidateQueries({ queryKey: ['product', 'all'] });
       } else {
-        toast.error("Error al actualizar el producto: " + (response?.message || "Error desconocido"));
+        throw new Error(response?.message || "Error desconocido al actualizar el producto");
       }
     } catch (error) {
-      toast.error("Error al actualizar el producto: " + (error.message || 'Error desconocido'));
-      console.error('Error updating product:', error);
+      console.error('Error al actualizar el producto:', error);
+      toast.error(`Error al actualizar el producto: ${error.message || 'Error desconocido'}`);
     } finally {
       setIsLoading(false);
     }
@@ -1120,81 +1183,24 @@ export default function ProductoDetalle() {
               {/* Funcionalidades */}
               <div className="mt-6">
                 <h3 className="text-xl font-bold text-gray-800 mb-4">FUNCIONALIDADES</h3>
-                <div className="overflow-hidden border border-gray-200 rounded-lg">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {producto.functionalities && producto.functionalities.length > 0 ? (
-                        producto.functionalities.map((item, index) => (
-                          <tr key={`func-${index}`}>
-                            <td className="px-6 py-3 text-sm font-medium text-gray-900 bg-gray-50 w-1/3 capitalize">
-                              {item.key}
-                            </td>
-                            <td className="px-6 py-3 text-sm text-gray-500">
-                              {item.value}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan="2" className="px-6 py-4 text-sm text-gray-500 text-center">
-                            No hay funcionalidades disponibles
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-200">
+                  {producto.functionalities ? (
+                    <div className="p-4 whitespace-pre-line">
+                      {producto.functionalities}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-gray-500">
+                      No hay funcionalidades disponibles
+                    </div>
+                  )}
                 </div>
               </div>
 
 
-              {/* Sección de descargas */}
-              <div className="mt-6">
+              {/* Sección de descargas simplificada */}
+              <div className="mt-6" data-component-name="ProductoDetalle">
                 <h3 className="text-xl font-bold text-gray-800 mb-4">Descargas</h3>
-                {producto.downloads && Object.keys(producto.downloads).length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {Object.entries(producto.downloads).map(([key, value], index) => {
-                      // Verificar si la URL es válida
-                      let url = value;
-                      let displayText = key.replace(/_/g, ' ');
-                      
-                      // Si la URL no comienza con http, asumimos que no es una URL válida
-                      if (typeof url === 'string' && !url.startsWith('http')) {
-                        url = `#${key}`;
-                      }
-                      
-                      // Si el texto es muy corto o parece ser un índice, usar un texto más descriptivo
-                      if (displayText.length <= 2 || /^\d+$/.test(displayText) || /^enlace_\d+$/.test(key)) {
-                        displayText = `Descargar ${index + 1}`;
-                      }
-                      
-                      return (
-                        <a
-                          key={`download-${index}`}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
-                        >
-                          <div className="bg-blue-100 p-2 rounded-full mr-3">
-                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                          </div>
-                          <div className="truncate">
-                            <span className="text-gray-700 font-medium capitalize">{displayText}</span>
-                            {url && url.startsWith('http') && (
-                              <p className="text-xs text-gray-500 truncate">{new URL(url).hostname}</p>
-                            )}
-                          </div>
-                        </a>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="bg-gray-50 rounded-lg p-4 text-center text-gray-500">
-                    No hay archivos disponibles para descargar
-                  </div>
-                )}
+                <DescargasComponente downloads={producto.downloads} />
               </div>
             </TabsContent>
 
@@ -1701,68 +1707,132 @@ export default function ProductoDetalle() {
                   </div>
                 </div>
 
-                {/* Especificaciones técnicas */}
-                <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Características técnicas */}
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">Características técnicas</h3>
-                    <KeyValueInput
-                      values={Array.isArray(editedProduct.technicalData) 
-                        ? editedProduct.technicalData 
-                        : Object.entries(editedProduct.technicalData || {}).map(([key, value]) => ({
-                            key,
-                            value: typeof value === 'string' ? value : JSON.stringify(value)
-                          }))}
-                      onChange={(newValues) => {
-                        // Si technicalData era originalmente un objeto, lo mantenemos como objeto
-                        const wasObject = !Array.isArray(editedProduct.technicalData) && editedProduct.technicalData !== null;
-                        
-                        if (wasObject) {
-                          const newData = {};
-                          newValues.forEach(({ key, value }) => {
-                            if (key) newData[key] = value;
-                          });
-                          setEditedProduct({ ...editedProduct, technicalData: newData });
-                        } else {
-                          setEditedProduct({ ...editedProduct, technicalData: newValues });
-                        }
+                {/* Características técnicas */}
+                <div className="mt-8">
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Características técnicas</h3>
+                  <div className="space-y-4">
+                    {Array.isArray(editedProduct.technicalData) ? (
+                      editedProduct.technicalData.map((item, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <Input
+                            placeholder="Nombre de la característica"
+                            value={item.key || ''}
+                            onChange={(e) => {
+                              const newTechData = [...editedProduct.technicalData];
+                              newTechData[index] = { ...newTechData[index], key: e.target.value };
+                              setEditedProduct({ ...editedProduct, technicalData: newTechData });
+                            }}
+                            className="flex-1"
+                          />
+                          <Input
+                            placeholder="Valor"
+                            value={item.value || ''}
+                            onChange={(e) => {
+                              const newTechData = [...editedProduct.technicalData];
+                              newTechData[index] = { ...newTechData[index], value: e.target.value };
+                              setEditedProduct({ ...editedProduct, technicalData: newTechData });
+                            }}
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              const newTechData = editedProduct.technicalData.filter((_, i) => i !== index);
+                              setEditedProduct({ ...editedProduct, technicalData: newTechData });
+                            }}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))
+                    ) : null}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full mt-2"
+                      onClick={() => {
+                        setEditedProduct({
+                          ...editedProduct,
+                          technicalData: [...(editedProduct.technicalData || []), { key: '', value: '' }]
+                        });
                       }}
-                      placeholderKey="Nombre del campo"
-                      placeholderValue="Valor"
-                    />
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agregar característica
+                    </Button>
                   </div>
+                </div>
 
-                  {/* Funcionalidades */}
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">Funcionalidades</h3>
-                    <KeyValueInput
-                      values={Array.isArray(editedProduct.functionalities) 
-                        ? editedProduct.functionalities 
-                        : []}
-                      onChange={(newValues) => {
-                        setEditedProduct({ ...editedProduct, functionalities: newValues });
+                {/* Funcionalidades */}
+                <div className="mt-8">
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Funcionalidades</h3>
+                  <div className="space-y-4">
+                    <textarea
+                      placeholder="Escribe cada funcionalidad en una línea nueva"
+                      value={editedProduct.functionalities || ''}
+                      onChange={(e) => {
+                        setEditedProduct({
+                          ...editedProduct,
+                          functionalities: e.target.value
+                        });
                       }}
-                      placeholderKey="Nombre del campo"
-                      placeholderValue="Descripción"
+                      rows={5}
+                      className="flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                     />
+                    <p className="text-sm text-gray-500">
+                      Escribe cada funcionalidad en una línea separada
+                    </p>
                   </div>
                 </div>
 
                 {/* Descargas */}
                 <div className="mt-8">
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">Descargas</h3>
-                  <KeyValueInput
-                    values={Object.entries(editedProduct.downloads || {}).map(([key, value]) => ({ key, value }))}
-                    onChange={(newValues) => {
-                      const downloadsObj = {};
-                      newValues.forEach(({ key, value }) => {
-                        if (key && value) downloadsObj[key] = value;
-                      });
-                      setEditedProduct({ ...editedProduct, downloads: downloadsObj });
-                    }}
-                    placeholderKey="Nombre del archivo"
-                    placeholderValue="URL"
-                  />
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">Enlace de descarga</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        type="url"
+                        name="downloads"
+                        placeholder="https://ejemplo.com/archivo.pdf"
+                        value={typeof editedProduct.downloads === 'string' ? editedProduct.downloads : ''}
+                        onChange={(e) => {
+                          // Asegurarse de que la URL comience con http:// o https://
+                          let url = e.target.value || '';
+                          if (url && !url.match(/^https?:\/\//)) {
+                            url = 'https://' + url;
+                          }
+                          setEditedProduct({
+                            ...editedProduct,
+                            downloads: url
+                          });
+                        }}
+                        className="flex-1"
+                      />
+                      {typeof editedProduct.downloads === 'string' && editedProduct.downloads !== '' && (
+                        <a 
+                          href={editedProduct.downloads.startsWith('http') ? editedProduct.downloads : `https://${editedProduct.downloads}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 text-sm whitespace-nowrap px-3 py-2 border border-blue-300 rounded-md hover:bg-blue-50 transition-colors"
+                        >
+                          Probar enlace
+                        </a>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-500">
+                      Ingresa la URL completa (ej: https://www.ejemplo.com/archivo.pdf)
+                    </p>
+                    {typeof editedProduct.downloads === 'string' && 
+                     editedProduct.downloads !== '' && 
+                     !editedProduct.downloads.match(/^https?:\/\//) && (
+                      <p className="text-sm text-yellow-600">
+                        La URL debe comenzar con http:// o https://
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </TabsContent>

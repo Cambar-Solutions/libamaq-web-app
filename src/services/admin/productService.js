@@ -317,6 +317,19 @@ export const getProductsByCategoryAndBrand = async (categoryId, brandId) => {
   }
 };
 
+// Eliminar un producto por ID (marcar como inactivo)
+export const deleteProduct = async (productId) => {
+  try {
+    console.log(`Eliminando producto con ID: ${productId}`);
+    const response = await apiClient.delete(`/l/products/delete/${productId}`);
+    console.log('Respuesta de eliminación de producto:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error al eliminar el producto:', error);
+    throw error.response?.data || error.message;
+  }
+};
+
 /**
  * Crea un producto con imágenes en un solo proceso
  * @param {Object} productData - Datos básicos del producto

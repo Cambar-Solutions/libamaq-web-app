@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2 } from 'lucide-react';
@@ -17,67 +17,91 @@ const KeyValueInput = ({
   placeholderKey = 'Clave', 
   placeholderValue = 'Valor' 
 }) => {
-  // Inicializar con los valores existentes o una fila vacía
-  const [inputRows, setInputRows] = useState(
-    values.length > 0 
-      ? values.map(item => ({ key: item.key || '', value: item.value || '' })) 
-      : [{ key: '', value: '' }]
-  );
+  // Convertir valores iniciales a un formato consistente
+  const initialValues = Array.isArray(values) ? values : [];
+  
+  // Estado local para manejar las filas de entrada
+  const [inputRows, setInputRows] = useState(() => {
+    return initialValues.length > 0 
+      ? initialValues.map(item => ({ 
+          key: item.key || '', 
+          value: item.value || '' 
+        })) 
+      : [{ key: '', value: '' }];
+  });
 
-  // Actualizar los valores cuando cambian los props
+  // Sincronizar con los valores externos solo cuando cambian externamente
   useEffect(() => {
-    if (values.length === 0 && inputRows.length === 1 && !inputRows[0].key && !inputRows[0].value) {
-      return; // No hacer nada si ambos están vacíos
+    // Solo actualizar si hay cambios reales
+    const currentValues = inputRows
+      .filter(row => row.key.trim() || row.value.trim())
+      .map(row => ({
+        key: row.key.trim(),
+        value: row.value.trim()
+      }));
+
+    const newValues = initialValues.map(item => ({
+      key: (item.key || '').trim(),
+      value: (item.value || '').trim()
+    }));
+
+    if (JSON.stringify(currentValues) !== JSON.stringify(newValues)) {
+      setInputRows(
+        initialValues.length > 0
+          ? initialValues.map(item => ({
+              key: item.key || '',
+              value: item.value || ''
+            }))
+          : [{ key: '', value: '' }]
+      );
     }
-    
-    const validRows = inputRows.filter(row => row.key.trim() || row.value.trim());
+  }, [JSON.stringify(initialValues)]);
+
+  // Actualizar el estado padre cuando cambian las filas
+  const updateParent = useCallback((rows) => {
+    const validRows = rows.filter(row => row.key.trim() || row.value.trim());
     const newValues = validRows.map(row => ({
       key: row.key.trim(),
       value: row.value.trim()
     }));
     
-    // Solo actualizar si hay cambios
-    if (JSON.stringify(newValues) !== JSON.stringify(values)) {
-      onChange(newValues);
-    }
-  }, [inputRows, values, onChange]);
+    onChange(newValues);
+  }, [onChange]);
 
   // Agregar una nueva fila de inputs
   const addNewRow = (e) => {
     e?.preventDefault?.();
-    setInputRows([...inputRows, { key: '', value: '' }]);
+    const newRows = [...inputRows, { key: '', value: '' }];
+    setInputRows(newRows);
   };
 
   // Actualizar una fila específica
   const updateRow = (index, field, value) => {
-    const newRows = [...inputRows];
-    newRows[index] = { ...newRows[index], [field]: value };
+    const newRows = inputRows.map((row, i) => 
+      i === index ? { ...row, [field]: value } : row
+    );
     setInputRows(newRows);
+    updateParent(newRows);
   };
 
   // Eliminar una fila específica
   const removeRow = (index) => {
-    if (inputRows.length > 1) {
-      const newRows = inputRows.filter((_, i) => i !== index);
-      setInputRows(newRows);
-    }
+    if (inputRows.length <= 1) return;
+    
+    const newRows = inputRows.filter((_, i) => i !== index);
+    setInputRows(newRows);
+    updateParent(newRows);
   };
 
+  // Eliminar una fila de la tabla
   const handleRemove = (index) => {
-    const newValues = Array.isArray(values) ? [...values] : [];
+    const newValues = [...initialValues];
     newValues.splice(index, 1);
     onChange(newValues);
   };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAdd();
-    }
-  };
   
   // Asegurarse de que values sea un array
-  const safeValues = Array.isArray(values) ? values : [];
+  const safeValues = initialValues;
 
   return (
     <div className="space-y-4">
