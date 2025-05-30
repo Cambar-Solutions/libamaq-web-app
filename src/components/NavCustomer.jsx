@@ -140,27 +140,26 @@ export function NavCustomer({ onViewChange }) {
               </Select>
             </div>
 
-            <button
-              onClick={() => { onViewChange("perfil"); setMenuOpen(false); }}
+            <Link to="/user-profile"
               className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
 
             >
               <MapPin size={20} />
               Actualizar ubicación
-            </button>
+            </Link>
 
 
 
-            <button
+            <Link to="/user-profile"
               onClick={() => { onViewChange("perfil"); setMenuOpen(false); }}
               className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
             >
               <GrUserWorker size={20} />
               Mi perfil
-            </button>
+            </Link>
 
             <button
-              onClick={() => { onViewChange("carrito"); setMenuOpen(false); }}
+              onClick={() => navigate('/user-profile', { state: { view: 'carrito' } })}
               className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
             >
               <RiShoppingCartFill size={20} />
