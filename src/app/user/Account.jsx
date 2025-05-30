@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
-
-import NavCustomer from "@/components/NavCustomer";
- import SidebarCustomer from '@/components/SidebarCustomer';
+import SidebarCustomer from '@/components/SidebarCustomer';
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
@@ -20,11 +18,19 @@ import { SiteHeaderCustomer } from "@/components/site-headerCustomer";
 import { AppSidebarCustomer } from "@/components/app-sidebarCustomer";
 
 export default function Account() {
+    const location = useLocation();
     const [currentView, setCurrentView] = useState("perfil");
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
 
+    // Si vienes de la ruta con state.view, ponte en carrito:
+  useEffect(() => {
+    if (location.state?.view) {
+      setCurrentView(location.state.view);
+    }
+  }, [location.state]);
+  
     // En desarrollo, no verificamos autenticación
     useEffect(() => {
         // Simplemente establecemos isLoading en false para mostrar el dashboard
