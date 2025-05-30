@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from "react";
+import { getCustomerUsers } from "@/services/admin/userService";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -17,6 +18,8 @@ import {
 } from "@/components/ui/select";
 
 export function SiteHeaderCustomer({ onViewChange }) {
+  const [user, setUser] = useState({ name: "null", email: "null@gmail.com" });
+  const [editing, setEditing] = useState(false);
   const { toggleSidebar } = useSidebar();
   const drawerRef = useRef(null);
 
@@ -53,6 +56,36 @@ export function SiteHeaderCustomer({ onViewChange }) {
       }
     }
   };
+
+  useEffect(() => {
+          const userId = localStorage.getItem("userId");
+          if (!userId) {
+              console.warn("No hay userId en localStorage");
+              setLoading(false);
+              return;
+          }
+  
+          getCustomerUsers()
+              .then((list) => {
+                  // asume que 'id' viene como número o string en los objetos
+                  const me = list.find(u => u.id.toString() === userId.toString());
+                  if (me) {
+                      setUser({ name: me.name, email: me.email });
+                  } else {
+                      console.warn("Usuario no encontrado en la lista de clientes");
+                  }
+              })
+              .catch((err) => console.error("Error cargando usuarios:", err))
+              .finally(() => setLoading(false));
+      }, []);
+  
+      if (loading) {
+          return (
+              <div className="flex justify-center items-center h-64">
+                  Cargando perfil…
+              </div>
+          );
+      }
 
   return (
     <header className="fixed top-0 inset-x-0 z-50 bg-blue-950 border-b shadow-lg">
@@ -185,8 +218,8 @@ export function SiteHeaderCustomer({ onViewChange }) {
           >
             <div className="relative">
               {/* Texto */}
-              <span className="px-2.5 py-1 bg-white text-black group-hover:text-white text-sm rounded-l-full group-hover:bg-gradient-to-l from-yellow-600 to-yellow-500/80 transition-colors duration-600 inline-block mr-8 max-w-[10em]">
-                Hola Jonathan
+              <span className="px-2.5 pr-4 py-1 bg-white text-black group-hover:text-white text-sm rounded-l-full group-hover:bg-gradient-to-l from-yellow-600 to-yellow-500/80 transition-colors duration-600 inline-block mr-8 max-w-[10em]">
+                Hola {user.name}
               </span>
 
               {/* Círculo del icono */}

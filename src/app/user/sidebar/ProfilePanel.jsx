@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getCustomerUsers } from "@/services/admin/userService";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,8 @@ import { Eye, EyeOff } from 'lucide-react';
 
 
 export default function ProfilePanel() {
+    const [user, setUser] = useState({ name: "null", email: "null@gmail.com" });
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
     const [editing, setEditing] = useState(false);
 
@@ -25,8 +28,35 @@ export default function ProfilePanel() {
     const [showNew, setShowNew] = useState(false);
     const [newPassword, setNewPassword] = useState("");
 
-    const currentName = "Jonathan";
-    const currentEmail = "jony@gmail.com";
+    useEffect(() => {
+        const userId = localStorage.getItem("userId");
+        if (!userId) {
+            console.warn("No hay userId en localStorage");
+            setLoading(false);
+            return;
+        }
+
+        getCustomerUsers()
+            .then((list) => {
+                // asume que 'id' viene como número o string en los objetos
+                const me = list.find(u => u.id.toString() === userId.toString());
+                if (me) {
+                    setUser({ name: me.name, email: me.email });
+                } else {
+                    console.warn("Usuario no encontrado en la lista de clientes");
+                }
+            })
+            .catch((err) => console.error("Error cargando usuarios:", err))
+            .finally(() => setLoading(false));
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                Cargando perfil…
+            </div>
+        );
+    }
 
     const variants = {
         initial: { opacity: 0, x: 50 },
@@ -54,8 +84,8 @@ export default function ProfilePanel() {
                             >
                                 <SquarePen size={18} className="text-gray-400" />
                             </button>
-                            <p className="text-gray-700 text-3xl font-semibold">Jonathan</p>
-                            <p className="text-gray-500 text-sm">jony@gmail.com</p>
+                            <p className="text-gray-700 text-3xl font-semibold">{user.name}</p>
+                            <p className="text-gray-500 text-sm">{user.email}</p>
                         </div>
                     </div>
 
@@ -214,7 +244,7 @@ export default function ProfilePanel() {
                                         <div className="flex flex-col lg:flex-row bg-white p-5 rounded-lg leading-none gap-y-4 lg:gap-20 justify-around">
                                             <div className="flex flex-col">
                                                 <Label className="text-sm text-gray-600 mb-1">Nombre actual:</Label>
-                                                <span className="font-medium mb-3">{currentName}</span>
+                                                <span className="font-medium mb-3">{user.name}</span>
                                             </div>
                                             <div className="flex flex-col">
                                                 <Label className="text-sm text-gray-600 mb-1">Nombre nuevo:</Label>
@@ -230,7 +260,7 @@ export default function ProfilePanel() {
                                         <div className="flex flex-col lg:flex-row bg-white p-5 rounded-lg leading-none gap-y-4 lg:gap-20 justify-around">
                                             <div className="flex flex-col">
                                                 <Label className="text-sm text-gray-600 mb-1">Correo actual:</Label>
-                                                <span className="font-medium mb-3">{currentEmail}</span>
+                                                <span className="font-medium mb-3">{user.email}</span>
                                             </div>
                                             <div className="flex flex-col">
                                                 <Label className="text-sm text-gray-600 mb-1">Correo nuevo:</Label>
