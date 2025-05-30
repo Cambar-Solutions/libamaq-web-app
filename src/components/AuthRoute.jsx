@@ -18,6 +18,12 @@ const AuthRoute = ({
 
   // Si está autenticado y es ruta de login, redirigir según el rol
   if (isLoginRoute && isAuth) {
+    // Si hay una ruta anterior guardada, intentar redirigir a ella
+    if (location.state?.from) {
+      return <Navigate to={location.state.from.pathname} replace />;
+    }
+
+    // Si no hay ruta anterior, redirigir según el rol
     if (userRole === 'ADMIN' || userRole === 'DIRECTOR') {
       return <Navigate to="/dashboard" replace />;
     } else if (userRole === 'USER' || userRole === 'CUSTOMER') {

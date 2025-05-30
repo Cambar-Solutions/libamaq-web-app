@@ -5,7 +5,7 @@ import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { login } from "@/services/authService";
-import { saveAuthResponse } from "@/utils/storage";
+import { saveAuthResponse, getUserRole } from "@/utils/storage";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -42,13 +42,22 @@ export default function Login() {
         saveAuthResponse(response);
 
         const { user } = response.data;
+        const userRole = getUserRole();
 
         // Mostrar mensaje de bienvenida
         toast.success(`¡Bienvenido, ${user.name || user.email}!`, {
           position: 'top-right',
           style: { background: '#4caf50', color: '#fff', borderRadius: '10px' },
         });
-        navigate('/');
+
+        // Redirigir según el rol del usuario
+        if (userRole === 'ADMIN' || userRole === 'DIRECTOR') {
+          navigate('/dashboard');
+        } else if (userRole === 'USER' || userRole === 'CUSTOMER') {
+          navigate('/user-profile');
+        } else {
+          navigate('/');
+        }
       } else {
         throw new Error('Respuesta inesperada del servidor');
       }
