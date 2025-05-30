@@ -17,7 +17,7 @@ const Nav2 = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const drawerRef = useRef(null);
-  
+
   // Estado para controlar la visibilidad del menú lateral
   const [menuOpen, setMenuOpen] = useState(false);
   // Estado para almacenar las marcas obtenidas de la API
@@ -65,7 +65,7 @@ const Nav2 = () => {
       }
     }
   };
-  
+
   // Determinar si estamos en la página de la tienda
   const isInStore = location.pathname === '/tienda' || location.pathname.includes('/productos/');
 
@@ -73,7 +73,7 @@ const Nav2 = () => {
     <nav className="bg-blue-950 dark:bg-gray-800 shadow-lg py-4 px-12 flex justify-between items-center fixed top-0 w-full z-50">
       {/* Logo */}
       <div className="flex items-center">
-        <div 
+        <div
           onClick={() => {
             // Forzar una recarga completa para asegurar que se muestre el LoadingScreen
             navigate('/', { replace: true, state: { forceLoading: true } });
@@ -89,7 +89,7 @@ const Nav2 = () => {
 
       {/* Menú hamburguesa (pantallas pequeñas) */}
       <div className="md:hidden flex items-center">
-        <button onClick={toggleMenu} className="text-blue-600">
+        <button onClick={toggleMenu} className="text-white">
           <FaBars size={24} />
         </button>
       </div>
@@ -108,7 +108,7 @@ const Nav2 = () => {
 
         <div className="flex flex-col items-center space-y-4 mt-12">
           {/* Botón de Tienda (solo se muestra si no estamos ya en la tienda) */}
-       
+
           {/* Selector de marcas para móvil */}
           <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">Explorar por marca</label>
@@ -135,11 +135,11 @@ const Nav2 = () => {
           </Button>
 
           <Button
-  asChild
-  className="w-full bg-transparent border border-blue-700 text-blue-700 hover:bg-blue-50 transition-all duration-600"
->
-  <Link to="/register">Crear tu cuenta</Link>
-</Button>
+            asChild
+            className="w-full bg-transparent border border-blue-700 text-blue-700 hover:bg-blue-50 transition-all duration-600"
+          >
+            <Link to="/register">Crear tu cuenta</Link>
+          </Button>
         </div>
       </div>
 
@@ -154,13 +154,13 @@ const Nav2 = () => {
           <Link to="/login">Iniciar sesión</Link>
         </Button>
 
-        
-<Button
-  asChild
-  className="bg-transparent text-white border border-white hover:bg-blue-800  hover:text-white rounded-full transition-all"
->
-  <Link to="/register">Crea tu cuenta</Link>
-</Button>
+
+        <Button
+          asChild
+          className="bg-transparent text-white border border-white hover:bg-blue-800  hover:text-white rounded-full transition-all"
+        >
+          <Link to="/register">Crea tu cuenta</Link>
+        </Button>
 
       </div>
     </nav>

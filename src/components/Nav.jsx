@@ -53,27 +53,31 @@ export default function Nav() {
               <FaStore size={20} />
               Tienda
             </Link>
-            <Link
-              to="/login"
-              className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
-              onClick={toggleMenu}
-            >
-              <FaUser size={20} />
-              Iniciar sesión
-            </Link>
+            <div>
+              <Button asChild className="w-full">
+                <Link to="/login">Iniciar sesión</Link>
+              </Button>
+
+              <Button
+                asChild
+                className="w-full mt-3 bg-transparent border border-blue-700 text-blue-700 hover:bg-blue-50 transition-all duration-600"
+              >
+                <Link to="/register">Crear tu cuenta</Link>
+              </Button>
+            </div>
           </nav>
         </div>
       )}
 
       {/* Desktop nav */}
       <nav className="hidden md:flex items-center justify-between py-4 px-12 shadow-lg">
-        <button>
+        <Link to="/">
           <img
             src="/Tipografia_LIBAMAQ_legulab_color_hor.png"
             alt="logo"
             className="max-h-12"
           />
-        </button>
+        </Link>
         <div className="flex items-center space-x-4 md:flex ">
           <Button asChild className="flex items-center bg-transparent hover:bg-transparent text-white hover:text-yellow-500 transition-colors duration-400">
             <Link to="/location" className="flex items-center">
