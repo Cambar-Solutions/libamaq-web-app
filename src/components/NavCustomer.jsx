@@ -140,13 +140,16 @@ export function NavCustomer({ onViewChange }) {
               </Select>
             </div>
 
-            <Link to="/user-profile"
+            <button onClick={() =>
+              navigate('/user-profile', {
+                state: { view: 'perfil', openLocation: true }
+              })}
               className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
 
             >
               <MapPin size={20} />
               Actualizar ubicación
-            </Link>
+            </button>
 
 
 
@@ -181,17 +184,20 @@ export function NavCustomer({ onViewChange }) {
             />
           </Link>
 
-          <Link to="/user-profile">
-            <button
-              className="cursor-pointer flex items-center gap-1 text-white hover:text-yellow-500 transition-colors duration-600"
-            >
-              <MapPin size={28} />
-              <div className="text-left">
-                <p className="text-sm">San Antón</p>
-                <p className="text-base">Actualizar ubicación</p>
-              </div>
-            </button>
-          </Link>
+          <button
+            onClick={() =>
+              navigate('/user-profile', {
+                state: { view: 'perfil', openLocation: true }
+              })
+            }
+            className="cursor-pointer flex items-center gap-1 text-white hover:text-yellow-500 transition-colors duration-600"
+          >
+            <MapPin size={28} />
+            <div className="text-left">
+              <p className="text-sm">San Antón</p>
+              <p className="text-base">Actualizar ubicación</p>
+            </div>
+          </button>
 
         </div>
 

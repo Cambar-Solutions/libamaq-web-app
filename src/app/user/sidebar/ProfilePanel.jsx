@@ -16,7 +16,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff } from 'lucide-react';
 
 
-export default function ProfilePanel() {
+export default function ProfilePanel({ openLocationDialog = false, onCloseLocationDialog }) {
+    const [isDialogOpen, setIsDialogOpen] = useState(openLocationDialog);
+
     const [user, setUser] = useState({ name: "null", email: "null@gmail.com" });
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
@@ -27,6 +29,13 @@ export default function ProfilePanel() {
     const [showCurrent, setShowCurrent] = useState(false);
     const [showNew, setShowNew] = useState(false);
     const [newPassword, setNewPassword] = useState("");
+
+    // Si el padre dice que abra el diálogo, lo abrimos:
+    useEffect(() => {
+        if (openLocationDialog) {
+            setIsDialogOpen(true);
+        }
+    }, [openLocationDialog]);
 
     useEffect(() => {
         const userId = localStorage.getItem("userId");
@@ -104,7 +113,13 @@ export default function ProfilePanel() {
                                     className="flex flex-col w-full h-60 shadow-md rounded-lg bg-stone-50"
                                 >
                                     {/* — Card de Direcciones — */}
-                                    <Dialog>
+                                    <Dialog
+                                        open={isDialogOpen}
+                                        onOpenChange={(open) => {
+                                            setIsDialogOpen(open);
+                                            if (!open) onCloseLocationDialog();
+                                        }}
+                                    >
                                         <DialogTrigger asChild>
                                             <button className="h-[50%] flex items-center justify-between bg-white hover:bg-gray-200 transition-colors duration-400 p-4 w-full rounded-t-lg">
                                                 <div className="flex items-center space-x-4">

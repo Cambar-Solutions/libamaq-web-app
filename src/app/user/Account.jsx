@@ -20,17 +20,22 @@ import { AppSidebarCustomer } from "@/components/app-sidebarCustomer";
 export default function Account() {
     const location = useLocation();
     const [currentView, setCurrentView] = useState("perfil");
+    const [openLocationDialog, setOpenLocationDialog] = useState(false);
+
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
 
-    // Si vienes de la ruta con state.view, ponte en carrito:
-  useEffect(() => {
-    if (location.state?.view) {
-      setCurrentView(location.state.view);
-    }
-  }, [location.state]);
-  
+    // Cuando cambia la location al navegar, inicializa ambos estados:
+    useEffect(() => {
+        if (location.state?.view) {
+            setCurrentView(location.state.view);
+        }
+        if (location.state?.openLocation) {
+            setOpenLocationDialog(true);
+        }
+    }, [location.state]);
+
     // En desarrollo, no verificamos autenticación
     useEffect(() => {
         // Simplemente establecemos isLoading en false para mostrar el dashboard
@@ -42,7 +47,9 @@ export default function Account() {
         try {
             switch (currentView) {
                 case "perfil":
-                    return <ProfilePanel />;
+                    return <ProfilePanel
+                        openLocationDialog={openLocationDialog}
+                        onCloseLocationDialog={() => setOpenLocationDialog(false)} />;
                 case "compras":
                     return <BuyPanel />;
                 case "pedidos":
