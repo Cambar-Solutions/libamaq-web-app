@@ -20,7 +20,7 @@ import { SiteHeaderCustomer } from "@/components/site-headerCustomer";
 import { AppSidebarCustomer } from "@/components/app-sidebarCustomer";
 
 export default function Account() {
-    const [currentView, setCurrentView] = useState("productos");
+    const [currentView, setCurrentView] = useState("perfil");
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
@@ -92,7 +92,7 @@ export default function Account() {
     return (
         <div className="[--header-height:calc(theme(spacing.14))]">
             <SidebarProvider className="flex flex-col">
-                <SiteHeaderCustomer />
+                <SiteHeaderCustomer onViewChange={setCurrentView} />
                 <div className="flex flex-1">
                     <AppSidebarCustomer onViewChange={setCurrentView} currentView={currentView} />
                     <SidebarInset>

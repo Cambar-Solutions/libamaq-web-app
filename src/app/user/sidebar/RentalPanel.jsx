@@ -10,6 +10,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
+import { motion } from "framer-motion";
 
 const products = [
     {
@@ -86,108 +87,115 @@ const products = [
 
 export default function RentalPanel() {
     return (
-        <div className="w-full bg-stone-100 min-h-screen pb-10 pt-22">
-            <div className="max-w-7xl mx-auto px-2 sm:px-4 sticky top-16 z-10 mb-6 p-2 sm:p-3">
-                <div className="m-2 border-b border-gray-400 mb-5">
-                    <h1 className="text-3xl font-semibold ">Mis Rentas</h1>
-                    <p className="text-base text-gray-400 font-semibold mb-3">Aquí podrás ver las rentas que has realizado y las que están en curso
-                    </p>
-                </div>
+        <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+        >
+            <div className="w-full bg-stone-100 min-h-screen pb-10 pt-22">
+                <div className="max-w-7xl mx-auto px-2 sm:px-4 sticky top-16 z-10 mb-6 p-2 sm:p-3">
+                    <div className="m-2 border-b border-gray-400 mb-5">
+                        <h1 className="text-3xl font-semibold text-indigo-950">Mis Rentas</h1>
+                        <p className="text-base text-gray-400 font-semibold mb-3">Aquí podrás ver las rentas que has realizado y las que están en curso
+                        </p>
+                    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-1 gap-6">
-                    {products.map((prod) => {
-                        return (
-                            <Dialog key={prod.id}>
-                                <DialogTrigger asChild>
-                                    <div
-                                        key={prod.id}
-                                        className="bg-white rounded-lg shadow-sm hover:shadow-lg duration-500 cursor-pointer"
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-1 gap-6">
+                        {products.map((prod) => {
+                            return (
+                                <Dialog key={prod.id}>
+                                    <DialogTrigger asChild>
+                                        <div
+                                            key={prod.id}
+                                            className="bg-white rounded-lg shadow-sm hover:shadow-lg duration-500 cursor-pointer"
 
-                                    >
-
-                                        <div className="px-10 py-4 flex mb-5 flex-col sm:flex-row items-center sm:items-center">
-                                            <img
-                                                src={prod.img}
-                                                alt={prod.name}
-                                                className="w-40 h-40 sm:h-48 object-cover rounded"
-                                            />
-                                            <div className="flex-1 ml-4 sm:mt-0 sm:ml-4">
-                                                <h2 className="text-2xl font-semibold">{prod.name}</h2>
-                                                <p className="text-lg text-gray-600">{prod.brand}</p>
-                                                <p className="mt-1 text-gray-700 line-clamp-3 w-[80%] text-justify">
-                                                    {prod.description}
-                                                </p>
-                                            </div>
-                                            <div className="flex flex-col items-center">
-                                                <span className="text-xl font-semibold">
-                                                    ${prod.price.toLocaleString()}
-                                                </span>
-                                                <span
-                                                    className={`mt-2 px-2 py-1 rounded-full text-sm font-medium ${prod.status === "Rentado"
-                                                        ? "bg-green-100 text-green-800"
-                                                        : "bg-yellow-100 text-yellow-800"
-                                                        }`}
-                                                >
-                                                    {prod.status}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
-                                    <DialogHeader className="gap-0">
-                                        <DialogTitle className="text-3xl font-semibold">{prod.name}</DialogTitle>
-                                        <DialogDescription className="mt-0 text-gray-500 line-clamp-2">
-                                            {prod.description}
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="flex mr-13 justify-end sm:justify-center ">
-                                        <span
-                                            className={`px-2 py-1 rounded-full text-sm font-medium ${prod.status === "Rentado"
-                                                ? "bg-green-100 text-green-800"
-                                                : "bg-yellow-100 text-yellow-800"
-                                                }`}
                                         >
-                                            Estado: {prod.status}
-                                        </span>
-                                    </div>
-                                    <div className="w-[90%] mx-auto mt-0 grid grid-cols-1 sm:grid-cols-2 gap-4 px-4">
-                                        <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-1">
-                                            <dt className="text-sm font-medium text-gray-600 mt-2">Inicio de renta</dt>
-                                            <dd className="mt-1 text-gray-900">{prod.startRentalDate}</dd>
+
+                                            <div className="px-10 py-4 flex mb-5 flex-col sm:flex-row items-center sm:items-center">
+                                                <img
+                                                    src={prod.img}
+                                                    alt={prod.name}
+                                                    className="w-40 h-40 sm:h-48 object-cover rounded"
+                                                />
+                                                <div className="flex-1 ml-4 sm:mt-0 sm:ml-4">
+                                                    <h2 className="text-2xl font-semibold">{prod.name}</h2>
+                                                    <p className="text-lg text-gray-600">{prod.brand}</p>
+                                                    <p className="mt-1 text-gray-700 line-clamp-3 w-[80%] text-justify">
+                                                        {prod.description}
+                                                    </p>
+                                                </div>
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-xl font-semibold">
+                                                        ${prod.price.toLocaleString()}
+                                                    </span>
+                                                    <span
+                                                        className={`mt-2 px-2 py-1 rounded-full text-sm font-medium ${prod.status === "Rentado"
+                                                            ? "bg-green-100 text-green-800"
+                                                            : "bg-yellow-100 text-yellow-800"
+                                                            }`}
+                                                    >
+                                                        {prod.status}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
+                                        <DialogHeader className="gap-0">
+                                            <DialogTitle className="text-3xl font-semibold">{prod.name}</DialogTitle>
+                                            <DialogDescription className="mt-0 text-gray-500 line-clamp-2">
+                                                {prod.description}
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="flex mr-13 justify-end sm:justify-center ">
+                                            <span
+                                                className={`px-2 py-1 rounded-full text-sm font-medium ${prod.status === "Rentado"
+                                                    ? "bg-green-100 text-green-800"
+                                                    : "bg-yellow-100 text-yellow-800"
+                                                    }`}
+                                            >
+                                                Estado: {prod.status}
+                                            </span>
+                                        </div>
+                                        <div className="w-[90%] mx-auto mt-0 grid grid-cols-1 sm:grid-cols-2 gap-4 px-4">
+                                            <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-1">
+                                                <dt className="text-sm font-medium text-gray-600 mt-2">Inicio de renta</dt>
+                                                <dd className="mt-1 text-gray-900">{prod.startRentalDate}</dd>
+                                            </div>
+
+                                            <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-1">
+                                                <dt className="text-sm font-medium text-gray-600 mt-2">Fin de renta</dt>
+                                                <dd className="mt-0 text-gray-900">{prod.endRentalDate}</dd>
+                                            </div>
+
+                                            <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-1">
+                                                <dt className="text-sm font-medium text-gray-600 mt-2">Se realizó en</dt>
+                                                <dd className="mt-0 text-gray-900">{prod.seRealizoEn}</dd>
+                                            </div>
+
+                                            <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-1">
+                                                <dt className="text-sm font-medium text-gray-600 mt-2">Se entregó en</dt>
+                                                <dd className="mt-0 text-gray-900">{prod.seEntregoEn}</dd>
+                                            </div>
+
+                                            <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-2">
+                                                <dt className="text-sm font-medium text-gray-600">Detalles del Pago</dt>
+                                                <dd className="mt-0 text-gray-900">Método de pago: {prod.pay}</dd>
+                                                <dd className="mt-0 text-gray-900">Precio: ${prod.price}</dd>
+                                            </div>
                                         </div>
 
-                                        <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-1">
-                                            <dt className="text-sm font-medium text-gray-600 mt-2">Fin de renta</dt>
-                                            <dd className="mt-0 text-gray-900">{prod.endRentalDate}</dd>
-                                        </div>
+                                        <DialogFooter className="">
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                            )
+                        })}
+                    </div>
 
-                                        <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-1">
-                                            <dt className="text-sm font-medium text-gray-600 mt-2">Se realizó en</dt>
-                                            <dd className="mt-0 text-gray-900">{prod.seRealizoEn}</dd>
-                                        </div>
-
-                                        <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-1">
-                                            <dt className="text-sm font-medium text-gray-600 mt-2">Se entregó en</dt>
-                                            <dd className="mt-0 text-gray-900">{prod.seEntregoEn}</dd>
-                                        </div>
-
-                                        <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-2">
-                                            <dt className="text-sm font-medium text-gray-600">Detalles del Pago</dt>
-                                            <dd className="mt-0 text-gray-900">Método de pago: {prod.pay}</dd>
-                                            <dd className="mt-0 text-gray-900">Precio: ${prod.price}</dd>
-                                        </div>
-                                    </div>
-
-                                    <DialogFooter className="">
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-                        )
-                    })}
                 </div>
-
             </div>
-        </div>
+        </motion.div>
+
     );
 }

@@ -15,6 +15,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
+import { motion } from "framer-motion";
 
 
 export default function OrderPanel() {
@@ -56,100 +57,107 @@ export default function OrderPanel() {
 
     return (
         <>
-            <div className="w-full bg-stone-100 min-h-screen pb-10 pt-22">
-                <div className="max-w-7xl mx-auto px-2 sm:px-4 sticky top-16 z-10 mb-6 p-2 sm:p-3">
-                    <div className="m-2 border-b border-gray-400">
-                        <div className="mb-3">
-                            <h1 className="text-3xl font-semibold">Pedidos Disponibles</h1>
-                            <p className="text-base text-gray-400 font-semibold">Aquí puedes ver los pedidos que has hecho en estos días
-                            </p>
+            <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+            >
+                <div className="w-full bg-stone-100 min-h-screen pb-10 pt-22">
+                    <div className="max-w-7xl mx-auto px-2 sm:px-4 sticky top-16 z-10 mb-6 p-2 sm:p-3">
+                        <div className="m-2 border-b border-gray-400">
+                            <div className="mb-3">
+                                <h1 className="text-3xl font-semibold text-indigo-950">Pedidos Disponibles</h1>
+                                <p className="text-base text-gray-400 font-semibold">En esta sección puedes ver los pedidos que has hecho en estos días
+                                </p>
+                            </div>
+
                         </div>
 
-                    </div>
-
-                    {products.map((prod) => {
-                        return (
-                            <Dialog key={prod.id}>
-                                <DialogTrigger asChild>
-                                    <div className="cursor-pointer p-3 mt-4 bg-white shadow-sm hover:shadow-lg duration-500 rounded-2xl">
-                                        <div className="flex flex-col md:flex-row items-start md:items-center">
-                                            {/* Imagen del producto - Responsive */}
-                                            <img
-                                                src={prod.image}
-                                                alt={prod.name}
-                                                className="w-full h-40 md:w-40 md:h-40 object-contain rounded-xl mx-auto md:mx-0"
-                                            />
-                                            {/* Información del producto - Responsive */}
-                                            <div className="flex flex-col w-full md:w-[20em] px-0 md:px-5 mt-3 md:mt-0">
-                                                <h2 className="text-xl md:text-2xl font-semibold">{prod.name}</h2>
-                                                <p className="text-sm md:text-base text-gray-700 line-clamp-2 md:line-clamp-4 overflow-hidden mt-1 ">
-                                                    {prod.description}
-                                                </p>
-                                                {/* Estado del pedido en móvil */}
-                                                <div className="flex items-center mt-2 md:hidden">
-                                                    <div className={`${prod.color} rounded-full w-3 h-3 mr-2`}></div>
-                                                    <span className="text-sm font-medium">{prod.state}</span>
+                        {products.map((prod) => {
+                            return (
+                                <Dialog key={prod.id}>
+                                    <DialogTrigger asChild>
+                                        <div className="cursor-pointer p-3 mt-4 bg-white shadow-sm hover:shadow-lg duration-500 rounded-2xl">
+                                            <div className="flex flex-col md:flex-row items-start md:items-center">
+                                                {/* Imagen del producto - Responsive */}
+                                                <img
+                                                    src={prod.image}
+                                                    alt={prod.name}
+                                                    className="w-full h-40 md:w-40 md:h-40 object-contain rounded-xl mx-auto md:mx-0"
+                                                />
+                                                {/* Información del producto - Responsive */}
+                                                <div className="flex flex-col w-full md:w-[20em] px-0 md:px-5 mt-3 md:mt-0">
+                                                    <h2 className="text-xl md:text-2xl font-semibold">{prod.name}</h2>
+                                                    <p className="text-sm md:text-base text-gray-700 line-clamp-2 md:line-clamp-4 overflow-hidden mt-1 ">
+                                                        {prod.description}
+                                                    </p>
+                                                    {/* Estado del pedido en móvil */}
+                                                    <div className="flex items-center mt-2 md:hidden">
+                                                        <div className={`${prod.color} rounded-full w-3 h-3 mr-2`}></div>
+                                                        <span className="text-sm font-medium">{prod.state}</span>
+                                                    </div>
+                                                </div>
+                                                {/* Seguimiento de pedido - Solo visible en desktop */}
+                                                <div className="hidden md:flex flex-col w-full md:w-[40em] pl-2">
+                                                    <h2 className="text-lg font-semibold text-gray-700 mb-2">Seguimiento de pedido</h2>
+                                                    <StepperDemo status={prod.state} />
                                                 </div>
                                             </div>
-                                            {/* Seguimiento de pedido - Solo visible en desktop */}
-                                            <div className="hidden md:flex flex-col w-full md:w-[40em] pl-2">
-                                                <h2 className="text-lg font-semibold text-gray-700 mb-2">Seguimiento de pedido</h2>
-                                                <StepperDemo status={prod.state} />
-                                            </div>
                                         </div>
-                                    </div>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
-                                    <DialogHeader>
-                                        <DialogTitle><h2 className="text-xl sm:text-2xl font-semibold">{prod.name}</h2></DialogTitle>
-                                        <DialogDescription>
-                                            <p className="text-sm sm:text-base text-gray-700 mt-1">
-                                                {prod.description}
-                                            </p>
-                                        </DialogDescription>
-                                    </DialogHeader>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
+                                        <DialogHeader>
+                                            <DialogTitle><h2 className="text-xl sm:text-2xl font-semibold">{prod.name}</h2></DialogTitle>
+                                            <DialogDescription>
+                                                <p className="text-sm sm:text-base text-gray-700 mt-1">
+                                                    {prod.description}
+                                                </p>
+                                            </DialogDescription>
+                                        </DialogHeader>
 
-                                    {/* Seguimiento de pedido en el modal - Vertical */}
-                                    <div className="mt-4 mb-6">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-3">Seguimiento de pedido</h3>
-                                        <div className="bg-gray-50 rounded-xl p-4">
-                                            <StepperDemo status={prod.state} inModal={true} />
-                                        </div>
-                                    </div>
-
-                                    {/* Detalles del pedido */}
-                                    <div className="space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-sm font-medium text-gray-500">Estado actual:</h3>
-                                            <div className={`${prod.color} rounded-full px-3 py-1`}>
-                                                <p className="text-xs font-semibold text-white">{prod.state}</p>
+                                        {/* Seguimiento de pedido en el modal - Vertical */}
+                                        <div className="mt-4 mb-6">
+                                            <h3 className="text-lg font-semibold text-gray-800 mb-3">Seguimiento de pedido</h3>
+                                            <div className="bg-gray-50 rounded-xl p-4">
+                                                <StepperDemo status={prod.state} inModal={true} />
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                                            <h3 className="text-sm font-medium text-gray-500">Fecha de pedido:</h3>
-                                            <p className="text-sm">19/05/2025</p>
+                                        {/* Detalles del pedido */}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-sm font-medium text-gray-500">Estado actual:</h3>
+                                                <div className={`${prod.color} rounded-full px-3 py-1`}>
+                                                    <p className="text-xs font-semibold text-white">{prod.state}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                                                <h3 className="text-sm font-medium text-gray-500">Fecha de pedido:</h3>
+                                                <p className="text-sm">19/05/2025</p>
+                                            </div>
+
+                                            <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                                                <h3 className="text-sm font-medium text-gray-500">Precio:</h3>
+                                                <p className="text-sm font-semibold">${prod.price.toLocaleString()}</p>
+                                            </div>
+
+                                            <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                                                <h3 className="text-sm font-medium text-gray-500">Dirección de entrega:</h3>
+                                                <p className="text-sm">Col. Ciudad Chapu arcos 07</p>
+                                            </div>
                                         </div>
 
-                                        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                                            <h3 className="text-sm font-medium text-gray-500">Precio:</h3>
-                                            <p className="text-sm font-semibold">${prod.price.toLocaleString()}</p>
-                                        </div>
-
-                                        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                                            <h3 className="text-sm font-medium text-gray-500">Dirección de entrega:</h3>
-                                            <p className="text-sm">Col. Ciudad Chapu arcos 07</p>
-                                        </div>
-                                    </div>
-
-                                    <DialogFooter className="">
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-                        )
-                    })}
+                                        <DialogFooter className="">
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                            )
+                        })}
+                    </div>
                 </div>
-            </div>
+            </motion.div>
+
         </>
     );
 }
