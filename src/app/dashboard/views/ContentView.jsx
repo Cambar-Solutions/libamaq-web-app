@@ -1041,7 +1041,7 @@ export function ContentView() {
                           </div>
                           <CardHeader className="flex-1 overflow-hidden">
                             <CardTitle className="text-base md:text-lg font-bold truncate select-none" title={landing.title}>{landing.title}</CardTitle>
-                            <CardDescription className="text-xs md:text-sm line-clamp-3 h-[60px] overflow-hidden select-none" title={landing.description}>
+                            <CardDescription className="text-xs md:text-sm truncate h-[60px] overflow-hidden select-none" title={landing.description}>
                               {landing.description}
                             </CardDescription>
                           </CardHeader>
@@ -1231,7 +1231,7 @@ export function ContentView() {
                   </section>
                 </div>
 
-                <Dialog>
+                <Dialog open={isVideoDialogOpen} onOpenChange={setIsVideoDialogOpen}>
                   <DialogTrigger asChild>
                     <Button
                       className="bg-black hover:bg-blue-500 cursor-pointer"
@@ -1364,10 +1364,10 @@ export function ContentView() {
                     No hay imágenes disponibles. ¡Agrega una nueva!
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center gap-4 p-4 w-full">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full p-4">
                     {images.map((image) => (
                       <div key={image.id} className="bg-gradient-to-l from-blue-700 to-zinc-500 p-2 rounded-2xl w-full max-w-[300px]">
-                        <Card className="p-3 md:p-5 relative group w-full bg-stone-100">
+                        <Card className="p-3 md:p-5 relative group w-full bg-stone-100 h-full">
                           <div className="absolute top-2 right-2 flex gap-2 transition-opacity">
                             <Button
                               size="icon"
@@ -1380,7 +1380,7 @@ export function ContentView() {
                           </div>
                           <CardHeader className="select-none">
                             <CardTitle className="text-base md:text-lg">{image.title}</CardTitle>
-                            <CardDescription className="text-xs md:text-sm">
+                            <CardDescription className="text-xs md:text-sm truncate">
                               {image.description}
                             </CardDescription>
                           </CardHeader>
@@ -1743,10 +1743,10 @@ export function ContentView() {
                     No hay videos disponibles. ¡Agrega uno nuevo!
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center gap-4 p-4 w-full">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full p-4">
                     {videos.map((video) => (
                       <div key={video.id} className="bg-gradient-to-l from-orange-500 to-zinc-500 p-2 rounded-2xl w-full max-w-[300px]">
-                        <Card className="p-3 md:p-5 relative group w-full bg-stone-100">
+                        <Card className="h-full p-3 md:p-5 relative group w-full bg-stone-100">
                           <div className="absolute top-2 right-2 flex gap-2 transition-opacity">
                             <Button
                               size="icon"
@@ -1759,7 +1759,7 @@ export function ContentView() {
                           </div>
                           <CardHeader className="select-none">
                             <CardTitle className="text-base md:text-lg">{video.title}</CardTitle>
-                            <CardDescription className="text-xs md:text-sm">
+                            <CardDescription className="text-xs md:text-sm truncate">
                               {video.description}
                             </CardDescription>
                           </CardHeader>
