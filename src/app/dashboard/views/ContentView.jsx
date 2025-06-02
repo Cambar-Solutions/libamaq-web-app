@@ -26,11 +26,11 @@ import TikTokEmbed from "./../../../components/ui/TikTokEmbed";
 import { uploadLandingFile, deleteLandingFile } from "@/services/admin/landingService";
 
 // Importar los hooks personalizados de Tanstack Query
-import { 
-  useActiveLandings, 
-  useCreateLanding, 
-  useUpdateLanding, 
-  useChangeLandingStatus, 
+import {
+  useActiveLandings,
+  useCreateLanding,
+  useUpdateLanding,
+  useChangeLandingStatus,
   useDeleteLanding,
   useUploadLandingFile,
   useLandingWithFile
@@ -116,13 +116,13 @@ const VideoPlayer = ({ url, title = "Video", className = "" }) => {
 
 export function ContentView() {
   // Usar hooks de Tanstack Query para landings con manejo de errores
-  const { 
-    data: landingsData, 
-    isLoading: loadingLandings, 
+  const {
+    data: landingsData,
+    isLoading: loadingLandings,
     error: landingsError,
-    refetch: refetchLandings 
-  } = useActiveLandings() || { data: null, isLoading: false, error: null, refetch: () => {} };
-  
+    refetch: refetchLandings
+  } = useActiveLandings() || { data: null, isLoading: false, error: null, refetch: () => { } };
+
   // Función para determinar si una URL es de TikTok
   const isTikTokUrl = (url) => {
     if (!url) return false;
@@ -140,17 +140,17 @@ export function ContentView() {
   const isVideoUrl = (url) => {
     if (!url) return false;
     const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi'];
-    return videoExtensions.some(ext => url.toLowerCase().endsWith(ext)) || 
-           url.includes('youtube.com') || url.includes('youtu.be') || 
-           url.includes('vimeo.com');
+    return videoExtensions.some(ext => url.toLowerCase().endsWith(ext)) ||
+      url.includes('youtube.com') || url.includes('youtu.be') ||
+      url.includes('vimeo.com');
   };
 
   // Extraer todos los landings disponibles
   const allLandingItems = React.useMemo(() => {
     if (!landingsData) return [];
-    
+
     let items = [];
-    
+
     // Manejar diferentes estructuras de respuesta posibles
     if (Array.isArray(landingsData)) {
       items = landingsData;
@@ -163,7 +163,7 @@ export function ContentView() {
         items = [landingsData.result];
       }
     }
-    
+
     return items;
   }, [landingsData]);
 
@@ -171,7 +171,7 @@ export function ContentView() {
   const landings = React.useMemo(() => {
     return allLandingItems.filter(item => isTikTokUrl(item.url));
   }, [allLandingItems]);
-    
+
   // Hooks para mutaciones
   const createLandingMutation = useCreateLanding();
   const updateLandingMutation = useUpdateLanding();
@@ -244,14 +244,14 @@ export function ContentView() {
   const loadAllContent = () => {
     // Utilizar refetchLandings de Tanstack Query
     refetchLandings();
-    
+
     // También recargar imágenes y videos
     loadImages();
     loadVideos();
-    
+
     console.log('Recargando todos los datos con Tanstack Query');
   };
-  
+
   // Actualizar imágenes y videos cuando cambian los landings
   useEffect(() => {
     if (allLandingItems && allLandingItems.length > 0) {
@@ -308,12 +308,12 @@ export function ContentView() {
     } catch (err) {
       console.error("Error al guardar landing:", err);
       let errorMessage = err.message || 'Error desconocido';
-      
+
       // Mostrar un mensaje más amigable para el error SQL
       if (errorMessage === 'UNHANDLED_SQL_ERROR') {
         errorMessage = 'Error en la base de datos. Verifica que los datos sean correctos y no haya duplicados.';
       }
-      
+
       toast.error(`Ocurrió un error al ${isEditing ? 'actualizar' : 'crear'} el TikTok: ${errorMessage}`);
     } finally {
       setSubmitting(false);
@@ -375,11 +375,11 @@ export function ContentView() {
       updateLandingMutation.mutate(updatedData, {
         onSuccess: () => {
           console.log("Actualización exitosa");
-          
+
           // Forzar la recarga de todos los datos para asegurar que la UI se actualice
           // Esto es importante especialmente para los TikToks
           refetchLandings();
-          
+
           // También recargar los datos específicos según el tipo
           if (type === "TIKTOK") {
             // Para TikToks, ya llamamos a refetchLandings arriba
@@ -394,7 +394,7 @@ export function ContentView() {
             // Cerrar el diálogo de edición de videos si está abierto
             setIsVideoDialogOpen(false);
           }
-          
+
           toast.success(`${type === "TIKTOK" ? "TikTok" : type === "IMAGE" ? "Imagen" : "Video"} actualizado correctamente`);
         },
         onError: (error) => {
@@ -468,13 +468,13 @@ export function ContentView() {
         // Si no tenemos datos, hacemos la petición directamente
         const response = await getAllActiveLandings();
         let items = [];
-        
+
         if (response && response.result) {
           items = Array.isArray(response.result) ? response.result : [response.result];
         } else if (Array.isArray(response)) {
           items = response;
         }
-        
+
         // Filtrar por URL en lugar de por tipo
         const imageItems = items.filter(item => isImageUrl(item.url));
         setImages(imageItems);
@@ -499,13 +499,13 @@ export function ContentView() {
         // Si no tenemos datos, hacemos la petición directamente
         const response = await getAllActiveLandings();
         let items = [];
-        
+
         if (response && response.result) {
           items = Array.isArray(response.result) ? response.result : [response.result];
         } else if (Array.isArray(response)) {
           items = response;
         }
-        
+
         // Filtrar por URL en lugar de por tipo
         const videoItems = items.filter(item => isVideoUrl(item.url));
         setVideos(videoItems);
@@ -1604,7 +1604,7 @@ export function ContentView() {
                           {videoUrl ? (
                             <div className={`w-full ${videoUrl.includes('youtube.com/shorts/') ? 'max-w-[400px] mx-auto' : ''}`}>
                               {videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be') ? (
-                                <div className="relative w-full" style={{ 
+                                <div className="relative w-full" style={{
                                   paddingBottom: videoUrl.includes('youtube.com/shorts/') ? '177.78%' : '56.25%',
                                   height: 0
                                 }}>
@@ -1630,7 +1630,7 @@ export function ContentView() {
                           )}
                         </div>
                       </CardContent>
-                      
+
                       <CardFooter className="flex space-x-2 mt-2 md:mt-5 p-3 md:p-6">
                         <Button
                           className="bg-blue-600 hover:bg-blue-700 cursor-pointer"

@@ -53,29 +53,34 @@ export const createLanding = async (landingData) => {
  */
 export const uploadLandingFile = async (file) => {
   try {
+    if (!file) throw new Error("Necesitas seleccionar un archivo.");
     console.log('Subiendo archivo:', file.name, 'Tipo:', file.type);
     
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("files", file);
 
     const { data } = await apiClient.post("/l/media/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-        "Accept": "application/json",
-      },
+      "Accept": "application/json",
+
+      // headers: {
+      //   "Content-Type": "multipart/form-data",
+      //   "Accept": "application/json",
+      // },
     });
 
     console.log('Respuesta de subida de archivo:', data);
     
     // Asegurarse de que la respuesta contiene una URL
-    if (!data.data?.[0]?.url && !data.url) {
-      throw new Error('La respuesta del servidor no contiene una URL válida');
+    // Según tu Swagger, la URL podría venir en data.data[0].url o data.url
+    const fileUrl = data.data?.[0]?.url || data.url;
+    if (!fileUrl) {
+      throw new Error("La respuesta del servidor no contiene una URL válida");
     }
     
     // Devolver la URL del archivo subido
     return {
-      url: data.data?.[0]?.url || data.url,
-      fileId: data.data?.[0]?.fileId || null
+      url: fileUrl,
+      fileId: data.data?.[0]?.fileId || null,
     };
   } catch (error) {
     console.error("Error al subir archivo:", error);
@@ -90,9 +95,10 @@ export const uploadLandingFile = async (file) => {
  */
 export const deleteLandingFile = async (fileUrl) => {
   try {
+    // Envolvemos en un array, tal y como lo pide el Swagger
+    const payload = [ { fileUrl } ];
+
     console.log('Eliminando archivo:', fileUrl);
-    
-    const payload = { fileUrl };
     
     const { data } = await apiClient.post("/l/media/delete", payload, {
       headers: {
