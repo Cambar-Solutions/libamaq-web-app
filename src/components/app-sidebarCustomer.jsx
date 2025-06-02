@@ -1,4 +1,5 @@
-import * as React from "react"
+import React, { useState, useEffect } from "react";
+
 import {
   ShoppingBag,
   ClipboardList,
@@ -7,8 +8,6 @@ import {
   User,
   LogOut
 } from "lucide-react"
-
-import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
   SidebarContent,
@@ -18,13 +17,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { NavUserCustomer } from "./nav-userCustomer"
 
 const data = {
-  user: {
-    name: "Jonathan Ocampo",
-    email: "libamaq@gmail.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   optionsMenu: [
     {
       name: "Mis compras",
@@ -52,7 +47,7 @@ const data = {
       id: "perfil",
       icon: User,
     },
-    
+
   ],
 }
 
@@ -93,7 +88,8 @@ export function AppSidebarCustomer({ onViewChange, currentView, ...props }) {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        {/* <NavUser user={data.user} /> */}
+        <NavUserCustomer />
+
       </SidebarFooter>
     </Sidebar>
   );

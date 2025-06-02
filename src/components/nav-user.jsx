@@ -46,10 +46,13 @@ export function NavUser({ user }) {
   const { isMobile } = useSidebar()
   const navigate = useNavigate();
 
-    const handleLogout = () => {
-        // localStorage.removeItem("authToken");
-        navigate("/", { replace: true });
-    };;
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user_data");
+    localStorage.removeItem("userId");
+    navigate("/", { replace: true });
+  };;
 
   return (
     <SidebarMenu>
