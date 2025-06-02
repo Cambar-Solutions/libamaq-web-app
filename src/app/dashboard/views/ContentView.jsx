@@ -24,6 +24,18 @@ import { Button } from "@/components/ui/button";
 import "../../../index.css";
 import TikTokEmbed from "./../../../components/ui/TikTokEmbed";
 import { uploadLandingFile, deleteLandingFile } from "@/services/admin/landingService";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction
+} from "@/components/ui/alert-dialog";
+
 
 // Importar los hooks personalizados de Tanstack Query
 import {
@@ -322,57 +334,56 @@ export function ContentView() {
 
   // Función para eliminar un landing (cambiando su estado a INACTIVE) usando Tanstack Query
   const handleDeleteLanding = async (landingId) => {
-  if (!window.confirm("¿Estás seguro que deseas eliminar este TikTok?")) return;
 
-  try {
-    // 1) Encuentra el landing en tu estado local
-    const landingToDelete = landings.find((l) => l.id === landingId);
-    if (!landingToDelete) {
-      throw new Error(`No se encontró el TikTok con ID ${landingId}`);
-    }
-
-    // 2) Asegúrate de que 'type' sea válido. Si no lo es, elige un fallback (p.ej. "PROMOTION").
-    const originalType = landingToDelete.type;
-    const allowedTypes = ["PROMOTION", "EVENT", "NEWS", "PRODUCT_LAUNCH"];
-    const validType = allowedTypes.includes(originalType)
-      ? originalType
-      : "PROMOTION";
-
-    // 3) Construye el payload con ID numérico y type válido
-    const payload = {
-      id: Number(landingToDelete.id),      // <-- convertir a número
-      title: landingToDelete.title,
-      description: landingToDelete.description || "",
-      url: landingToDelete.url,
-      type: validType,                     // <-- uno de los cuatro permitidos
-      status: "INACTIVE",
-    };
-
-    console.log("⏳ Payload para PUT /l/landing (TikTok):", payload);
-
-    // 4) Llama a la mutación
-    await changeLandingStatusMutation.mutateAsync(payload);
-
-    toast.success("TikTok eliminado correctamente");
-    // Tanstack Query refetchea automáticamente, pero si necesitas, puedes llamar refetchLandings()
-    refetchLandings();
-  } catch (err) {
-    console.error(`Error al eliminar TikTok con ID ${landingId}:`, err);
-
-    // Mostrar mensaje de error más específico si viene del backend
-    if (err.response && err.response.data) {
-      console.error("❌ Detalle del error del backend:", err.response.data);
-      const messages = err.response.data.message;
-      if (Array.isArray(messages) && messages.length) {
-        toast.error(`Error: ${messages[0]}`);
-      } else {
-        toast.error(`Error: ${err.response.data.error || "Bad Request"}`);
+    try {
+      // 1) Encuentra el landing en tu estado local
+      const landingToDelete = landings.find((l) => l.id === landingId);
+      if (!landingToDelete) {
+        throw new Error(`No se encontró el TikTok con ID ${landingId}`);
       }
-    } else {
-      toast.error(`Ocurrió un error: ${err.message}`);
+
+      // 2) Asegúrate de que 'type' sea válido. Si no lo es, elige un fallback (p.ej. "PROMOTION").
+      const originalType = landingToDelete.type;
+      const allowedTypes = ["PROMOTION", "EVENT", "NEWS", "PRODUCT_LAUNCH"];
+      const validType = allowedTypes.includes(originalType)
+        ? originalType
+        : "PROMOTION";
+
+      // 3) Construye el payload con ID numérico y type válido
+      const payload = {
+        id: Number(landingToDelete.id),      // <-- convertir a número
+        title: landingToDelete.title,
+        description: landingToDelete.description || "",
+        url: landingToDelete.url,
+        type: validType,                     // <-- uno de los cuatro permitidos
+        status: "INACTIVE",
+      };
+
+      console.log("⏳ Payload para PUT /l/landing (TikTok):", payload);
+
+      // 4) Llama a la mutación
+      await changeLandingStatusMutation.mutateAsync(payload);
+
+      toast.success("TikTok eliminado correctamente");
+      // Tanstack Query refetchea automáticamente, pero si necesitas, puedes llamar refetchLandings()
+      refetchLandings();
+    } catch (err) {
+      console.error(`Error al eliminar TikTok con ID ${landingId}:`, err);
+
+      // Mostrar mensaje de error más específico si viene del backend
+      if (err.response && err.response.data) {
+        console.error("❌ Detalle del error del backend:", err.response.data);
+        const messages = err.response.data.message;
+        if (Array.isArray(messages) && messages.length) {
+          toast.error(`Error: ${messages[0]}`);
+        } else {
+          toast.error(`Error: ${err.response.data.error || "Bad Request"}`);
+        }
+      } else {
+        toast.error(`Ocurrió un error: ${err.message}`);
+      }
     }
-  }
-};
+  };
 
 
   // Función para editar un landing (abre el diálogo de edición)
@@ -725,7 +736,6 @@ export function ContentView() {
 
   // Función para eliminar una imagen
   const handleDeleteImage = async (imageId) => {
-    if (!window.confirm("¿Estás seguro que deseas eliminar esta imagen?")) return;
 
     try {
       const imageToDelete = images.find((img) => img.id === imageId);
@@ -779,52 +789,51 @@ export function ContentView() {
 
   // Función para eliminar un video
   const handleDeleteVideo = async (videoId) => {
-  if (!window.confirm("¿Estás seguro que deseas eliminar este video?")) return;
 
-  try {
-    const videoToDelete = videos.find((vid) => vid.id === videoId);
-    if (!videoToDelete) {
-      throw new Error(`No se encontró el video con ID ${videoId}`);
-    }
-
-    // Asegurarnos de que `type` sea uno de los valores válidos:
-    const originalType = videoToDelete.type;
-    const allowedTypes = ["PROMOTION", "EVENT", "NEWS", "PRODUCT_LAUNCH"];
-    const validType = allowedTypes.includes(originalType)
-      ? originalType
-      : "PROMOTION"; // <- Por ejemplo, si no coincide, forzamos PROMOTION
-
-    // Armar el payload con id numérico
-    const payload = {
-      id: Number(videoToDelete.id),       // <-- convertir a número
-      title: videoToDelete.title,
-      description: videoToDelete.description || "",
-      url: videoToDelete.url,
-      type: validType,                    // <-- uno de los cuatro permitidos
-      status: "INACTIVE",
-    };
-
-    console.log("⏳ Payload para PUT /l/landing (video):", payload);
-
-    await changeLandingStatusMutation.mutateAsync(payload);
-
-    toast.success("Video eliminado correctamente");
-    loadVideos();
-  } catch (err) {
-    console.error("Error al cambiar estado del landing con ID", videoId, ":", err);
-    if (err.response && err.response.data) {
-      console.error("❌ Detalle del error del backend:", err.response.data);
-      const messages = err.response.data.message;
-      if (Array.isArray(messages) && messages.length) {
-        toast.error(`Error: ${messages[0]}`);
-      } else {
-        toast.error(`Error: ${err.response.data.error || "Bad Request"}`);
+    try {
+      const videoToDelete = videos.find((vid) => vid.id === videoId);
+      if (!videoToDelete) {
+        throw new Error(`No se encontró el video con ID ${videoId}`);
       }
-    } else {
-      toast.error(`Ocurrió un error: ${err.message}`);
+
+      // Asegurarnos de que `type` sea uno de los valores válidos:
+      const originalType = videoToDelete.type;
+      const allowedTypes = ["PROMOTION", "EVENT", "NEWS", "PRODUCT_LAUNCH"];
+      const validType = allowedTypes.includes(originalType)
+        ? originalType
+        : "PROMOTION"; // <- Por ejemplo, si no coincide, forzamos PROMOTION
+
+      // Armar el payload con id numérico
+      const payload = {
+        id: Number(videoToDelete.id),       // <-- convertir a número
+        title: videoToDelete.title,
+        description: videoToDelete.description || "",
+        url: videoToDelete.url,
+        type: validType,                    // <-- uno de los cuatro permitidos
+        status: "INACTIVE",
+      };
+
+      console.log("⏳ Payload para PUT /l/landing (video):", payload);
+
+      await changeLandingStatusMutation.mutateAsync(payload);
+
+      toast.success("Video eliminado correctamente");
+      loadVideos();
+    } catch (err) {
+      console.error("Error al cambiar estado del landing con ID", videoId, ":", err);
+      if (err.response && err.response.data) {
+        console.error("❌ Detalle del error del backend:", err.response.data);
+        const messages = err.response.data.message;
+        if (Array.isArray(messages) && messages.length) {
+          toast.error(`Error: ${messages[0]}`);
+        } else {
+          toast.error(`Error: ${err.response.data.error || "Bad Request"}`);
+        }
+      } else {
+        toast.error(`Ocurrió un error: ${err.message}`);
+      }
     }
-  }
-};
+  };
 
 
   // Abrir diálogo para nuevo landing
@@ -1030,14 +1039,38 @@ export function ContentView() {
                       <div key={landing.id} className="bg-gradient-to-l from-red-500 to-blue-500 p-2 rounded-2xl w-full h-full">
                         <Card className="p-3 md:p-5 relative group h-full flex flex-col min-h-[250px]">
                           <div className="absolute top-2 right-2 flex gap-2 transition-opacity">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm cursor-pointer"
-                              onClick={() => handleDeleteLanding(landing.id)}
-                            >
-                              <Trash2 className="h-5 w-5" />
-                            </Button>
+
+                            <AlertDialog>
+                              {/* El trigger: normalmente será tu botón de papelera */}
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm cursor-pointer transition-colors duration-300"
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </Button>
+                              </AlertDialogTrigger>
+
+                              {/* Contenido del diálogo */}
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta acción eliminará tu TikTok y no se podrá deshacer. ¿Deseas continuar?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  {/* “Cancelar” cierra el diálogo sin llamar a handleDeleteLanding */}
+                                  <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
+                                  {/* “Continuar” invoca la función de borrado */}
+                                  <AlertDialogAction onClick={() => handleDeleteLanding(landing.id)} className="cursor-pointer">
+                                    Continuar
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+
                           </div>
                           <CardHeader className="flex-1 overflow-hidden">
                             <CardTitle className="text-base md:text-lg font-bold truncate select-none" title={landing.title}>{landing.title}</CardTitle>
@@ -1047,7 +1080,7 @@ export function ContentView() {
                           </CardHeader>
                           <Dialog>
                             <DialogTrigger asChild>
-                              <div className="w-8 h-8 cursor-pointer flex justify-center items-center hover:bg-indigo-100 shadow-sm rounded-md">
+                              <div className="w-8 h-8 cursor-pointer flex justify-center items-center hover:bg-indigo-100 shadow-sm rounded-md transition-colors duration-300">
                                 <SquareMousePointer size={20} />
 
 
@@ -1190,6 +1223,12 @@ export function ContentView() {
                                             }}
                                           />
                                         </div>
+                                        <Button
+                                          className="bg-blue-600 hover:bg-blue-700 cursor-pointer mt-[8em]"
+                                          onClick={() => handleSaveEdits(landing)}
+                                        >
+                                          Guardar cambios
+                                        </Button>
                                       </div>
 
                                       {/* DERECHA: vista previa de TikTok */}
@@ -1198,14 +1237,9 @@ export function ContentView() {
                                       </div>
                                     </CardContent>
 
-                                    <CardFooter className="flex space-x-2">
+                                    <CardFooter className="flex space-x-2 ">
 
-                                      <Button
-                                        className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
-                                        onClick={() => handleSaveEdits(landing)}
-                                      >
-                                        Guardar cambios
-                                      </Button>
+
                                     </CardFooter>
                                   </Card>
                                 </TabsContent>
@@ -1369,14 +1403,37 @@ export function ContentView() {
                       <div key={image.id} className="bg-gradient-to-l from-blue-700 to-zinc-500 p-2 rounded-2xl w-full max-w-[300px]">
                         <Card className="p-3 md:p-5 relative group w-full bg-stone-100 h-full">
                           <div className="absolute top-2 right-2 flex gap-2 transition-opacity">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="cursor-pointer h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm"
-                              onClick={() => handleDeleteImage(image.id)}
-                            >
-                              <Trash2 className="h-5 w-5" />
-                            </Button>
+
+                            <AlertDialog>
+                              {/* El trigger: normalmente será tu botón de papelera */}
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm cursor-pointer transition-colors duration-300"
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </Button>
+                              </AlertDialogTrigger>
+
+                              {/* Contenido del diálogo */}
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta acción eliminará la imagen y no se podrá deshacer. ¿Deseas continuar?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  {/* “Cancelar” cierra el diálogo sin llamar a handleDeleteLanding */}
+                                  <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
+                                  {/* “Continuar” invoca la función de borrado */}
+                                  <AlertDialogAction onClick={() => handleDeleteImage(image.id)} className="cursor-pointer">
+                                    Continuar
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                           <CardHeader className="select-none">
                             <CardTitle className="text-base md:text-lg">{image.title}</CardTitle>
@@ -1393,7 +1450,7 @@ export function ContentView() {
                             <DialogTrigger asChild>
                               <div className="">
 
-                                <div className="w-8 h-8 flex mt-2 cursor-pointer justify-center items-center hover:bg-indigo-100 shadow-sm rounded-md">
+                                <div className="w-8 h-8 flex mt-2 cursor-pointer justify-center items-center hover:bg-indigo-100 shadow-sm rounded-md transition-colors duration-300">
                                   <SquareMousePointer size={20} />
                                 </div>
                               </div>
@@ -1567,7 +1624,7 @@ export function ContentView() {
                                       </div>
                                     </CardContent>
 
-                                    <CardFooter className="flex space-x-2 mt-2 md:mt-5 p-3 md:p-6">
+                                    <CardFooter className="flex space-x-2 mt-0 md:mt-0 p-3 md:px-6">
                                       <Button
                                         className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
                                         onClick={() => handleSaveImageEdits(image)}
@@ -1748,14 +1805,37 @@ export function ContentView() {
                       <div key={video.id} className="bg-gradient-to-l from-orange-500 to-zinc-500 p-2 rounded-2xl w-full max-w-[300px]">
                         <Card className="h-full p-3 md:p-5 relative group w-full bg-stone-100">
                           <div className="absolute top-2 right-2 flex gap-2 transition-opacity">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="cursor-pointer h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm"
-                              onClick={() => handleDeleteVideo(video.id)}
-                            >
-                              <Trash2 className="h-5 w-5" />
-                            </Button>
+
+                            <AlertDialog>
+                              {/* El trigger: normalmente será tu botón de papelera */}
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm cursor-pointer transition-colors duration-300"
+                                >
+                                  <Trash2 className="h-5 w-5" />
+                                </Button>
+                              </AlertDialogTrigger>
+
+                              {/* Contenido del diálogo */}
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta acción eliminará el video y no se podrá deshacer. ¿Deseas continuar?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  {/* “Cancelar” cierra el diálogo sin llamar a handleDeleteLanding */}
+                                  <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
+                                  {/* “Continuar” invoca la función de borrado */}
+                                  <AlertDialogAction onClick={() => handleDeleteVideo(video.id)} className="cursor-pointer">
+                                    Continuar
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                           <CardHeader className="select-none">
                             <CardTitle className="text-base md:text-lg">{video.title}</CardTitle>
@@ -1771,7 +1851,7 @@ export function ContentView() {
                             <DialogTrigger asChild>
                               <div className="">
 
-                                <div className="w-8 h-8 cursor-pointer flex mt-2 justify-center items-center hover:bg-indigo-100 shadow-sm rounded-md">
+                                <div className="w-8 h-8 cursor-pointer flex mt-2 justify-center items-center hover:bg-indigo-100 shadow-sm rounded-md transition-colors duration-300">
                                   <SquareMousePointer size={20} />
                                 </div>
                               </div>
@@ -1945,7 +2025,7 @@ export function ContentView() {
                                       </div>
                                     </CardContent>
 
-                                    <CardFooter className="flex space-x-2 mt-2 md:mt-5 p-3 md:p-6">
+                                    <CardFooter className="flex space-x-2 mt-0 md:mt-0 p-3 md:px-6">
 
                                       <Button
                                         className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
