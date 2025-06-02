@@ -322,29 +322,58 @@ export function ContentView() {
 
   // Función para eliminar un landing (cambiando su estado a INACTIVE) usando Tanstack Query
   const handleDeleteLanding = async (landingId) => {
-    if (window.confirm("¿Estás seguro que deseas eliminar este TikTok?")) {
-      try {
-        // Encontrar el landing completo en el estado actual
-        const landingToDelete = landings.find(landing => landing.id === landingId);
+  if (!window.confirm("¿Estás seguro que deseas eliminar este TikTok?")) return;
 
-        if (!landingToDelete) {
-          throw new Error(`No se encontró el TikTok con ID ${landingId}`);
-        }
-
-        // Cambiar el estado a INACTIVE usando la mutación
-        await changeLandingStatusMutation.mutateAsync({
-          ...landingToDelete,
-          status: "INACTIVE"
-        });
-
-        console.log(`TikTok con ID ${landingId} desactivado correctamente`);
-        // No necesitamos recargar manualmente, Tanstack Query lo hace por nosotros
-      } catch (err) {
-        console.error(`Error al eliminar TikTok con ID ${landingId}:`, err);
-        toast.error(`Error al eliminar TikTok: ${err.message || 'Error desconocido'}`);
-      }
+  try {
+    // 1) Encuentra el landing en tu estado local
+    const landingToDelete = landings.find((l) => l.id === landingId);
+    if (!landingToDelete) {
+      throw new Error(`No se encontró el TikTok con ID ${landingId}`);
     }
-  };
+
+    // 2) Asegúrate de que 'type' sea válido. Si no lo es, elige un fallback (p.ej. "PROMOTION").
+    const originalType = landingToDelete.type;
+    const allowedTypes = ["PROMOTION", "EVENT", "NEWS", "PRODUCT_LAUNCH"];
+    const validType = allowedTypes.includes(originalType)
+      ? originalType
+      : "PROMOTION";
+
+    // 3) Construye el payload con ID numérico y type válido
+    const payload = {
+      id: Number(landingToDelete.id),      // <-- convertir a número
+      title: landingToDelete.title,
+      description: landingToDelete.description || "",
+      url: landingToDelete.url,
+      type: validType,                     // <-- uno de los cuatro permitidos
+      status: "INACTIVE",
+    };
+
+    console.log("⏳ Payload para PUT /l/landing (TikTok):", payload);
+
+    // 4) Llama a la mutación
+    await changeLandingStatusMutation.mutateAsync(payload);
+
+    toast.success("TikTok eliminado correctamente");
+    // Tanstack Query refetchea automáticamente, pero si necesitas, puedes llamar refetchLandings()
+    refetchLandings();
+  } catch (err) {
+    console.error(`Error al eliminar TikTok con ID ${landingId}:`, err);
+
+    // Mostrar mensaje de error más específico si viene del backend
+    if (err.response && err.response.data) {
+      console.error("❌ Detalle del error del backend:", err.response.data);
+      const messages = err.response.data.message;
+      if (Array.isArray(messages) && messages.length) {
+        toast.error(`Error: ${messages[0]}`);
+      } else {
+        toast.error(`Error: ${err.response.data.error || "Bad Request"}`);
+      }
+    } else {
+      toast.error(`Ocurrió un error: ${err.message}`);
+    }
+  }
+};
+
 
   // Función para editar un landing (abre el diálogo de edición)
   const handleEditLanding = (landing) => {
