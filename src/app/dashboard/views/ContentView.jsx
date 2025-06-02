@@ -579,29 +579,31 @@ export function ContentView() {
         return;
       }
 
-      // Crear landing con el tipo seleccionado por el usuario
+      // Preparamos los datos del landing (imagen) según el backend
       const landingData = {
         url: finalImageUrl,
         title: imageTitle,
         description: imageDescription,
-        type: contentType, // Usar el tipo seleccionado en el formulario
+        type: contentType, // ej. 'PROMOTION', 'EVENT', etc.
         status: "ACTIVE"
       };
 
-      const newLanding = await createLanding(landingData);
+      // Usamos la mutación de Tanstack Query en lugar de 'createLanding':
+      const newLanding = await createLandingMutation.mutateAsync(landingData);
       console.log("Nueva imagen creada:", newLanding);
 
-      // Resetear formulario y recargar imágenes
+      // Resetear formulario y recargar lista
       resetImageForm();
       loadImages();
-      console.log("Imagen creada correctamente");
+      toast.success("Imagen creada correctamente");
     } catch (err) {
       console.error("Error al guardar imagen:", err);
-      alert(`Ocurrió un error al crear la imagen: ${err.message || 'Error de conexión'}`);
+      toast.error(`Ocurrió un error al crear la imagen: ${err.message || 'Error de conexión'}`);
     } finally {
       setSubmittingImage(false);
     }
   };
+
 
   // Función para manejar la selección de archivo de video
   const handleVideoFileChange = (e) => {
@@ -677,6 +679,8 @@ export function ContentView() {
       // Usar la mutación de Tanstack Query
       const newLanding = await createLandingMutation.mutateAsync(landingData);
       console.log("Nuevo video creado:", newLanding);
+      toast.success("Video creado correctamente");
+      setIsVideoDialogOpen(false);
 
       // Resetear formulario y recargar videos
       resetVideoForm();
@@ -692,59 +696,107 @@ export function ContentView() {
 
   // Función para eliminar una imagen
   const handleDeleteImage = async (imageId) => {
-    if (window.confirm("¿Estás seguro que deseas eliminar esta imagen?")) {
-      try {
-        const imageToDelete = images.find(img => img.id === imageId);
-        if (!imageToDelete) {
-          throw new Error(`No se encontró la imagen con ID ${imageId}`);
+    if (!window.confirm("¿Estás seguro que deseas eliminar esta imagen?")) return;
+
+    try {
+      const imageToDelete = images.find((img) => img.id === imageId);
+      if (!imageToDelete) {
+        throw new Error(`No se encontró la imagen con ID ${imageId}`);
+      }
+
+      const originalType = imageToDelete.type;
+      const allowedTypes = ["PROMOTION", "EVENT", "NEWS", "PRODUCT_LAUNCH"];
+      const validType = allowedTypes.includes(originalType)
+        ? originalType
+        : "PROMOTION";
+      // Construye el payload que vas a enviar:
+      const payload = {
+        id: Number(imageToDelete.id),
+        title: imageToDelete.title,
+        description: imageToDelete.description || "",
+        url: imageToDelete.url,
+        type: validType,
+        status: "INACTIVE",
+      };
+
+      console.log("⏳ Payload para PUT /l/landing:", payload);
+      console.log("⏳ Intentando cambiar estado con este payload:", payload);
+      console.log("Tipo que viene del backend para esta imagen:", imageToDelete.type);
+
+
+      await changeLandingStatusMutation.mutateAsync(payload);
+
+      toast.success("Imagen eliminada correctamente");
+      loadImages();
+    } catch (err) {
+      // Si err.response existe, imprime el cuerpo de la respuesta
+      if (err.response && err.response.data) {
+        console.error("❌ Error detallado del backend:", err.response.data);
+        // Por ejemplo, err.response.data podría tener { message: [...], error: "...", statusCode: 400 }
+        const messages = err.response.data.message;
+        // Muestra en pantalla el primer mensaje de validación (si existe)
+        if (Array.isArray(messages) && messages.length) {
+          toast.error(`Error: ${messages[0]}`);
+        } else {
+          toast.error(`Error: ${err.response.data.error || "Bad Request"}`);
         }
-
-        // Pasar todos los campos requeridos
-        await changeLandingStatus({
-          id: imageToDelete.id,
-          title: imageToDelete.title,
-          description: imageToDelete.description || '',
-          url: imageToDelete.url,
-          type: imageToDelete.type || 'IMAGE',
-          status: 'INACTIVE'
-        });
-
-        console.log("Imagen eliminada correctamente");
-        loadImages();
-      } catch (err) {
-        console.error("Error al eliminar imagen:", err);
-        alert(`Ocurrió un error al eliminar la imagen: ${err.message || 'Error de conexión'}`);
+      } else {
+        console.error("❌ Error genérico:", err);
+        toast.error(`Ocurrió un error: ${err.message}`);
       }
     }
   };
+
 
   // Función para eliminar un video
   const handleDeleteVideo = async (videoId) => {
-    if (window.confirm("¿Estás seguro que deseas eliminar este video?")) {
-      try {
-        const videoToDelete = videos.find(vid => vid.id === videoId);
-        if (!videoToDelete) {
-          throw new Error(`No se encontró el video con ID ${videoId}`);
-        }
+  if (!window.confirm("¿Estás seguro que deseas eliminar este video?")) return;
 
-        // Pasar todos los campos requeridos y usar la mutación de Tanstack Query
-        await changeLandingStatusMutation.mutateAsync({
-          id: videoToDelete.id,
-          title: videoToDelete.title,
-          description: videoToDelete.description || '',
-          url: videoToDelete.url,
-          type: videoToDelete.type || 'VIDEO',
-          status: 'INACTIVE'
-        });
-
-        console.log("Video eliminado correctamente");
-        loadVideos();
-      } catch (err) {
-        console.error("Error al eliminar video:", err);
-        alert(`Ocurrió un error al eliminar el video: ${err.message || 'Error de conexión'}`);
-      }
+  try {
+    const videoToDelete = videos.find((vid) => vid.id === videoId);
+    if (!videoToDelete) {
+      throw new Error(`No se encontró el video con ID ${videoId}`);
     }
-  };
+
+    // Asegurarnos de que `type` sea uno de los valores válidos:
+    const originalType = videoToDelete.type;
+    const allowedTypes = ["PROMOTION", "EVENT", "NEWS", "PRODUCT_LAUNCH"];
+    const validType = allowedTypes.includes(originalType)
+      ? originalType
+      : "PROMOTION"; // <- Por ejemplo, si no coincide, forzamos PROMOTION
+
+    // Armar el payload con id numérico
+    const payload = {
+      id: Number(videoToDelete.id),       // <-- convertir a número
+      title: videoToDelete.title,
+      description: videoToDelete.description || "",
+      url: videoToDelete.url,
+      type: validType,                    // <-- uno de los cuatro permitidos
+      status: "INACTIVE",
+    };
+
+    console.log("⏳ Payload para PUT /l/landing (video):", payload);
+
+    await changeLandingStatusMutation.mutateAsync(payload);
+
+    toast.success("Video eliminado correctamente");
+    loadVideos();
+  } catch (err) {
+    console.error("Error al cambiar estado del landing con ID", videoId, ":", err);
+    if (err.response && err.response.data) {
+      console.error("❌ Detalle del error del backend:", err.response.data);
+      const messages = err.response.data.message;
+      if (Array.isArray(messages) && messages.length) {
+        toast.error(`Error: ${messages[0]}`);
+      } else {
+        toast.error(`Error: ${err.response.data.error || "Bad Request"}`);
+      }
+    } else {
+      toast.error(`Ocurrió un error: ${err.message}`);
+    }
+  }
+};
+
 
   // Abrir diálogo para nuevo landing
   const openNewLandingDialog = () => {
@@ -1519,7 +1571,7 @@ export function ContentView() {
                   </section>
                 </div>
 
-                <Dialog>
+                <Dialog open={isVideoDialogOpen} onOpenChange={setIsVideoDialogOpen}>
                   <DialogTrigger asChild>
                     <Button
                       className="bg-black hover:bg-blue-500 cursor-pointer"
