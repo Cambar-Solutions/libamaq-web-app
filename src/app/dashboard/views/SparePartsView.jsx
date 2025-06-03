@@ -15,8 +15,9 @@ import {
   uploadMediaFile,
   deleteSparePartMedia
 } from "@/services/admin/sparePartService";
+import { getActiveProducts, getProductPreviews } from "@/services/admin/productService";
 import { createMultimedia } from "@/services/admin/multimediaService";
-import { toast } from "sonner";
+import toast, { Toaster } from "react-hot-toast";
 import { 
   Select, 
   SelectContent, 
@@ -418,45 +419,43 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
     }
   };
 
-  const fetchProducts = async () => {
+ const fetchProducts = async () => {
     try {
-      // Usar getAllProducts en lugar de getProductPreviews para obtener datos más completos
-      const response = await getAllProducts();
-      console.log('Respuesta completa de productos:', response);
-      
-      // Extraer datos de la respuesta, manejando diferentes formatos posibles
-      let data = [];
-      if (response && response.result && Array.isArray(response.result)) {
-        data = response.result;
-      } else if (Array.isArray(response)) {
-        data = response;
-      } else if (response && typeof response === 'object') {
-        // Intentar extraer datos de otras propiedades si existen
-        data = response.data || response.items || [];
-      }
-      
-      console.log('Datos de productos extraídos:', data);
-      
-      // Filtrar productos nulos o indefinidos
-      const validProducts = data.filter(product => product && product.id);
-      
-      // Ordenar productos por nombre para facilitar la búsqueda
-      const sortedProducts = [...validProducts].sort((a, b) => {
-        return (a.name || '').localeCompare(b.name || '') || 0;
-      });
-      
-      console.log('Productos procesados y ordenados:', sortedProducts);
-      setProducts(sortedProducts);
-      
-      // Si no hay productos, mostrar un mensaje
-      if (sortedProducts.length === 0) {
-        console.warn('No se encontraron productos válidos en la respuesta');
-      }
-    } catch (error) {
-      console.error('Error al cargar los productos:', error);
-      toast.error("Error al cargar los productos: " + (error.message || "Error desconocido"));
+      // Opción A: si quieres solo los productos en estado “ACTIVE”:
+      const data = await getActiveProducts();
+      console.log("Productos activos recibidos:", data);
+      // Normaliza según la forma en que tu API devuelva los datos:
+      // - Si devuelve un array plano, usa directamente data
+      // - Si devuelve { result: [...], ... } u { data: [...], ... }, ajusta accordingly
+      const lista = Array.isArray(data)
+        ? data
+        : Array.isArray(data.result)
+          ? data.result
+          : Array.isArray(data.data)
+            ? data.data
+            : [];
+      setProducts(lista);
+
+      // — o bien —
+
+      // Opción B: si prefieres el endpoint “preview” (lista liviana):
+      // const data = await getProductPreviews();
+      // console.log("Productos PREVIEW recibidos:", data);
+      // const listaPrev = Array.isArray(data)
+      //   ? data
+      //   : Array.isArray(data.result)
+      //     ? data.result
+      //     : [];
+      // setProducts(listaPrev);
+
+    } catch (err) {
+      console.error("Error completo al cargar productos:", err);
+      toast.error("Error al cargar los productos: " + err.message);
     }
   };
+
+
+
 
   const handleInputChange = (e) => {
     const { name, value, type } = e.target;
@@ -633,149 +632,60 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
   };
 
   const handleSubmit = async () => {
-    try {
-      console.log('Iniciando guardado de repuesto...');
-      
-      // Preparar datos básicos del repuesto según la estructura esperada por el backend
-      const saveData = {
-        ...formData,
-        // Asegurar que el estado siempre sea ACTIVE al crear o actualizar
-        status: "ACTIVE",
-        // Inicializar el array de medios vacío
-        media: []
-      };
-      
-      // Asegurarse de que el ID esté presente si estamos actualizando
-      if (sparePartId) {
-        saveData.id = sparePartId;
-      }
-      
-      console.log('Datos básicos del repuesto:', saveData);
+  try {
+    console.log("Iniciando guardado de repuesto...");
 
-      // Preparar información de asignación a producto si existe
-      let productAssignment = null;
-      if (selectedProductId && selectedProductId !== "none") {
-        productAssignment = {
-          productId: parseInt(selectedProductId, 10),
-          compatibilityNotes
-        };
-        
-        // Si estamos editando y ya existe un ID para la relación
-        if (sparePart?.productSparePartDto?.id) {
-          productAssignment.id = sparePart.productSparePartDto.id;
-        }
-        
-        console.log('Asignación a producto:', productAssignment);
-      }
-      
-      // Preparar las imágenes para guardar (eliminar campos de previsualización)
-      const cleanedImages = uploadedImages.map((img, index) => ({
-        id: img.id,
-        url: img.url,
-        fileType: img.fileType || 'IMAGE',
-        entityType: 'SPARE_PART',
-        displayOrder: index
-      }));
-      
-      console.log('Imágenes preparadas para guardar:', cleanedImages);
-      
-      let success = false;
-      let response;
-      
-      // Usar las nuevas funciones mejoradas según sea creación o actualización
-      if (sparePartId) {
-        console.log('Actualizando repuesto existente con ID:', sparePartId);
-        
-        // Asegurarnos de que el ID esté en el objeto saveData
-        saveData.id = sparePartId;
-        
-        // Preparar las imágenes en el formato esperado por el backend
-        saveData.media = cleanedImages.map((img, index) => ({
-          id: img.id ? parseInt(img.id, 10) : 0,  // Asegurar que el ID sea un número
-          url: img.url,
-          fileType: 'IMAGE',
-          entityId: parseInt(sparePartId, 10),  // Asegurar que sea un número
-          entityType: 'SPARE_PART',
-          displayOrder: index,
-          status: 'ACTIVE'  // Asegurar que el estado esté incluido
-        }));
-        
-        // Si hay asignación a producto, agregarla al payload
-        if (productAssignment) {
-          saveData.productSparePartDto = {
-            id: productAssignment.id ? parseInt(productAssignment.id, 10) : 0,
-            productId: parseInt(productAssignment.productId, 10),
-            compatibilityNotes: productAssignment.compatibilityNotes || ''
-          };
-        }
-        
-        console.log('Datos completos para actualizar:', JSON.stringify(saveData, null, 2));
-        
-        // Llamar directamente a updateSparePart en lugar de updateSparePartWithImages
-        // ya que ya hemos preparado los datos de las imágenes
-        response = await updateSparePart(saveData);
-        
-        console.log('Respuesta de actualización:', response);
-      } else {
-        console.log('Creando nuevo repuesto');
-        
-        // Crear nuevo repuesto con imágenes
-        if (cleanedImages.length > 0) {
-          saveData.media = cleanedImages;
-        }
-        
-        // Si hay asignación a producto, agregarla al payload
-        if (productAssignment) {
-          saveData.productSparePartDto = productAssignment;
-        }
-        
-        console.log('Datos completos para crear:', JSON.stringify(saveData, null, 2));
-        
-        // Usar la función createSparePartWithImages para manejar correctamente las imágenes
-        const onProgress = (index, progress, fileName) => {
-          console.log(`Subiendo imagen ${index + 1}: ${fileName} - ${progress}%`);
-        };
-        
-        // En este caso, todas las imágenes ya están subidas, así que no necesitamos pasar nuevos archivos
-        response = await createSparePartWithImages(
-          saveData,
-          [], // No hay nuevos archivos para subir
-          productAssignment,
-          onProgress
-        );
-        
-        console.log('Respuesta de creación:', response);
-      }
-      
-      // Verificar si la respuesta fue exitosa
-      success = response && (response.type === 'SUCCESS' || response.result);
-      console.log('Operación exitosa:', success);
-      
-      // Solo cerrar el diálogo si el guardado fue exitoso
-      if (success) {
-        toast.success(sparePartId ? "Repuesto actualizado correctamente" : "Repuesto creado correctamente");
-        
-        // Refrescar la lista de repuestos antes de cerrar el diálogo
-        if (typeof onSave === 'function') {
-          await onSave(saveData);
-        }
-        
-        onClose();
-        return true;
-      } else {
-        throw new Error("No se recibió una respuesta válida del servidor");
-      }
-    } catch (error) {
-      console.error('Error al guardar repuesto:', error);
-      toast.error(
-        "Error al " + 
-        (sparePartId ? "actualizar" : "crear") + 
-        " el repuesto: " + 
-        (error.message || "Error desconocido")
-      );
-      return false;
+    // 1. Construye un array “cleanedImages” a partir de tu estado uploadedImages.
+    //    Ese array contendrá solo las propiedades que tu API espera (id, url, fileType, entityId, entityType, displayOrder).
+    //    Si no tienes ninguna imagen subida, uploadedImages será [] y cleanedImages también quedará [].
+    const cleanedImages = uploadedImages.map((img, index) => ({
+      id:           img.id || 0,
+      url:          img.url,
+      fileType:     img.fileType || "IMAGE",
+      entityId:     sparePartId ? parseInt(sparePartId, 10) : 0,
+      entityType:   "SPARE_PART",      // o "PRODUCT" si tu backend solo acepta ese valor
+      displayOrder: index
+    }));
+
+    console.log("Imágenes preparadas para guardar (cleanedImages):", cleanedImages);
+
+    // 2. Ahora arma el objeto saveData con todos los campos que tu API PUT /l/spare-parts espera:
+    const saveData = {
+      id:         sparePartId,                // p. ej. “5”
+      updatedBy:  "1",                        // tu usuario autenticado o un valor fijo
+      updatedAt:  new Date().toISOString(),   // fecha ISO
+      externalId: formData.externalId,
+      code:       formData.code,
+      name:       formData.name,
+      description:formData.description,
+      material:   formData.material,
+      price:      formData.price,
+      stock:      formData.stock,
+      rentable:   false,                      // o true, según corresponda
+      status:     formData.status,            // “ACTIVE” o “INACTIVE”
+      media:      cleanedImages               // el array que acabamos de armar
+    };
+
+    console.log("Datos completos para actualizar (saveData):", saveData);
+
+    // 3. Llama a tu servicio de actualización:
+    const response = await updateSparePart(saveData);
+    console.log("Respuesta del servicio updateSparePart:", response);
+
+    if (typeof onSave === "function") {
+      await onSave(saveData);
     }
-  };
+    onClose();
+    return true;
+  }
+  catch (error) {
+    console.error("Error al guardar repuesto:", error);
+    toast.error("Error al actualizar el repuesto: " + (error.message || "Error desconocido"));
+    return false;
+  }
+};
+
+
 
   if (isLoading) {
     return (
@@ -1331,6 +1241,35 @@ export function SparePartsView() {
         sparePartId={selectedSparePartId}
         onSave={handleSaveSparePart}
       />
+
+      <Toaster
+              position="top-center"
+              reverseOrder={false}
+              toastOptions={{
+                // Estilos por defecto para todos los toasts
+                duration: 3000,
+                style: {
+                  background: '#363636',
+                  color: '#fff',
+                },
+                // Estilos específicos para toasts de éxito
+                success: {
+                  duration: 3000,
+                  iconTheme: {
+                    primary: '#10B981',
+                    secondary: '#fff',
+                  },
+                },
+                // Estilos específicos para toasts de error
+                error: {
+                  duration: 4000,
+                  iconTheme: {
+                    primary: '#EF4444',
+                    secondary: '#fff',
+                  },
+                },
+              }}
+            />
     </>
   );
 }

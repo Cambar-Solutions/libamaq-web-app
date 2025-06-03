@@ -123,67 +123,53 @@ export const createSparePart = async (sparePartData) => {
  */
 export const updateSparePart = async (sparePartData) => {
   try {
-    const { id, ...updateData } = sparePartData;
-    
-    // Crear el objeto de solicitud con los campos requeridos
+    // Desestructuro para obtener el id y el resto de campos
+    const { id, externalId, code, name, description, material, price, stock, rentable, status, media, updatedBy, updatedAt } = sparePartData;
+
+    // 1) Construyo el objeto EXACTO que el backend espera según tu Swagger:
     const requestData = {
-      id: parseInt(id, 10),
-      externalId: updateData.externalId || '',
-      code: updateData.code || '',
-      name: updateData.name || '',
-      description: updateData.description || '',
-      material: updateData.material || '',
-      price: parseFloat(updateData.price) || 0,
-      stock: parseInt(updateData.stock, 10) || 0,
-      variant: parseInt(updateData.variant, 10) || 1,
-      rentable: updateData.rentable || false,
-      status: updateData.status || 'ACTIVE',
-      media: []
+      id:         parseInt(id, 10),
+      updatedBy:  updatedBy  || "1",                       // Usuario que edita (o tu lógica de auth)
+      updatedAt:  updatedAt  || new Date().toISOString(), // Timestamp ISO
+      externalId: externalId || "",
+      code:       code       || "",
+      name:       name       || "",
+      description:description || "",
+      material:   material   || "",
+      price:      parseFloat(price) || 0,
+      stock:      parseInt(stock, 10)   || 0,
+      rentable:   (typeof rentable === "boolean") ? rentable : false,
+      status:     status     || "ACTIVE",
+      media:      []
     };
-    
-    // Asegurarse de que el campo media tenga la estructura correcta
-    if (updateData.media && Array.isArray(updateData.media)) {
-      requestData.media = updateData.media.map(media => ({
-        id: media.id || 0,
-        url: media.url,
-        fileType: 'IMAGE',
-        entityId: media.entityId || id,
-        entityType: 'SPARE_PART',
-        displayOrder: media.displayOrder || 0
+
+    // 2) Si tu sparePartData.media existe y es array, normalízalo:
+    if (Array.isArray(media)) {
+      requestData.media = media.map(m => ({
+        id:           m.id           || 0,
+        url:          m.url          || "",
+        fileType:     m.fileType     || "IMAGE",
+        entityId:     parseInt(id, 10),
+        entityType:   m.entityType   || "SPARE_PART", // O "PRODUCT" si el back explícitamente solo acepta eso
+        displayOrder: m.displayOrder || 0
       }));
     }
-    
-    // Agregar campos de auditoría si no están presentes
-    if (!updateData.updatedBy) {
-      requestData.updatedBy = '1'; // Deberías obtener esto del usuario autenticado
-    }
-    
-    if (!updateData.updatedAt) {
-      requestData.updatedAt = new Date().toISOString();
-    }
-    
-    console.log('Enviando datos al servidor para actualizar:', requestData);
-    
-    // Asegurarnos de que la URL sea correcta
-    const url = `${SPARE_PARTS_ENDPOINT}`;
-    console.log('URL de la solicitud:', url);
-    
-    const response = await apiClient.put(url, requestData);
-    console.log('Respuesta del servidor:', response);
-    
+
+    console.log("→ PUT a:", SPARE_PARTS_ENDPOINT, "\n   Payload:", requestData);
+
+    // 3) Llamo exactamente a /l/spare-parts (sin id en la ruta)
+    const response = await apiClient.put(SPARE_PARTS_ENDPOINT, requestData);
+    console.log("← Respuesta exitosa:", response.data);
+
     return { result: response.data };
-  } catch (error) {
+  }
+  catch (error) {
     console.error("Error al actualizar repuesto:", error);
     if (error.response) {
-      console.error('Datos de la respuesta de error:', error.response.data);
-      console.error('Estado de la respuesta:', error.response.status);
-      console.error('Cabeceras de la respuesta:', error.response.headers);
-    } else if (error.request) {
-      console.error('No se recibió respuesta del servidor:', error.request);
-    } else {
-      console.error('Error al configurar la solicitud:', error.message);
+      console.error("→ Respuesta del servidor (error):", error.response.data);
+      console.error("→ HTTP Status:", error.response.status);
     }
-    throw error.response?.data?.message || error.message || 'Error al actualizar el repuesto';
+    throw error.response?.data?.message || error.message;
   }
 };
 

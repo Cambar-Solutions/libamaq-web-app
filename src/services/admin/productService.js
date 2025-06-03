@@ -10,31 +10,49 @@ export const getAllProducts = async () => {
     return response.data;
   } catch (error) {
     console.error('Error fetching products:', error);
-    throw error.response?.data || error.message;
+
+    // Si viene de axios y trae response.data.message:
+    const serverMsg = error.response?.data?.message;
+    if (serverMsg) {
+      throw new Error(serverMsg);
+    }
+    // Si solo hay status o text:
+    throw new Error(error.message || `HTTP ${error.response?.status}`);
   }
 };
+
 
 // Obtener todos los productos activos
 export const getActiveProducts = async () => {
   try {
+    console.log("Llamando a GET /l/products/active …");
     const response = await apiClient.get("/l/products/active");
-    console.log('Respuesta completa de productos activos:', response.data);
+    console.log("→ Respuesta GET /l/products/active:", response.data);
     return response.data;
   } catch (error) {
-    console.error('Error fetching active products:', error);
-    throw error.response?.data || error.message;
+    console.error("Error fetching active products:", {
+      status: error.response?.status,
+      data:   error.response?.data
+    });
+    const msg = error.response?.data?.message || error.message || "Error desconocido";
+    throw new Error(msg);
   }
 };
 
 // Obtener vista previa de productos
 export const getProductPreviews = async () => {
   try {
+    console.log("Llamando a GET /l/products/preview …");
     const response = await apiClient.get("/l/products/preview");
-    console.log('Respuesta completa de productos:', response.data);
+    console.log("→ Respuesta GET /l/products/preview:", response.data);
     return response.data;
   } catch (error) {
-    console.error('Error fetching product previews:', error);
-    throw error.response?.data || error.message;
+    console.error("Error fetching product previews:", {
+      status: error.response?.status,
+      data:   error.response?.data
+    });
+    const msg = error.response?.data?.message || error.message || "Error desconocido";
+    throw new Error(msg);
   }
 };
 
