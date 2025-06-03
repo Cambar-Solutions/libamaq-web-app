@@ -24,6 +24,22 @@ export function ClientsView() {
     status: "ACTIVE",
     role: "CUSTOMER"
   });
+  const [newPassword, setNewPassword] = useState("");
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [phoneError, setPhoneError] = useState(false);
+  const [nombreError, setNombreError] = useState(false);
+  const [apellidoError, setApellidoError] = useState(false);
+
+  // Lista de códigos de país (ejemplo, se puede expandir)
+  const countryCodes = [
+    { label: 'México (+52)', value: '+52' },
+    { label: 'Estados Unidos (+1)', value: '+1' },
+    { label: 'Canadá (+1)', value: '+1' },
+    { label: 'España (+34)', value: '+34' },
+    // Añadir más países aquí si es necesario
+  ];
+
+  const [selectedCountryCode, setSelectedCountryCode] = useState(countryCodes[0].value); // Estado para el código de país seleccionado, inicia con +52
 
   // Consulta para obtener los clientes
   const { 
@@ -44,10 +60,60 @@ export function ClientsView() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewClient(prev => ({
-      ...prev,
-      [name]: value
-    }));
+
+    // Validaciones en tiempo real
+    let isValid = true;
+    if (name === 'nombre' || name === 'apellido') {
+      // Permitir solo letras y espacios
+      isValid = /^[a-zA-Z\s]*$/.test(value);
+      if (name === 'nombre') setNombreError(!isValid);
+      if (name === 'apellido') setApellidoError(!isValid);
+    } else if (name === 'telefono') {
+      // Permitir solo dígitos y + (la validación de lada se hace al guardar/cambiar lada)
+      isValid = /^[0-9+]*$/.test(value);
+      setPhoneError(!isValid);
+
+      // No actualizar el estado si la entrada no es válida para telefono (evitar caracteres inválidos)
+      if (!isValid) {
+        return; 
+      }
+
+      // Si la entrada es válida, actualizar el estado del teléfono
+      setNewClient(prev => ({
+        ...prev,
+        [name]: value
+      }));
+
+      // La validación de lada se hará al guardar
+      setPhoneError(false); // Limpiar error visual en tiempo real si la entrada es válida
+      return; // Salir para no duplicar la actualización del estado
+    }
+
+    // No actualizar el estado si la entrada no es válida para nombre o apellido
+    if (!isValid && (name === 'nombre' || name === 'apellido')) {
+      return; 
+    }
+
+    // Limpiar error específico si el campo es válido globalmente (para nombre y apellido)
+     if (name === 'nombre' && isValid) { setNombreError(false); }
+     if (name === 'apellido' && isValid) { setApellidoError(false); }
+
+    // No actualizar newClient.password si estamos editando y el nombre del campo es password
+    if (isEditing && name === 'password') {
+      setNewPassword(value);
+    } else {
+      setNewClient(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleCountryCodeChange = (value) => {
+    setSelectedCountryCode(value);
+    // Establecer el campo de teléfono a la nueva lada seleccionada
+    setNewClient(prev => ({ ...prev, telefono: value }));
+    setPhoneError(false); // Limpiar error de teléfono al cambiar la lada
   };
 
   const handleStatusChange = (value) => {
@@ -76,31 +142,50 @@ export function ClientsView() {
 
   const handleEdit = (client) => {
     setIsEditing(true);
+    // Intentar encontrar el código de país en el número de teléfono existente
+    let matchedCode = countryCodes.find(code => client.phoneNumber.startsWith(code.value));
+    
+    // Establecer el código de país seleccionado si se encontró una coincidencia, de lo contrario usar el por defecto
+    setSelectedCountryCode(matchedCode ? matchedCode.value : countryCodes.find(code => code.value === '+52')?.value || countryCodes[0].value);
+
     setNewClient({
       id: client.id,
       nombre: client.name,
       apellido: client.lastName,
       email: client.email,
-      telefono: client.phoneNumber,
-      password: "",
+      telefono: client.phoneNumber, // Cargar el número tal cual, sin añadir +52 automáticamente
+      password: "", // Limpiar la contraseña al abrir el modal de edición
       status: client.status,
       role: client.role
     });
+    setNewPassword(""); // Limpiar el estado de la nueva contraseña
     setIsModalOpen(true);
+    setPhoneError(false);
+    setNombreError(false);
+    setApellidoError(false);
   };
 
   const resetForm = () => {
+    // Encontrar el código de país por defecto (+52)
+    const defaultCountryCode = countryCodes.find(code => code.value === '+52')?.value || countryCodes[0].value;
+
     setNewClient({
       id: null,
       nombre: "",
       apellido: "",
       email: "",
-      telefono: "",
+      telefono: defaultCountryCode, // Resetear a la lada por defecto
       password: "",
       status: "ACTIVE",
       role: "CUSTOMER"
     });
     setIsEditing(false);
+    setNewPassword(""); // Limpiar el estado de la nueva contraseña
+    setIsPasswordModalOpen(false); // Cerrar modal de contraseña
+    setPhoneError(false); // Limpiar error de teléfono
+    setNombreError(false); // Limpiar error de nombre
+    setApellidoError(false); // Limpiar error de apellido
+    setSelectedCountryCode(defaultCountryCode); // Resetear el código de país seleccionado
   };
 
   const handleCloseModal = () => {
@@ -138,16 +223,57 @@ export function ClientsView() {
     }
   });
 
+  // Nueva mutación para restablecer contraseña
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ id, password }) => resetPassword(newClient.email, "", password),
+    onSuccess: () => {
+      toast.success("Contraseña actualizada exitosamente");
+      setIsPasswordModalOpen(false);
+      setNewPassword("");
+    },
+    onError: (error) => {
+      toast.error("Error al actualizar contraseña");
+      console.error(error);
+    }
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    // Validar campos antes de enviar
+    if (nombreError || apellidoError || phoneError) {
+       toast.error("Corrige los errores en el formulario antes de guardar.");
+       return;
+    }
+
+    // Validar que el teléfono comience con la lada seleccionada
+    if (!newClient.telefono.startsWith(selectedCountryCode)) {
+      toast.error(`El número de teléfono debe comenzar con ${selectedCountryCode}`);
+      setPhoneError(true); // Asegurarse de que el error visual esté activo
+      return; // Detener el envío del formulario
+    }
+
+    // Validar que el teléfono tenga algo más que solo la lada (si aplica)
+    if (newClient.telefono === selectedCountryCode) {
+        toast.error("Por favor, ingresa el resto del número de teléfono.");
+        setPhoneError(true);
+        return;
+    }
+
+    // Validar que los campos de nombre y apellido no estén vacíos (required ya debería manejar esto, pero doble check)
+    if (!newClient.nombre.trim() || !newClient.apellido.trim()) {
+       toast.error("Nombre y Apellido son campos obligatorios.");
+       // No establecemos errores visuales aquí, ya que el atributo 'required' lo manejará
+       return;
+    }
+
     // Datos base para crear o actualizar
     const userData = {
       email: newClient.email,
       name: newClient.nombre,
       lastName: newClient.apellido,
       phoneNumber: newClient.telefono,
-      role: 'CUSTOMER', // Forzar el rol CUSTOMER para clientes
+      role: newClient.role,
       status: newClient.status
     };
     
@@ -157,9 +283,7 @@ export function ClientsView() {
       // Para actualización, incluir el ID como número
       const updateData = {
         ...userData,
-        id: Number(newClient.id), // Convertir a número
-        // No incluir password si está vacío
-        ...(newClient.password ? { password: newClient.password } : {})
+        id: Number(newClient.id),
       };
       
       console.log('Datos del usuario a actualizar:', updateData);
@@ -168,13 +292,23 @@ export function ClientsView() {
       // Para creación, incluir campos adicionales
       const createData = {
         ...userData,
-        createdBy: "1", // ID del usuario administrador
+        createdBy: "1",
         createdAt: new Date().toISOString(),
-        password: newClient.password // Password es obligatorio para crear
+        password: newClient.password
       };
       
       console.log('Datos del usuario a crear:', createData);
       createClientMutation.mutate(createData);
+    }
+  };
+
+  // Función para manejar el envío del formulario de cambio de contraseña
+  const handlePasswordSubmit = (e) => {
+    e.preventDefault();
+    if (newClient.id && newPassword) {
+      resetPasswordMutation.mutate({ id: newClient.id, password: newPassword });
+    } else {
+      toast.error("Debes seleccionar un cliente y proporcionar una nueva contraseña.");
     }
   };
 
@@ -363,7 +497,7 @@ export function ClientsView() {
                   name="nombre"
                   value={newClient.nombre}
                   onChange={handleInputChange}
-                  className="col-span-3"
+                  className={`col-span-3 ${nombreError ? 'border-red-500' : ''}`}
                   required
                 />
               </div>
@@ -376,7 +510,7 @@ export function ClientsView() {
                   name="apellido"
                   value={newClient.apellido}
                   onChange={handleInputChange}
-                  className="col-span-3"
+                  className={`col-span-3 ${apellidoError ? 'border-red-500' : ''}`}
                   required
                 />
               </div>
@@ -392,20 +526,38 @@ export function ClientsView() {
                   onChange={handleInputChange}
                   className="col-span-3"
                   required
+                  disabled={isEditing}
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="telefono" className="text-right">
                   Teléfono
                 </Label>
+                {/* Selector de País/Lada */}
+                <Select
+                  value={selectedCountryCode}
+                  onValueChange={handleCountryCodeChange}
+                >
+                  <SelectTrigger className="col-span-1">
+                    <SelectValue placeholder="Lada" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countryCodes.map((country) => (
+                      <SelectItem key={country.value} value={country.value}>
+                        {country.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {/* Campo de Teléfono */}
                 <Input
                   id="telefono"
                   name="telefono"
                   value={newClient.telefono}
                   onChange={handleInputChange}
-                  className="col-span-3"
+                  className={`col-span-2 ${phoneError ? 'border-red-500' : ''}`}
                   required
-                  placeholder="+52..."
+                  placeholder="Número..."
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
@@ -415,6 +567,7 @@ export function ClientsView() {
                 <Select
                   value={newClient.role}
                   onValueChange={handleRoleChange}
+                  disabled={isEditing}
                 >
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Seleccionar rol" />
@@ -425,21 +578,22 @@ export function ClientsView() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="password" className="text-right">
-                  Contraseña
-                </Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={newClient.password}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required={!isEditing}
-                  placeholder={isEditing ? "Dejar vacío para mantener la actual" : ""}
-                />
-              </div>
+              {!isEditing && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="password" className="text-right">
+                    Contraseña
+                  </Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    value={newClient.password}
+                    onChange={handleInputChange}
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+              )}
               {isEditing && (
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="status" className="text-right">
@@ -472,6 +626,39 @@ export function ClientsView() {
               </Button>
             </DialogFooter>
           </form>
+          {isEditing && (
+            <div className="mt-4 pt-4 border-t">
+              <h4 className="text-lg font-semibold mb-2">Cambiar Contraseña</h4>
+              <form onSubmit={handlePasswordSubmit}>
+                <div className="grid gap-4">
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="new-password" className="text-right">
+                      Nueva Contraseña
+                    </Label>
+                    <Input
+                      id="new-password"
+                      name="new-password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="col-span-3"
+                      required
+                    />
+                  </div>
+                  <DialogFooter className="sm:justify-start">
+                    <Button 
+                      type="submit" 
+                      variant="destructive"
+                      disabled={resetPasswordMutation.isPending || !newPassword}
+                      className="hover:bg-red-700"
+                    >
+                      {resetPasswordMutation.isPending ? "Actualizando..." : "Actualizar Contraseña"}
+                    </Button>
+                  </DialogFooter>
+                </div>
+              </form>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>

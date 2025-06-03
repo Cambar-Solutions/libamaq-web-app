@@ -27,9 +27,9 @@ export const getCustomerUsers = async () => {
   try {
     const response = await apiClient.get("/l/users");
     console.log('Respuesta completa getCustomerUsers:', response);
-    // Filtrar solo los usuarios con rol CUSTOMER
+    // Filtrar solo los usuarios con rol CUSTOMER o FREQUENT_CUSTOMER
     const customers = Array.isArray(response.data?.data) 
-      ? response.data.data.filter(user => user.role === 'CUSTOMER') 
+      ? response.data.data.filter(user => user.role === 'CUSTOMER' || user.role === 'FREQUENT_CUSTOMER') 
       : [];
     console.log('Clientes filtrados:', customers);
     return customers;

@@ -51,6 +51,18 @@ const data = {
       icon: ShoppingCart,
     },
     {
+      name: "Clientes",
+      id: "clientes",
+      icon: Users,
+      roles: ["ADMIN", "DIRECTOR", "GERENTE"] // Actualizado para incluir GERENTE
+    },
+    {
+      name: "Empleados",
+      id: "empleados",
+      icon: Briefcase,
+      roles: ["ADMIN", "DIRECTOR"] // Solo visible para estos roles
+    },
+    {
       name: "Estadísticas",
       id: "estadisticas",
       icon: BarChart3,
@@ -64,6 +76,18 @@ const data = {
 }
 
 export function AppSidebarGerente({ onViewChange, currentView, ...props }) {
+  // Obtener el rol del usuario actual
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const userRole = user?.role;
+
+  // Filtrar las opciones del menú según el rol del usuario
+  const filteredMenuOptions = data.optionsMenu.filter(option => {
+    // Si la opción no tiene roles definidos, es visible para todos
+    if (!option.roles) return true;
+    // Si tiene roles definidos, verificar si el usuario tiene uno de esos roles
+    return option.roles.includes(userRole);
+  });
+
   return (
     <Sidebar
       className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
@@ -86,7 +110,7 @@ export function AppSidebarGerente({ onViewChange, currentView, ...props }) {
       </SidebarHeader>
       <SidebarContent className="bg-slate-100">
         <SidebarMenu>
-          {data.optionsMenu.map((item) => (
+          {filteredMenuOptions.map((item) => (
             <SidebarMenuItem key={item.id}>
               <SidebarMenuButton className="data-[active=true]:bg-blue-100 data-[active=true]:text-sky-600 hover:bg-stone-200"
                 onClick={() => onViewChange(item.id)}

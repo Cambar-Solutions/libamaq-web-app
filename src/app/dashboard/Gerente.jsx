@@ -46,6 +46,10 @@ export default function Gerente() {
           return <BrandsView />;
         case "categorias":
           return <CategoriesView />;
+        case "clientes":
+          return <ClientsView />;
+        case "empleados":
+          return <EmployeesView />;
         default:
           return <ProductsView />;
       }
