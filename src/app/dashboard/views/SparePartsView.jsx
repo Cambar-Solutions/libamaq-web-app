@@ -13,7 +13,7 @@ import {
   updateSparePartWithImages,
   deleteSparePart,
   getSparePartImages,
-  uploadMediaFile,
+  uploadMediaFiles,
   deleteSparePartMedia,
 } from "@/services/admin/sparePartService";
 import { getActiveProducts, getProductPreviews } from "@/services/admin/productService";
@@ -50,6 +50,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+
+const FILE_TYPE_IMAGE = "IMAGE";
+const ENTITY_TYPE_SPARE_PART = "SPARE_PART";
 
 const SparePartCard = ({ sparePart, onClick, onDelete }) => {
   // Estado local para almacenar los detalles completos del repuesto
@@ -266,6 +269,14 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImages, setUploadedImages] = useState([]);
 
+  // 1) Estado para la imagen actual (objeto con { id, url, previewUrl, fileType, entityType, displayOrder })
+  const [currentImage, setCurrentImage] = useState(null);
+
+  // 2) Estado para el archivo nuevo que el usuario seleccione
+  const [selectedFile, setSelectedFile] = useState(null);
+
+
+
   // 1) Definimos aquí la función confirmDelete:
   const confirmDelete = async () => {
     if (!sparePartToDelete) {
@@ -323,53 +334,41 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
     }
   }, [isOpen, sparePartId]);
 
+  // 3) Al cargar detalles del repuesto, si viene con imagen, guardarla
   const fetchSparePartDetails = async () => {
     try {
       setIsLoading(true);
-      console.log('Obteniendo detalles del repuesto con ID:', sparePartId);
-
-      // Verificar que sparePartId tenga un valor válido
       if (!sparePartId) {
-        console.error('ID de repuesto no válido:', sparePartId);
-        toast.error('ID de repuesto no válido');
+        toast.error("ID de repuesto no válido");
         return;
       }
 
       const response = await getSparePartById(sparePartId);
-      console.log('Respuesta completa del servidor:', response);
+      console.log("Respuesta completa del servidor:", response);
 
-      // Extraer los datos del repuesto de la respuesta
-      // La respuesta puede estar en response.data, response.result o response.result.data
+      // ─────────── Aquí definimos sparePartData ───────────
       let sparePartData = null;
-
-      // Primero intentamos obtener los datos de response.result.data
       if (response?.result?.data) {
         sparePartData = response.result.data;
-      }
-      // Luego de response.data.data
-      else if (response?.data?.data) {
+      } else if (response?.data?.data) {
         sparePartData = response.data.data;
-      }
-      // Luego de response.result
-      else if (response?.result) {
+      } else if (response?.result) {
         sparePartData = response.result;
-      }
-      // Finalmente de response.data
-      else if (response?.data) {
+      } else if (response?.data) {
         sparePartData = response.data;
       }
 
       if (!sparePartData || Object.keys(sparePartData).length === 0) {
-        console.error('No se encontraron datos del repuesto en la respuesta:', response);
-        toast.error('No se pudieron cargar los datos del repuesto');
+        console.error("No se encontraron datos del repuesto en la respuesta:", response);
+        toast.error("No se pudieron cargar los datos del repuesto");
         return;
       }
+      console.log("Detalles del repuesto obtenidos:", sparePartData);
 
-      console.log('Detalles del repuesto obtenidos:', sparePartData);
-
-      // Crear un objeto con los datos actualizados del formulario
-      const updatedFormData = {
-        id: sparePartData.id || sparePartData.id === 0 ? sparePartData.id : 0,
+      // Ahora ya puedes usar sparePartData sin error:
+      // — Ejemplo: llenar el formData con sus campos
+      setFormData({
+        id: sparePartData.id || 0,
         externalId: sparePartData.externalId || "",
         name: sparePartData.name || "",
         code: sparePartData.code || "",
@@ -378,87 +377,73 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
         stock: sparePartData.stock || 0,
         material: sparePartData.material || "",
         variant: sparePartData.variant || 0,
-        status: sparePartData.status || "ACTIVE"
-      };
+        status: sparePartData.status || "ACTIVE",
+        sparePartMultimediaDto: [] // (si tienes ese campo)
+      });
 
-      console.log('Datos del formulario actualizados:', updatedFormData);
-
-      // Actualizar el estado
-      setSparePart(sparePartData);
-      setFormData(prevState => ({
-        ...prevState,  // Mantener el estado anterior
-        ...updatedFormData  // Sobrescribir con los nuevos valores
-      }));
-
-      // Intentar cargar imágenes solo si hay un ID válido
-      if (sparePartData.id) {
-        try {
-          const imagesResponse = await getSparePartImages(sparePartData.id);
-          console.log('Imágenes del repuesto:', imagesResponse);
-          if (imagesResponse && Array.isArray(imagesResponse)) {
-            setUploadedImages(imagesResponse);
-          }
-        } catch (imageError) {
-          console.error('Error al cargar las imágenes del repuesto:', imageError);
-          // No mostramos error al usuario si falla la carga de imágenes
-          setUploadedImages([]);
-        }
-      }
-
-      // Verificar si hay productos asociados
-      if (sparePartData.productSparePartDto) {
-        const productId = sparePartData.productSparePartDto.productId?.toString() || "";
-        const notes = sparePartData.productSparePartDto.compatibilityNotes || "";
-
-        console.log('Producto asociado encontrado:', { productId, notes });
-        setSelectedProductId(productId);
-        setCompatibilityNotes(notes);
+      // Si quieres precargar la única imagen:
+      if (Array.isArray(sparePartData.media) && sparePartData.media.length > 0) {
+        const first = sparePartData.media[0];
+        setUploadedImages([{
+          id: first.id,
+          url: first.url,
+          fileType: first.fileType,
+          entityType: first.entityType,
+          displayOrder: first.displayOrder,
+          previewUrl: null
+        }]);
       } else {
-        console.log('No se encontró ningún producto asociado');
-        setSelectedProductId("");
-        setCompatibilityNotes("");
+        setUploadedImages([]);
       }
 
-      // Verificar si hay imágenes en la respuesta principal
-      if (sparePartData.sparePartMultimediaDto && Array.isArray(sparePartData.sparePartMultimediaDto) && sparePartData.sparePartMultimediaDto.length > 0) {
-        // Si hay imágenes en la respuesta principal, usarlas
-        const imageUrls = sparePartData.sparePartMultimediaDto.map(item => ({
-          url: item.multimedia?.url || '',
-          id: item.multimedia?.id || 0,
-          name: item.multimedia?.name || 'Imagen',
-          displayOrder: item.displayOrder || 0
-        }));
-        setUploadedImages(imageUrls);
-        console.log('Imágenes encontradas en la respuesta principal:', imageUrls);
-      } else {
-        // Si no hay imágenes en la respuesta principal, intentar obtenerlas por separado
-        console.log('No se encontraron imágenes en la respuesta principal, intentando obtenerlas por separado...');
-        try {
-          const imagesData = await getSparePartImages(sparePartId);
-          if (imagesData && imagesData.length > 0) {
-            const imageUrls = imagesData.map(item => ({
-              url: item.url || item.multimedia?.url || '',
-              id: item.id || item.multimediaId || item.multimedia?.id || null,
-              displayOrder: item.displayOrder || 0
-            }));
-            setUploadedImages(imageUrls);
-            console.log('Imágenes obtenidas por separado:', imageUrls);
-          } else {
-            console.log('No se encontraron imágenes asociadas al repuesto');
-            setUploadedImages([]);
-          }
-        } catch (imageError) {
-          console.error('Error al obtener imágenes del repuesto:', imageError);
-          setUploadedImages([]);
-        }
-      }
+      // …el resto de tu lógica (productos, notas, etc.)…
     } catch (error) {
-      console.error('Error al cargar detalles del repuesto:', error);
-      toast.error("Error al cargar los detalles del repuesto: " + (error.message || "Error desconocido"));
+      console.error("Error al cargar detalles del repuesto:", error);
+      toast.error(
+        "Error al cargar los detalles del repuesto: " +
+        (error.message || "Error desconocido")
+      );
     } finally {
       setIsLoading(false);
     }
   };
+
+
+  // 4) Al cambiar el input file, guardamos el File en selectedFile
+  const onFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  // 5) Función que sube el único archivo seleccionado y actualiza currentImage
+  const handleUploadImage = async () => {
+    if (!selectedFile) return;
+    try {
+      setIsUploading(true);
+      // Reutilizamos tu servicio uploadMediaFiles, pero pasándole un array de un solo File
+      const [result] = await uploadMediaFiles([selectedFile], (progressEvent) => {
+        // Si quieres, muestras porcentaje de subida aquí…
+      });
+      // result = { id: number, url: string }
+      setCurrentImage({
+        id: result.id,
+        url: result.url,
+        fileType: FILE_TYPE_IMAGE,
+        entityType: ENTITY_TYPE_SPARE_PART,
+        displayOrder: 0,
+        previewUrl: URL.createObjectURL(selectedFile)
+      });
+      setSelectedFile(null);
+      toast.success("Imagen subida correctamente");
+    } catch (err) {
+      console.error("Error al subir imagen:", err);
+      toast.error("Error al subir la imagen: " + err.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
 
   const fetchProducts = async () => {
     try {
@@ -518,70 +503,55 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
       setIsUploading(true);
       console.log('Subiendo imagen:', selectedImage.name);
 
-      // Crear un FormData
       const formData = new FormData();
-      formData.append('files', selectedImage); // Usar 'files' como nombre del campo
+      formData.append('files', selectedImage);
 
-      // Hacer la petición al endpoint correcto
       const response = await apiClient.post(
-        "/l/media/upload",  // Endpoint corregido
+        "/l/media/upload",
         formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        }
+        { headers: { 'Content-Type': 'multipart/form-data' } }
       );
-
       console.log('Respuesta de subida de imagen:', response.data);
 
-      // Extraer la URL de la respuesta
-      let imageUrl = '';
+      // Extraer URL e ID de la respuesta (según tu API)
+      let imageUrl = "";
       let imageId = 0;
-
-      // Manejar la respuesta según la estructura esperada
       if (Array.isArray(response.data) && response.data.length > 0) {
-        // Estructura: { data: [{ url: '...', id: 1, ... }] }
         imageUrl = response.data[0].url;
         imageId = response.data[0].id || 0;
       } else if (response.data?.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
-        // Estructura: { data: { data: [{ url: '...', id: 1, ... }] } }
         imageUrl = response.data.data[0].url;
         imageId = response.data.data[0].id || 0;
       } else if (response.data?.url) {
-        // Estructura: { url: '...', id: 1, ... }
         imageUrl = response.data.url;
         imageId = response.data.id || 0;
       }
 
       if (!imageUrl) {
-        console.error('No se pudo extraer la URL de la imagen de la respuesta:', response.data);
-        throw new Error('No se pudo obtener la URL de la imagen subida');
+        console.error('No se pudo extraer la URL de la imagen:', response.data);
+        throw new Error('No se obtuvo URL de la imagen');
       }
 
-      // Crear objeto de imagen con la estructura esperada
       const newImage = {
         id: imageId,
         url: imageUrl,
         previewUrl: URL.createObjectURL(selectedImage),
-        fileType: 'IMAGE',
-        entityType: 'SPARE_PART',
+        fileType: FILE_TYPE_IMAGE,         // ya está definido arriba
+        entityType: ENTITY_TYPE_SPARE_PART,  // ya está definido arriba
         displayOrder: uploadedImages.length
       };
 
-      // Actualizar estado
       setUploadedImages(prev => [...prev, newImage]);
       setSelectedImage(null);
 
-      // Limpiar input de archivo
+      // Limpiar el input file
       const fileInput = document.getElementById('image-upload');
-      if (fileInput) fileInput.value = '';
+      if (fileInput) fileInput.value = "";
 
       toast.success("Imagen subida correctamente");
-
     } catch (error) {
       console.error('Error al subir imagen:', error);
-      toast.error("Error al subir la imagen: " + (error.response?.data?.message || error.message || "Error desconocido"));
+      toast.error("Error al subir la imagen: " + (error.response?.data?.message || error.message || "Desconocido"));
     } finally {
       setIsUploading(false);
     }
@@ -622,69 +592,64 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
 
 
 
+  // 6) Al enviar el formulario, incluimos SOLO esta imagen (si existe) en media
   const handleSubmit = async () => {
-    try {
-      if (sparePartId) {
-        // Modo edición
-        const updateData = {
-          id: sparePartId,               // string o number
-          externalId: formData.externalId,
-          code: formData.code,
-          name: formData.name,
-          description: formData.description,
-          material: formData.material,
-          price: parseFloat(formData.price),
-          stock: parseInt(formData.stock, 10),
-          status: formData.status,
-          media: uploadedImages.map((img, idx) => ({
-            id: img.id,
-            url: img.url,
-            fileType: img.fileType || "IMAGE",
-            entityType: img.entityType || "SPARE_PART",
-            displayOrder: img.displayOrder ?? idx
-          }))
-          // ¡OJO! No pongas aquí ni variant ni otros campos extra
-        };
-
-        await updateSparePart(updateData);
-        toast.success("Repuesto actualizado correctamente");
-        // refresca lista, cierra el diálogo, etc…
-      } else {
-        const creationData = {
-          externalId: formData.externalId,
-          code: formData.code,
-          name: formData.name,
-          description: formData.description,
-          material: formData.material,
-          price: parseFloat(formData.price) || 0,
-          stock: parseInt(formData.stock, 10) || 0,
-          rentable: false,
-          status: formData.status,
-          // si quieres subir imágenes en la creación, pásalas aquí:
-          media: uploadedImages.map((img, idx) => ({
-            id: img.id || 0,
-            url: img.url,
-            fileType: img.fileType || "IMAGE",
-            entityType: img.entityType || "SPARE_PART",
-            displayOrder: img.displayOrder ?? idx
-          }))
-        };
-
-        await createSparePart(creationData);
-        toast.success("Repuesto creado correctamente");
-        // Si el padre (SparePartsView) espera un retorno booleano para cerrar el diálogo
-        // y recargar la lista, devolvemos true:
-        if (typeof onSave === "function") {
-          onSave(); // el padre volverá a llamar a fetchSpareParts()
-        }
-      }
-      return true;
-    } catch (err) {
-      console.error("Error al guardar repuesto:", err);
-      toast.error("Error al guardar el repuesto: " + (err.message || "Error desconocido"));
-      return false;
+  try {
+    if (sparePartId) {
+      // Definir updateData localmente
+      const updateData = {
+        id: sparePartId,
+        externalId: formData.externalId,
+        code: formData.code,
+        name: formData.name,
+        description: formData.description,
+        material: formData.material,
+        price: parseFloat(formData.price)  || 0,
+        stock: parseInt(formData.stock, 10) || 0,
+        status: formData.status,
+        media: uploadedImages.map((img, idx) => ({
+          id: img.id,
+          url: img.url,
+          fileType: img.fileType || "IMAGE",
+          entityType: img.entityType || "SPARE_PART",
+          displayOrder: img.displayOrder ?? idx
+        }))
+      };
+      await updateSparePart(updateData);
+      toast.success("Repuesto actualizado correctamente");
+      if (typeof onSave === "function") onSave();
+    } else {
+      // Definir creationData localmente
+      const creationData = {
+        externalId: formData.externalId,
+        code: formData.code,
+        name: formData.name,
+        description: formData.description,
+        material: formData.material,
+        price: parseFloat(formData.price)  || 0,
+        stock: parseInt(formData.stock, 10) || 0,
+        rentable: false,
+        status: formData.status,
+        media: uploadedImages.map((img, idx) => ({
+          id: img.id || 0,
+          url: img.url,
+          fileType: img.fileType || "IMAGE",
+          entityType: img.entityType || "SPARE_PART",
+          displayOrder: img.displayOrder ?? idx
+        }))
+      };
+      await createSparePart(creationData);
+      toast.success("Repuesto creado correctamente");
+      if (typeof onSave === "function") onSave();
     }
-  };
+    return true;
+  } catch (err) {
+    console.error("Error al guardar repuesto:", err);
+    toast.error("Error al guardar el repuesto: " + (err.message || "desconocido"));
+    return false;
+  }
+};
+
 
 
 
@@ -832,78 +797,58 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
 
             <div className="flex flex-col space-y-4 mt-4 pt-4 border-t">
               <h3 className="text-lg font-medium">Imágenes</h3>
-              <div className="grid grid-cols-1 gap-4">
-                {/* Previsualización de imágenes subidas */}
-                {uploadedImages.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {uploadedImages.map((image) => (
-                      <div key={image.id} className="relative group">
-                        <div className="relative w-20 h-20 bg-gray-100 rounded border overflow-hidden flex items-center justify-center">
-                          <img
-                            src={image.previewUrl || `https://libamaq.com/api/multimedia/${image.id}`}
-                            alt="Vista previa"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              // Evitar bucle infinito estableciendo una bandera
-                              if (!e.target.hasAttribute('data-error')) {
-                                e.target.setAttribute('data-error', 'true');
-                                e.target.style.display = 'none';
-                                e.target.parentNode.innerHTML = `
-                                <div class="flex flex-col items-center justify-center w-full h-full">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="text-gray-400">
-                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                    <polyline points="21 15 16 10 5 21"></polyline>
-                                  </svg>
-                                </div>
-                              `;
-                              }
-                            }}
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveImage(image.id)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
+              <div className="flex flex-col items-start gap-4">
+                {/* Si ya hay una imagen actual, la mostramos */}
+                {currentImage && (
+                  <div className="relative w-32 h-32 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                    <img
+                      src={
+                        currentImage.previewUrl
+                          ? currentImage.previewUrl
+                          : currentImage.url
+                      }
+                      alt="Imagen actual"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Si la url falla, ocultamos y dejamos un placeholder
+                        if (!e.target.hasAttribute("data-error")) {
+                          e.target.setAttribute("data-error", "true");
+                          e.target.style.display = "none";
+                        }
+                      }}
+                    />
                   </div>
                 )}
 
-                {/* Selector de archivo */}
+                {/* Input para elegir el nuevo archivo (si el usuario quiere reemplazar) */}
                 <div className="flex items-center gap-2">
                   <input
                     type="file"
                     id="image-upload"
                     accept="image/*"
-                    onChange={handleImageChange}
+                    onChange={onFileChange}
                     className="hidden"
                   />
                   <label
                     htmlFor="image-upload"
                     className="cursor-pointer px-3 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 text-sm"
                   >
-                    Seleccionar imagen
+                    {currentImage ? "Reemplazar imagen" : "Seleccionar imagen"}
                   </label>
-                  {selectedImage && (
-                    <div className="flex-1 truncate text-sm text-gray-500">
-                      {selectedImage.name}
-                    </div>
+                  {selectedFile && (
+                    <span className="text-sm truncate">
+                      {selectedFile.name}
+                    </span>
                   )}
                   <Button
-                    onClick={handleImageUpload}
-                    disabled={!selectedImage || isUploading}
+                    onClick={handleUploadImage}
+                    disabled={!selectedFile || isUploading}
                     size="sm"
-                    variant={selectedImage ? "default" : "outline"}
+                    variant={selectedFile ? "default" : "outline"}
                   >
                     {isUploading ? (
                       <span className="flex items-center gap-1">
-                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
                         Subiendo...
                       </span>
                     ) : (
@@ -1102,52 +1047,15 @@ export function SparePartsView() {
     setIsDetailDialogOpen(true);
   };
 
-  const handleSaveSparePart = async (sparePartData) => {
-    try {
-      console.log('Datos del repuesto a guardar:', JSON.stringify(sparePartData, null, 2));
-
-      // Verificar que los datos de multimedia estén correctamente formateados
-      if (sparePartData.sparePartMultimediaDto && sparePartData.sparePartMultimediaDto.length > 0) {
-        console.log('Imágenes a guardar:', sparePartData.sparePartMultimediaDto);
-      }
-
-      let response;
-      if (sparePartData.id) {
-        // Actualizar repuesto existente
-        response = await updateSparePart(sparePartData);
-        console.log('Respuesta de actualización:', response);
-      } else {
-        // Crear nuevo repuesto
-        response = await createSparePart(sparePartData);
-        console.log('Respuesta de creación:', response);
-      }
-
-      // Verificar si la respuesta fue exitosa
-      if (response && (response.type === 'SUCCESS' || response.result)) {
-        // Refrescar la lista después de guardar
-        await fetchSpareParts();
-
-        toast.success(
-          sparePartData.id
-            ? "Repuesto actualizado correctamente"
-            : "Repuesto creado correctamente"
-        );
-
-        return true; // Indicar éxito para que el diálogo pueda cerrarse
-      } else {
-        throw new Error(response?.text || 'No se recibió una respuesta válida del servidor');
-      }
-    } catch (error) {
-      console.error('Error al guardar repuesto:', error);
-      toast.error(
-        "Error al " +
-        (sparePartData.id ? "actualizar" : "crear") +
-        " el repuesto: " +
-        (error.message || "Error desconocido")
-      );
-      return false; // Indicar fallo
-    }
-  };
+  const handleSaveSparePart = async () => {
+   try {
+     await fetchSpareParts();       // recarga todos los repuestos
+     setIsDetailDialogOpen(false);  // cierra el modal
+   } catch (err) {
+     console.error("Error al refrescar lista tras guardar:", err);
+     toast.error("Error al actualizar la lista de repuestos");
+   }
+ };
 
   if (isLoading && spareParts.length === 0) {
     return (

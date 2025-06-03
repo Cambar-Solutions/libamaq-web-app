@@ -38,23 +38,23 @@ export const getAllSpareParts = async (page = 1, size = 10, filters = {}) => {
   try {
     // Usar el endpoint de repuestos activos por defecto, a menos que se especifique lo contrario
     const endpoint = filters.status === 'ALL' ? SPARE_PARTS_ENDPOINT : `${SPARE_PARTS_ENDPOINT}/active`;
-    
+
     // Eliminar el filtro de estado para el endpoint de activos
     const { status, ...otherFilters } = filters;
-    
+
     const response = await apiClient.get(endpoint, {
-      params: { 
+      params: {
         page: page - 1, // Ajuste para la paginación basada en 0
         size,
         ...(status === 'ALL' ? filters : otherFilters)
       }
     });
-    
+
     console.log('Respuesta original de la API:', response.data);
-    
+
     // Extraer los datos según el formato de respuesta que estamos recibiendo
     const responseData = response.data;
-    
+
     // Adaptar la respuesta al formato esperado por el frontend
     return {
       ...responseData,
@@ -159,23 +159,23 @@ export const updateSparePart = async (sparePartData) => {
     } = sparePartData;
 
     const requestData = {
-      id:         parseInt(id, 10),                   // obligatorio, número
-      updatedBy:  "1",                                // string, quién actualiza
-      updatedAt:  new Date().toISOString(),           // ISO timestamp
-      externalId: externalId  || "",
-      code:       code        || "",
-      name:       name        || "",
-      description:description || "",
-      material:   material    || "",
-      price:      parseFloat(price)  || 0,
-      stock:      parseInt(stock, 10) || 0,
-      rentable:   false,                              // sí lo admite el DTO, mantenerlo siempre
-      status:     status      || "ACTIVE",
-      media:      media.map((img, idx) => ({
-        id:           img.id    || 0,
-        url:          img.url   || "",
-        fileType:     img.fileType   || "IMAGE",
-        entityType:   img.entityType || "SPARE_PART",
+      id: parseInt(id, 10),                   // obligatorio, número
+      updatedBy: "1",                                // string, quién actualiza
+      updatedAt: new Date().toISOString(),           // ISO timestamp
+      externalId: externalId || "",
+      code: code || "",
+      name: name || "",
+      description: description || "",
+      material: material || "",
+      price: parseFloat(price) || 0,
+      stock: parseInt(stock, 10) || 0,
+      rentable: false,                              // sí lo admite el DTO, mantenerlo siempre
+      status: status || "ACTIVE",
+      media: media.map((img, idx) => ({
+        id: img.id || 0,
+        url: img.url || "",
+        fileType: img.fileType || "IMAGE",
+        entityType: img.entityType || "SPARE_PART",
         displayOrder: img.displayOrder ?? idx
       }))
     };
@@ -187,7 +187,7 @@ export const updateSparePart = async (sparePartData) => {
   } catch (error) {
     console.error("Error al actualizar repuesto:", {
       status: error.response?.status,
-      data:   error.response?.data
+      data: error.response?.data
     });
     const msg = error.response?.data?.message || error.message;
     throw new Error(msg);
@@ -222,10 +222,10 @@ export const softDeleteSparePart = async (id) => {
     // Primero obtener el repuesto para tener todos sus datos
     const response = await getSparePartById(id);
     const sparePart = response.result || response;
-    
+
     // Cambiar el estado a INACTIVE para realizar el soft delete
     sparePart.status = "INACTIVE";
-    
+
     // Actualizar el repuesto con el nuevo estado
     const result = await updateSparePart(sparePart);
     return result;
@@ -236,48 +236,47 @@ export const softDeleteSparePart = async (id) => {
 };
 
 /**
- * Sube un archivo multimedia al servidor
- * @param {File} file - Archivo a subir
- * @param {Function} onUploadProgress - Función para reportar el progreso de la carga
- * @returns {Promise<Object>} - Datos del archivo subido
+ * Sube uno o más archivos multimedia al servidor (Swagger: POST /l/media/upload).
+ * @param {File[]} files        – Array de objetos File (del <input type="file" multiple />).
+ * @param {Function} onUploadProgress – (Opcional) callback para progreso de carga.
+ * @returns {Promise<Array<{ id: number, url: string }>>}  – Retorna un array con los objetos subidos.
  */
-export const uploadMediaFile = async (file, onUploadProgress = null) => {
+export const uploadMediaFiles = async (files, onUploadProgress = null) => {
   try {
+    if (!files || files.length === 0) {
+      return [];
+    }
+
+    // Prepara un FormData con el campo “files”
     const formData = new FormData();
-    formData.append('file', file);
+    for (const file of files) {
+      formData.append("files", file);
+    }
 
     const config = {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      onUploadProgress
+      headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress: onUploadProgress    // si quieres mostrar barra de progreso
     };
 
-    // Subir el archivo
-    const response = await apiClient.post(
-      `${MEDIA_ENDPOINT}/upload`,
-      formData,
-      config
-    );
+    // Llamar al endpoint de Swagger: POST /l/media/upload
+    const response = await apiClient.post(`${MEDIA_ENDPOINT}/upload`, formData, config);
 
-    console.log('Respuesta completa de subida de archivo:', response);
-
-    // Verificar que la respuesta tenga la estructura esperada
-    if (!response.data || !response.data.data || !Array.isArray(response.data.data) || response.data.data.length === 0) {
-      console.error('Estructura de respuesta inesperada:', response.data);
-      throw new Error('La respuesta del servidor no tiene el formato esperado');
+    // Según tu Swagger, la respuesta viene en response.data.data (array de objetos)
+    // Asegúrate de que coincida con la estructura real: { data: [ { id, url, … }, … ] }
+    if (!response.data || !Array.isArray(response.data.data)) {
+      console.error("Respuesta inesperada al subir multimedia:", response.data);
+      throw new Error("No se recibió un array de archivos subidos desde el servidor");
     }
 
-    const uploadedFile = response.data.data[0];
-    
-    if (!uploadedFile.url) {
-      console.error('URL no encontrada en la respuesta:', uploadedFile);
-      throw new Error('No se recibió una URL válida en la respuesta');
-    }
-
-    console.log('Archivo subido exitosamente. URL:', uploadedFile.url);
-    return { url: uploadedFile.url };
+    // Devuelve un array de { id, url } para cada archivo subido
+    return response.data.data.map(item => ({
+      id: item.id,
+      url: item.url
+    }));
   } catch (error) {
-    console.error('Error al subir archivo multimedia:', error);
-    throw error.response?.data?.message || error.message || 'Error al subir el archivo';
+    console.error("Error al subir archivos multimedia:", error.response || error.message);
+    const msg = error.response?.data?.message || error.message || "Error desconocido en la subida";
+    throw new Error(msg);
   }
 };
 
@@ -293,7 +292,7 @@ export const createSparePartWithImages = async (sparePartData, imageFiles = [], 
   try {
     // 1. Preparar el objeto de datos del repuesto
     const sparePartPayload = { ...sparePartData };
-    
+
     // 2. Si hay asignación a producto, agregarla al payload
     if (productAssignment && productAssignment.productId) {
       sparePartPayload.productSparePartDto = {
@@ -301,14 +300,14 @@ export const createSparePartWithImages = async (sparePartData, imageFiles = [], 
         compatibilityNotes: productAssignment.compatibilityNotes || ""
       };
     }
-    
+
     // 3. Subir las imágenes
     const uploadedMedia = [];
-    
+
     if (imageFiles && imageFiles.length > 0) {
       for (let i = 0; i < imageFiles.length; i++) {
         const file = imageFiles[i];
-        
+
         // Función para reportar el progreso de la carga
         const progressCallback = onProgress ? (progressEvent) => {
           const percentCompleted = Math.round(
@@ -319,7 +318,7 @@ export const createSparePartWithImages = async (sparePartData, imageFiles = [], 
 
         // Subir el archivo
         const uploadResult = await uploadMediaFile(file, progressCallback);
-        
+
         // Preparar el objeto de media para el repuesto
         // Usar el formato UpdateMediaDTO esperado por el backend
         uploadedMedia.push({
@@ -332,7 +331,7 @@ export const createSparePartWithImages = async (sparePartData, imageFiles = [], 
         });
       }
     }
-    
+
     // 4. Agregar los medios al payload según el formato esperado
     if (uploadedMedia.length > 0) {
       sparePartPayload.media = uploadedMedia;
@@ -340,7 +339,7 @@ export const createSparePartWithImages = async (sparePartData, imageFiles = [], 
       // Si no hay imágenes, asegurarse de que el campo media sea un array vacío
       sparePartPayload.media = [];
     }
-    
+
     // 5. Crear el repuesto con todas sus relaciones
     const result = await createSparePart(sparePartPayload);
     return result;
@@ -362,7 +361,7 @@ export const updateSparePartWithImages = async (sparePartData, newImageFiles = [
   try {
     // 1. Preparar el objeto de datos del repuesto
     const sparePartPayload = { ...sparePartData };
-    
+
     // 2. Si hay asignación a producto, agregarla al payload
     if (productAssignment && productAssignment.productId) {
       sparePartPayload.productSparePartDto = {
@@ -371,10 +370,10 @@ export const updateSparePartWithImages = async (sparePartData, newImageFiles = [
         compatibilityNotes: productAssignment.compatibilityNotes || ""
       };
     }
-    
+
     // 3. Preparar el array de medios actualizado
     const updatedMedia = [];
-    
+
     // 4. Procesar imágenes existentes si las hay
     if (existingImages && existingImages.length > 0) {
       existingImages.forEach(img => {
@@ -389,13 +388,13 @@ export const updateSparePartWithImages = async (sparePartData, newImageFiles = [
         });
       });
     }
-    
+
     // 5. Subir las nuevas imágenes
     if (newImageFiles && newImageFiles.length > 0) {
       for (let i = 0; i < newImageFiles.length; i++) {
         const file = newImageFiles[i];
         const uploadResult = await uploadMediaFile(file);
-        
+
         if (uploadResult && uploadResult.url) {
           updatedMedia.push({
             id: 0, // Nuevo registro
@@ -409,10 +408,10 @@ export const updateSparePartWithImages = async (sparePartData, newImageFiles = [
         }
       }
     }
-    
+
     // 6. Agregar los medios al payload según el formato esperado
     sparePartPayload.media = updatedMedia;
-    
+
     // 7. Actualizar el repuesto con todas sus relaciones
     const result = await updateSparePart(sparePartPayload);
     return result;
@@ -449,12 +448,12 @@ export const getSparePartImages = async (sparePartId) => {
   try {
     // Obtener el repuesto completo que ya incluye las imágenes
     const response = await apiClient.get(`${SPARE_PARTS_ENDPOINT}/${sparePartId}`);
-    
+
     // Verificar si hay imágenes en la respuesta
     if (response.data?.result?.images) {
       return Array.isArray(response.data.result.images) ? response.data.result.images : [response.data.result.images];
     }
-    
+
     // Si no hay imágenes, devolver array vacío
     return [];
   } catch (error) {
