@@ -23,19 +23,22 @@ export const getAllProducts = async () => {
 
 
 // Obtener todos los productos activos
-export const getActiveProducts = async () => {
+export const getActiveProducts = async (page = 1, size = 50) => {
   try {
-    console.log("Llamando a GET /l/products/active …");
-    const response = await apiClient.get("/l/products/active");
-    console.log("→ Respuesta GET /l/products/active:", response.data);
+    // Llamamos a /l/products con parámetros de paginación y, si tienes 
+    // un query param “status=ACTIVE”, agrégalo aquí. 
+    // Pero NUNCA a /l/products/active.
+    const response = await apiClient.get("/l/products", {
+      params: {
+        page: page - 1, // si tu API usa base-0
+        size,
+        status: "ACTIVE" // si tu backend admite filtrar por status
+      }
+    });
     return response.data;
   } catch (error) {
-    console.error("Error fetching active products:", {
-      status: error.response?.status,
-      data:   error.response?.data
-    });
-    const msg = error.response?.data?.message || error.message || "Error desconocido";
-    throw new Error(msg);
+    console.error("Error fetching active products:", error.response?.data || error.message);
+    throw new Error(error.response?.data?.message || error.message);
   }
 };
 

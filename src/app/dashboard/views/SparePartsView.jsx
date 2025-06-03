@@ -3,34 +3,35 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import apiClient from "@/services/apiClient";
-import { 
-  getAllSpareParts, 
-  getSparePartById, 
-  createSparePart, 
-  updateSparePart, 
+import {
+  getAllSpareParts,
+  getSparePartById,
+  createSparePart,
+  updateSparePart,
+  deleteSparePartById,
   createSparePartWithImages,
   updateSparePartWithImages,
   deleteSparePart,
   getSparePartImages,
   uploadMediaFile,
-  deleteSparePartMedia
+  deleteSparePartMedia,
 } from "@/services/admin/sparePartService";
 import { getActiveProducts, getProductPreviews } from "@/services/admin/productService";
 import { createMultimedia } from "@/services/admin/multimediaService";
 import toast, { Toaster } from "react-hot-toast";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
   DialogTrigger,
   DialogClose
@@ -50,7 +51,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
-const SparePartCard = ({ sparePart, onClick }) => {
+const SparePartCard = ({ sparePart, onClick, onDelete }) => {
   // Estado local para almacenar los detalles completos del repuesto
   const [detailedSparePart, setDetailedSparePart] = useState(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
@@ -58,18 +59,17 @@ const SparePartCard = ({ sparePart, onClick }) => {
   // Obtener detalles completos del repuesto al montar el componente
   useEffect(() => {
     const fetchDetails = async () => {
-      if (sparePart && sparePart.id) {
-        try {
-          setIsLoadingDetails(true);
-          const response = await getSparePartById(sparePart.id);
-          if (response && response.result) {
-            setDetailedSparePart(response.result);
-          }
-        } catch (error) {
-          console.error(`Error al obtener detalles del repuesto ${sparePart.id}:`, error);
-        } finally {
-          setIsLoadingDetails(false);
+      if (!sparePart?.id) return;
+      try {
+        setIsLoadingDetails(true);
+        const response = await getSparePartById(sparePart.id);
+        if (response?.result) {
+          setDetailedSparePart(response.result);
         }
+      } catch (err) {
+        console.error(`Error al obtener detalles del repuesto ${sparePart.id}:`, err);
+      } finally {
+        setIsLoadingDetails(false);
       }
     };
 
@@ -77,12 +77,14 @@ const SparePartCard = ({ sparePart, onClick }) => {
   }, [sparePart.id]);
 
   // Determinar si hay imágenes disponibles
-  const hasImages = sparePart?.media && 
-                   Array.isArray(sparePart.media) && 
-                   sparePart.media.length > 0;
+  const hasImages = sparePart?.media &&
+    Array.isArray(sparePart.media) &&
+    sparePart.media.length > 0;
 
   // Obtener la URL de la primera imagen si existe
-  const firstImageUrl = hasImages ? sparePart.media[0].url : null;
+  const firstImageUrl = Array.isArray(sparePart.media) && sparePart.media.length > 0
+    ? sparePart.media[0].url
+    : null;
 
   return (
     <Card
@@ -157,16 +159,19 @@ const SparePartCard = ({ sparePart, onClick }) => {
             <span>Stock: {sparePart.stock}</span>
           </div>
         </CardDescription>
-        
+
         {/* Botón de eliminar en la esquina inferior derecha */}
         <div className="absolute bottom-2 right-2">
           <Dialog>
             <DialogTrigger asChild>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="icon"
                 className="h-8 w-8 bg-white/20 hover:bg-white/30 text-white"
-                onClick={(e) => e.stopPropagation()} // Evitar que se abra el modal de edición
+                onClick={(e) => {
+                  e.stopPropagation();         // Para que no abra el modal de edición
+                  onDelete(sparePart);
+                }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 6h18"></path>
@@ -187,23 +192,23 @@ const SparePartCard = ({ sparePart, onClick }) => {
                   <Button variant="outline">Cancelar</Button>
                 </DialogClose>
                 <DialogClose asChild>
-                  <Button 
+                  <Button
                     variant="destructive"
                     onClick={async (e) => {
                       // Evitar que el evento se propague y abra el modal de edición
                       e.preventDefault();
                       e.stopPropagation();
-                      
+
                       try {
                         // Preparar datos para el soft delete (cambiar estado a INACTIVE)
                         const deleteData = {
                           ...sparePart,
                           status: "INACTIVE"
                         };
-                        
+
                         // Llamar directamente al servicio de actualización
                         const response = await updateSparePart(deleteData);
-                        
+
                         if (response && (response.type === 'SUCCESS' || response.result)) {
                           toast.success("Repuesto eliminado correctamente");
                           // Recargar la página para ver los cambios
@@ -216,7 +221,7 @@ const SparePartCard = ({ sparePart, onClick }) => {
                         console.error('Error al eliminar repuesto:', error);
                         toast.error("Error al eliminar el repuesto: " + (error.message || "Error desconocido"));
                       }
-                      
+
                       return false; // Evitar comportamiento por defecto
                     }}
                   >
@@ -233,6 +238,9 @@ const SparePartCard = ({ sparePart, onClick }) => {
 };
 
 const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
+  const [sparePartToDelete, setSparePartToDelete] = useState(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
   const [sparePart, setSparePart] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -254,14 +262,44 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImages, setUploadedImages] = useState([]);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [sparePartToDelete, setSparePartToDelete] = useState(null);
+
+// 1) Definimos aquí la función confirmDelete:
+  const confirmDelete = async () => {
+    if (!sparePartToDelete) {
+      setIsDeleteDialogOpen(false);
+      return;
+    }
+
+    try {
+      // Llamamos a tu servicio que hace DELETE /l/spare-parts/delete/{id}
+      await deleteSparePartById(Number(sparePartToDelete.id));
+      toast.success("Repuesto eliminado correctamente");
+      // Opcional: cerrar el diálogo de detalle tras borrar
+      onClose();
+      // Podrías refrescar la lista (si quieres avisar al padre, usa un callback onSave o similar)
+    } catch (err) {
+      console.error("Error al eliminar repuesto:", err);
+      toast.error("Error al eliminar el repuesto: " + (err.message || "Desconocido"));
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setSparePartToDelete(null);
+    }
+  };
+
+  // 2) Asegúrate de que, cuando abras el diálogo de “¿Estás seguro?”, 
+  //    guardes en sparePartToDelete el objeto a eliminar:
+  const handleDelete = (sp, e) => {
+    if (e) e.stopPropagation();
+    setSparePartToDelete(sp);
+    setIsDeleteDialogOpen(true);
+  };
+
 
   useEffect(() => {
     if (isOpen) {
       // Siempre cargar productos cuando se abre el diálogo
       fetchProducts();
-      
+
       if (sparePartId) {
         fetchSparePartDetails();
       } else {
@@ -286,46 +324,46 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
     try {
       setIsLoading(true);
       console.log('Obteniendo detalles del repuesto con ID:', sparePartId);
-      
+
       // Verificar que sparePartId tenga un valor válido
       if (!sparePartId) {
         console.error('ID de repuesto no válido:', sparePartId);
         toast.error('ID de repuesto no válido');
         return;
       }
-      
+
       const response = await getSparePartById(sparePartId);
       console.log('Respuesta completa del servidor:', response);
-      
+
       // Extraer los datos del repuesto de la respuesta
       // La respuesta puede estar en response.data, response.result o response.result.data
       let sparePartData = null;
-      
+
       // Primero intentamos obtener los datos de response.result.data
       if (response?.result?.data) {
         sparePartData = response.result.data;
-      } 
+      }
       // Luego de response.data.data
       else if (response?.data?.data) {
         sparePartData = response.data.data;
-      } 
+      }
       // Luego de response.result
       else if (response?.result) {
         sparePartData = response.result;
-      } 
+      }
       // Finalmente de response.data
       else if (response?.data) {
         sparePartData = response.data;
       }
-      
+
       if (!sparePartData || Object.keys(sparePartData).length === 0) {
         console.error('No se encontraron datos del repuesto en la respuesta:', response);
         toast.error('No se pudieron cargar los datos del repuesto');
         return;
       }
-      
+
       console.log('Detalles del repuesto obtenidos:', sparePartData);
-      
+
       // Crear un objeto con los datos actualizados del formulario
       const updatedFormData = {
         id: sparePartData.id || sparePartData.id === 0 ? sparePartData.id : 0,
@@ -339,9 +377,9 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
         variant: sparePartData.variant || 0,
         status: sparePartData.status || "ACTIVE"
       };
-      
+
       console.log('Datos del formulario actualizados:', updatedFormData);
-      
+
       // Actualizar el estado
       setSparePart(sparePartData);
       setFormData(prevState => ({
@@ -368,7 +406,7 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
       if (sparePartData.productSparePartDto) {
         const productId = sparePartData.productSparePartDto.productId?.toString() || "";
         const notes = sparePartData.productSparePartDto.compatibilityNotes || "";
-        
+
         console.log('Producto asociado encontrado:', { productId, notes });
         setSelectedProductId(productId);
         setCompatibilityNotes(notes);
@@ -420,46 +458,25 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
   };
 
  const fetchProducts = async () => {
-    try {
-      // Opción A: si quieres solo los productos en estado “ACTIVE”:
-      const data = await getActiveProducts();
-      console.log("Productos activos recibidos:", data);
-      // Normaliza según la forma en que tu API devuelva los datos:
-      // - Si devuelve un array plano, usa directamente data
-      // - Si devuelve { result: [...], ... } u { data: [...], ... }, ajusta accordingly
-      const lista = Array.isArray(data)
-        ? data
-        : Array.isArray(data.result)
-          ? data.result
-          : Array.isArray(data.data)
-            ? data.data
-            : [];
-      setProducts(lista);
+  try {
+    // No uses /l/products/active, usa /l/products
+    const data = await getActiveProducts(1, 50);
+    // Luego adapta “data” según cómo venga tu API
+    const lista = Array.isArray(data.result) ? data.result : data.data || [];
+    setProducts(lista);
+  } catch (error) {
+    console.error("Error completo al cargar productos:", error);
+    toast.error("Error al cargar productos: " + error.message);
+  }
+};
 
-      // — o bien —
-
-      // Opción B: si prefieres el endpoint “preview” (lista liviana):
-      // const data = await getProductPreviews();
-      // console.log("Productos PREVIEW recibidos:", data);
-      // const listaPrev = Array.isArray(data)
-      //   ? data
-      //   : Array.isArray(data.result)
-      //     ? data.result
-      //     : [];
-      // setProducts(listaPrev);
-
-    } catch (err) {
-      console.error("Error completo al cargar productos:", err);
-      toast.error("Error al cargar los productos: " + err.message);
-    }
-  };
 
 
 
 
   const handleInputChange = (e) => {
     const { name, value, type } = e.target;
-    
+
     // Manejo especial para campos numéricos
     if (type === "number") {
       // Si el campo está vacío o es solo un cero, permitir que sea vacío o cero
@@ -493,15 +510,15 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
 
   const handleImageUpload = async () => {
     if (!selectedImage) return;
-    
+
     try {
       setIsUploading(true);
       console.log('Subiendo imagen:', selectedImage.name);
-      
+
       // Crear un FormData
       const formData = new FormData();
       formData.append('files', selectedImage); // Usar 'files' como nombre del campo
-      
+
       // Hacer la petición al endpoint correcto
       const response = await apiClient.post(
         "/l/media/upload",  // Endpoint corregido
@@ -512,13 +529,13 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
           }
         }
       );
-      
+
       console.log('Respuesta de subida de imagen:', response.data);
-      
+
       // Extraer la URL de la respuesta
       let imageUrl = '';
       let imageId = 0;
-      
+
       // Manejar la respuesta según la estructura esperada
       if (Array.isArray(response.data) && response.data.length > 0) {
         // Estructura: { data: [{ url: '...', id: 1, ... }] }
@@ -533,12 +550,12 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
         imageUrl = response.data.url;
         imageId = response.data.id || 0;
       }
-      
+
       if (!imageUrl) {
         console.error('No se pudo extraer la URL de la imagen de la respuesta:', response.data);
         throw new Error('No se pudo obtener la URL de la imagen subida');
       }
-      
+
       // Crear objeto de imagen con la estructura esperada
       const newImage = {
         id: imageId,
@@ -548,17 +565,17 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
         entityType: 'SPARE_PART',
         displayOrder: uploadedImages.length
       };
-      
+
       // Actualizar estado
       setUploadedImages(prev => [...prev, newImage]);
       setSelectedImage(null);
-      
+
       // Limpiar input de archivo
       const fileInput = document.getElementById('image-upload');
       if (fileInput) fileInput.value = '';
-      
+
       toast.success("Imagen subida correctamente");
-      
+
     } catch (error) {
       console.error('Error al subir imagen:', error);
       toast.error("Error al subir la imagen: " + (error.response?.data?.message || error.message || "Error desconocido"));
@@ -576,11 +593,11 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
           await deleteSparePartMedia(imageId);
           toast.success("Imagen eliminada correctamente");
         }
-        
+
         // Actualizar el estado local
         const updatedImages = uploadedImages.filter(img => img.id !== imageId);
         setUploadedImages(updatedImages);
-        
+
         // Actualizar el formData sin la imagen eliminada
         setFormData(prev => ({
           ...prev,
@@ -599,91 +616,47 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
     }
   };
 
-  const handleDelete = (sparePart, e) => {
-    if (e) e.stopPropagation(); // Evitar que se abra el modal de edición
-    setSparePartToDelete(sparePart);
-    setIsDeleteDialogOpen(true);
-  };
+  
 
-  const confirmDelete = async () => {
-    try {
-      // Preparar datos para el soft delete (cambiar estado a INACTIVE)
-      const deleteData = {
-        ...sparePartToDelete,
-        status: "INACTIVE"
+
+const handleSubmit = async () => {
+  try {
+    if (sparePartId) {
+      // Modo edición
+      const updateData = {
+        id:         sparePartId,               // string o number
+        externalId: formData.externalId,
+        code:       formData.code,
+        name:       formData.name,
+        description: formData.description,
+        material:   formData.material,
+        price:      parseFloat(formData.price),
+        stock:      parseInt(formData.stock, 10),
+        status:     formData.status,
+        media: uploadedImages.map((img, idx) => ({
+          id:           img.id,
+          url:          img.url,
+          fileType:     img.fileType || "IMAGE",
+          entityType:   img.entityType || "SPARE_PART",
+          displayOrder: img.displayOrder ?? idx
+        }))
+        // ¡OJO! No pongas aquí ni variant ni otros campos extra
       };
 
-      // Llamar directamente al servicio de actualización
-      const response = await updateSparePart(deleteData);
-      
-      if (response && (response.type === 'SUCCESS' || response.result)) {
-        toast.success("Repuesto eliminado correctamente");
-        await fetchSpareParts();
-      } else {
-        throw new Error(response?.text || 'No se recibió una respuesta válida del servidor');
-      }
-    } catch (error) {
-      console.error('Error al eliminar repuesto:', error);
-      toast.error("Error al eliminar el repuesto: " + (error.message || "Error desconocido"));
-    } finally {
-      setIsDeleteDialogOpen(false);
-      setSparePartToDelete(null);
-    }
-  };
-
-  const handleSubmit = async () => {
-  try {
-    console.log("Iniciando guardado de repuesto...");
-
-    // 1. Construye un array “cleanedImages” a partir de tu estado uploadedImages.
-    //    Ese array contendrá solo las propiedades que tu API espera (id, url, fileType, entityId, entityType, displayOrder).
-    //    Si no tienes ninguna imagen subida, uploadedImages será [] y cleanedImages también quedará [].
-    const cleanedImages = uploadedImages.map((img, index) => ({
-      id:           img.id || 0,
-      url:          img.url,
-      fileType:     img.fileType || "IMAGE",
-      entityId:     sparePartId ? parseInt(sparePartId, 10) : 0,
-      entityType:   "SPARE_PART",      // o "PRODUCT" si tu backend solo acepta ese valor
-      displayOrder: index
-    }));
-
-    console.log("Imágenes preparadas para guardar (cleanedImages):", cleanedImages);
-
-    // 2. Ahora arma el objeto saveData con todos los campos que tu API PUT /l/spare-parts espera:
-    const saveData = {
-      id:         sparePartId,                // p. ej. “5”
-      updatedBy:  "1",                        // tu usuario autenticado o un valor fijo
-      updatedAt:  new Date().toISOString(),   // fecha ISO
-      externalId: formData.externalId,
-      code:       formData.code,
-      name:       formData.name,
-      description:formData.description,
-      material:   formData.material,
-      price:      formData.price,
-      stock:      formData.stock,
-      rentable:   false,                      // o true, según corresponda
-      status:     formData.status,            // “ACTIVE” o “INACTIVE”
-      media:      cleanedImages               // el array que acabamos de armar
-    };
-
-    console.log("Datos completos para actualizar (saveData):", saveData);
-
-    // 3. Llama a tu servicio de actualización:
-    const response = await updateSparePart(saveData);
-    console.log("Respuesta del servicio updateSparePart:", response);
-
-    if (typeof onSave === "function") {
-      await onSave(saveData);
+      await updateSparePart(updateData);
+      toast.success("Repuesto actualizado correctamente");
+      // refresca lista, cierra el diálogo, etc…
+    } else {
+      // Modo creación (idéntico a antes, pero con createSparePart)
     }
     onClose();
-    return true;
-  }
-  catch (error) {
-    console.error("Error al guardar repuesto:", error);
-    toast.error("Error al actualizar el repuesto: " + (error.message || "Error desconocido"));
-    return false;
+  } catch (err) {
+    toast.error("Error al guardar repuesto: " + err.message);
   }
 };
+
+
+
 
 
 
@@ -703,148 +676,148 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col overflow-hidden">
-        <DialogHeader className="sticky top-0 z-10 pb-2 border-b">
-          <DialogTitle>{sparePartId ? "Editar Repuesto" : "Nuevo Repuesto"}</DialogTitle>
-          <DialogDescription>
-            {sparePartId ? "Modifica los detalles del repuesto seleccionado." : "Completa los datos para crear un nuevo repuesto."}
-          </DialogDescription>
-        </DialogHeader>
+          <DialogHeader className="sticky top-0 z-10 pb-2 border-b">
+            <DialogTitle>{sparePartId ? "Editar Repuesto" : "Nuevo Repuesto"}</DialogTitle>
+            <DialogDescription>
+              {sparePartId ? "Modifica los detalles del repuesto seleccionado." : "Completa los datos para crear un nuevo repuesto."}
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="grid gap-4 py-4 overflow-y-auto pr-2">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 py-4 overflow-y-auto pr-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="externalId">ID Externo</Label>
+                <Input
+                  id="externalId"
+                  name="externalId"
+                  value={formData.externalId}
+                  onChange={handleInputChange}
+                  placeholder="ID Externo"
+                />
+              </div>
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="code">Código</Label>
+                <Input
+                  id="code"
+                  name="code"
+                  value={formData.code}
+                  onChange={handleInputChange}
+                  placeholder="Código del repuesto"
+                />
+              </div>
+            </div>
+
             <div className="flex flex-col space-y-2">
-              <Label htmlFor="externalId">ID Externo</Label>
+              <Label htmlFor="name">Nombre</Label>
               <Input
-                id="externalId"
-                name="externalId"
-                value={formData.externalId}
+                id="name"
+                name="name"
+                value={formData.name}
                 onChange={handleInputChange}
-                placeholder="ID Externo"
+                placeholder="Nombre del repuesto"
               />
             </div>
+
             <div className="flex flex-col space-y-2">
-              <Label htmlFor="code">Código</Label>
-              <Input
-                id="code"
-                name="code"
-                value={formData.code}
+              <Label htmlFor="description">Descripción</Label>
+              <Textarea
+                id="description"
+                name="description"
+                value={formData.description}
                 onChange={handleInputChange}
-                placeholder="Código del repuesto"
+                placeholder="Descripción detallada del repuesto"
+                rows={3}
               />
             </div>
-          </div>
 
-          <div className="flex flex-col space-y-2">
-            <Label htmlFor="name">Nombre</Label>
-            <Input
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              placeholder="Nombre del repuesto"
-            />
-          </div>
-
-          <div className="flex flex-col space-y-2">
-            <Label htmlFor="description">Descripción</Label>
-            <Textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Descripción detallada del repuesto"
-              rows={3}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col space-y-2">
-              <Label htmlFor="price">Precio</Label>
-              <Input
-                id="price"
-                name="price"
-                type="number"
-                value={formData.price}
-                onChange={handleInputChange}
-                placeholder="0.00"
-                min="0"
-                step="0.01"
-                onFocus={(e) => {
-                  // Si el valor es 0, seleccionar todo el texto para facilitar su reemplazo
-                  if (e.target.value === "0" || e.target.value === 0) {
-                    e.target.select();
-                  }
-                }}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="price">Precio</Label>
+                <Input
+                  id="price"
+                  name="price"
+                  type="number"
+                  value={formData.price}
+                  onChange={handleInputChange}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                  onFocus={(e) => {
+                    // Si el valor es 0, seleccionar todo el texto para facilitar su reemplazo
+                    if (e.target.value === "0" || e.target.value === 0) {
+                      e.target.select();
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="stock">Stock</Label>
+                <Input
+                  id="stock"
+                  name="stock"
+                  type="number"
+                  value={formData.stock}
+                  onChange={handleInputChange}
+                  placeholder="0"
+                  min="0"
+                  step="1"
+                  onFocus={(e) => {
+                    // Si el valor es 0, seleccionar todo el texto para facilitar su reemplazo
+                    if (e.target.value === "0" || e.target.value === 0) {
+                      e.target.select();
+                    }
+                  }}
+                />
+              </div>
             </div>
-            <div className="flex flex-col space-y-2">
-              <Label htmlFor="stock">Stock</Label>
-              <Input
-                id="stock"
-                name="stock"
-                type="number"
-                value={formData.stock}
-                onChange={handleInputChange}
-                placeholder="0"
-                min="0"
-                step="1"
-                onFocus={(e) => {
-                  // Si el valor es 0, seleccionar todo el texto para facilitar su reemplazo
-                  if (e.target.value === "0" || e.target.value === 0) {
-                    e.target.select();
-                  }
-                }}
-              />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col space-y-2">
-              <Label htmlFor="material">Material</Label>
-              <Input
-                id="material"
-                name="material"
-                value={formData.material}
-                onChange={handleInputChange}
-                placeholder="Material del repuesto"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="material">Material</Label>
+                <Input
+                  id="material"
+                  name="material"
+                  value={formData.material}
+                  onChange={handleInputChange}
+                  placeholder="Material del repuesto"
+                />
+              </div>
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="variant">Variante</Label>
+                <Input
+                  id="variant"
+                  name="variant"
+                  type="number"
+                  value={formData.variant}
+                  onChange={handleInputChange}
+                  placeholder="0"
+                  min="0"
+                  step="1"
+                />
+              </div>
             </div>
-            <div className="flex flex-col space-y-2">
-              <Label htmlFor="variant">Variante</Label>
-              <Input
-                id="variant"
-                name="variant"
-                type="number"
-                value={formData.variant}
-                onChange={handleInputChange}
-                placeholder="0"
-                min="0"
-                step="1"
-              />
-            </div>
-          </div>
 
-          {/* El estado se maneja automáticamente, no se muestra en la interfaz */}
+            {/* El estado se maneja automáticamente, no se muestra en la interfaz */}
 
-          <div className="flex flex-col space-y-4 mt-4 pt-4 border-t">
-            <h3 className="text-lg font-medium">Imágenes</h3>
-            <div className="grid grid-cols-1 gap-4">
-              {/* Previsualización de imágenes subidas */}
-              {uploadedImages.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {uploadedImages.map((image) => (
-                    <div key={image.id} className="relative group">
-                      <div className="relative w-20 h-20 bg-gray-100 rounded border overflow-hidden flex items-center justify-center">
-                        <img 
-                          src={image.previewUrl || `https://libamaq.com/api/multimedia/${image.id}`}
-                          alt="Vista previa"
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            // Evitar bucle infinito estableciendo una bandera
-                            if (!e.target.hasAttribute('data-error')) {
-                              e.target.setAttribute('data-error', 'true');
-                              e.target.style.display = 'none';
-                              e.target.parentNode.innerHTML = `
+            <div className="flex flex-col space-y-4 mt-4 pt-4 border-t">
+              <h3 className="text-lg font-medium">Imágenes</h3>
+              <div className="grid grid-cols-1 gap-4">
+                {/* Previsualización de imágenes subidas */}
+                {uploadedImages.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {uploadedImages.map((image) => (
+                      <div key={image.id} className="relative group">
+                        <div className="relative w-20 h-20 bg-gray-100 rounded border overflow-hidden flex items-center justify-center">
+                          <img
+                            src={image.previewUrl || `https://libamaq.com/api/multimedia/${image.id}`}
+                            alt="Vista previa"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Evitar bucle infinito estableciendo una bandera
+                              if (!e.target.hasAttribute('data-error')) {
+                                e.target.setAttribute('data-error', 'true');
+                                e.target.style.display = 'none';
+                                e.target.parentNode.innerHTML = `
                                 <div class="flex flex-col items-center justify-center w-full h-full">
                                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="text-gray-400">
                                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -853,134 +826,134 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
                                   </svg>
                                 </div>
                               `;
-                            }
-                          }}
-                        />
+                              }
+                            }}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(image.id)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(image.id)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {/* Selector de archivo */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="file"
-                  id="image-upload"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-                <label
-                  htmlFor="image-upload"
-                  className="cursor-pointer px-3 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 text-sm"
-                >
-                  Seleccionar imagen
-                </label>
-                {selectedImage && (
-                  <div className="flex-1 truncate text-sm text-gray-500">
-                    {selectedImage.name}
+                    ))}
                   </div>
                 )}
-                <Button 
-                  onClick={handleImageUpload} 
-                  disabled={!selectedImage || isUploading}
-                  size="sm"
-                  variant={selectedImage ? "default" : "outline"}
-                >
-                  {isUploading ? (
-                    <span className="flex items-center gap-1">
-                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                      Subiendo...
-                    </span>
-                  ) : (
-                    "Subir"
+
+                {/* Selector de archivo */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    id="image-upload"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="image-upload"
+                    className="cursor-pointer px-3 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 text-sm"
+                  >
+                    Seleccionar imagen
+                  </label>
+                  {selectedImage && (
+                    <div className="flex-1 truncate text-sm text-gray-500">
+                      {selectedImage.name}
+                    </div>
                   )}
-                </Button>
-              </div>
-            </div>
-
-            <h3 className="text-lg font-medium mt-4">Compatibilidad con Productos</h3>
-            <div className="flex flex-col space-y-2">
-              <Label htmlFor="productId">Producto Compatible</Label>
-              <Select 
-                value={selectedProductId} 
-                onValueChange={setSelectedProductId}
-              >
-                <SelectTrigger id="productId" className="h-10">
-                  <SelectValue placeholder="Selecciona un producto" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  <div className="p-2 sticky top-0 bg-white border-b z-10">
-                    <input
-                      className="w-full px-3 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      placeholder="Buscar producto..."
-                      onChange={(e) => {
-                        // Implementar búsqueda en tiempo real aquí si es necesario
-                        // Por ahora, la lista está ordenada alfabéticamente
-                      }}
-                    />
-                  </div>
-                  <SelectItem value="none" className="font-medium text-gray-500">-- Ninguno --</SelectItem>
-                  <div className="pt-1">
-                    {products.length === 0 ? (
-                      <div className="py-2 px-2 text-sm text-gray-500 italic">Cargando productos...</div>
+                  <Button
+                    onClick={handleImageUpload}
+                    disabled={!selectedImage || isUploading}
+                    size="sm"
+                    variant={selectedImage ? "default" : "outline"}
+                  >
+                    {isUploading ? (
+                      <span className="flex items-center gap-1">
+                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                        Subiendo...
+                      </span>
                     ) : (
-                      products.map((product) => (
-                        <SelectItem 
-                          key={product.id} 
-                          value={product.id.toString()}
-                          className="py-2 flex items-center gap-2"
-                        >
-                          <div className="flex flex-col">
-                            <span className="font-medium">{product.name}</span>
-                            <span className="text-xs text-gray-500">
-                              ID: {product.externalId || product.id}
-                              {product.brand?.name && ` | Marca: ${product.brand.name}`}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))
+                      "Subir"
                     )}
-                  </div>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {selectedProductId && selectedProductId !== "none" && (
-              <div className="flex flex-col space-y-2">
-                <Label htmlFor="compatibilityNotes">Notas de Compatibilidad</Label>
-                <Textarea
-                  id="compatibilityNotes"
-                  value={compatibilityNotes}
-                  onChange={(e) => setCompatibilityNotes(e.target.value)}
-                  placeholder="Detalles sobre la compatibilidad con el producto seleccionado"
-                  rows={2}
-                />
+                  </Button>
+                </div>
               </div>
-            )}
-          </div>
-        </div>
 
-        <DialogFooter className="sticky bottom-0 bg-white z-10 pt-2 border-t mt-4">
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSubmit}>
-              {sparePartId ? "Guardar Cambios" : "Crear Repuesto"}
-            </Button>
+              <h3 className="text-lg font-medium mt-4">Compatibilidad con Productos</h3>
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="productId">Producto Compatible</Label>
+                <Select
+                  value={selectedProductId}
+                  onValueChange={setSelectedProductId}
+                >
+                  <SelectTrigger id="productId" className="h-10">
+                    <SelectValue placeholder="Selecciona un producto" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    <div className="p-2 sticky top-0 bg-white border-b z-10">
+                      <input
+                        className="w-full px-3 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        placeholder="Buscar producto..."
+                        onChange={(e) => {
+                          // Implementar búsqueda en tiempo real aquí si es necesario
+                          // Por ahora, la lista está ordenada alfabéticamente
+                        }}
+                      />
+                    </div>
+                    <SelectItem value="none" className="font-medium text-gray-500">-- Ninguno --</SelectItem>
+                    <div className="pt-1">
+                      {products.length === 0 ? (
+                        <div className="py-2 px-2 text-sm text-gray-500 italic">Cargando productos...</div>
+                      ) : (
+                        products.map((product) => (
+                          <SelectItem
+                            key={product.id}
+                            value={product.id.toString()}
+                            className="py-2 flex items-center gap-2"
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-medium">{product.name}</span>
+                              <span className="text-xs text-gray-500">
+                                ID: {product.externalId || product.id}
+                                {product.brand?.name && ` | Marca: ${product.brand.name}`}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
+                    </div>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedProductId && selectedProductId !== "none" && (
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="compatibilityNotes">Notas de Compatibilidad</Label>
+                  <Textarea
+                    id="compatibilityNotes"
+                    value={compatibilityNotes}
+                    onChange={(e) => setCompatibilityNotes(e.target.value)}
+                    placeholder="Detalles sobre la compatibilidad con el producto seleccionado"
+                    rows={2}
+                  />
+                </div>
+              )}
+            </div>
           </div>
-        </DialogFooter>
+
+          <DialogFooter className="sticky bottom-0 bg-white z-10 pt-2 border-t mt-4">
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSubmit}>
+                {sparePartId ? "Guardar Cambios" : "Crear Repuesto"}
+              </Button>
+            </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1014,9 +987,41 @@ export function SparePartsView() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
-  
+
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [selectedSparePartId, setSelectedSparePartId] = useState(null);
+
+  // Estado para el diálogo de eliminación
+  const [sparePartToDelete, setSparePartToDelete] = useState(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  // Función que abre el diálogo de confirmación y guarda el repuesto a eliminar
+  const handleDeleteClick = (sparePart) => {
+    setSparePartToDelete(sparePart);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Función que realmente ejecuta el DELETE al Backend
+  const confirmDelete = async () => {
+    if (!sparePartToDelete) {
+      setIsDeleteDialogOpen(false);
+      return;
+    }
+
+    try {
+      // Usamos el método deleteSparePartById(id) que hicimos en sparePartService.js
+      await deleteSparePartById(Number(sparePartToDelete.id));
+      toast.success("Repuesto eliminado correctamente");
+      // Luego recargamos la lista
+      await fetchSpareParts();
+    } catch (err) {
+      console.error("Error al eliminar repuesto:", err);
+      toast.error("Error al eliminar el repuesto: " + err.message);
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setSparePartToDelete(null);
+    }
+  };
 
   useEffect(() => {
     fetchSpareParts();
@@ -1037,57 +1042,24 @@ export function SparePartsView() {
     }
   }, [spareParts, searchTerm]);
 
+  // Función para cargar todos los repuestos (llamada por useEffect o tras eliminar)
   const fetchSpareParts = async () => {
     try {
       setIsLoading(true);
-      console.log(`Obteniendo repuestos: página ${currentPage}, tamaño ${pageSize}`);
-      const response = await getAllSpareParts(currentPage, pageSize);
-      console.log('Respuesta completa de repuestos:', response);
-      
-      // Extraer los datos de la respuesta, manejando el formato de paginación
-      let data = [];
-      let totalPagesCount = 1;
-      
-      // Verificar todos los posibles lugares donde podrían estar los datos
-      if (response.data && Array.isArray(response.data)) {
-        // Los datos están directamente en response.data (formato de la API actual)
-        data = response.data;
-        console.log('Datos extraídos de response.data:', data);
-        totalPagesCount = response.totalPages || 1;
-      } else if (response.content && Array.isArray(response.content)) {
-        // Los datos están en response.content (formato alternativo)
-        data = response.content;
-        console.log('Datos extraídos de response.content:', data);
-        totalPagesCount = response.totalPages || 1;
-      } else if (response && response.result) {
-        // Formato de respuesta con result
-        if (response.result.content && Array.isArray(response.result.content)) {
-          data = response.result.content;
-          console.log('Datos extraídos de response.result.content:', data);
-          totalPagesCount = response.result.totalPages || 1;
-        } else if (Array.isArray(response.result)) {
-          data = response.result;
-          console.log('Datos extraídos de response.result (array):', data);
-        }
-      } else if (Array.isArray(response)) {
-        data = response;
-        console.log('Datos extraídos directamente del array de respuesta:', data);
-      }
-      
-      console.log(`Se encontraron ${data.length} repuestos. Total de páginas: ${totalPagesCount}`);
-      setTotalPages(totalPagesCount);
-      
-      setSpareParts(data);
-      setFilteredSpareParts(data);
-    } catch (error) {
-      console.error('Error al cargar repuestos:', error);
-      toast.error("Error al cargar los repuestos: " + (error.message || "Error desconocido"));
+      const response = await getAllSpareParts(1, 50);
+      setSpareParts(response.content || []);
+    } catch (err) {
+      console.error("Error al cargar repuestos:", err);
+      toast.error("Error al cargar repuestos");
       setSpareParts([]);
-      setFilteredSpareParts([]);
     } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchSpareParts();
+  }, []);
 
   const handleCardClick = (sparePart) => {
     setSelectedSparePartId(sparePart.id);
@@ -1102,12 +1074,12 @@ export function SparePartsView() {
   const handleSaveSparePart = async (sparePartData) => {
     try {
       console.log('Datos del repuesto a guardar:', JSON.stringify(sparePartData, null, 2));
-      
+
       // Verificar que los datos de multimedia estén correctamente formateados
       if (sparePartData.sparePartMultimediaDto && sparePartData.sparePartMultimediaDto.length > 0) {
         console.log('Imágenes a guardar:', sparePartData.sparePartMultimediaDto);
       }
-      
+
       let response;
       if (sparePartData.id) {
         // Actualizar repuesto existente
@@ -1118,18 +1090,18 @@ export function SparePartsView() {
         response = await createSparePart(sparePartData);
         console.log('Respuesta de creación:', response);
       }
-      
+
       // Verificar si la respuesta fue exitosa
       if (response && (response.type === 'SUCCESS' || response.result)) {
         // Refrescar la lista después de guardar
         await fetchSpareParts();
-        
+
         toast.success(
-          sparePartData.id 
-            ? "Repuesto actualizado correctamente" 
+          sparePartData.id
+            ? "Repuesto actualizado correctamente"
             : "Repuesto creado correctamente"
         );
-        
+
         return true; // Indicar éxito para que el diálogo pueda cerrarse
       } else {
         throw new Error(response?.text || 'No se recibió una respuesta válida del servidor');
@@ -1137,9 +1109,9 @@ export function SparePartsView() {
     } catch (error) {
       console.error('Error al guardar repuesto:', error);
       toast.error(
-        "Error al " + 
-        (sparePartData.id ? "actualizar" : "crear") + 
-        " el repuesto: " + 
+        "Error al " +
+        (sparePartData.id ? "actualizar" : "crear") +
+        " el repuesto: " +
         (error.message || "Error desconocido")
       );
       return false; // Indicar fallo
@@ -1194,7 +1166,9 @@ export function SparePartsView() {
             >
               <SparePartCard
                 sparePart={sparePart}
-                onClick={() => handleCardClick(sparePart)} />
+                onClick={() => handleCardClick(sparePart)}
+                onDelete={handleDeleteClick}
+              />
             </motion.div>
           ))}
         </div>
@@ -1218,11 +1192,11 @@ export function SparePartsView() {
             >
               Anterior
             </Button>
-            
+
             <div className="flex items-center px-4">
               Página {currentPage} de {totalPages}
             </div>
-            
+
             <Button
               variant="outline"
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
@@ -1243,33 +1217,33 @@ export function SparePartsView() {
       />
 
       <Toaster
-              position="top-center"
-              reverseOrder={false}
-              toastOptions={{
-                // Estilos por defecto para todos los toasts
-                duration: 3000,
-                style: {
-                  background: '#363636',
-                  color: '#fff',
-                },
-                // Estilos específicos para toasts de éxito
-                success: {
-                  duration: 3000,
-                  iconTheme: {
-                    primary: '#10B981',
-                    secondary: '#fff',
-                  },
-                },
-                // Estilos específicos para toasts de error
-                error: {
-                  duration: 4000,
-                  iconTheme: {
-                    primary: '#EF4444',
-                    secondary: '#fff',
-                  },
-                },
-              }}
-            />
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          // Estilos por defecto para todos los toasts
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          // Estilos específicos para toasts de éxito
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10B981',
+              secondary: '#fff',
+            },
+          },
+          // Estilos específicos para toasts de error
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#EF4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
     </>
   );
 }

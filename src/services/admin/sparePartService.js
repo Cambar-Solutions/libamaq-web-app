@@ -15,6 +15,25 @@ const FILE_TYPE_IMAGE = 'IMAGE';
  * @param {Object} filters - Filtros adicionales
  * @returns {Promise<Object>} - Datos de repuestos paginados
  */
+
+/**
+ * Elimina un repuesto por su ID (DELETE /l/spare-parts/delete/{id})
+ * @param {number|string} id 
+ * @returns {Promise<Object>}
+ */
+
+export const deleteSparePartById = async (id) => {
+  try {
+    const response = await apiClient.delete(`/l/spare-parts/delete/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al eliminar repuesto ${id}:`, error.response?.data || error.message);
+    throw error.response?.data || new Error(error.message);
+  }
+};
+
+
+
 export const getAllSpareParts = async (page = 1, size = 10, filters = {}) => {
   try {
     // Usar el endpoint de repuestos activos por defecto, a menos que se especifique lo contrario
@@ -108,13 +127,15 @@ export const getSparePartById = async (id) => {
  */
 export const createSparePart = async (sparePartData) => {
   try {
-    const { data } = await apiClient.post(SPARE_PARTS_ENDPOINT, sparePartData);
+    const { data } = await apiClient.post("/l/spare-parts", sparePartData);
     return { result: data };
   } catch (error) {
-    console.error("Error al crear repuesto:", error);
-    throw error.response?.data?.message || error.message;
+    // aquí capturas y relanzas el error con error.response.data.message
+    const msg = error.response?.data?.message || error.message || "Error desconocido";
+    throw new Error(msg);
   }
 };
+
 
 /**
  * Actualiza un repuesto existente con sus imágenes y relaciones a productos
@@ -123,55 +144,58 @@ export const createSparePart = async (sparePartData) => {
  */
 export const updateSparePart = async (sparePartData) => {
   try {
-    // Desestructuro para obtener el id y el resto de campos
-    const { id, externalId, code, name, description, material, price, stock, rentable, status, media, updatedBy, updatedAt } = sparePartData;
+    // Desestructuramos sólo los campos que sí admite el DTO de actualización:
+    const {
+      id,
+      externalId,
+      code,
+      name,
+      description,
+      material,
+      price,
+      stock,
+      status,
+      media = []
+    } = sparePartData;
 
-    // 1) Construyo el objeto EXACTO que el backend espera según tu Swagger:
     const requestData = {
-      id:         parseInt(id, 10),
-      updatedBy:  updatedBy  || "1",                       // Usuario que edita (o tu lógica de auth)
-      updatedAt:  updatedAt  || new Date().toISOString(), // Timestamp ISO
-      externalId: externalId || "",
-      code:       code       || "",
-      name:       name       || "",
+      id:         parseInt(id, 10),                   // obligatorio, número
+      updatedBy:  "1",                                // string, quién actualiza
+      updatedAt:  new Date().toISOString(),           // ISO timestamp
+      externalId: externalId  || "",
+      code:       code        || "",
+      name:       name        || "",
       description:description || "",
-      material:   material   || "",
-      price:      parseFloat(price) || 0,
-      stock:      parseInt(stock, 10)   || 0,
-      rentable:   (typeof rentable === "boolean") ? rentable : false,
-      status:     status     || "ACTIVE",
-      media:      []
+      material:   material    || "",
+      price:      parseFloat(price)  || 0,
+      stock:      parseInt(stock, 10) || 0,
+      rentable:   false,                              // sí lo admite el DTO, mantenerlo siempre
+      status:     status      || "ACTIVE",
+      media:      media.map((img, idx) => ({
+        id:           img.id    || 0,
+        url:          img.url   || "",
+        fileType:     img.fileType   || "IMAGE",
+        entityType:   img.entityType || "SPARE_PART",
+        displayOrder: img.displayOrder ?? idx
+      }))
     };
 
-    // 2) Si tu sparePartData.media existe y es array, normalízalo:
-    if (Array.isArray(media)) {
-      requestData.media = media.map(m => ({
-        id:           m.id           || 0,
-        url:          m.url          || "",
-        fileType:     m.fileType     || "IMAGE",
-        entityId:     parseInt(id, 10),
-        entityType:   m.entityType   || "SPARE_PART", // O "PRODUCT" si el back explícitamente solo acepta eso
-        displayOrder: m.displayOrder || 0
-      }));
-    }
-
-    console.log("→ PUT a:", SPARE_PARTS_ENDPOINT, "\n   Payload:", requestData);
-
-    // 3) Llamo exactamente a /l/spare-parts (sin id en la ruta)
+    console.log("→ PUT a /l/spare-parts, payload:", requestData);
     const response = await apiClient.put(SPARE_PARTS_ENDPOINT, requestData);
-    console.log("← Respuesta exitosa:", response.data);
-
     return { result: response.data };
-  }
-  catch (error) {
-    console.error("Error al actualizar repuesto:", error);
-    if (error.response) {
-      console.error("→ Respuesta del servidor (error):", error.response.data);
-      console.error("→ HTTP Status:", error.response.status);
-    }
-    throw error.response?.data?.message || error.message;
+
+  } catch (error) {
+    console.error("Error al actualizar repuesto:", {
+      status: error.response?.status,
+      data:   error.response?.data
+    });
+    const msg = error.response?.data?.message || error.message;
+    throw new Error(msg);
   }
 };
+
+
+
 
 /**
  * Elimina un repuesto (borrado físico)
