@@ -212,7 +212,10 @@ const SparePartCard = ({ sparePart, onClick, onDelete }) => {
                         if (response && (response.type === 'SUCCESS' || response.result)) {
                           toast.success("Repuesto eliminado correctamente");
                           // Recargar la página para ver los cambios
-                          window.location.reload();
+                          // Avisamos al padre para que vuelva a cargar los datos
+                          if (typeof onDelete === "function") {
+                            onDelete(); // el padre hará fetchSpareParts() o filtrará el arreglo
+                          }
                           return false; // Evitar comportamiento por defecto
                         } else {
                           throw new Error(response?.text || 'No se recibió una respuesta válida del servidor');
@@ -263,7 +266,7 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImages, setUploadedImages] = useState([]);
 
-// 1) Definimos aquí la función confirmDelete:
+  // 1) Definimos aquí la función confirmDelete:
   const confirmDelete = async () => {
     if (!sparePartToDelete) {
       setIsDeleteDialogOpen(false);
@@ -457,18 +460,18 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
     }
   };
 
- const fetchProducts = async () => {
-  try {
-    // No uses /l/products/active, usa /l/products
-    const data = await getActiveProducts(1, 50);
-    // Luego adapta “data” según cómo venga tu API
-    const lista = Array.isArray(data.result) ? data.result : data.data || [];
-    setProducts(lista);
-  } catch (error) {
-    console.error("Error completo al cargar productos:", error);
-    toast.error("Error al cargar productos: " + error.message);
-  }
-};
+  const fetchProducts = async () => {
+    try {
+      // No uses /l/products/active, usa /l/products
+      const data = await getActiveProducts(1, 50);
+      // Luego adapta “data” según cómo venga tu API
+      const lista = Array.isArray(data.result) ? data.result : data.data || [];
+      setProducts(lista);
+    } catch (error) {
+      console.error("Error completo al cargar productos:", error);
+      toast.error("Error al cargar productos: " + error.message);
+    }
+  };
 
 
 
@@ -616,44 +619,72 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
     }
   };
 
-  
 
 
-const handleSubmit = async () => {
-  try {
-    if (sparePartId) {
-      // Modo edición
-      const updateData = {
-        id:         sparePartId,               // string o number
-        externalId: formData.externalId,
-        code:       formData.code,
-        name:       formData.name,
-        description: formData.description,
-        material:   formData.material,
-        price:      parseFloat(formData.price),
-        stock:      parseInt(formData.stock, 10),
-        status:     formData.status,
-        media: uploadedImages.map((img, idx) => ({
-          id:           img.id,
-          url:          img.url,
-          fileType:     img.fileType || "IMAGE",
-          entityType:   img.entityType || "SPARE_PART",
-          displayOrder: img.displayOrder ?? idx
-        }))
-        // ¡OJO! No pongas aquí ni variant ni otros campos extra
-      };
 
-      await updateSparePart(updateData);
-      toast.success("Repuesto actualizado correctamente");
-      // refresca lista, cierra el diálogo, etc…
-    } else {
-      // Modo creación (idéntico a antes, pero con createSparePart)
+  const handleSubmit = async () => {
+    try {
+      if (sparePartId) {
+        // Modo edición
+        const updateData = {
+          id: sparePartId,               // string o number
+          externalId: formData.externalId,
+          code: formData.code,
+          name: formData.name,
+          description: formData.description,
+          material: formData.material,
+          price: parseFloat(formData.price),
+          stock: parseInt(formData.stock, 10),
+          status: formData.status,
+          media: uploadedImages.map((img, idx) => ({
+            id: img.id,
+            url: img.url,
+            fileType: img.fileType || "IMAGE",
+            entityType: img.entityType || "SPARE_PART",
+            displayOrder: img.displayOrder ?? idx
+          }))
+          // ¡OJO! No pongas aquí ni variant ni otros campos extra
+        };
+
+        await updateSparePart(updateData);
+        toast.success("Repuesto actualizado correctamente");
+        // refresca lista, cierra el diálogo, etc…
+      } else {
+        const creationData = {
+          externalId: formData.externalId,
+          code: formData.code,
+          name: formData.name,
+          description: formData.description,
+          material: formData.material,
+          price: parseFloat(formData.price) || 0,
+          stock: parseInt(formData.stock, 10) || 0,
+          rentable: false,
+          status: formData.status,
+          // si quieres subir imágenes en la creación, pásalas aquí:
+          media: uploadedImages.map((img, idx) => ({
+            id: img.id || 0,
+            url: img.url,
+            fileType: img.fileType || "IMAGE",
+            entityType: img.entityType || "SPARE_PART",
+            displayOrder: img.displayOrder ?? idx
+          }))
+        };
+
+        await createSparePart(creationData);
+        toast.success("Repuesto creado correctamente");
+        // Si el padre (SparePartsView) espera un retorno booleano para cerrar el diálogo
+        // y recargar la lista, devolvemos true:
+        if (typeof onSave === "function") {
+          onSave(); // el padre volverá a llamar a fetchSpareParts()
+        }
+      }
+      return true;
+    } catch (err) {
+      console.error("Error al guardar repuesto:", err);
+      toast.error("Error al guardar el repuesto: " + (err.message || "Error desconocido"));
+      return false;
     }
-    onClose();
-  } catch (err) {
-    toast.error("Error al guardar repuesto: " + err.message);
-  }
-};
+  };
 
 
 
