@@ -237,17 +237,15 @@ export const softDeleteSparePart = async (id) => {
 
 /**
  * Sube uno o más archivos multimedia al servidor (Swagger: POST /l/media/upload).
- * @param {File[]} files        – Array de objetos File (del <input type="file" multiple />).
+ * @param {File[]} files             – Array de objetos File (del <input type="file" multiple />).
  * @param {Function} onUploadProgress – (Opcional) callback para progreso de carga.
- * @returns {Promise<Array<{ id: number, url: string }>>}  – Retorna un array con los objetos subidos.
+ * @returns {Promise<Array<{ id: number, url: string }>>} 
  */
 export const uploadMediaFiles = async (files, onUploadProgress = null) => {
   try {
     if (!files || files.length === 0) {
       return [];
     }
-
-    // Prepara un FormData con el campo “files”
     const formData = new FormData();
     for (const file of files) {
       formData.append("files", file);
@@ -255,20 +253,18 @@ export const uploadMediaFiles = async (files, onUploadProgress = null) => {
 
     const config = {
       headers: { "Content-Type": "multipart/form-data" },
-      onUploadProgress: onUploadProgress    // si quieres mostrar barra de progreso
+      onUploadProgress: onUploadProgress
     };
 
-    // Llamar al endpoint de Swagger: POST /l/media/upload
+    // Llamada a POST /l/media/upload
     const response = await apiClient.post(`${MEDIA_ENDPOINT}/upload`, formData, config);
-
-    // Según tu Swagger, la respuesta viene en response.data.data (array de objetos)
-    // Asegúrate de que coincida con la estructura real: { data: [ { id, url, … }, … ] }
+    // La respuesta según tu Swagger viene en response.data.data (array de objetos)
     if (!response.data || !Array.isArray(response.data.data)) {
       console.error("Respuesta inesperada al subir multimedia:", response.data);
-      throw new Error("No se recibió un array de archivos subidos desde el servidor");
+      throw new Error("No se recibió array de archivos subidos");
     }
 
-    // Devuelve un array de { id, url } para cada archivo subido
+    // Devolvemos un array mínimo de { id, url }
     return response.data.data.map(item => ({
       id: item.id,
       url: item.url

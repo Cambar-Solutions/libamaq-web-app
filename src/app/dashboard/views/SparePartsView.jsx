@@ -269,7 +269,6 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedImages, setUploadedImages] = useState([]);
 
-  // 1) Estado para la imagen actual (objeto con { id, url, previewUrl, fileType, entityType, displayOrder })
   const [currentImage, setCurrentImage] = useState(null);
 
   // 2) Estado para el archivo nuevo que el usuario seleccione
@@ -344,6 +343,22 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
       }
 
       const response = await getSparePartById(sparePartId);
+      const datos = response.result;
+
+      // Si trae media, precárgala en el estado uploadedImages:
+      if (Array.isArray(datos.media) && datos.media.length > 0) {
+        setUploadedImages([
+          {
+            id: datos.media[0].id,
+            url: datos.media[0].url,
+            fileType: datos.media[0].fileType,       // normalmente "IMAGE"
+            entityType: datos.media[0].entityType,   // típicamente "SPARE_PART"
+            displayOrder: datos.media[0].displayOrder
+          }
+        ]);
+      } else {
+        setUploadedImages([]);
+      }
       console.log("Respuesta completa del servidor:", response);
 
       // ─────────── Aquí definimos sparePartData ───────────
@@ -421,19 +436,21 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
     if (!selectedFile) return;
     try {
       setIsUploading(true);
-      // Reutilizamos tu servicio uploadMediaFiles, pero pasándole un array de un solo File
-      const [result] = await uploadMediaFiles([selectedFile], (progressEvent) => {
-        // Si quieres, muestras porcentaje de subida aquí…
-      });
-      // result = { id: number, url: string }
-      setCurrentImage({
-        id: result.id,
-        url: result.url,
-        fileType: FILE_TYPE_IMAGE,
-        entityType: ENTITY_TYPE_SPARE_PART,
-        displayOrder: 0,
-        previewUrl: URL.createObjectURL(selectedFile)
-      });
+      // Subir al endpoint /l/media/upload:
+      const resultados = await uploadMediaFiles([selectedFile]);
+      // resultados === [ { id: nuevoMediaId, url: nuevaUrl, … } ]
+
+      // Reemplazamos la imagen previa por la nueva:
+      setUploadedImages([
+        {
+          id: resultados[0].id,
+          url: resultados[0].url,
+          fileType: FILE_TYPE_IMAGE,        // "IMAGE"
+          entityType: ENTITY_TYPE_SPARE_PART, // "SPARE_PART"
+          displayOrder: 0                    // o el índice que quieras
+        }
+      ]);
+
       setSelectedFile(null);
       toast.success("Imagen subida correctamente");
     } catch (err) {
@@ -596,52 +613,114 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
   const handleSubmit = async () => {
   try {
     if (sparePartId) {
-      // Definir updateData localmente
-      const updateData = {
+      // 1) Arma el objeto base del repuesto (sin media aún):
+      const sparePartData = {
         id: sparePartId,
         externalId: formData.externalId,
         code: formData.code,
         name: formData.name,
         description: formData.description,
         material: formData.material,
-        price: parseFloat(formData.price)  || 0,
+        price: parseFloat(formData.price) || 0,
         stock: parseInt(formData.stock, 10) || 0,
         status: formData.status,
-        media: uploadedImages.map((img, idx) => ({
-          id: img.id,
-          url: img.url,
-          fileType: img.fileType || "IMAGE",
-          entityType: img.entityType || "SPARE_PART",
-          displayOrder: img.displayOrder ?? idx
-        }))
+        updatedBy: "1",
+        updatedAt: new Date().toISOString(),
       };
+
+      // 2) Si hay una imagen previa y se eligió un nuevo archivo, primero elimínala:
+      if (
+        uploadedImages.length > 0 &&   // hay media guardada en el estado
+        selectedFile                   // y el usuario seleccionó un archivo nuevo
+      ) {
+        const idMediaAnterior = uploadedImages[0].id;
+        try {
+          await deleteSparePartMedia(idMediaAnterior);
+          // Una vez eliminado, limpiamos el array de imágenes previas:
+          setUploadedImages([]);
+        } catch (err) {
+          console.error("Error eliminando la media anterior:", err);
+          // Si falla la eliminación, podrías optar por continuar o abortar;
+          // por simplicidad, seguimos para intentar actualizar con la nueva.
+        }
+      }
+
+      // 3) Ahora, si hay un nuevo archivo seleccionado, lo subimos a /l/media/upload:
+      let nuevaImagen = null;
+      if (selectedFile) {
+        const resultados = await uploadMediaFiles([ selectedFile ]);
+        // resultados === [ { id: nuevoId, url: nuevaUrl } ]
+        nuevaImagen = {
+          id: resultados[0].id,
+          url: resultados[0].url,
+          fileType: FILE_TYPE_IMAGE,        // "IMAGE"
+          entityType: ENTITY_TYPE_SPARE_PART,// "SPARE_PART"
+          entityId: sparePartId,             // asignación al repuesto
+          displayOrder: 0
+        };
+        // Reemplazamos cualquier antigua “uploadedImages” con la nueva:
+        setUploadedImages([ nuevaImagen ]);
+        // Borramos el selectedFile para que ya no intente volver a subirla si hacen otro submit:
+        setSelectedFile(null);
+      }
+
+      // 4) Preparamos el array final de “media” para mandar en el PUT:
+      //    Si ya había una imagen previa Y no se eligió nueva, la conservamos.
+      //    Si elegimos una nueva, nuestro uploadedImages ya contiene sólo la nueva.
+      const mediaParaPayload = uploadedImages.length > 0
+        ? uploadedImages.map((img, idx) => ({
+            id: img.id,
+            url: img.url,
+            fileType: "IMAGE",
+            entityType: "SPARE_PART",
+            entityId: sparePartId,
+            displayOrder: idx
+          }))
+        : [];
+
+      // 5) Montamos el JSON de actualización incluyendo “media”:
+      const updateData = {
+        ...sparePartData,
+        media: mediaParaPayload
+      };
+
+      // 6) Llamamos a tu servicio para actualizar:
       await updateSparePart(updateData);
-      toast.success("Repuesto actualizado correctamente");
+      toast.success("Repuesto y su imagen se actualizaron correctamente");
       if (typeof onSave === "function") onSave();
     } else {
-      // Definir creationData localmente
+      // **Lógica de creación (igual que antes, sin deleteHostMedia)**
       const creationData = {
         externalId: formData.externalId,
         code: formData.code,
         name: formData.name,
         description: formData.description,
         material: formData.material,
-        price: parseFloat(formData.price)  || 0,
+        price: parseFloat(formData.price) || 0,
         stock: parseInt(formData.stock, 10) || 0,
         rentable: false,
         status: formData.status,
-        media: uploadedImages.map((img, idx) => ({
-          id: img.id || 0,
-          url: img.url,
-          fileType: img.fileType || "IMAGE",
-          entityType: img.entityType || "SPARE_PART",
-          displayOrder: img.displayOrder ?? idx
-        }))
+        media: []
       };
+
+      // Si hay un archivo seleccionado al crear
+      if (selectedFile) {
+        const resultados = await uploadMediaFiles([ selectedFile ]);
+        creationData.media = resultados.map((r, idx) => ({
+          id: r.id,
+          url: r.url,
+          fileType: "IMAGE",
+          entityType: "SPARE_PART",
+          displayOrder: idx
+        }));
+        setSelectedFile(null);
+      }
+
       await createSparePart(creationData);
       toast.success("Repuesto creado correctamente");
       if (typeof onSave === "function") onSave();
     }
+
     return true;
   } catch (err) {
     console.error("Error al guardar repuesto:", err);
@@ -649,6 +728,8 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
     return false;
   }
 };
+
+
 
 
 
@@ -799,22 +880,20 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
               <h3 className="text-lg font-medium">Imágenes</h3>
               <div className="flex flex-col items-start gap-4">
                 {/* Si ya hay una imagen actual, la mostramos */}
-                {currentImage && (
+                {uploadedImages.length > 0 && (
                   <div className="relative w-32 h-32 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
                     <img
-                      src={
-                        currentImage.previewUrl
-                          ? currentImage.previewUrl
-                          : currentImage.url
-                      }
+                      src={uploadedImages[0].previewUrl
+                        ? uploadedImages[0].previewUrl
+                        : uploadedImages[0].url}
                       alt="Imagen actual"
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        // Si la url falla, ocultamos y dejamos un placeholder
                         if (!e.target.hasAttribute("data-error")) {
                           e.target.setAttribute("data-error", "true");
                           e.target.style.display = "none";
                         }
+
                       }}
                     />
                   </div>
@@ -835,11 +914,7 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
                   >
                     {currentImage ? "Reemplazar imagen" : "Seleccionar imagen"}
                   </label>
-                  {selectedFile && (
-                    <span className="text-sm truncate">
-                      {selectedFile.name}
-                    </span>
-                  )}
+                  {selectedFile && <span className="text-sm truncate">{selectedFile.name}</span>}
                   <Button
                     onClick={handleUploadImage}
                     disabled={!selectedFile || isUploading}
@@ -1048,14 +1123,14 @@ export function SparePartsView() {
   };
 
   const handleSaveSparePart = async () => {
-   try {
-     await fetchSpareParts();       // recarga todos los repuestos
-     setIsDetailDialogOpen(false);  // cierra el modal
-   } catch (err) {
-     console.error("Error al refrescar lista tras guardar:", err);
-     toast.error("Error al actualizar la lista de repuestos");
-   }
- };
+    try {
+      await fetchSpareParts();       // recarga todos los repuestos
+      setIsDetailDialogOpen(false);  // cierra el modal
+    } catch (err) {
+      console.error("Error al refrescar lista tras guardar:", err);
+      toast.error("Error al actualizar la lista de repuestos");
+    }
+  };
 
   if (isLoading && spareParts.length === 0) {
     return (
