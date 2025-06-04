@@ -170,7 +170,7 @@ const SparePartCard = ({ sparePart, onClick, onDelete }) => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 bg-white/20 hover:bg-white/30 text-white"
+                className="h-8 w-8 bg-white/20 hover:bg-white/30 text-white cursor-pointer transition-colors duration-500"
                 onClick={(e) => {
                   e.stopPropagation();         // Para que no abra el modal de edición
                   onDelete(sparePart);
@@ -425,42 +425,41 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
 
 
   // 4) Al cambiar el input file, guardamos el File en selectedFile
-  const onFileChange = (e) => {
+  const onFileChange = async (e) => {
     if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-    }
-  };
+      const file = e.target.files[0];
 
-  // 5) Función que sube el único archivo seleccionado y actualiza currentImage
-  const handleUploadImage = async () => {
-    if (!selectedFile) return;
-    try {
+      // 1) Ponemos el spinner de subida
       setIsUploading(true);
-      // Subir al endpoint /l/media/upload:
-      const resultados = await uploadMediaFiles([selectedFile]);
-      // resultados === [ { id: nuevoMediaId, url: nuevaUrl, … } ]
 
-      // Reemplazamos la imagen previa por la nueva:
-      setUploadedImages([
-        {
+      try {
+        // 2) Subimos de inmediato el archivo (POST /l/media/upload)
+        //    NOTA: uploadMediaFiles espera un array de Files
+        const resultados = await uploadMediaFiles([file]);
+
+        // 3) Construimos el objeto con id/url que regresó el backend
+        const nueva = {
           id: resultados[0].id,
           url: resultados[0].url,
-          fileType: FILE_TYPE_IMAGE,        // "IMAGE"
+          fileType: FILE_TYPE_IMAGE,         // "IMAGE"
           entityType: ENTITY_TYPE_SPARE_PART, // "SPARE_PART"
-          displayOrder: 0                    // o el índice que quieras
-        }
-      ]);
+          entityId: sparePartId || null,      // Si es edición, aquí va el ID; si es creación, déjalo null por ahora
+          displayOrder: 0                     // o el índice que quieras
+        };
 
-      setSelectedFile(null);
-      toast.success("Imagen subida correctamente");
-    } catch (err) {
-      console.error("Error al subir imagen:", err);
-      toast.error("Error al subir la imagen: " + err.message);
-    } finally {
-      setIsUploading(false);
+        // 4) Reemplazamos cualquier imagen previa
+        setUploadedImages([nueva]);
+
+        toast.success("Imagen subida");
+      } catch (err) {
+        console.error("Error al subir imagen automáticamente:", err);
+        toast.error("Error al subir la imagen: " + err.message);
+      } finally {
+        // 5) Quitamos el spinner
+        setIsUploading(false);
+      }
     }
   };
-
 
   const fetchProducts = async () => {
     try {
@@ -611,64 +610,64 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
 
   // 6) Al enviar el formulario, incluimos SOLO esta imagen (si existe) en media
   const handleSubmit = async () => {
-  try {
-    if (sparePartId) {
-      // 1) Arma el objeto base del repuesto (sin media aún):
-      const sparePartData = {
-        id: sparePartId,
-        externalId: formData.externalId,
-        code: formData.code,
-        name: formData.name,
-        description: formData.description,
-        material: formData.material,
-        price: parseFloat(formData.price) || 0,
-        stock: parseInt(formData.stock, 10) || 0,
-        status: formData.status,
-        updatedBy: "1",
-        updatedAt: new Date().toISOString(),
-      };
-
-      // 2) Si hay una imagen previa y se eligió un nuevo archivo, primero elimínala:
-      if (
-        uploadedImages.length > 0 &&   // hay media guardada en el estado
-        selectedFile                   // y el usuario seleccionó un archivo nuevo
-      ) {
-        const idMediaAnterior = uploadedImages[0].id;
-        try {
-          await deleteSparePartMedia(idMediaAnterior);
-          // Una vez eliminado, limpiamos el array de imágenes previas:
-          setUploadedImages([]);
-        } catch (err) {
-          console.error("Error eliminando la media anterior:", err);
-          // Si falla la eliminación, podrías optar por continuar o abortar;
-          // por simplicidad, seguimos para intentar actualizar con la nueva.
-        }
-      }
-
-      // 3) Ahora, si hay un nuevo archivo seleccionado, lo subimos a /l/media/upload:
-      let nuevaImagen = null;
-      if (selectedFile) {
-        const resultados = await uploadMediaFiles([ selectedFile ]);
-        // resultados === [ { id: nuevoId, url: nuevaUrl } ]
-        nuevaImagen = {
-          id: resultados[0].id,
-          url: resultados[0].url,
-          fileType: FILE_TYPE_IMAGE,        // "IMAGE"
-          entityType: ENTITY_TYPE_SPARE_PART,// "SPARE_PART"
-          entityId: sparePartId,             // asignación al repuesto
-          displayOrder: 0
+    try {
+      if (sparePartId) {
+        // 1) Arma el objeto base del repuesto (sin media aún):
+        const sparePartData = {
+          id: sparePartId,
+          externalId: formData.externalId,
+          code: formData.code,
+          name: formData.name,
+          description: formData.description,
+          material: formData.material,
+          price: parseFloat(formData.price) || 0,
+          stock: parseInt(formData.stock, 10) || 0,
+          status: formData.status,
+          updatedBy: "1",
+          updatedAt: new Date().toISOString(),
         };
-        // Reemplazamos cualquier antigua “uploadedImages” con la nueva:
-        setUploadedImages([ nuevaImagen ]);
-        // Borramos el selectedFile para que ya no intente volver a subirla si hacen otro submit:
-        setSelectedFile(null);
-      }
 
-      // 4) Preparamos el array final de “media” para mandar en el PUT:
-      //    Si ya había una imagen previa Y no se eligió nueva, la conservamos.
-      //    Si elegimos una nueva, nuestro uploadedImages ya contiene sólo la nueva.
-      const mediaParaPayload = uploadedImages.length > 0
-        ? uploadedImages.map((img, idx) => ({
+        // 2) Si hay una imagen previa y se eligió un nuevo archivo, primero elimínala:
+        if (
+          uploadedImages.length > 0 &&   // hay media guardada en el estado
+          selectedFile                   // y el usuario seleccionó un archivo nuevo
+        ) {
+          const idMediaAnterior = uploadedImages[0].id;
+          try {
+            await deleteSparePartMedia(idMediaAnterior);
+            // Una vez eliminado, limpiamos el array de imágenes previas:
+            setUploadedImages([]);
+          } catch (err) {
+            console.error("Error eliminando la media anterior:", err);
+            // Si falla la eliminación, podrías optar por continuar o abortar;
+            // por simplicidad, seguimos para intentar actualizar con la nueva.
+          }
+        }
+
+        // 3) Ahora, si hay un nuevo archivo seleccionado, lo subimos a /l/media/upload:
+        let nuevaImagen = null;
+        if (selectedFile) {
+          const resultados = await uploadMediaFiles([selectedFile]);
+          // resultados === [ { id: nuevoId, url: nuevaUrl } ]
+          nuevaImagen = {
+            id: resultados[0].id,
+            url: resultados[0].url,
+            fileType: FILE_TYPE_IMAGE,        // "IMAGE"
+            entityType: ENTITY_TYPE_SPARE_PART,// "SPARE_PART"
+            entityId: sparePartId,             // asignación al repuesto
+            displayOrder: 0
+          };
+          // Reemplazamos cualquier antigua “uploadedImages” con la nueva:
+          setUploadedImages([nuevaImagen]);
+          // Borramos el selectedFile para que ya no intente volver a subirla si hacen otro submit:
+          setSelectedFile(null);
+        }
+
+        // 4) Preparamos el array final de “media” para mandar en el PUT:
+        //    Si ya había una imagen previa Y no se eligió nueva, la conservamos.
+        //    Si elegimos una nueva, nuestro uploadedImages ya contiene sólo la nueva.
+        const mediaParaPayload = uploadedImages.length > 0
+          ? uploadedImages.map((img, idx) => ({
             id: img.id,
             url: img.url,
             fileType: "IMAGE",
@@ -676,58 +675,58 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
             entityId: sparePartId,
             displayOrder: idx
           }))
-        : [];
+          : [];
 
-      // 5) Montamos el JSON de actualización incluyendo “media”:
-      const updateData = {
-        ...sparePartData,
-        media: mediaParaPayload
-      };
+        // 5) Montamos el JSON de actualización incluyendo “media”:
+        const updateData = {
+          ...sparePartData,
+          media: mediaParaPayload
+        };
 
-      // 6) Llamamos a tu servicio para actualizar:
-      await updateSparePart(updateData);
-      toast.success("Repuesto y su imagen se actualizaron correctamente");
-      if (typeof onSave === "function") onSave();
-    } else {
-      // **Lógica de creación (igual que antes, sin deleteHostMedia)**
-      const creationData = {
-        externalId: formData.externalId,
-        code: formData.code,
-        name: formData.name,
-        description: formData.description,
-        material: formData.material,
-        price: parseFloat(formData.price) || 0,
-        stock: parseInt(formData.stock, 10) || 0,
-        rentable: false,
-        status: formData.status,
-        media: []
-      };
+        // 6) Llamamos a tu servicio para actualizar:
+        await updateSparePart(updateData);
+        toast.success("Repuesto actualizado correctamente");
+        if (typeof onSave === "function") onSave();
+      } else {
+        // **Lógica de creación (igual que antes, sin deleteHostMedia)**
+        const creationData = {
+          externalId: formData.externalId,
+          code: formData.code,
+          name: formData.name,
+          description: formData.description,
+          material: formData.material,
+          price: parseFloat(formData.price) || 0,
+          stock: parseInt(formData.stock, 10) || 0,
+          rentable: false,
+          status: formData.status,
+          media: []
+        };
 
-      // Si hay un archivo seleccionado al crear
-      if (selectedFile) {
-        const resultados = await uploadMediaFiles([ selectedFile ]);
-        creationData.media = resultados.map((r, idx) => ({
-          id: r.id,
-          url: r.url,
-          fileType: "IMAGE",
-          entityType: "SPARE_PART",
-          displayOrder: idx
-        }));
-        setSelectedFile(null);
+        // Si hay un archivo seleccionado al crear
+        if (selectedFile) {
+          const resultados = await uploadMediaFiles([selectedFile]);
+          creationData.media = resultados.map((r, idx) => ({
+            id: r.id,
+            url: r.url,
+            fileType: "IMAGE",
+            entityType: "SPARE_PART",
+            displayOrder: idx
+          }));
+          setSelectedFile(null);
+        }
+
+        await createSparePart(creationData);
+        toast.success("Repuesto creado correctamente");
+        if (typeof onSave === "function") onSave();
       }
 
-      await createSparePart(creationData);
-      toast.success("Repuesto creado correctamente");
-      if (typeof onSave === "function") onSave();
+      return true;
+    } catch (err) {
+      console.error("Error al guardar repuesto:", err);
+      toast.error("Error al guardar el repuesto: " + (err.message || "desconocido"));
+      return false;
     }
-
-    return true;
-  } catch (err) {
-    console.error("Error al guardar repuesto:", err);
-    toast.error("Error al guardar el repuesto: " + (err.message || "desconocido"));
-    return false;
-  }
-};
+  };
 
 
 
@@ -912,24 +911,17 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
                     htmlFor="image-upload"
                     className="cursor-pointer px-3 py-2 border border-gray-300 rounded-md bg-white hover:bg-gray-50 text-sm"
                   >
-                    {currentImage ? "Reemplazar imagen" : "Seleccionar imagen"}
+                    Seleccionar imagen
                   </label>
                   {selectedFile && <span className="text-sm truncate">{selectedFile.name}</span>}
-                  <Button
-                    onClick={handleUploadImage}
-                    disabled={!selectedFile || isUploading}
-                    size="sm"
-                    variant={selectedFile ? "default" : "outline"}
-                  >
-                    {isUploading ? (
-                      <span className="flex items-center gap-1">
-                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                        Subiendo...
-                      </span>
-                    ) : (
-                      "Subir"
-                    )}
-                  </Button>
+
+                  {/* Si quieres mostrar un spinner separado: */}
+                  {isUploading && (
+                    <div className="ml-2 flex items-center gap-2 text-sm text-gray-500">
+                      <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full" />
+                      <span>Subiendo...</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
