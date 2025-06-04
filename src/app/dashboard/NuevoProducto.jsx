@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import KeyValueInput from '@/components/common/KeyValueInput';
+import InputData from '@/components/common/InputData';
 import { 
   Select, 
   SelectContent, 
@@ -856,15 +856,24 @@ return (
 
                     <div className="space-y-2">
                       <Label>Especificaciones Técnicas</Label>
-                      <KeyValueInput
-                        values={Array.isArray(producto.technicalData) ? producto.technicalData : []}
-                        onChange={(newValues) => setProducto({ ...producto, technicalData: newValues })}
-                        placeholderKey="Especificación"
-                        placeholderValue="Valor"
+                      <InputData
+                        value={typeof producto.technicalData === 'string' 
+                          ? producto.technicalData 
+                          : Array.isArray(producto.technicalData) 
+                            ? producto.technicalData.map(item => 
+                                typeof item === 'object' 
+                                  ? `${item.key || ''}:${item.value || ''}`
+                                  : item
+                              ).join(',')
+                            : ''}
+                        onChange={(value) => {
+                          setProducto({ 
+                            ...producto, 
+                            technicalData: value 
+                          });
+                        }}
+                        placeholder="Ej: Peso:25kg"
                       />
-                      <p className="text-xs text-muted-foreground">
-                        Agrega las especificaciones técnicas en formato clave-valor
-                      </p>
                     </div>
                   </div>
                 </div>

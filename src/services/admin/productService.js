@@ -180,60 +180,58 @@ export const updateProduct = async (productData) => {
       throw new Error('El producto debe tener un ID para actualizarlo');
     }
     
-    // Actualizar el producto base
-    const response = await apiClient.put('/l/products', productData);
-    console.log('Respuesta de actualización de producto:', response.data);
-    
-    if (!response.data) {
-      throw new Error('No se recibió una respuesta válida del servidor');
+    // Procesar los campos dinámicos
+    const processField = (field) => {
+      if (!field) return {};
+      if (typeof field === 'string') {
+        try {
+          return JSON.parse(field);
+        } catch (e) {
+          return field;
+        }
+      }
+      return field;
     };
 
-    // Asegurarse de que los campos dinámicos estén presentes y sean objetos
-    const technicalData = processJsonField(productData.technicalData);
-    const functionalities = processJsonField(productData.functionalities);
-    const downloads = processJsonField(productData.downloads);
-    const description = processJsonField(productData.description);
-    
-    console.log('Campos dinámicos procesados:', {
-      technicalData,
-      functionalities,
-      downloads,
-      description
-    });
-
+    // Preparar el DTO del producto según el formato esperado por la API
     const productDto = {
       id: Number(productData.id),
-      externalId: productData.externalId,
+      updatedBy: "1", // Deberías obtener esto del usuario autenticado
+      updatedAt: new Date().toISOString(),
+      externalId: productData.externalId || `PROD-${Date.now()}`,
       name: productData.name,
-      color: productData.color || '#000000',
-      shortDescription: productData.shortDescription,
-      description: description,
-      type: productData.type,
-      productUsage: productData.productUsage,
-      cost: Number(productData.cost || 0),
+      shortDescription: productData.shortDescription || '',
+      description: processField(productData.description),
+      type: productData.type || 'PRODUCT',
+      productUsage: productData.productUsage || 'GENERAL',
       price: Number(productData.price || 0),
+      cost: Number(productData.cost || 0),
       discount: Number(productData.discount || 0),
       stock: Number(productData.stock || 0),
       garanty: Number(productData.garanty || 0),
-      technicalData: technicalData,
-      functionalities: functionalities,
-      downloads: downloads,
+      color: productData.color || '#000000',
+      downloads: processField(productData.downloads || {}),
+      rentable: Boolean(productData.rentable),
       status: productData.status || 'ACTIVE',
       brandId: Number(productData.brandId),
       categoryId: Number(productData.categoryId),
-      productMultimediaDto: Array.isArray(productData.multimedia)
-        ? productData.multimedia.map((m, index) => ({
-            id: m.id ? Number(m.id) : 0,
-            displayOrder: Number(index + 1),
-            productId: Number(productData.id),
-            multimediaId: m.id ? Number(m.id) : 0
+      technicalData: processField(productData.technicalData || {}),
+      functionalities: processField(productData.functionalities || {}),
+      media: Array.isArray(productData.media) 
+        ? productData.media.map((media, index) => ({
+            id: media.id || 0,
+            url: media.url,
+            fileType: media.fileType || 'IMAGE',
+            entityId: Number(productData.id),
+            entityType: 'PRODUCT',
+            displayOrder: media.displayOrder || index
           }))
         : []
     };
 
-    console.log('Datos enviados a la API:', productDto);
+    console.log('Enviando datos al servidor:', JSON.stringify(productDto, null, 2));
     
-    // Usar axios directamente con la URL completa y correcta, igual que en brandService
+    // Usar axios directamente con la URL completa
     const { data } = await axios({
       method: 'put',
       url: "https://libamaq.com/l/products",
