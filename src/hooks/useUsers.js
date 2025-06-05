@@ -130,7 +130,9 @@ export const useDeleteUser = () => {
     mutationFn: deleteUser,
     onSuccess: () => {
       toast.success('Usuario eliminado exitosamente');
+      // Invalidar las cachés relevantes: usuarios generales y clientes
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
     },
     onError: (error) => {
       console.error('Error al eliminar usuario:', error);

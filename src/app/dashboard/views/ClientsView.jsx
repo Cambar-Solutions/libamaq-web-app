@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
-import { getCustomerUsers, createUser, updateUser } from "@/services/admin/userService";
+import { getCustomerUsers, createUser, updateUser, resetUserPassword, deleteUser } from "@/services/admin/userService";
 import { Pencil } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useDeleteUser } from '../../../hooks/useUsers';
+import ActionButtons from '@/components/ui/ActionButtons';
 
 
 export function ClientsView() {
@@ -30,6 +32,13 @@ export function ClientsView() {
   const [phoneError, setPhoneError] = useState(false);
   const [nombreError, setNombreError] = useState(false);
   const [apellidoError, setApellidoError] = useState(false);
+  const [clientToChangePassword, setClientToChangePassword] = useState(null);
+  const [newPasswordError, setNewPasswordError] = useState("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  // Inicializar la mutación de eliminación
+  const deleteClientMutation = useDeleteUser();
 
   // Lista de códigos de país (ejemplo, se puede expandir)
   const countryCodes = [
@@ -166,6 +175,15 @@ export function ClientsView() {
     setApellidoError(false);
   };
 
+  const handleChangePasswordClick = (client) => {
+    setClientToChangePassword(client);
+    setNewPassword("");
+    setConfirmPassword("");
+    setNewPasswordError("");
+    setConfirmPasswordError("");
+    setIsPasswordModalOpen(true);
+  };
+
   const resetForm = () => {
     // Encontrar el código de país por defecto (+52)
     const defaultCountryCode = countryCodes.find(code => code.value === '+52')?.value || countryCodes[0].value;
@@ -178,15 +196,24 @@ export function ClientsView() {
       telefono: defaultCountryCode, // Resetear a la lada por defecto
       password: "",
       status: "ACTIVE",
-      role: "CUSTOMER"
+      role: "GENERAL_CUSTOMER"
     });
     setIsEditing(false);
-    setNewPassword(""); // Limpiar el estado de la nueva contraseña
-    setIsPasswordModalOpen(false); // Cerrar modal de contraseña
-    setPhoneError(false); // Limpiar error de teléfono
-    setNombreError(false); // Limpiar error de nombre
-    setApellidoError(false); // Limpiar error de apellido
-    setSelectedCountryCode(defaultCountryCode); // Resetear el código de país seleccionado
+    setNewPassword("");
+    setIsPasswordModalOpen(false);
+    setPhoneError(false);
+    setNombreError(false);
+    setApellidoError(false);
+    setSelectedCountryCode(defaultCountryCode);
+    setClientToChangePassword(null);
+    setNewPasswordError("");
+    setConfirmPasswordError("");
+    setConfirmPassword("");
+
+    console.log("Estado de newClient después de resetForm:", {
+      email: "", // Esperamos que sea vacío
+      password: "" // Esperamos que sea vacío
+    });
   };
 
   const handleCloseModal = () => {
@@ -226,17 +253,86 @@ export function ClientsView() {
 
   // Nueva mutación para restablecer contraseña
   const resetPasswordMutation = useMutation({
-    mutationFn: ({ id, password }) => resetPassword(newClient.email, "", password),
+    mutationFn: ({ userId, newPassword }) => resetUserPassword(userId, newPassword),
     onSuccess: () => {
       toast.success("Contraseña actualizada exitosamente");
       setIsPasswordModalOpen(false);
       setNewPassword("");
+      setConfirmPassword("");
+      setNewPasswordError("");
+      setConfirmPasswordError("");
     },
     onError: (error) => {
       toast.error("Error al actualizar contraseña");
       console.error(error);
     }
   });
+
+  // Función de validación de complejidad de contraseña (copiada de EmployeesView)
+  const validatePassword = (password) => {
+    if (password.length < 8) {
+      return "La contraseña debe tener al menos 8 caracteres.";
+    }
+    if (!/[A-Z]/.test(password)) {
+      return "La contraseña debe contener al menos una mayúscula.";
+    }
+    if (!/[a-z]/.test(password)) {
+      return "La contraseña debe contener al menos una minúscula.";
+    }
+    if (!/[0-9]/.test(password)) {
+      return "La contraseña debe contener al menos un número.";
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      return "La contraseña debe contener al menos un carácter especial.";
+    }
+    return ""; // Retorna cadena vacía si es válida
+  };
+
+  // Función para manejar el envío del formulario de cambio de contraseña
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+
+    let valid = true;
+
+    // Validar complejidad de la nueva contraseña
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      setNewPasswordError(passwordError);
+      valid = false;
+    } else {
+      setNewPasswordError("");
+    }
+
+    // Validar que las contraseñas coincidan
+    if (newPassword !== confirmPassword) {
+      setConfirmPasswordError("Las contraseñas no coinciden.");
+      valid = false;
+    } else {
+      setConfirmPasswordError("");
+    }
+
+    console.log('Password validation results:', {
+      length: validatePassword(newPassword).includes('caracteres') ? validatePassword(newPassword) : 'OK',
+      uppercase: validatePassword(newPassword).includes('mayúscula') ? validatePassword(newPassword) : 'OK',
+      lowercase: validatePassword(newPassword).includes('minúscula') ? validatePassword(newPassword) : 'OK',
+      number: validatePassword(newPassword).includes('número') ? validatePassword(newPassword) : 'OK',
+      specialChar: validatePassword(newPassword).includes('carácter especial') ? validatePassword(newPassword) : 'OK',
+      match: newPassword === confirmPassword ? 'OK' : 'Passwords do not match'
+    });
+
+    // Si alguna validación falla, detener el envío
+    if (!valid) {
+      return;
+    }
+
+    // Si las validaciones pasan, proceder con la mutación
+    if (clientToChangePassword?.id && newPassword) {
+      resetPasswordMutation.mutate({ userId: clientToChangePassword.id, newPassword });
+    } else {
+      // Esto debería ser manejado por validación, pero como fallback
+      toast.error("Ocurrió un error. Intenta de nuevo.");
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -280,6 +376,9 @@ export function ClientsView() {
     
     console.log('Datos del cliente a guardar:', userData);
 
+    // Agregar console.log antes de llamar a la mutación
+    console.log('Llamando a createClientMutation.mutate con datos:', userData);
+
     if (isEditing) {
       // Para actualización, incluir el ID como número
       const updateData = {
@@ -300,16 +399,6 @@ export function ClientsView() {
       
       console.log('Datos del usuario a crear:', createData);
       createClientMutation.mutate(createData);
-    }
-  };
-
-  // Función para manejar el envío del formulario de cambio de contraseña
-  const handlePasswordSubmit = (e) => {
-    e.preventDefault();
-    if (newClient.id && newPassword) {
-      resetPasswordMutation.mutate({ id: newClient.id, password: newPassword });
-    } else {
-      toast.error("Debes seleccionar un cliente y proporcionar una nueva contraseña.");
     }
   };
 
@@ -385,17 +474,21 @@ export function ClientsView() {
                         </TableCell>
                         <TableCell className="select-all">{formatDate(client.createdAt)}</TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(client);
+                          <ActionButtons
+                            showView={false}
+                            showEdit={true}
+                            showDelete={true}
+                            showChangePassword={true}
+                            onEdit={() => handleEdit(client)}
+                            onChangePassword={() => handleChangePasswordClick(client)}
+                            onDelete={() => {
+                              if (window.confirm(`¿Estás seguro de que quieres eliminar al cliente ${client.name} ${client.lastName}?`)) {
+                                deleteClientMutation.mutate(client.id);
+                              }
                             }}
-                            className="cursor-pointer"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                            editTitle="Editar Cliente"
+                            changePasswordTitle="Cambiar Contraseña"
+                          />
                         </TableCell>
                       </TableRow>
                     ))
@@ -456,15 +549,22 @@ export function ClientsView() {
                         </div>
                         
                         <div className="mt-4 flex justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                            onClick={() => handleEdit(client)}
-                          >
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Editar
-                          </Button>
+                          <ActionButtons
+                            showView={false}
+                            showEdit={true}
+                            showDelete={true}
+                            showChangePassword={true}
+                            onEdit={() => handleEdit(client)}
+                            onChangePassword={() => handleChangePasswordClick(client)}
+                            onDelete={() => {
+                              if (window.confirm(`¿Estás seguro de que quieres eliminar al cliente ${client.name} ${client.lastName}?`)) {
+                                deleteClientMutation.mutate(client.id);
+                              }
+                            }}
+                            editTitle="Editar Cliente"
+                            changePasswordTitle="Cambiar Contraseña"
+                            className="!bg-transparent hover:!bg-blue-50 border border-blue-200 !text-blue-600"
+                          />
                         </div>
                       </div>
                     </div>
@@ -530,7 +630,6 @@ export function ClientsView() {
                 <Label htmlFor="telefono" className="text-right">
                   Teléfono
                 </Label>
-                {/* Selector de País/Lada */}
                 <Select
                   value={selectedCountryCode}
                   onValueChange={handleCountryCodeChange}
@@ -540,13 +639,12 @@ export function ClientsView() {
                   </SelectTrigger>
                   <SelectContent>
                     {countryCodes.map((country) => (
-                      <SelectItem key={country.value} value={country.value}>
+                      <SelectItem key={country.value + country.label} value={country.value}>
                         {country.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {/* Campo de Teléfono */}
                 <Input
                   id="telefono"
                   name="telefono"
@@ -570,7 +668,7 @@ export function ClientsView() {
                     <SelectValue placeholder="Seleccionar rol" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="CUSTOMER">Cliente General</SelectItem>
+                    <SelectItem value="GENERAL_CUSTOMER">Cliente General</SelectItem>
                     <SelectItem value="FREQUENT_CUSTOMER">Cliente Frecuente</SelectItem>
                   </SelectContent>
                 </Select>
@@ -629,39 +727,84 @@ export function ClientsView() {
               </Button>
             </DialogFooter>
           </form>
-          {isEditing && (
-            <div className="mt-4 pt-4 border-t">
-              <h4 className="text-lg font-semibold mb-2">Cambiar Contraseña</h4>
-              <form onSubmit={handlePasswordSubmit}>
-                <div className="grid gap-4">
-                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="new-password" className="text-right">
-                      Nueva Contraseña
-                    </Label>
-                    <Input
-                      id="new-password"
-                      name="new-password"
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="col-span-3"
-                      required
-                    />
-                  </div>
-                  <DialogFooter className="sm:justify-start">
-                    <Button 
-                      type="submit" 
-                      variant="destructive"
-                      disabled={resetPasswordMutation.isPending || !newPassword}
-                      className="hover:bg-red-700 ml-auto"
-                    >
-                      {resetPasswordMutation.isPending ? "Actualizando..." : "Actualizar Contraseña"}
-                    </Button>
-                  </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para Cambiar Contraseña */}
+      <Dialog open={isPasswordModalOpen} onOpenChange={() => setIsPasswordModalOpen(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cambiar Contraseña de {clientToChangePassword?.name} {clientToChangePassword?.lastName}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handlePasswordSubmit}>
+            {resetPasswordMutation.isPending && (
+              <div className="mb-4 p-2 bg-blue-50 text-blue-700 rounded">
+                Actualizando contraseña...
+              </div>
+            )}
+            <div className="grid gap-y-4 py-4">
+              <div className="grid grid-cols-4 items-start gap-4">
+                <Label htmlFor="new-password" className="text-right">
+                  Nueva Contraseña
+                </Label>
+                <div className="col-span-3 w-full flex flex-col">
+                  <Input
+                    id="new-password"
+                    name="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className={`w-full ${newPasswordError ? 'border-red-500' : ''}`}
+                    required
+                  />
+                  {newPasswordError && (
+                    <p className="text-sm text-red-500 mt-1">{newPasswordError}</p>
+                  )}
+                  {!newPasswordError && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.
+                    </p>
+                  )}
                 </div>
-              </form>
+              </div>
+
+              <div className="grid grid-cols-4 items-start gap-4">
+                <Label htmlFor="confirm-password" className="text-right">
+                  Confirmar Contraseña
+                </Label>
+                <div className="col-span-3 w-full flex flex-col">
+                  <Input
+                    id="confirm-password"
+                    name="confirm-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={`w-full ${confirmPasswordError ? 'border-red-500' : ''}`}
+                    required
+                  />
+                  {confirmPasswordError && (
+                    <p className="text-sm text-red-500 mt-1">{confirmPasswordError}</p>
+                  )}
+                </div>
+              </div>
             </div>
-          )}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsPasswordModalOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={resetPasswordMutation.isPending || !newPassword}
+                className="cursor-pointer"
+              >
+                Actualizar Contraseña
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
@@ -669,13 +812,11 @@ export function ClientsView() {
         position="top-center"
         reverseOrder={false}
         toastOptions={{
-          // Estilos por defecto para todos los toasts
           duration: 3000,
           style: {
             background: '#363636',
             color: '#fff',
           },
-          // Estilos específicos para toasts de éxito
           success: {
             duration: 3000,
             iconTheme: {
@@ -683,7 +824,6 @@ export function ClientsView() {
               secondary: '#fff',
             },
           },
-          // Estilos específicos para toasts de error
           error: {
             duration: 4000,
             iconTheme: {
