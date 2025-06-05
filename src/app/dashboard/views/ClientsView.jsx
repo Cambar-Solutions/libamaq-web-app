@@ -102,10 +102,10 @@ export function ClientsView() {
     if (isEditing && name === 'password') {
       setNewPassword(value);
     } else {
-      setNewClient(prev => ({
-        ...prev,
-        [name]: value
-      }));
+    setNewClient(prev => ({
+      ...prev,
+      [name]: value
+    }));
     }
   };
 
@@ -266,7 +266,7 @@ export function ClientsView() {
        // No establecemos errores visuales aquí, ya que el atributo 'required' lo manejará
        return;
     }
-
+    
     // Datos base para crear o actualizar
     const userData = {
       email: newClient.email,
@@ -579,20 +579,20 @@ export function ClientsView() {
                 </Select>
               </div>
               {!isEditing && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="password" className="text-right">
-                    Contraseña
-                  </Label>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    value={newClient.password}
-                    onChange={handleInputChange}
-                    className="col-span-3"
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="password" className="text-right">
+                  Contraseña
+                </Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={newClient.password}
+                  onChange={handleInputChange}
+                  className="col-span-3"
                     required
-                  />
-                </div>
+                />
+              </div>
               )}
               {isEditing && (
                 <div className="grid grid-cols-4 items-center gap-4">

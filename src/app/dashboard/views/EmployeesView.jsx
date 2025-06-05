@@ -5,11 +5,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
-import { getAllUsers, createUser, updateUser } from "@/services/admin/userService";
+import {
+  useAllUsers,
+  useCreateUser,
+  useUpdateUser,
+  useDeleteUser,
+  useResetUserPassword,
+} from '@/hooks/useUsers';
 import { toast } from "sonner";
 import { Pencil } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
+import ActionButtons from '@/components/ui/ActionButtons';
+
+// Array estático de roles de empleados disponibles
+const EMPLOYEE_ROLES = [
+  { value: 'ADMIN', label: 'Administrador' },
+  { value: 'MANAGER', label: 'Gerente' }
+];
 
 export function EmployeesView() {
   const queryClient = useQueryClient();
@@ -23,30 +36,30 @@ export function EmployeesView() {
     telefono: "",
     password: "",
     status: "ACTIVE",
-    role: "DIRECTOR" // Rol predeterminado para empleados
+    role: "MANAGER" // Rol predeterminado para empleados
   });
-
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false); // Nuevo estado para el modal de contraseña
+  const [employeeToChangePassword, setEmployeeToChangePassword] = useState(null); // Estado para el empleado a cambiar contraseña
+  const [newPassword, setNewPassword] = useState(""); // Estado para la nueva contraseña
+  const [confirmPassword, setConfirmPassword] = useState(""); // Estado para confirmar contraseña
+  const [newPasswordError, setNewPasswordError] = useState(""); // Estado para errores de nueva contraseña
+  const [confirmPasswordError, setConfirmPasswordError] = useState(""); // Estado para errores de confirmar contraseña
+  
   // Consulta para obtener todos los usuarios y filtrar solo los empleados
   const { 
     data: allUsers = [], 
     isLoading: isLoadingUsers,
     error: usersError 
-  } = useQuery({
-    queryKey: ['users'],
-    queryFn: getAllUsers,
-    onError: (error) => {
-      toast.error("Error al cargar usuarios");
-      console.error('Error al cargar usuarios:', error);
-    }
-  });
+  } = useAllUsers();
   
   // Filtrar solo los empleados (DIRECTOR, PROVIDER, DELIVERY, ADMIN)
   const employees = Array.isArray(allUsers) 
-    ? allUsers.filter(user => user && ["DIRECTOR", "PROVIDER", "DELIVERY", "ADMIN"].includes(user.role))
+    ? allUsers.filter(user => user && EMPLOYEE_ROLES.some(role => role.value === user.role))
     : [];
     
   console.log('Usuarios totales:', allUsers);
   console.log('Empleados filtrados:', employees);
+  console.log('Roles de empleados permitidos (Frontend):', EMPLOYEE_ROLES);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -89,6 +102,16 @@ export function EmployeesView() {
     setIsModalOpen(true);
   };
 
+  // Nueva función para manejar el clic en "Cambiar Contraseña"
+  const handleChangePasswordClick = (employee) => {
+    setEmployeeToChangePassword(employee);
+    setNewPassword(""); // Limpiar el campo de contraseña al abrir el modal
+    setConfirmPassword(""); // Limpiar el campo de confirmar contraseña
+    setNewPasswordError(""); // Limpiar errores
+    setConfirmPasswordError(""); // Limpiar errores
+    setIsPasswordModalOpen(true);
+  };
+
   const resetForm = () => {
     setNewEmployee({
       id: null,
@@ -98,9 +121,15 @@ export function EmployeesView() {
       telefono: "",
       password: "",
       status: "ACTIVE",
-      role: "DIRECTOR"
+      role: "MANAGER"
     });
     setIsEditing(false);
+    setEmployeeToChangePassword(null); // Resetear empleado para cambiar contraseña
+    setNewPassword(""); // Resetear la nueva contraseña
+    setConfirmPassword(""); // Resetear confirmar contraseña
+    setNewPasswordError(""); // Limpiar errores
+    setConfirmPasswordError(""); // Limpiar errores
+    setIsPasswordModalOpen(false); // Cerrar modal de contraseña
   };
 
   const handleCloseModal = () => {
@@ -109,34 +138,16 @@ export function EmployeesView() {
   };
 
   // Mutación para crear un empleado
-  const createEmployeeMutation = useMutation({
-    mutationFn: createUser,
-    onSuccess: () => {
-      toast.success("Empleado registrado exitosamente");
-      setIsModalOpen(false);
-      resetForm();
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-    },
-    onError: (error) => {
-      toast.error("Error al registrar empleado");
-      console.error(error);
-    }
-  });
+  const createEmployeeMutation = useCreateUser();
 
   // Mutación para actualizar un empleado
-  const updateEmployeeMutation = useMutation({
-    mutationFn: updateUser,
-    onSuccess: () => {
-      toast.success("Empleado actualizado exitosamente");
-      setIsModalOpen(false);
-      resetForm();
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-    },
-    onError: (error) => {
-      toast.error("Error al actualizar empleado");
-      console.error(error);
-    }
-  });
+  const updateEmployeeMutation = useUpdateUser();
+
+  // Nueva mutación para restablecer contraseña (usada ahora por el modal específico)
+  const resetPasswordMutation = useResetUserPassword();
+
+  // Mutación para eliminar un empleado
+  const deleteEmployeeMutation = useDeleteUser();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -151,9 +162,9 @@ export function EmployeesView() {
       status: newEmployee.status
     };
     
-    // Verificar que el rol sea uno de los permitidos
-    if (!['ADMIN', 'DIRECTOR', 'USER', 'CUSTOMER', 'PROVIDER', 'DELIVERY'].includes(userData.role)) {
-      toast.error(`Rol no válido: ${userData.role}. Roles permitidos: ADMIN, DIRECTOR, USER, CUSTOMER, PROVIDER, DELIVERY`);
+    // Verificar que el rol sea uno de los permitidos para empleados
+    if (!EMPLOYEE_ROLES.some(role => role.value === userData.role)) {
+      toast.error(`Rol no válido: ${userData.role}. Roles permitidos: ${EMPLOYEE_ROLES.map(role => role.label).join(', ')}`);
       return;
     }
 
@@ -167,7 +178,12 @@ export function EmployeesView() {
       };
       
       console.log('Datos del empleado a actualizar:', updateData);
-      updateEmployeeMutation.mutate(updateData);
+      updateEmployeeMutation.mutate(updateData, {
+        onSuccess: () => {
+          setIsModalOpen(false);
+          resetForm();
+        },
+      });
     } else {
       // Para creación, incluir campos adicionales
       const createData = {
@@ -178,7 +194,84 @@ export function EmployeesView() {
       };
       
       console.log('Datos del empleado a crear:', createData);
-      createEmployeeMutation.mutate(createData);
+      console.log('Role a enviar en creación:', createData.role);
+      createEmployeeMutation.mutate(createData, {
+        onSuccess: () => {
+          setIsModalOpen(false);
+          resetForm();
+        },
+      });
+    }
+  };
+
+  // Función de validación de complejidad de contraseña
+  const validatePassword = (password) => {
+    if (password.length < 8) {
+      return "La contraseña debe tener al menos 8 caracteres.";
+    }
+    if (!/[A-Z]/.test(password)) {
+      return "La contraseña debe contener al menos una mayúscula.";
+    }
+    if (!/[a-z]/.test(password)) {
+      return "La contraseña debe contener al menos una minúscula.";
+    }
+    if (!/[0-9]/.test(password)) {
+      return "La contraseña debe contener al menos un número.";
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      return "La contraseña debe contener al menos un carácter especial.";
+    }
+    return ""; // Retorna cadena vacía si es válida
+  };
+
+  // Función para manejar el envío del formulario de cambio de contraseña
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+
+    let valid = true;
+
+    // Validar complejidad de la nueva contraseña
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      setNewPasswordError(passwordError);
+      valid = false;
+    } else {
+      setNewPasswordError("");
+    }
+
+    // Validar que las contraseñas coincidan
+    if (newPassword !== confirmPassword) {
+      setConfirmPasswordError("Las contraseñas no coinciden.");
+      valid = false;
+    } else {
+      setConfirmPasswordError("");
+    }
+
+    console.log('Password validation results:', {
+      length: validatePassword(newPassword).includes('caracteres') ? validatePassword(newPassword) : 'OK',
+      uppercase: validatePassword(newPassword).includes('mayúscula') ? validatePassword(newPassword) : 'OK',
+      lowercase: validatePassword(newPassword).includes('minúscula') ? validatePassword(newPassword) : 'OK',
+      number: validatePassword(newPassword).includes('número') ? validatePassword(newPassword) : 'OK',
+      specialChar: validatePassword(newPassword).includes('carácter especial') ? validatePassword(newPassword) : 'OK',
+      match: newPassword === confirmPassword ? 'OK' : 'Passwords do not match'
+    });
+
+    // Si alguna validación falla, detener el envío
+    if (!valid) {
+      return;
+    }
+
+    // Si las validaciones pasan, proceder con la mutación
+    if (employeeToChangePassword?.id && newPassword) {
+      resetPasswordMutation.mutate({ userId: employeeToChangePassword.id, newPassword }, {
+        onSuccess: () => {
+          setIsPasswordModalOpen(false);
+          resetForm();
+        },
+      });
+    } else {
+      // Esto debería ser manejado por validación, pero como fallback
+      toast.error("Ocurrió un error. Intenta de nuevo.");
     }
   };
 
@@ -233,21 +326,7 @@ export function EmployeesView() {
                         <TableCell>{employee.email}</TableCell>
                         <TableCell>{employee.phoneNumber}</TableCell>
                         <TableCell>
-                          {employee.role === 'ADMIN' && (
-                            <Badge variant="destructive">Administrador</Badge>
-                          )}
-                          {employee.role === 'DIRECTOR' && (
-                            <Badge variant="default">Director</Badge>
-                          )}
-                          {employee.role === 'PROVIDER' && (
-                            <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">Proveedor</Badge>
-                          )}
-                          {employee.role === 'DELIVERY' && (
-                            <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">Repartidor</Badge>
-                          )}
-                          {employee.role === 'CUSTOMER' && (
-                            <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Cliente</Badge>
-                          )}
+                          {EMPLOYEE_ROLES.find(role => role.value === employee.role)?.label || employee.role}
                         </TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
@@ -260,17 +339,21 @@ export function EmployeesView() {
                         </TableCell>
                         <TableCell>{formatDate(employee.createdAt)}</TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="cursor-pointer hover:bg-gray-200"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(employee);
+                          <ActionButtons
+                            showView={false}
+                            showEdit={true}
+                            showDelete={true}
+                            onEdit={() => handleEdit(employee)}
+                            onDelete={() => {
+                              if (window.confirm(`¿Estás seguro de que quieres eliminar a ${employee.name} ${employee.lastName}?`)) {
+                                deleteEmployeeMutation.mutate(employee.id);
+                              }
                             }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                            editTitle="Editar"
+                            deleteTitle="Eliminar"
+                            onChangePassword={() => handleChangePasswordClick(employee)}
+                            showChangePassword={true}
+                          />
                         </TableCell>
                       </TableRow>
                     ))
@@ -303,21 +386,7 @@ export function EmployeesView() {
                             }`}>
                               {employee.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
                             </span>
-                            {employee.role === 'ADMIN' && (
-                              <Badge variant="destructive" className="text-xs">Admin</Badge>
-                            )}
-                            {employee.role === 'DIRECTOR' && (
-                              <Badge variant="default" className="text-xs">Director</Badge>
-                            )}
-                            {employee.role === 'PROVIDER' && (
-                              <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200 text-xs">Proveedor</Badge>
-                            )}
-                            {employee.role === 'DELIVERY' && (
-                              <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200 text-xs">Repartidor</Badge>
-                            )}
-                            {employee.role === 'CUSTOMER' && (
-                              <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200 text-xs">Cliente</Badge>
-                            )}
+                            {EMPLOYEE_ROLES.find(role => role.value === employee.role)?.label || employee.role}
                           </div>
                         </div>
                         
@@ -336,16 +405,23 @@ export function EmployeesView() {
                           </div>
                         </div>
                         
-                        <div className="mt-4 flex justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                            onClick={() => handleEdit(employee)}
-                          >
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Editar
-                          </Button>
+                        <div className="mt-4 flex justify-center">
+                          <ActionButtons
+                            showView={false}
+                            showEdit={true}
+                            showDelete={true}
+                            onEdit={() => handleEdit(employee)}
+                            onDelete={() => {
+                              if (window.confirm(`¿Estás seguro de que quieres eliminar a ${employee.name} ${employee.lastName}?`)) {
+                                deleteEmployeeMutation.mutate(employee.id);
+                              }
+                            }}
+                            editTitle="Editar"
+                            deleteTitle="Eliminar"
+                            onChangePassword={() => handleChangePasswordClick(employee)}
+                            showChangePassword={true}
+                            className="!bg-transparent hover:!bg-blue-50 border border-blue-200 !text-blue-600"
+                          />
                         </div>
                       </div>
                     </div>
@@ -425,21 +501,22 @@ export function EmployeesView() {
                   placeholder="+52..."
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="password" className="text-right">
-                  Contraseña
-                </Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={newEmployee.password}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  required={!isEditing}
-                  placeholder={isEditing ? "Dejar vacío para mantener la actual" : ""}
-                />
-              </div>
+              {!isEditing && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="password" className="text-right">
+                    Contraseña
+                  </Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    value={newEmployee.password}
+                    onChange={handleInputChange}
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+              )}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="role" className="text-right">
                   Rol
@@ -452,11 +529,11 @@ export function EmployeesView() {
                     <SelectValue placeholder="Seleccionar rol" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ADMIN">Administrador</SelectItem>
-                    <SelectItem value="DIRECTOR">Director</SelectItem>
-                    <SelectItem value="PROVIDER">Proveedor</SelectItem>
-                    <SelectItem value="DELIVERY">Repartidor</SelectItem>
-                    <SelectItem value="CUSTOMER">Cliente</SelectItem>
+                    {EMPLOYEE_ROLES.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -494,6 +571,85 @@ export function EmployeesView() {
                 disabled={createEmployeeMutation.isPending || updateEmployeeMutation.isPending}
               >
                 {isEditing ? "Actualizar" : "Registrar"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para Cambiar Contraseña */}
+      <Dialog open={isPasswordModalOpen} onOpenChange={() => setIsPasswordModalOpen(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cambiar Contraseña de {employeeToChangePassword?.name} {employeeToChangePassword?.lastName}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handlePasswordSubmit}>
+            {resetPasswordMutation.isPending && (
+              <div className="mb-4 p-2 bg-blue-50 text-blue-700 rounded">
+                Actualizando contraseña...
+              </div>
+            )}
+            <div className="grid gap-y-4 py-4">
+              {/* Campo Nueva Contraseña */}
+              <div className="grid grid-cols-4 items-start gap-4">
+                <Label htmlFor="new-password" className="text-right">
+                  Nueva Contraseña
+                </Label>
+                <div className="col-span-3 w-full flex flex-col">
+                  <Input
+                    id="new-password"
+                    name="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className={`w-full ${newPasswordError ? 'border-red-500' : ''}`}
+                    required
+                  />
+                  {newPasswordError && (
+                    <p className="text-sm text-red-500 mt-1">{newPasswordError}</p>
+                  )}
+                  {!newPasswordError && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Campo Confirmar Contraseña */}
+              <div className="grid grid-cols-4 items-start gap-4">
+                <Label htmlFor="confirm-password" className="text-right">
+                  Confirmar Contraseña
+                </Label>
+                <div className="col-span-3 w-full flex flex-col">
+                  <Input
+                    id="confirm-password"
+                    name="confirm-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={`w-full ${confirmPasswordError ? 'border-red-500' : ''}`}
+                    required
+                  />
+                  {confirmPasswordError && (
+                    <p className="text-sm text-red-500 mt-1">{confirmPasswordError}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsPasswordModalOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={resetPasswordMutation.isPending || !newPassword}
+              >
+                Actualizar Contraseña
               </Button>
             </DialogFooter>
           </form>
