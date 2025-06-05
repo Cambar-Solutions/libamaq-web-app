@@ -12,8 +12,8 @@ import {
   useDeleteUser,
   useResetUserPassword,
 } from '@/hooks/useUsers';
-import { toast } from "sonner";
 import { Pencil } from "lucide-react";
+import toast, { Toaster } from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import ActionButtons from '@/components/ui/ActionButtons';
@@ -44,19 +44,19 @@ export function EmployeesView() {
   const [confirmPassword, setConfirmPassword] = useState(""); // Estado para confirmar contraseña
   const [newPasswordError, setNewPasswordError] = useState(""); // Estado para errores de nueva contraseña
   const [confirmPasswordError, setConfirmPasswordError] = useState(""); // Estado para errores de confirmar contraseña
-  
+
   // Consulta para obtener todos los usuarios y filtrar solo los empleados
-  const { 
-    data: allUsers = [], 
+  const {
+    data: allUsers = [],
     isLoading: isLoadingUsers,
-    error: usersError 
+    error: usersError
   } = useAllUsers();
-  
+
   // Filtrar solo los empleados (DIRECTOR, PROVIDER, DELIVERY, ADMIN)
-  const employees = Array.isArray(allUsers) 
+  const employees = Array.isArray(allUsers)
     ? allUsers.filter(user => user && EMPLOYEE_ROLES.some(role => role.value === user.role))
     : [];
-    
+
   console.log('Usuarios totales:', allUsers);
   console.log('Empleados filtrados:', employees);
   console.log('Roles de empleados permitidos (Frontend):', EMPLOYEE_ROLES);
@@ -151,7 +151,7 @@ export function EmployeesView() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Datos base para crear o actualizar
     const userData = {
       email: newEmployee.email,
@@ -161,7 +161,7 @@ export function EmployeesView() {
       role: newEmployee.role,
       status: newEmployee.status
     };
-    
+
     // Verificar que el rol sea uno de los permitidos para empleados
     if (!EMPLOYEE_ROLES.some(role => role.value === userData.role)) {
       toast.error(`Rol no válido: ${userData.role}. Roles permitidos: ${EMPLOYEE_ROLES.map(role => role.label).join(', ')}`);
@@ -176,13 +176,18 @@ export function EmployeesView() {
         // No incluir password si está vacío
         ...(newEmployee.password ? { password: newEmployee.password } : {})
       };
-      
+
       console.log('Datos del empleado a actualizar:', updateData);
       updateEmployeeMutation.mutate(updateData, {
         onSuccess: () => {
+          toast.success("Empleado actualizado correctamente");
           setIsModalOpen(false);
           resetForm();
         },
+        onError: (error) => {
+          toast.error("Error al registrar empleado");
+          console.error('Error al registrar empleado:', error);
+        }
       });
     } else {
       // Para creación, incluir campos adicionales
@@ -192,14 +197,19 @@ export function EmployeesView() {
         createdAt: new Date().toISOString(),
         password: newEmployee.password // Password es obligatorio para crear
       };
-      
+
       console.log('Datos del empleado a crear:', createData);
       console.log('Role a enviar en creación:', createData.role);
       createEmployeeMutation.mutate(createData, {
         onSuccess: () => {
+          toast.success("Empleado registrado correctamente");
           setIsModalOpen(false);
           resetForm();
         },
+        onError: (error) => {
+          toast.error("Error al registrar empleado");
+          console.error('Error al registrar empleado:', error);
+        }
       });
     }
   };
@@ -265,9 +275,14 @@ export function EmployeesView() {
     if (employeeToChangePassword?.id && newPassword) {
       resetPasswordMutation.mutate({ userId: employeeToChangePassword.id, newPassword }, {
         onSuccess: () => {
+          toast.success("Contraseña actualizada correctamente");
           setIsPasswordModalOpen(false);
           resetForm();
         },
+        onError: (error) => {
+          toast.error("Error al actualizar contraseña");
+          console.error('Error al actualizar contraseña:', error);
+        }
       });
     } else {
       // Esto debería ser manejado por validación, pero como fallback
@@ -329,11 +344,10 @@ export function EmployeesView() {
                           {EMPLOYEE_ROLES.find(role => role.value === employee.role)?.label || employee.role}
                         </TableCell>
                         <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            employee.status === 'ACTIVE' 
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${employee.status === 'ACTIVE'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                            }`}>
                             {employee.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
                           </span>
                         </TableCell>
@@ -361,7 +375,7 @@ export function EmployeesView() {
                 </TableBody>
               </Table>
             </div>
-            
+
             {/* Vista de tarjetas para dispositivos móviles y tablets */}
             <div className="lg:hidden">
               {employees.length === 0 ? (
@@ -371,25 +385,24 @@ export function EmployeesView() {
               ) : (
                 <div className="grid grid-cols-1 gap-4 p-4">
                   {employees.map((employee) => (
-                    <div 
-                      key={employee.id} 
+                    <div
+                      key={employee.id}
                       className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all"
                     >
                       <div className="p-4">
                         <div className="flex justify-between items-start mb-2">
                           <h3 className="font-semibold text-lg">{`${employee.name} ${employee.lastName}`}</h3>
                           <div className="flex space-x-2">
-                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                              employee.status === 'ACTIVE' 
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${employee.status === 'ACTIVE'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                              }`}>
                               {employee.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
                             </span>
                             {EMPLOYEE_ROLES.find(role => role.value === employee.role)?.label || employee.role}
                           </div>
                         </div>
-                        
+
                         <div className="grid grid-cols-1 gap-2 text-sm">
                           <div className="flex items-center">
                             <span className="text-gray-500 w-24">Email:</span>
@@ -404,7 +417,7 @@ export function EmployeesView() {
                             <span className="text-gray-900">{formatDate(employee.createdAt)}</span>
                           </div>
                         </div>
-                        
+
                         <div className="mt-4 flex justify-center">
                           <ActionButtons
                             showView={false}
@@ -558,17 +571,18 @@ export function EmployeesView() {
               )}
             </div>
             <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 className="cursor-pointer"
                 onClick={handleCloseModal}
               >
                 Cancelar
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={createEmployeeMutation.isPending || updateEmployeeMutation.isPending}
+                className="cursor-pointer"
               >
                 {isEditing ? "Actualizar" : "Registrar"}
               </Button>
@@ -648,6 +662,7 @@ export function EmployeesView() {
               <Button
                 type="submit"
                 disabled={resetPasswordMutation.isPending || !newPassword}
+                className="cursor-pointer"
               >
                 Actualizar Contraseña
               </Button>
@@ -655,6 +670,35 @@ export function EmployeesView() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          // Estilos por defecto para todos los toasts
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          // Estilos específicos para toasts de éxito
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10B981',
+              secondary: '#fff',
+            },
+          },
+          // Estilos específicos para toasts de error
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#EF4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
     </>
   );
 }
