@@ -396,17 +396,17 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
         sparePartMultimediaDto: [] // (si tienes ese campo)
       });
 
-      // Si quieres precargar la única imagen:
+      // Cargar todas las imágenes del repuesto
       if (Array.isArray(sparePartData.media) && sparePartData.media.length > 0) {
-        const first = sparePartData.media[0];
-        setUploadedImages([{
-          id: first.id,
-          url: first.url,
-          fileType: first.fileType,
-          entityType: first.entityType,
-          displayOrder: first.displayOrder,
+        const images = sparePartData.media.map(media => ({
+          id: media.id,
+          url: media.url,
+          fileType: media.fileType,
+          entityType: media.entityType,
+          displayOrder: media.displayOrder || 0,
           previewUrl: null
-        }]);
+        }));
+        setUploadedImages(images);
       } else {
         setUploadedImages([]);
       }
@@ -573,43 +573,50 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
     }
   };
 
-  const handleRemoveImage = async (imageId) => {
+  const handleRemoveImage = async (imageIdOrIndex) => {
     try {
+      // Si es un número, es un índice, si no, es un ID
+      const imageToRemove = typeof imageIdOrIndex === 'number' 
+        ? uploadedImages[imageIdOrIndex]
+        : uploadedImages.find(img => img.id === imageIdOrIndex);
+
+      if (!imageToRemove) return;
+
       // Confirmar con el usuario antes de eliminar
-      if (window.confirm('¿Estás seguro de que deseas eliminar esta imagen? Esta acción no se puede deshacer.')) {
-        // Si la imagen ya está guardada en el servidor, eliminarla
-        if (imageId && sparePartId) {
-          await deleteSparePartMedia(imageId);
-          toast.success("Imagen eliminada correctamente");
-        }
-
-        // Actualizar el estado local
-        const updatedImages = uploadedImages.filter(img => img.id !== imageId);
-        setUploadedImages(updatedImages);
-
-        // Actualizar el formData sin la imagen eliminada
-        setFormData(prev => ({
-          ...prev,
-          media: updatedImages.map((img, index) => ({
-            id: img.id,
-            url: img.url,
-            fileType: img.fileType || 'IMAGE',
-            entityType: 'SPARE_PART',
-            displayOrder: index
-          }))
-        }));
+      if (!window.confirm('¿Estás seguro de que deseas eliminar esta imagen? Esta acción no se puede deshacer.')) {
+        return;
       }
+
+      // Si la imagen ya está en el servidor (tiene ID), la eliminamos de allí
+      if (imageToRemove.id) {
+        await deleteSparePartMedia(imageToRemove.id);
+      }
+
+      // Actualizamos el estado local
+      const updatedImages = uploadedImages.filter(img => img.id !== imageToRemove.id);
+      setUploadedImages(updatedImages);
+
+      // Actualizar el formData
+      setFormData(prev => ({
+        ...prev,
+        media: updatedImages.map((img, index) => ({
+          id: img.id,
+          url: img.url,
+          fileType: img.fileType || 'IMAGE',
+          entityType: 'SPARE_PART',
+          displayOrder: index
+        }))
+      }));
+
+      toast.success("Imagen eliminada correctamente");
     } catch (error) {
-      console.error('Error al eliminar imagen:', error);
+      console.error('Error al eliminar la imagen:', error);
       toast.error("Error al eliminar la imagen: " + (error.message || "Error desconocido"));
     }
   };
 
-
-
-
-  // 6) Al enviar el formulario, incluimos SOLO esta imagen (si existe) en media
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
       if (sparePartId) {
         // 1) Arma el objeto base del repuesto (sin media aún):
@@ -878,23 +885,44 @@ const SparePartDetailDialog = ({ isOpen, onClose, sparePartId, onSave }) => {
             <div className="flex flex-col space-y-4 mt-4 pt-4 border-t">
               <h3 className="text-lg font-medium">Imágenes</h3>
               <div className="flex flex-col items-start gap-4">
-                {/* Si ya hay una imagen actual, la mostramos */}
+                {/* Mostrar todas las imágenes del repuesto */}
                 {uploadedImages.length > 0 && (
-                  <div className="relative w-32 h-32 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
-                    <img
-                      src={uploadedImages[0].previewUrl
-                        ? uploadedImages[0].previewUrl
-                        : uploadedImages[0].url}
-                      alt="Imagen actual"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        if (!e.target.hasAttribute("data-error")) {
-                          e.target.setAttribute("data-error", "true");
-                          e.target.style.display = "none";
-                        }
-
-                      }}
-                    />
+                  <div className="grid grid-cols-3 gap-3 w-full">
+                    {uploadedImages.map((img, index) => (
+                      <div key={img.id || index} className="relative group">
+                        <div className="relative w-full aspect-square bg-gray-100 rounded overflow-hidden flex items-center justify-center border border-gray-200">
+                          <img
+                            src={img.previewUrl || img.url}
+                            alt={`Imagen ${index + 1}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              if (!e.target.hasAttribute("data-error")) {
+                                e.target.setAttribute("data-error", "true");
+                                e.target.style.display = "none";
+                                // Mostrar un placeholder si la imagen falla al cargar
+                                const placeholder = document.createElement('div');
+                                placeholder.className = 'w-full h-full flex items-center justify-center bg-gray-200 text-gray-400';
+                                placeholder.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>';
+                                e.target.parentNode.appendChild(placeholder);
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(img.id || index)}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            aria-label="Eliminar imagen"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        </div>
+                        <div className="text-xs text-center mt-1 text-gray-500">
+                          Imagen {index + 1}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
 
