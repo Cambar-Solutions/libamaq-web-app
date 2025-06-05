@@ -1,4 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import toast, { Toaster } from "react-hot-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,9 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { getCustomerUsers, createUser, updateUser } from "@/services/admin/userService";
-import { toast } from "sonner";
 import { Pencil } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
 
 export function ClientsView() {
   const queryClient = useQueryClient();
@@ -337,7 +338,7 @@ export function ClientsView() {
             <div className="hidden lg:block">
               <Table className="bg-white">
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="select-none">
                     <TableHead>Nombre</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Teléfono</TableHead>
@@ -356,12 +357,12 @@ export function ClientsView() {
                     </TableRow>
                   ) : (
                     clients.map((client) => (
-                      <TableRow key={client.id} className="cursor-pointer hover:bg-gray-50">
+                      <TableRow key={client.id} className=" hover:bg-gray-50">
                         <TableCell className="font-medium">
                           {`${client.name} ${client.lastName}`}
                         </TableCell>
-                        <TableCell>{client.email}</TableCell>
-                        <TableCell>{client.phoneNumber}</TableCell>
+                        <TableCell className="select-all">{client.email}</TableCell>
+                        <TableCell className="select-all">{client.phoneNumber}</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                             client.role === "GENERAL_CUSTOMER" || client.role === "CUSTOMER" 
@@ -382,7 +383,7 @@ export function ClientsView() {
                             {client.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
                           </span>
                         </TableCell>
-                        <TableCell>{formatDate(client.createdAt)}</TableCell>
+                        <TableCell className="select-all">{formatDate(client.createdAt)}</TableCell>
                         <TableCell className="text-right">
                           <Button
                             variant="ghost"
@@ -391,6 +392,7 @@ export function ClientsView() {
                               e.stopPropagation();
                               handleEdit(client);
                             }}
+                            className="cursor-pointer"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -482,11 +484,6 @@ export function ClientsView() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
-            {(createClientMutation.isPending || updateClientMutation.isPending) && (
-              <div className="mb-4 p-2 bg-blue-50 text-blue-700 rounded">
-                Procesando solicitud...
-              </div>
-            )}
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="nombre" className="text-right">
@@ -615,12 +612,18 @@ export function ClientsView() {
               )}
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleCloseModal}>
+              {(createClientMutation.isPending || updateClientMutation.isPending) && (
+              <div className="mb-4 p-2 bg-blue-50 text-blue-700 rounded">
+                Procesando solicitud...
+              </div>
+            )}
+              <Button type="button" variant="outline" onClick={handleCloseModal} className="cursor-pointer">
                 Cancelar
               </Button>
               <Button 
                 type="submit" 
                 disabled={createClientMutation.isPending || updateClientMutation.isPending}
+                className="cursor-pointer"
               >
                 {isEditing ? "Actualizar" : "Registrar"}
               </Button>
@@ -650,7 +653,7 @@ export function ClientsView() {
                       type="submit" 
                       variant="destructive"
                       disabled={resetPasswordMutation.isPending || !newPassword}
-                      className="hover:bg-red-700"
+                      className="hover:bg-red-700 ml-auto"
                     >
                       {resetPasswordMutation.isPending ? "Actualizando..." : "Actualizar Contraseña"}
                     </Button>
@@ -661,6 +664,35 @@ export function ClientsView() {
           )}
         </DialogContent>
       </Dialog>
+
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          // Estilos por defecto para todos los toasts
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          // Estilos específicos para toasts de éxito
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10B981',
+              secondary: '#fff',
+            },
+          },
+          // Estilos específicos para toasts de error
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#EF4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
     </>
   );
 }
