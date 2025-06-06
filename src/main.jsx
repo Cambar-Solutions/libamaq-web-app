@@ -132,22 +132,15 @@ createRoot(document.getElementById('root')).render(
             {/* Rutas protegidas para USER y CUSTOMER */}
             <Route path="/user-home" element={
               <AppLayout>
-                <AuthRoute allowedRoles={['USER', 'CUSTOMER']}>
+                <AuthRoute allowedRoles={['GENERAL_CUSTOMER', 'FREQUENT_CUSTOMER']}>
                   <UserHome />
                 </AuthRoute>
               </AppLayout>
             } />
             <Route path="/user-profile" element={
               <AppLayout>
-                <AuthRoute allowedRoles={['USER', 'CUSTOMER']}>
+                <AuthRoute allowedRoles={['GENERAL_CUSTOMER', 'FREQUENT_CUSTOMER']}>
                   <Account />
-                </AuthRoute>
-              </AppLayout>
-            } />
-            <Route path="/user-shopping" element={
-              <AppLayout>
-                <AuthRoute allowedRoles={['USER', 'CUSTOMER']}>
-                  <Shopping />
                 </AuthRoute>
               </AppLayout>
             } />

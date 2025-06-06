@@ -53,8 +53,8 @@ export default function Login() {
         // Redirigir según el rol del usuario
         if (userRole === 'ADMIN' || userRole === 'DIRECTOR') {
           navigate('/dashboard');
-        } else if (userRole === 'USER' || userRole === 'CUSTOMER') {
-          navigate('/user-profile');
+        } else if (userRole === 'GENERAL_CUSTOMER' || userRole === 'FREQUENT_CUSTOMER') {
+          navigate('/user-home');
         } else {
           navigate('/');
         }
