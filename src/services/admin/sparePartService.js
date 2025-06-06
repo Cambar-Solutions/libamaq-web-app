@@ -1,474 +1,114 @@
 import apiClient from "../apiClient";
 
-// Configuración base para las peticiones
+// Endpoint base para repuestos
 const SPARE_PARTS_ENDPOINT = '/l/spare-parts';
-const MEDIA_ENDPOINT = '/l/media';
-
-// Constantes para tipos de entidad y archivo
-const ENTITY_TYPE_SPARE_PART = 'SPARE_PART';
-const FILE_TYPE_IMAGE = 'IMAGE';
 
 /**
- * Obtiene todos los repuestos con paginación
- * @param {number} page - Número de página (comienza en 1)
- * @param {number} size - Tamaño de página
- * @param {Object} filters - Filtros adicionales
- * @returns {Promise<Object>} - Datos de repuestos paginados
+ * Obtiene todos los repuestos
+ * @returns {Promise<Object>} - Lista de repuestos
  */
-
-/**
- * Elimina un repuesto por su ID (DELETE /l/spare-parts/delete/{id})
- * @param {number|string} id 
- * @returns {Promise<Object>}
- */
-
-export const deleteSparePartById = async (id) => {
+export const getAllSpareParts = async () => {
   try {
-    const response = await apiClient.delete(`/l/spare-parts/delete/${id}`);
+    const response = await apiClient.get(SPARE_PARTS_ENDPOINT);
     return response.data;
   } catch (error) {
-    console.error(`Error al eliminar repuesto ${id}:`, error.response?.data || error.message);
-    throw error.response?.data || new Error(error.message);
-  }
-};
-
-
-
-export const getAllSpareParts = async (page = 1, size = 10, filters = {}) => {
-  try {
-    // Usar el endpoint de repuestos activos por defecto, a menos que se especifique lo contrario
-    const endpoint = filters.status === 'ALL' ? SPARE_PARTS_ENDPOINT : `${SPARE_PARTS_ENDPOINT}/active`;
-
-    // Eliminar el filtro de estado para el endpoint de activos
-    const { status, ...otherFilters } = filters;
-
-    const response = await apiClient.get(endpoint, {
-      params: {
-        page: page - 1, // Ajuste para la paginación basada en 0
-        size,
-        ...(status === 'ALL' ? filters : otherFilters)
-      }
-    });
-
-    console.log('Respuesta original de la API:', response.data);
-
-    // Extraer los datos según el formato de respuesta que estamos recibiendo
-    const responseData = response.data;
-
-    // Adaptar la respuesta al formato esperado por el frontend
-    return {
-      ...responseData,
-      content: responseData.data || [], // Los repuestos están en data.data
-      totalElements: responseData.totalElements || responseData.data?.length || 0,
-      totalPages: responseData.totalPages || 1,
-      size: responseData.size || size,
-      number: (responseData.number || 0) + 1, // Ajuste para la paginación basada en 1
-      data: responseData.data || [] // Mantener también en data para compatibilidad
-    };
-  } catch (error) {
-    console.error("Error al obtener repuestos:", error);
-    throw error.response?.data?.message || error.message;
+    console.error('Error al obtener repuestos:', error);
+    throw error.response?.data || error.message;
   }
 };
 
 /**
- * Obtiene los repuestos asociados a un producto específico
- * @param {number} productId - ID del producto
- * @returns {Promise<Array>} - Lista de repuestos asociados al producto
+ * Obtiene todos los repuestos activos
+ * @returns {Promise<Object>} - Lista de repuestos activos
  */
-export const getSparePartsByProduct = async (productId) => {
+export const getActiveSpareParts = async () => {
   try {
-    console.log(`Obteniendo repuestos para el producto con ID ${productId}`);
-    const { data } = await apiClient.get(`${API_PREFIX}/products/${productId}/spare-parts`);
-    return data || [];
+    const response = await apiClient.get(`${SPARE_PARTS_ENDPOINT}/active`);
+    return response.data;
   } catch (error) {
-    console.error(`Error al obtener repuestos para el producto con ID ${productId}:`, error);
-    return []; // Devolver array vacío en caso de error para no interrumpir el flujo
+    console.error('Error al obtener repuestos activos:', error);
+    throw error.response?.data || error.message;
   }
 };
 
 /**
- * Obtiene los repuestos activos asociados a un producto específico (endpoint público)
- * @param {number} productId - ID del producto
- * @returns {Promise<Array>} - Lista de repuestos activos asociados al producto
- */
-export const getActiveSparePartsByProduct = async (productId) => {
-  try {
-    console.log(`Obteniendo repuestos activos para el producto con ID ${productId}`);
-    const { data } = await apiClient.get(`${API_PREFIX}/products/${productId}/spare-parts/active`);
-    return data || [];
-  } catch (error) {
-    console.error(`Error al obtener repuestos activos para el producto con ID ${productId}:`, error);
-    return []; // Devolver array vacío en caso de error para no interrumpir el flujo
-  }
-};
-
-/**
- * Obtiene un repuesto por su ID, incluyendo imágenes y relaciones con productos
- * @param {number|string} id - ID del repuesto
- * @returns {Promise<{result: Object|null, status: number, message: string}>} - Respuesta del servidor
+ * Obtiene un repuesto por su ID
+ * @param {number} id - ID del repuesto
+ * @returns {Promise<Object>} - Datos del repuesto
  */
 export const getSparePartById = async (id) => {
   try {
-    console.log(`Solicitando repuesto con ID: ${id}`);
     const response = await apiClient.get(`${SPARE_PARTS_ENDPOINT}/${id}`);
-    console.log('Respuesta de la API:', response.data);
-    
-    // La respuesta tiene la forma: { data: {...}, status: 200, message: 'success' }
-    if (response.data && response.data.data) {
-      return {
-        result: response.data.data, // Los datos del repuesto están en response.data.data
-        status: response.data.status || 200,
-        message: response.data.message || 'success'
-      };
-    }
-    
-    console.warn('La respuesta no contiene datos válidos:', response.data);
-    return { result: null, status: 404, message: 'No se encontró el repuesto' };
+    return response.data;
   } catch (error) {
     console.error(`Error al obtener repuesto con ID ${id}:`, error);
-    const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
-    throw new Error(errorMessage);
+    throw error.response?.data || error;
   }
 };
 
-
-
 /**
- * Crea un nuevo repuesto con sus imágenes y relaciones a productos
+ * Crea un nuevo repuesto
  * @param {Object} sparePartData - Datos del repuesto a crear
  * @returns {Promise<Object>} - Respuesta del servidor
  */
 export const createSparePart = async (sparePartData) => {
   try {
-    const { data } = await apiClient.post("/l/spare-parts", sparePartData);
-    return { result: data };
+    const response = await apiClient.post(SPARE_PARTS_ENDPOINT, sparePartData);
+    return response.data;
   } catch (error) {
-    // aquí capturas y relanzas el error con error.response.data.message
-    const msg = error.response?.data?.message || error.message || "Error desconocido";
-    throw new Error(msg);
+    console.error('Error al crear repuesto:', error);
+    throw error.response?.data || error.message;
   }
 };
 
-
 /**
- * Actualiza un repuesto existente con sus imágenes y relaciones a productos
- * @param {Object} sparePartData - Datos del repuesto a actualizar
+ * Actualiza un repuesto existente
+ * @param {Object} sparePartData - Datos actualizados del repuesto
  * @returns {Promise<Object>} - Respuesta del servidor
  */
 export const updateSparePart = async (sparePartData) => {
   try {
-    // Desestructuramos sólo los campos que sí admite el DTO de actualización:
-    const {
-      id,
-      externalId,
-      code,
-      name,
-      description,
-      material,
-      price,
-      stock,
-      status,
-      media = []
-    } = sparePartData;
-
-    const requestData = {
-      id: parseInt(id, 10),                   // obligatorio, número
-      updatedBy: "1",                                // string, quién actualiza
-      updatedAt: new Date().toISOString(),           // ISO timestamp
-      externalId: externalId || "",
-      code: code || "",
-      name: name || "",
-      description: description || "",
-      material: material || "",
-      price: parseFloat(price) || 0,
-      stock: parseInt(stock, 10) || 0,
-      rentable: false,                              // sí lo admite el DTO, mantenerlo siempre
-      status: status || "ACTIVE",
-      media: media.map((img, idx) => ({
-        id: img.id || 0,
-        url: img.url || "",
-        fileType: img.fileType || "IMAGE",
-        entityType: img.entityType || "SPARE_PART",
-        displayOrder: img.displayOrder ?? idx
-      }))
-    };
-
-    console.log("→ PUT a /l/spare-parts, payload:", requestData);
-    const response = await apiClient.put(SPARE_PARTS_ENDPOINT, requestData);
-    return { result: response.data };
-
+    const response = await apiClient.put(
+      `${SPARE_PARTS_ENDPOINT}/${sparePartData.id}`, 
+      sparePartData
+    );
+    return response.data;
   } catch (error) {
-    console.error("Error al actualizar repuesto:", {
-      status: error.response?.status,
-      data: error.response?.data
-    });
-    const msg = error.response?.data?.message || error.message;
-    throw new Error(msg);
+    console.error(`Error al actualizar repuesto ${sparePartData.id}:`, error);
+    throw error.response?.data || error.message;
   }
 };
 
-
-
-
 /**
- * Elimina un repuesto (borrado físico)
+ * Elimina un repuesto
  * @param {number} id - ID del repuesto a eliminar
  * @returns {Promise<Object>} - Respuesta del servidor
  */
 export const deleteSparePart = async (id) => {
   try {
-    const { data } = await apiClient.delete(`${SPARE_PARTS_ENDPOINT}/${id}`);
-    return data;
-  } catch (error) {
-    console.error(`Error al eliminar repuesto con ID ${id}:`, error);
-    throw error.response?.data?.message || error.message;
-  }
-};
-
-/**
- * Realiza un soft delete de un repuesto (cambia su estado a INACTIVE)
- * @param {number} id - ID del repuesto a desactivar
- * @returns {Promise<Object>} - Respuesta del servidor
- */
-export const softDeleteSparePart = async (id) => {
-  try {
-    // Primero obtener el repuesto para tener todos sus datos
-    const response = await getSparePartById(id);
-    const sparePart = response.result || response;
-
-    // Cambiar el estado a INACTIVE para realizar el soft delete
-    sparePart.status = "INACTIVE";
-
-    // Actualizar el repuesto con el nuevo estado
-    const result = await updateSparePart(sparePart);
-    return result;
-  } catch (error) {
-    console.error(`Error al desactivar repuesto con ID ${id}:`, error);
-    throw error.response?.data?.message || error.message;
-  }
-};
-
-/**
- * Sube uno o más archivos multimedia al servidor (Swagger: POST /l/media/upload).
- * @param {File[]} files             – Array de objetos File (del <input type="file" multiple />).
- * @param {Function} onUploadProgress – (Opcional) callback para progreso de carga.
- * @returns {Promise<Array<{ id: number, url: string }>>} 
- */
-export const uploadMediaFiles = async (files, onUploadProgress = null) => {
-  try {
-    if (!files || files.length === 0) {
-      return [];
-    }
-    const formData = new FormData();
-    for (const file of files) {
-      formData.append("files", file);
-    }
-
-    const config = {
-      headers: { "Content-Type": "multipart/form-data" },
-      onUploadProgress: onUploadProgress
-    };
-
-    // Llamada a POST /l/media/upload
-    const response = await apiClient.post(`${MEDIA_ENDPOINT}/upload`, formData, config);
-    // La respuesta según tu Swagger viene en response.data.data (array de objetos)
-    if (!response.data || !Array.isArray(response.data.data)) {
-      console.error("Respuesta inesperada al subir multimedia:", response.data);
-      throw new Error("No se recibió array de archivos subidos");
-    }
-
-    // Devolvemos un array mínimo de { id, url }
-    return response.data.data.map(item => ({
-      id: item.id,
-      url: item.url
-    }));
-  } catch (error) {
-    console.error("Error al subir archivos multimedia:", error.response || error.message);
-    const msg = error.response?.data?.message || error.message || "Error desconocido en la subida";
-    throw new Error(msg);
-  }
-};
-
-/**
- * Crea un nuevo repuesto con imágenes y asignación a producto
- * @param {Object} sparePartData - Datos básicos del repuesto
- * @param {File[]} imageFiles - Archivos de imagen a subir
- * @param {Object} productAssignment - Datos de asignación a producto (opcional)
- * @param {Function} onProgress - Función para reportar el progreso de la carga
- * @returns {Promise<Object>} - Repuesto creado con todas sus relaciones
- */
-export const createSparePartWithImages = async (sparePartData, imageFiles = [], productAssignment = null, onProgress = null) => {
-  try {
-    // 1. Preparar el objeto de datos del repuesto
-    const sparePartPayload = { ...sparePartData };
-
-    // 2. Si hay asignación a producto, agregarla al payload
-    if (productAssignment && productAssignment.productId) {
-      sparePartPayload.productSparePartDto = {
-        productId: productAssignment.productId,
-        compatibilityNotes: productAssignment.compatibilityNotes || ""
-      };
-    }
-
-    // 3. Subir las imágenes
-    const uploadedMedia = [];
-
-    if (imageFiles && imageFiles.length > 0) {
-      for (let i = 0; i < imageFiles.length; i++) {
-        const file = imageFiles[i];
-
-        // Función para reportar el progreso de la carga
-        const progressCallback = onProgress ? (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
-          onProgress(i, percentCompleted, file.name);
-        } : null;
-
-        // Subir el archivo
-        const uploadResult = await uploadMediaFile(file, progressCallback);
-
-        // Preparar el objeto de media para el repuesto
-        // Usar el formato UpdateMediaDTO esperado por el backend
-        uploadedMedia.push({
-          id: 0, // ID temporal, el backend lo asignará
-          url: uploadResult.url || uploadResult.data?.[0]?.url, // Ajustar según la respuesta real
-          fileType: FILE_TYPE_IMAGE,
-          entityType: ENTITY_TYPE_SPARE_PART,
-          displayOrder: i,
-          status: 'ACTIVE'
-        });
-      }
-    }
-
-    // 4. Agregar los medios al payload según el formato esperado
-    if (uploadedMedia.length > 0) {
-      sparePartPayload.media = uploadedMedia;
-    } else {
-      // Si no hay imágenes, asegurarse de que el campo media sea un array vacío
-      sparePartPayload.media = [];
-    }
-
-    // 5. Crear el repuesto con todas sus relaciones
-    const result = await createSparePart(sparePartPayload);
-    return result;
-  } catch (error) {
-    console.error("Error al crear repuesto con imágenes:", error);
-    throw error.response?.data?.message || error.message || 'Error al crear el repuesto';
-  }
-};
-
-/**
- * Actualiza un repuesto existente con nuevas imágenes y/o asignación a producto
- * @param {Object} sparePartData - Datos básicos del repuesto
- * @param {File[]} newImageFiles - Nuevos archivos de imagen a subir (opcional)
- * @param {Array} existingImages - Imágenes existentes a mantener (opcional)
- * @param {Object} productAssignment - Datos de asignación a producto (opcional)
- * @returns {Promise<Object>} - Repuesto actualizado con todas sus relaciones
- */
-export const updateSparePartWithImages = async (sparePartData, newImageFiles = [], existingImages = [], productAssignment = null) => {
-  try {
-    // 1. Preparar el objeto de datos del repuesto
-    const sparePartPayload = { ...sparePartData };
-
-    // 2. Si hay asignación a producto, agregarla al payload
-    if (productAssignment && productAssignment.productId) {
-      sparePartPayload.productSparePartDto = {
-        id: productAssignment.id || 0, // Incluir ID si existe
-        productId: productAssignment.productId,
-        compatibilityNotes: productAssignment.compatibilityNotes || ""
-      };
-    }
-
-    // 3. Preparar el array de medios actualizado
-    const updatedMedia = [];
-
-    // 4. Procesar imágenes existentes si las hay
-    if (existingImages && existingImages.length > 0) {
-      existingImages.forEach(img => {
-        updatedMedia.push({
-          id: img.id || 0,
-          url: img.url,
-          fileType: FILE_TYPE_IMAGE,
-          entityType: ENTITY_TYPE_SPARE_PART,
-          entityId: sparePartData.id,
-          displayOrder: img.displayOrder || 0,
-          status: 'ACTIVE'
-        });
-      });
-    }
-
-    // 5. Subir las nuevas imágenes
-    if (newImageFiles && newImageFiles.length > 0) {
-      for (let i = 0; i < newImageFiles.length; i++) {
-        const file = newImageFiles[i];
-        const uploadResult = await uploadMediaFile(file);
-
-        if (uploadResult && uploadResult.url) {
-          updatedMedia.push({
-            id: 0, // Nuevo registro
-            url: uploadResult.url || uploadResult.data?.[0]?.url,
-            fileType: FILE_TYPE_IMAGE,
-            entityType: ENTITY_TYPE_SPARE_PART,
-            entityId: sparePartData.id,
-            displayOrder: updatedMedia.length + 1,
-            status: 'ACTIVE'
-          });
-        }
-      }
-    }
-
-    // 6. Agregar los medios al payload según el formato esperado
-    sparePartPayload.media = updatedMedia;
-
-    // 7. Actualizar el repuesto con todas sus relaciones
-    const result = await updateSparePart(sparePartPayload);
-    return result;
-  } catch (error) {
-    console.error("Error al actualizar repuesto con imágenes:", error);
-    throw error.response?.data?.message || error.message || 'Error al actualizar el repuesto';
-  }
-};
-
-// La función deleteSparePart ya está definida arriba
-
-/**
- * Elimina un medio asociado a un repuesto
- * @param {number} mediaId - ID del medio a eliminar
- * @returns {Promise<Object>} - Respuesta del servidor
- */
-export const deleteSparePartMedia = async (mediaId) => {
-  try {
-    // El endpoint para eliminar medios acepta un array de IDs en el cuerpo de la petición
-    const response = await apiClient.post(`${MEDIA_ENDPOINT}/delete`, [mediaId]);
+    const response = await apiClient.delete(`${SPARE_PARTS_ENDPOINT}/${id}`);
     return response.data;
   } catch (error) {
-    console.error(`Error al eliminar medio con ID ${mediaId}:`, error);
-    throw error.response?.data?.message || error.message || 'Error al eliminar la imagen';
+    console.error(`Error al eliminar repuesto ${id}:`, error);
+    throw error.response?.data || error.message;
   }
 };
 
 /**
- * Obtiene las imágenes asociadas a un repuesto
- * @param {number} sparePartId - ID del repuesto
- * @returns {Promise<Array>} - Array de imágenes asociadas al repuesto
+ * Sube archivos multimedia para un repuesto
+ * @param {FormData} formData - Datos del formulario con los archivos
+ * @returns {Promise<Object>} - Respuesta del servidor con los datos de los archivos subidos
  */
-export const getSparePartImages = async (sparePartId) => {
+export const uploadSparePartMedia = async (formData) => {
   try {
-    // Obtener el repuesto completo que ya incluye las imágenes
-    const response = await apiClient.get(`${SPARE_PARTS_ENDPOINT}/${sparePartId}`);
-
-    // Verificar si hay imágenes en la respuesta
-    if (response.data?.result?.images) {
-      return Array.isArray(response.data.result.images) ? response.data.result.images : [response.data.result.images];
-    }
-
-    // Si no hay imágenes, devolver array vacío
-    return [];
+    const response = await apiClient.post('/l/media/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
   } catch (error) {
-    console.error(`Error al obtener imágenes del repuesto ${sparePartId}:`, error);
-    // En caso de error, devolver un array vacío para no romper la UI
-    return [];
+    console.error('Error al subir archivos multimedia:', error);
+    throw error.response?.data || error.message;
   }
 };

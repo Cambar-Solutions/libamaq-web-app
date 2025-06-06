@@ -5,9 +5,8 @@ import {
   getSparePartById, 
   createSparePart, 
   updateSparePart, 
-  deleteSparePartById,
-  createSparePartWithImages,
-  updateSparePartWithImages
+  deleteSparePart,
+  uploadSparePartMedia
 } from '@/services/admin/sparePartService';
 import { getActiveProducts } from '@/services/admin/productService';
 
@@ -69,19 +68,24 @@ export function useSpareParts() {
       setIsLoading(true);
       const { files, ...sparePart } = sparePartData;
       
-      let response;
-      
+      // Crear el repuesto
+      const response = await createSparePart(sparePart);
+
+      // Si hay archivos para subir
       if (files && files.length > 0) {
-        response = await createSparePartWithImages(sparePart, files);
-      } else {
-        response = await createSparePart(sparePart);
+        const formData = new FormData();
+        Array.from(files).forEach((file, index) => {
+          formData.append('files', file);
+        });
+        
+        // Subir archivos multimedia
+        const mediaResponse = await uploadSparePartMedia(formData);
+        console.log('Archivos subidos:', mediaResponse);
       }
 
-      if (response) {
-        await fetchSpareParts();
-        toast.success('Repuesto creado correctamente');
-        return response;
-      }
+      await fetchSpareParts();
+      toast.success('Repuesto creado correctamente');
+      return response;
     } catch (err) {
       console.error('Error al crear repuesto:', err);
       toast.error(`Error al crear repuesto: ${err.message || 'Error desconocido'}`);
@@ -95,20 +99,29 @@ export function useSpareParts() {
   const updateExistingSparePart = async (sparePartData) => {
     try {
       setIsLoading(true);
-      const { files, ...sparePart } = sparePartData;
-      let response;
+      const { files, mediaToRemove = [], ...sparePart } = sparePartData;
+      
+      // Actualizar el repuesto
+      const response = await updateSparePart(sparePart);
 
+      // Si hay archivos para subir
       if (files && files.length > 0) {
-        response = await updateSparePartWithImages(sparePart.id, sparePart, files);
-      } else {
-        response = await updateSparePart(sparePart);
+        const formData = new FormData();
+        Array.from(files).forEach((file, index) => {
+          formData.append('files', file);
+        });
+        
+        // Subir archivos multimedia
+        const mediaResponse = await uploadSparePartMedia(formData);
+        console.log('Archivos subidos:', mediaResponse);
       }
 
-      if (response) {
-        await fetchSpareParts();
-        toast.success('Repuesto actualizado correctamente');
-        return response;
-      }
+      // Aquí podrías manejar la eliminación de medios si es necesario
+      // usando mediaToRemove
+
+      await fetchSpareParts();
+      toast.success('Repuesto actualizado correctamente');
+      return response;
     } catch (err) {
       console.error('Error al actualizar repuesto:', err);
       toast.error(`Error al actualizar repuesto: ${err.message || 'Error desconocido'}`);
@@ -119,16 +132,13 @@ export function useSpareParts() {
   };
 
   // Eliminar un repuesto
-  const deleteSparePart = async (id) => {
+  const handleDeleteSparePart = async (id) => {
     try {
       setIsLoading(true);
-      const response = await deleteSparePartById(id);
-      
-      if (response) {
-        await fetchSpareParts();
-        toast.success('Repuesto eliminado correctamente');
-        return true;
-      }
+      await deleteSparePart(id);
+      await fetchSpareParts();
+      toast.success('Repuesto eliminado correctamente');
+      return true;
     } catch (err) {
       console.error('Error al eliminar repuesto:', err);
       toast.error(`Error al eliminar repuesto: ${err.message || 'Error desconocido'}`);
@@ -146,6 +156,7 @@ export function useSpareParts() {
 
   return {
     spareParts,
+    deleteSparePart: handleDeleteSparePart,
     filteredSpareParts,
     isLoading,
     searchTerm,
