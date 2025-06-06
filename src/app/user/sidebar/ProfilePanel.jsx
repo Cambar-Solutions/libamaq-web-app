@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { getCustomerUsers } from "@/services/admin/userService";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -17,9 +16,10 @@ import { Eye, EyeOff } from 'lucide-react';
 
 
 export default function ProfilePanel({ openLocationDialog = false, onCloseLocationDialog }) {
+    const [userData, setUserData] = useState({ name: "null", email: "null@gmail.com" });
+
     const [isDialogOpen, setIsDialogOpen] = useState(openLocationDialog);
 
-    const [user, setUser] = useState({ name: "null", email: "null@gmail.com" });
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
     const [editing, setEditing] = useState(false);
@@ -38,26 +38,28 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
     }, [openLocationDialog]);
 
     useEffect(() => {
-        const userId = localStorage.getItem("userId");
-        if (!userId) {
-            console.warn("No hay userId en localStorage");
-            setLoading(false);
-            return;
-        }
+    const raw = localStorage.getItem("user_data");
+    if (!raw) {
+      // Si no hay nada en localStorage, dejamos loading en false para que no siga mostrando "Cargando…"
+      console.warn("No se encontró 'user_data' en localStorage");
+      setLoading(false);
+      return;
+    }
 
-        getCustomerUsers()
-            .then((list) => {
-                // asume que 'id' viene como número o string en los objetos
-                const me = list.find(u => u.id.toString() === userId.toString());
-                if (me) {
-                    setUser({ name: me.name, email: me.email });
-                } else {
-                    console.warn("Usuario no encontrado en la lista de clientes");
-                }
-            })
-            .catch((err) => console.error("Error cargando usuarios:", err))
-            .finally(() => setLoading(false));
-    }, []);
+    // Parseamos el JSON y asignamos a userData
+    try {
+      const parsed = JSON.parse(raw);
+      setUserData({
+        name: parsed.name || "",
+        email: parsed.email || ""
+      });
+    } catch (e) {
+      console.error("No se pudo parsear user_data:", e);
+    }
+
+    // ¡Muy importante! aquí decimos que ya terminamos de cargar, aunque haya error de parseo
+    setLoading(false);
+  }, []);
 
     if (loading) {
         return (
@@ -93,8 +95,8 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
                             >
                                 <SquarePen size={18} className="text-gray-400" />
                             </button>
-                            <p className="text-gray-700 text-3xl font-semibold">{user.name}</p>
-                            <p className="text-gray-500 text-sm">{user.email}</p>
+                            <p className="text-gray-700 text-3xl font-semibold">{userData.name}</p>
+                            <p className="text-gray-500 text-sm">{userData.email}</p>
                         </div>
                     </div>
 
@@ -259,7 +261,7 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
                                         <div className="flex flex-col lg:flex-row bg-white p-5 rounded-lg leading-none gap-y-4 lg:gap-20 justify-around">
                                             <div className="flex flex-col">
                                                 <Label className="text-sm text-gray-600 mb-1">Nombre actual:</Label>
-                                                <span className="font-medium mb-3">{user.name}</span>
+                                                <span className="font-medium mb-3">{userData.name}</span>
                                             </div>
                                             <div className="flex flex-col">
                                                 <Label className="text-sm text-gray-600 mb-1">Nombre nuevo:</Label>
@@ -275,7 +277,7 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
                                         <div className="flex flex-col lg:flex-row bg-white p-5 rounded-lg leading-none gap-y-4 lg:gap-20 justify-around">
                                             <div className="flex flex-col">
                                                 <Label className="text-sm text-gray-600 mb-1">Correo actual:</Label>
-                                                <span className="font-medium mb-3">{user.email}</span>
+                                                <span className="font-medium mb-3">{userData.email}</span>
                                             </div>
                                             <div className="flex flex-col">
                                                 <Label className="text-sm text-gray-600 mb-1">Correo nuevo:</Label>
