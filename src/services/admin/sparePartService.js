@@ -105,16 +105,30 @@ export const getActiveSparePartsByProduct = async (productId) => {
 
 /**
  * Obtiene un repuesto por su ID, incluyendo imágenes y relaciones con productos
- * @param {number} id - ID del repuesto
- * @returns {Promise<Object>} - Datos completos del repuesto
+ * @param {number|string} id - ID del repuesto
+ * @returns {Promise<{result: Object|null, status: number, message: string}>} - Respuesta del servidor
  */
 export const getSparePartById = async (id) => {
   try {
-    const { data } = await apiClient.get(`${SPARE_PARTS_ENDPOINT}/${id}`);
-    return { result: data };
+    console.log(`Solicitando repuesto con ID: ${id}`);
+    const response = await apiClient.get(`${SPARE_PARTS_ENDPOINT}/${id}`);
+    console.log('Respuesta de la API:', response.data);
+    
+    // La respuesta tiene la forma: { data: {...}, status: 200, message: 'success' }
+    if (response.data && response.data.data) {
+      return {
+        result: response.data.data, // Los datos del repuesto están en response.data.data
+        status: response.data.status || 200,
+        message: response.data.message || 'success'
+      };
+    }
+    
+    console.warn('La respuesta no contiene datos válidos:', response.data);
+    return { result: null, status: 404, message: 'No se encontró el repuesto' };
   } catch (error) {
     console.error(`Error al obtener repuesto con ID ${id}:`, error);
-    throw error.response?.data?.message || error.message;
+    const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
+    throw new Error(errorMessage);
   }
 };
 
