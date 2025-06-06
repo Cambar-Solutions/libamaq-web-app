@@ -6,25 +6,31 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ImagePlus, Trash2 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
+/**
+ * Componente para editar un repuesto existente
+ * Maneja el formulario y la lógica de actualización
+ */
 export const EditSparePartForm = ({
   initialData,
   onSave,
   onCancel,
   isSaving = false
 }) => {
+  // Estado inicial del formulario con los campos requeridos por la API
   const [formData, setFormData] = useState({
-    id: 0,
-    externalId: '',
-    code: '',
-    name: '',
-    description: '',
-    material: '',
-    price: 0,
-    stock: 0,
-    rentable: false,
-    status: 'ACTIVE',
-    media: []
+    id: 0,                  // ID del repuesto
+    externalId: '',          // ID externo
+    code: '',                // Código interno
+    name: '',                // Nombre del repuesto
+    description: '',          // Descripción detallada
+    material: '',             // Material del repuesto
+    price: 0,                // Precio unitario
+    stock: 0,                // Cantidad en inventario
+    rentable: false,         // Si está disponible para renta
+    status: 'ACTIVE',        // Estado actual
+    media: []                // Array para medios (imágenes)
   });
 
   const [previewUrls, setPreviewUrls] = useState([]);
@@ -118,25 +124,59 @@ export const EditSparePartForm = ({
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Preparar el payload con los datos del formulario
+    // Validar campos requeridos
+    if (!formData.externalId || !formData.code || !formData.name) {
+      toast.error('Por favor complete los campos obligatorios');
+      return;
+    }
+    
+    // Preparar el payload según la estructura esperada por la API
     const payload = {
-      ...formData,
-      updatedBy: '1', // Esto debería venir del contexto de autenticación
+      id: formData.id,  // ID del repuesto a actualizar
+      updatedBy: '1',   // TODO: Obtener del contexto de autenticación
       updatedAt: new Date().toISOString(),
+      externalId: formData.externalId.trim(),
+      code: formData.code.trim(),
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      material: formData.material.trim(),
+      price: Number(formData.price) || 0,
+      stock: Number(formData.stock) || 0,
+      rentable: Boolean(formData.rentable),
+      status: formData.status,
       // Mantener medios existentes que no se van a eliminar
       media: [
-        ...existingMedia.filter(item => !mediaToRemove.includes(item.id)),
+        ...existingMedia
+          .filter(item => !mediaToRemove.includes(item.id))
+          .map(item => ({
+            id: item.id,
+            url: item.url,
+            fileType: item.fileType || 'IMAGE',
+            entityId: item.entityId || formData.id,
+            entityType: item.entityType || 'SPARE_PART',
+            displayOrder: item.displayOrder || 0
+          })),
         // Agregar nuevos medios
-        ...previewUrls.filter(item => item.isNew).map((item, index) => ({
-          id: 0,
-          url: item.preview,
-          fileType: 'IMAGE',
-          entityType: 'SPARE_PART',
-          displayOrder: index
-        }))
+        ...previewUrls
+          .filter(item => item.isNew)
+          .map((item, index) => ({
+            id: 0,  // Nuevo medio, se asignará ID en el backend
+            url: item.preview,  // URL temporal para la vista previa
+            fileType: 'IMAGE',
+            entityId: formData.id,  // ID del repuesto
+            entityType: 'SPARE_PART',
+            displayOrder: (existingMedia.length + index) || 0
+          }))
       ]
     };
 
+    // Validar que al menos haya una imagen si es requerido
+    if (payload.media.length === 0) {
+      toast.error('El repuesto debe tener al menos una imagen');
+      return;
+    }
+
+    // Llamar a la función onSave con los datos del formulario, archivos nuevos y medios a eliminar
     onSave(payload, selectedFiles, mediaToRemove);
   };
 

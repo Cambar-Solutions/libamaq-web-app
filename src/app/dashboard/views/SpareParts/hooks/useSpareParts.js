@@ -6,7 +6,9 @@ import {
   createSparePart, 
   updateSparePart, 
   deleteSparePart,
-  uploadSparePartMedia
+  uploadSparePartMedia,
+  getActiveSpareParts,
+  createSparePartWithImages
 } from '@/services/admin/sparePartService';
 import { getActiveProducts } from '@/services/admin/productService';
 
@@ -21,9 +23,15 @@ export function useSpareParts() {
   const fetchSpareParts = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await getAllSpareParts(1, 50);
-      setSpareParts(response.content || []);
-      setFilteredSpareParts(response.content || []);
+      const response = await getActiveSpareParts();
+      // La respuesta tiene la forma { data: [...], status: 200, message: 'success' }
+      if (response && response.data) {
+        setSpareParts(response.data);
+        setFilteredSpareParts(response.data);
+      } else {
+        setSpareParts([]);
+        setFilteredSpareParts([]);
+      }
     } catch (err) {
       console.error('Error al cargar repuestos:', err);
       toast.error('Error al cargar repuestos');
@@ -68,24 +76,34 @@ export function useSpareParts() {
       setIsLoading(true);
       const { files, ...sparePart } = sparePartData;
       
-      // Crear el repuesto
-      const response = await createSparePart(sparePart);
-
-      // Si hay archivos para subir
-      if (files && files.length > 0) {
-        const formData = new FormData();
-        Array.from(files).forEach((file, index) => {
-          formData.append('files', file);
-        });
-        
-        // Subir archivos multimedia
-        const mediaResponse = await uploadSparePartMedia(formData);
-        console.log('Archivos subidos:', mediaResponse);
+      console.log('Creando nuevo repuesto con datos:', sparePart);
+      console.log('Archivos a subir:', files);
+      
+      // Usar la nueva función que maneja todo el proceso
+      const response = await createSparePartWithImages(
+        sparePart,
+        files ? Array.from(files) : []
+      );
+      
+      console.log('Respuesta de creación de repuesto con imágenes:', response);
+      
+      // Verificar que el repuesto se creó correctamente
+      const sparePartId = response?.data?.id || response?.id || response?.data?.data?.id;
+      if (!sparePartId) {
+        console.error('No se pudo obtener el ID del repuesto creado:', response);
+        throw new Error('No se pudo crear el repuesto correctamente');
       }
+      
+      console.log('Repuesto creado exitosamente con ID:', sparePartId);
 
+      // Actualizar la lista de repuestos
       await fetchSpareParts();
       toast.success('Repuesto creado correctamente');
-      return response;
+      return { 
+        ...response.data, 
+        id: sparePartId,
+        success: true 
+      };
     } catch (err) {
       console.error('Error al crear repuesto:', err);
       toast.error(`Error al crear repuesto: ${err.message || 'Error desconocido'}`);
@@ -135,10 +153,13 @@ export function useSpareParts() {
   const handleDeleteSparePart = async (id) => {
     try {
       setIsLoading(true);
-      await deleteSparePart(id);
-      await fetchSpareParts();
-      toast.success('Repuesto eliminado correctamente');
-      return true;
+      const response = await deleteSparePart(id);
+      if (response) {
+        await fetchSpareParts();
+        toast.success('Repuesto eliminado correctamente');
+        return true;
+      }
+      return false;
     } catch (err) {
       console.error('Error al eliminar repuesto:', err);
       toast.error(`Error al eliminar repuesto: ${err.message || 'Error desconocido'}`);

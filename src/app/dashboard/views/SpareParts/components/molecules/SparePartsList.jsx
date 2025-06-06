@@ -54,9 +54,7 @@ export const SparePartsList = ({
             className="w-full"
           />
         </div>
-        <Button onClick={onAddNew} className="w-full sm:w-auto">
-          Agregar repuesto
-        </Button>
+       
       </div>
 
       {/* Grid de repuestos */}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,23 +6,30 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ImagePlus, Trash2 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
+/**
+ * Componente para crear un nuevo repuesto
+ * Maneja el formulario y la lógica de envío de datos
+ */
 export const CreateSparePartForm = ({
   onSave,
   onCancel,
-  isSaving = false
+  isSaving: propIsSaving = false
 }) => {
+  const [isSaving, setIsSaving] = useState(propIsSaving);
+  // Estado inicial del formulario con los campos requeridos por la API
   const [formData, setFormData] = useState({
-    externalId: '',
-    code: '',
-    name: '',
-    description: '',
-    material: '',
-    price: 0,
-    stock: 0,
-    rentable: false,
-    status: 'ACTIVE',
-    media: []
+    externalId: '',        // ID externo del repuesto
+    code: '',              // Código interno
+    name: '',              // Nombre del repuesto
+    description: '',        // Descripción detallada
+    material: '',           // Material del repuesto
+    price: 0,              // Precio unitario
+    stock: 0,              // Cantidad en inventario
+    rentable: false,       // Si está disponible para renta
+    status: 'ACTIVE',      // Estado por defecto
+    media: []              // Array para medios (imágenes)
   });
 
   const [previewUrls, setPreviewUrls] = useState([]);
@@ -79,25 +86,84 @@ export const CreateSparePartForm = ({
     setPreviewUrls(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Preparar el payload con las imágenes
-    const payload = {
-      ...formData,
-      createdBy: '1', // Esto debería venir del contexto de autenticación
-      createdAt: new Date().toISOString(),
-      media: previewUrls.map((item, index) => ({
-        id: 0,
-        url: item.preview,
-        fileType: 'IMAGE',
-        entityType: 'SPARE_PART',
-        displayOrder: index
-      }))
-    };
+    // Validar campos requeridos
+    if (!formData.externalId || !formData.code || !formData.name) {
+      toast.error('Por favor complete los campos obligatorios');
+      return;
+    }
+    
+    // Validar que al menos haya una imagen si es requerido
+    if (selectedFiles.length === 0) {
+      toast.error('Por favor agregue al menos una imagen del repuesto');
+      return;
+    }
 
-    onSave(payload, selectedFiles);
+    try {
+      setIsSaving(true);
+      
+      // 1. Primero subir las imágenes
+      const { uploadMedia } = await import('@/services/admin/mediaService');
+      
+      console.log('Subiendo archivos...');
+      const uploadResponse = await uploadMedia(selectedFiles.map(file => file.file));
+      console.log('Respuesta de subida de archivos:', uploadResponse);
+      
+      if (!uploadResponse || !uploadResponse.data || uploadResponse.data.length === 0) {
+        throw new Error('No se pudieron subir las imágenes');
+      }
+      
+      const uploadedFiles = Array.isArray(uploadResponse.data) ? uploadResponse.data : [uploadResponse.data];
+      
+      // 2. Preparar el payload del repuesto con las URLs de las imágenes subidas
+      const payload = {
+        createdBy: '1', // TODO: Obtener del contexto de autenticación
+        createdAt: new Date().toISOString(),
+        externalId: formData.externalId.trim(),
+        code: formData.code.trim(),
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        material: formData.material.trim(),
+        price: Number(formData.price) || 0,
+        stock: Number(formData.stock) || 0,
+        rentable: Boolean(formData.rentable),
+        status: formData.status,
+        // Incluir las imágenes ya subidas con sus URLs de Cloudflare
+        media: uploadedFiles.map((file, index) => ({
+          id: file.id,
+          url: file.url, // URL de Cloudflare
+          fileType: 'IMAGE',
+          entityId: 0, // Se actualizará con el ID del repuesto
+          entityType: 'SPARE_PART',
+          displayOrder: index,
+          status: 'ACTIVE'
+        }))
+      };
+
+      console.log('Enviando datos del repuesto al servidor:', {
+        ...payload,
+        media: `Array(${payload.media.length} imágenes)`
+      });
+      
+      // 3. Llamar a la función onSave con los datos del formulario
+      const result = await onSave(payload);
+      
+      return result;
+    } catch (error) {
+      console.error('Error al guardar el repuesto:', error);
+      toast.error(`Error al guardar el repuesto: ${error.message || 'Error desconocido'}`);
+      throw error;
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  // Sincronizar el estado de carga con la prop
+  useEffect(() => {
+    setIsSaving(propIsSaving);
+  }, [propIsSaving]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
