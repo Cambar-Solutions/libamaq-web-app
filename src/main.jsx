@@ -27,7 +27,6 @@ const Nosotros = lazy(() => import('./Nosotros.jsx'));
 const UserHome = lazy(() => import('./app/user/UserHome'));
 const Account = lazy(() => import('./app/user/Account')); 
 const PaymentMethod = lazy(() => import('./app/e-commerce/PaymentMethod'));
-const Shopping = lazy(() => import('./app/user/sidebar/Shopping'));
 const LocationLibamaq = lazy(() => import('./components/LocationLibamaq'));
 
 // Componente de layout que envuelve todas las rutas con Suspense
