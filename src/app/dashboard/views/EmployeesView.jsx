@@ -461,7 +461,7 @@ export function EmployeesView() {
                                 deleteEmployeeMutation.mutate(employee.id);
                               }
                             }}
-                            editTitle="Editar"
+                            editTitle="Editar Empleado"
                             deleteTitle="Eliminar"
                             onChangePassword={() => handleChangePasswordClick(employee)}
                             showChangePassword={true}
@@ -552,7 +552,7 @@ export function EmployeesView() {
 
       {/* Controles de paginación */}
       {filteredEmployees.length > itemsPerPage && (
-        <div className="flex justify-center items-center space-x-2 mt-4">
+        <div className="flex justify-center items-center space-x-2 mt-1 -ml-20">
           <Button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}

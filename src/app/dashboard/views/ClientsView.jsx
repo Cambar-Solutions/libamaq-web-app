@@ -903,7 +903,7 @@ export function ClientsView() {
 
       {/* Controles de paginación */}
       {filteredClients.length > itemsPerPage && (
-        <div className="flex justify-center items-center space-x-2 mt-4">
+        <div className="flex justify-center items-center space-x-2 mt-1 -ml-20">
           <Button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
