@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { getCustomerUsers, createUser, updateUser, resetUserPassword, deleteUser } from "@/services/admin/userService";
 import { Pencil } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDeleteUser } from '../../../hooks/useUsers';
 import ActionButtons from '@/components/ui/ActionButtons';
+import { SearchBar } from '@/components/ui/SearchBar';
 
 
 export function ClientsView() {
@@ -36,6 +37,15 @@ export function ClientsView() {
   const [newPasswordError, setNewPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  // Estado para la búsqueda
+  const [searchQuery, setSearchQuery] = useState("");
+  // Estado para el filtro de rol
+  const [selectedRole, setSelectedRole] = useState("ALL"); // "ALL" para mostrar todos los roles
+
+  // Estado para la paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9; // Número de elementos por página (cambiado a 9)
 
   // Inicializar la mutación de eliminación
   const deleteClientMutation = useDeleteUser();
@@ -67,6 +77,37 @@ export function ClientsView() {
       console.error('Error al cargar clientes:', error);
     }
   });
+
+  // Filtrar clientes basado en la búsqueda y el rol seleccionado
+  const filteredClients = useMemo(() => {
+    let filtered = clients;
+
+    // Filtrar por búsqueda
+    if (searchQuery) {
+      const lowerCaseQuery = searchQuery.toLowerCase();
+      filtered = filtered.filter(client =>
+        client.name.toLowerCase().includes(lowerCaseQuery) ||
+        client.lastName.toLowerCase().includes(lowerCaseQuery) ||
+        client.email.toLowerCase().includes(lowerCaseQuery) ||
+        client.phoneNumber.includes(lowerCaseQuery)
+      );
+    }
+
+    // Filtrar por rol
+    if (selectedRole !== "ALL") {
+      filtered = filtered.filter(client => client.role === selectedRole);
+    }
+
+    return filtered;
+  }, [clients, searchQuery, selectedRole]); // Recalcular cuando clients, searchQuery o selectedRole cambien
+
+  // Calcular los elementos para la página actual
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredClients.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Calcular el número total de páginas
+  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -402,16 +443,69 @@ export function ClientsView() {
     }
   };
 
+  // Manejador para el cambio en la barra de búsqueda
+  const handleSearchInputChange = (value) => {
+    setSearchQuery(value);
+    // Aquí podrías añadir lógica para filtrar inmediatamente o esperar a que se presione Enter/botón
+  };
+
+  // Manejador para el cambio en el filtro de rol
+  const handleRoleFilterChange = (value) => {
+    setSelectedRole(value);
+  };
+
+  // Manejador para el cambio de página
+  const handlePageChange = (pageNumber) => {
+    if (pageNumber < 1) pageNumber = 1;
+    if (pageNumber > totalPages) pageNumber = totalPages;
+    setCurrentPage(pageNumber);
+  };
+
   return (
     <>
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition cursor-pointer"
-        >
-          + Registrar cliente
-        </button>
+      {/* Contenedor para alinear la barra de búsqueda, el filtro de rol y el botón de registro */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-4">
+        {/* Barra de búsqueda y filtro en un contenedor flex para que estén uno al lado del otro en pantallas grandes */}
+        <div className="flex w-full sm:w-auto gap-4 items-center flex-grow">
+          <div className="flex-grow">
+            <SearchBar
+              value={searchQuery}
+              onChange={handleSearchInputChange}
+              placeholder="Buscar cliente..."
+              // Ajustar className si es necesario para que ocupe el espacio en el flex-grow
+              className="w-full"
+            />
+          </div>
+
+          {/* Filtro de rol */}
+          <div className="flex-shrink-0 w-40">
+            <Select
+              value={selectedRole}
+              onValueChange={handleRoleFilterChange}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Filtrar por Rol" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todos los roles</SelectItem>
+                <SelectItem value="GENERAL_CUSTOMER">Cliente General</SelectItem>
+                <SelectItem value="FREQUENT_CUSTOMER">Cliente Frecuente</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Botón de registro */}
+        <div className="flex-shrink-0 w-full sm:w-auto flex justify-end sm:justify-start">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition cursor-pointer w-full sm:w-auto"
+          >
+            + Registrar cliente
+          </button>
+        </div>
       </div>
+
       <div className="rounded-md border">
         {isLoadingClients ? (
           <div className="flex justify-center items-center h-40">
@@ -438,14 +532,14 @@ export function ClientsView() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {clients.length === 0 ? (
+                  {currentItems.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-6 text-gray-500">
-                        No hay clientes registrados
+                        {searchQuery || selectedRole !== "ALL" ? "No se encontraron clientes que coincidan" : "No hay clientes registrados"}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    clients.map((client) => (
+                    currentItems.map((client) => (
                       <TableRow key={client.id} className=" hover:bg-gray-50">
                         <TableCell className="font-medium">
                           {`${client.name} ${client.lastName}`}
@@ -454,18 +548,18 @@ export function ClientsView() {
                         <TableCell className="select-all">{client.phoneNumber}</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            client.role === "GENERAL_CUSTOMER" || client.role === "CUSTOMER" 
-                              ? "bg-blue-100 text-blue-800" 
+                            client.role === "GENERAL_CUSTOMER" || client.role === "CUSTOMER"
+                              ? "bg-blue-100 text-blue-800"
                               : "bg-purple-100 text-purple-800"
                           }`}>
-                            {client.role === "GENERAL_CUSTOMER" || client.role === "CUSTOMER" ? "Cliente General" : 
-                             client.role === "FREQUENT_CUSTOMER" ? "Cliente Frecuente" : 
+                            {client.role === "GENERAL_CUSTOMER" || client.role === "CUSTOMER" ? "Cliente General" :
+                             client.role === "FREQUENT_CUSTOMER" ? "Cliente Frecuente" :
                              client.role}
                           </span>
                         </TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            client.status === 'ACTIVE' 
+                            client.status === 'ACTIVE'
                               ? 'bg-green-100 text-green-800'
                               : 'bg-red-100 text-red-800'
                           }`}>
@@ -499,15 +593,15 @@ export function ClientsView() {
             
             {/* Vista de tarjetas para dispositivos móviles y tablets */}
             <div className="lg:hidden">
-              {clients.length === 0 ? (
+              {currentItems.length === 0 ? (
                 <div className="text-center py-6 text-gray-500">
-                  No hay clientes registrados
+                  {searchQuery || selectedRole !== "ALL" ? "No se encontraron clientes que coincidan" : "No hay clientes registrados"}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-4 p-4">
-                  {clients.map((client) => (
-                    <div 
-                      key={client.id} 
+                  {currentItems.map((client) => (
+                    <div
+                      key={client.id}
                       className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all"
                     >
                       <div className="p-4">
@@ -515,19 +609,19 @@ export function ClientsView() {
                           <h3 className="font-semibold text-lg">{`${client.name} ${client.lastName}`}</h3>
                           <div className="flex space-x-2">
                             <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                              client.status === 'ACTIVE' 
+                              client.status === 'ACTIVE'
                                 ? 'bg-green-100 text-green-800'
                                 : 'bg-red-100 text-red-800'
                             }`}>
                               {client.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
                             </span>
                             <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                              client.role === "GENERAL_CUSTOMER" || client.role === "CUSTOMER" 
-                                ? "bg-blue-100 text-blue-800" 
+                              client.role === "GENERAL_CUSTOMER" || client.role === "CUSTOMER"
+                                ? "bg-blue-100 text-blue-800"
                                 : "bg-purple-100 text-purple-800"
                             }`}>
-                              {client.role === "GENERAL_CUSTOMER" || client.role === "CUSTOMER" ? "Cliente General" : 
-                               client.role === "FREQUENT_CUSTOMER" ? "Cliente Frecuente" : 
+                              {client.role === "GENERAL_CUSTOMER" || client.role === "CUSTOMER" ? "Cliente General" :
+                               client.role === "FREQUENT_CUSTOMER" ? "Cliente Frecuente" :
                                client.role}
                             </span>
                           </div>
@@ -662,7 +756,6 @@ export function ClientsView() {
                 <Select
                   value={newClient.role}
                   onValueChange={handleRoleChange}
-                  disabled={isEditing}
                 >
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Seleccionar rol" />
@@ -807,6 +900,31 @@ export function ClientsView() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Controles de paginación */}
+      {filteredClients.length > itemsPerPage && (
+        <div className="flex justify-center items-center space-x-2 mt-4">
+          <Button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            variant="outline"
+            size="sm"
+          >
+            Anterior
+          </Button>
+          <span>
+            Página {currentPage} de {totalPages}
+          </span>
+          <Button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            variant="outline"
+            size="sm"
+          >
+            Siguiente
+          </Button>
+        </div>
+      )}
 
       <Toaster
         position="top-center"

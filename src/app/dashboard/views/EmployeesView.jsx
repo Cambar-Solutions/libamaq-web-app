@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   useAllUsers,
   useCreateUser,
@@ -17,6 +17,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import ActionButtons from '@/components/ui/ActionButtons';
+import { SearchBar } from '@/components/ui/SearchBar';
 
 // Array estático de roles de empleados disponibles
 const EMPLOYEE_ROLES = [
@@ -44,6 +45,12 @@ export function EmployeesView() {
   const [confirmPassword, setConfirmPassword] = useState(""); // Estado para confirmar contraseña
   const [newPasswordError, setNewPasswordError] = useState(""); // Estado para errores de nueva contraseña
   const [confirmPasswordError, setConfirmPasswordError] = useState(""); // Estado para errores de confirmar contraseña
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRole, setSelectedRole] = useState("ALL"); // "ALL" para mostrar todos los roles
+
+  // Estado para la paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9; // Número de elementos por página (cambiado a 9)
 
   // Consulta para obtener todos los usuarios y filtrar solo los empleados
   const {
@@ -58,8 +65,55 @@ export function EmployeesView() {
     : [];
 
   console.log('Usuarios totales:', allUsers);
-  console.log('Empleados filtrados:', employees);
+  console.log('Empleados filtrados (iniciales):', employees);
   console.log('Roles de empleados permitidos (Frontend):', EMPLOYEE_ROLES);
+
+  // Filtrar empleados basado en la búsqueda y el rol seleccionado
+  const filteredEmployees = useMemo(() => {
+    // Primero, filtrar por rol (si se ha seleccionado uno)
+    let roleFiltered = selectedRole === "ALL"
+      ? employees
+      : employees.filter(employee => employee.role === selectedRole);
+
+    // Luego, filtrar los resultados por la búsqueda
+    if (!searchQuery) {
+      return roleFiltered; // Si la búsqueda está vacía, devolver solo los filtrados por rol
+    }
+
+    const lowerCaseQuery = searchQuery.toLowerCase();
+    return roleFiltered.filter(employee =>
+      employee.name.toLowerCase().includes(lowerCaseQuery) ||
+      employee.lastName.toLowerCase().includes(lowerCaseQuery) ||
+      employee.email.toLowerCase().includes(lowerCaseQuery) ||
+      employee.phoneNumber.includes(lowerCaseQuery)
+    );
+  }, [employees, searchQuery, selectedRole]); // Recalcular cuando employees, searchQuery o selectedRole cambien
+
+  // Calcular los elementos para la página actual
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredEmployees.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Calcular el número total de páginas
+  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+
+  // Manejador para el cambio en la barra de búsqueda
+  const handleSearchInputChange = (value) => {
+    setSearchQuery(value);
+    // Aquí podrías añadir lógica para filtrar inmediatamente o esperar a que se presione Enter/botón
+  };
+
+  // Manejador para el cambio de página
+  const handlePageChange = (pageNumber) => {
+    if (pageNumber < 1) pageNumber = 1;
+    if (pageNumber > totalPages) pageNumber = totalPages;
+    setCurrentPage(pageNumber);
+  };
+
+  // Manejador para el cambio en el filtro de rol
+  const handleRoleFilterChange = (value) => {
+    setSelectedRole(value);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -292,14 +346,52 @@ export function EmployeesView() {
 
   return (
     <>
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition cursor-pointer"
-        >
-          + Registrar empleado
-        </button>
+      {/* Contenedor para alinear la barra de búsqueda, el filtro de rol y el botón de registro */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-4">
+        {/* Barra de búsqueda y filtro en un contenedor flex para que estén uno al lado del otro en pantallas grandes */}
+        <div className="flex w-full sm:w-auto gap-4 items-center flex-grow">
+          <div className="flex-grow">
+            <SearchBar
+              value={searchQuery}
+              onChange={handleSearchInputChange}
+              placeholder="Buscar empleado..."
+              // Ajustar className si es necesario para que ocupe el espacio en el flex-grow
+              className="w-full"
+            />
+          </div>
+
+          {/* Filtro de rol */}
+          <div className="flex-shrink-0 w-40">
+            <Select
+              value={selectedRole}
+              onValueChange={handleRoleFilterChange}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Filtrar por Rol" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todos los roles</SelectItem>
+                {EMPLOYEE_ROLES.map((role) => (
+                  <SelectItem key={role.value} value={role.value}>
+                    {role.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Botón de registro */}
+        <div className="flex-shrink-0 w-full sm:w-auto flex justify-end sm:justify-start">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition cursor-pointer w-full sm:w-auto"
+          >
+            + Registrar empleado
+          </button>
+        </div>
       </div>
+
       <div className="rounded-md border">
         {isLoadingUsers ? (
           <div className="flex justify-center items-center h-40">
@@ -326,14 +418,14 @@ export function EmployeesView() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {employees.length === 0 ? (
+                  {currentItems.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-6 text-gray-500">
-                        No hay empleados registrados
+                        {searchQuery || selectedRole !== "ALL" ? "No se encontraron empleados que coincidan" : "No hay empleados registrados"}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    employees.map((employee) => (
+                    currentItems.map((employee) => (
                       <TableRow key={employee.id} className="hover:bg-gray-50">
                         <TableCell className="font-medium">
                           {`${employee.name} ${employee.lastName}`}
@@ -341,7 +433,13 @@ export function EmployeesView() {
                         <TableCell>{employee.email}</TableCell>
                         <TableCell>{employee.phoneNumber}</TableCell>
                         <TableCell>
-                          {EMPLOYEE_ROLES.find(role => role.value === employee.role)?.label || employee.role}
+                          <Badge className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            employee.role === 'ADMIN' 
+                              ? 'bg-blue-100 text-blue-800' // Color para Admin (ej. azul)
+                              : 'bg-purple-100 text-purple-800' // Color para Manager (ej. morado)
+                          }`}>
+                            {EMPLOYEE_ROLES.find(role => role.value === employee.role)?.label || employee.role}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${employee.status === 'ACTIVE'
@@ -378,13 +476,13 @@ export function EmployeesView() {
 
             {/* Vista de tarjetas para dispositivos móviles y tablets */}
             <div className="lg:hidden">
-              {employees.length === 0 ? (
+              {currentItems.length === 0 ? (
                 <div className="text-center py-6 text-gray-500">
-                  No hay empleados registrados
+                  {searchQuery || selectedRole !== "ALL" ? "No se encontraron empleados que coincidan" : "No hay empleados registrados"}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-4 p-4">
-                  {employees.map((employee) => (
+                  {currentItems.map((employee) => (
                     <div
                       key={employee.id}
                       className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all"
@@ -399,7 +497,13 @@ export function EmployeesView() {
                               }`}>
                               {employee.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
                             </span>
-                            {EMPLOYEE_ROLES.find(role => role.value === employee.role)?.label || employee.role}
+                            <Badge className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              employee.role === 'ADMIN'
+                                ? 'bg-blue-100 text-blue-800' // Color para Admin (ej. azul)
+                                : 'bg-purple-100 text-purple-800' // Color para Manager (ej. morado)
+                            }`}>
+                              {EMPLOYEE_ROLES.find(role => role.value === employee.role)?.label || employee.role}
+                            </Badge>
                           </div>
                         </div>
 
@@ -445,6 +549,31 @@ export function EmployeesView() {
           </>
         )}
       </div>
+
+      {/* Controles de paginación */}
+      {filteredEmployees.length > itemsPerPage && (
+        <div className="flex justify-center items-center space-x-2 mt-4">
+          <Button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            variant="outline"
+            size="sm"
+          >
+            Anterior
+          </Button>
+          <span>
+            Página {currentPage} de {totalPages}
+          </span>
+          <Button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            variant="outline"
+            size="sm"
+          >
+            Siguiente
+          </Button>
+        </div>
+      )}
 
       <Dialog open={isModalOpen} onOpenChange={handleCloseModal}>
         <DialogContent className="sm:max-w-[425px]">
