@@ -10,7 +10,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createProduct, createProductWithImages } from '@/services/admin/productService';
 import { getActiveCategories } from '@/services/admin/categoryService';
 import { getAllActiveBrands, getCategoriesByBrand } from '@/services/admin/brandService';
-import { uploadMedia, deleteMedia } from '@/services/admin/mediaService';
+import mediaService from '@/services/admin/mediaService';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -121,7 +121,7 @@ const NuevoProducto = () => {
       console.log('Subiendo imagen:', selectedImage.name);
       
       // Subir la imagen usando el servicio de media
-      const response = await uploadMedia(selectedImage);
+      const response = await mediaService.uploadMedia(selectedImage);
       
       console.log('Respuesta de subida de imagen:', response);
       
@@ -238,7 +238,7 @@ const NuevoProducto = () => {
       if (window.confirm('¿Estás seguro de que deseas eliminar esta imagen? Esta acción no se puede deshacer.')) {
         // Si la imagen ya está guardada en el servidor y no es una URL externa, eliminarla
         if (imageId && !imageId.startsWith('temp-') && !uploadedImages[index]?.isFromUrl) {
-          await deleteMedia([imageId]);
+          await mediaService.deleteMedia([imageId]);
           toast.success("Imagen eliminada correctamente");
         }
         
