@@ -19,8 +19,9 @@ export default function SparePartsView() {
     products,
     createNewSparePart,
     updateExistingSparePart,
-    deleteSparePart: deleteSparePartService,
-    refreshSpareParts
+    deleteSparePart,
+    refreshSpareParts,
+    SparePartStatus
   } = useSpareParts();
 
   // Estados para los diálogos
@@ -28,8 +29,6 @@ export default function SparePartsView() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentSparePart, setCurrentSparePart] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-
-  // Estados para el diálogo de confirmación de eliminación
   const [sparePartToDelete, setSparePartToDelete] = useState(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
@@ -48,107 +47,96 @@ export default function SparePartsView() {
     setIsCreateDialogOpen(false);
   };
 
-  // Abrir diálogo para editar un repuesto existente
+  // Abrir diálogo de edición
   const handleEdit = (sparePart) => {
     setCurrentSparePart(sparePart);
     setIsEditDialogOpen(true);
   };
 
-  // Manejar éxito al guardar
+  // Cerrar diálogo de edición
+  const handleCloseEditDialog = () => {
+    setIsEditDialogOpen(false);
+    setCurrentSparePart(null);
+  };
+
+  // Manejar guardado exitoso
   const handleSaveSuccess = () => {
-    refreshSpareParts();
+    toast.success('Repuesto guardado correctamente');
     setIsCreateDialogOpen(false);
     setIsEditDialogOpen(false);
     setCurrentSparePart(null);
-    toast.success('Repuesto guardado exitosamente');
+    refreshSpareParts();
   };
 
-  // Manejar guardar repuesto (crear o actualizar)
-  const handleSaveSparePart = async (formData) => {
+  // Manejar el guardado de un repuesto (creación o actualización)
+  const handleSaveSparePart = async (sparePartData, files = []) => {
     try {
       setIsSaving(true);
-      
-      // Extraer archivos del formData
-      const { files, ...sparePartData } = formData;
-      
-      console.log('Datos del formulario recibidos en handleSaveSparePart:', {
-        ...sparePartData,
-        files: files ? `Array(${files.length} archivos)` : 'Ningún archivo'
-      });
-
-      // Llamar a la función correspondiente según si es creación o actualización
       let response;
+
       if (sparePartData.id) {
-        console.log('Actualizando repuesto existente con ID:', sparePartData.id);
+        // Actualizar repuesto existente
         response = await updateExistingSparePart({
           ...sparePartData,
-          updatedBy: '1',
-          updatedAt: new Date().toISOString()
-        }, files);
-      } else {
-        console.log('Creando nuevo repuesto');
-        response = await createNewSparePart({
-          ...sparePartData,
-          createdBy: '1',
-          createdAt: new Date().toISOString(),
-          status: 'ACTIVE',
           rentable: Boolean(sparePartData.rentable),
           price: parseFloat(sparePartData.price) || 0,
           stock: parseInt(sparePartData.stock, 10) || 0
         }, files);
+      } else {
+        // Crear nuevo repuesto
+        response = await createNewSparePart(
+          {
+            ...sparePartData,
+            createdBy: '1',
+            createdAt: new Date().toISOString(),
+            status: SparePartStatus.ACTIVE,
+            rentable: Boolean(sparePartData.rentable),
+            price: parseFloat(sparePartData.price) || 0,
+            stock: parseInt(sparePartData.stock, 10) || 0
+          },
+          files
+        );
       }
 
-      console.log('Respuesta del servicio:', response);
-
-      if (response) {
-        console.log('Guardado exitoso, llamando a handleSaveSuccess');
-        handleSaveSuccess();
-        return true;
-      }
-      return false;
+      handleSaveSuccess();
+      return response;
     } catch (error) {
       console.error('Error al guardar el repuesto:', error);
-      toast.error(`Error al guardar el repuesto: ${error.message || 'Error desconocido'}`);
+      toast.error(error.message || 'Error al guardar el repuesto');
       throw error;
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Manejar la eliminación de un repuesto
-  const handleDelete = (sparePart) => {
+  // Manejar eliminación de repuesto
+  const handleDeleteClick = (sparePart) => {
     setSparePartToDelete(sparePart);
     setIsDeleteDialogOpen(true);
   };
 
-  // Confirmar eliminación
-  const confirmDelete = async () => {
+  // Confirmar eliminación de repuesto
+  const handleConfirmDelete = async () => {
     if (!sparePartToDelete) return;
     
     try {
-      await deleteSparePartService(sparePartToDelete.id);
+      setIsSaving(true);
+      const mediaIds = sparePartToDelete.media?.map(m => m.id) || [];
+      await deleteSparePart(sparePartToDelete.id, mediaIds);
       toast.success('Repuesto eliminado correctamente');
-      refreshSpareParts();
-    } catch (error) {
-      console.error('Error al eliminar el repuesto:', error);
-      toast.error(`Error al eliminar el repuesto: ${error.message || 'Error desconocido'}`);
-    } finally {
       setIsDeleteDialogOpen(false);
       setSparePartToDelete(null);
+    } catch (error) {
+      console.error('Error al eliminar el repuesto:', error);
+      toast.error(error.message || 'Error al eliminar el repuesto');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Repuestos</h1>
-          <p className="mt-2 text-sm text-gray-500">
-            Administra los repuestos disponibles en el inventario
-          </p>
-        </div>
-       
-      </div>
+    <div className="space-y-6">
+      {/* Título */}
 
       {/* Lista de repuestos */}
       <SparePartsList
@@ -158,61 +146,56 @@ export default function SparePartsView() {
         onSearchChange={handleSearch}
         onAddNew={handleAddNew}
         onEdit={handleEdit}
-        onDelete={handleDelete}
-        emptyStateMessage={
-          searchTerm
-            ? 'No se encontraron repuestos que coincidan con la búsqueda'
-            : 'Aún no hay repuestos registrados. Comienza agregando uno nuevo.'
-        }
+        onDelete={handleDeleteClick}
       />
 
-      {/* Diálogo para crear un nuevo repuesto */}
+      {/* Diálogo para crear nuevo repuesto */}
       <SparePartDialog
         isOpen={isCreateDialogOpen}
         onClose={handleCloseCreateDialog}
         title="Nuevo Repuesto"
-        description="Complete el formulario para agregar un nuevo repuesto al inventario"
       >
         <CreateSparePartForm
-          onSave={handleSaveSparePart}
+          onSubmit={handleSaveSparePart}
           onCancel={handleCloseCreateDialog}
           isSaving={isSaving}
+          products={products}
         />
       </SparePartDialog>
 
-      {/* Diálogo para editar un repuesto existente */}
-      <SparePartDialog
-        isOpen={isEditDialogOpen}
-        onClose={() => setIsEditDialogOpen(false)}
-        title="Editar Repuesto"
-        description="Modifique los campos que desee actualizar"
-      >
-        {currentSparePart && (
+      {/* Diálogo para editar repuesto existente */}
+      {currentSparePart && (
+        <SparePartDialog
+          isOpen={isEditDialogOpen}
+          onClose={handleCloseEditDialog}
+          title="Editar Repuesto"
+        >
           <EditSparePartForm
             sparePart={currentSparePart}
             onSave={handleSaveSparePart}
-            onCancel={() => setIsEditDialogOpen(false)}
+            onCancel={handleCloseEditDialog}
             isSaving={isSaving}
           />
-        )}
-      </SparePartDialog>
+        </SparePartDialog>
+      )}
 
-      {/* Diálogo de confirmación de eliminación */}
+      {/* Diálogo de confirmación para eliminar */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción eliminará el repuesto "{sparePartToDelete?.name}". Esta acción no se puede deshacer.
+              Esta acción no se puede deshacer. ¿Deseas eliminar permanentemente este repuesto?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSaving}>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={confirmDelete}
+              onClick={handleConfirmDelete} 
+              disabled={isSaving}
               className="bg-red-600 hover:bg-red-700"
             >
-              Eliminar
+              {isSaving ? 'Eliminando...' : 'Eliminar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

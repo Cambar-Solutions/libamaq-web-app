@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from 'lucide-react';
+import ImageUploader from '../molecules/ImageUploader';
 
 /**
  * Componente de formulario para editar un repuesto existente
@@ -21,7 +23,7 @@ export const EditSparePartForm = ({
   onCancel, 
   isSaving 
 }) => {
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, formState: { errors }, setValue } = useForm({
     defaultValues: {
       ...sparePart,
       rentable: sparePart?.rentable || false,
@@ -30,7 +32,8 @@ export const EditSparePartForm = ({
     }
   });
 
-  const [files, setFiles] = useState([]);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [mediaToDelete, setMediaToDelete] = useState([]);
 
   // Actualizar el formulario cuando cambia el repuesto
   useEffect(() => {
@@ -41,28 +44,53 @@ export const EditSparePartForm = ({
         price: sparePart.price?.toString() || '0',
         stock: sparePart.stock?.toString() || '0',
       });
+      setSelectedFiles([]);
+      setMediaToDelete([]);
     }
   }, [sparePart, reset]);
 
   const onSubmit = (data) => {
-    // Convertir price y stock a número
-    const formData = {
-      ...data,
-      id: sparePart.id,
-      price: parseFloat(data.price) || 0,
-      stock: parseInt(data.stock, 10) || 0,
-      rentable: Boolean(data.rentable),
-      files: files.length > 0 ? files : undefined
-    };
-    
-    onSave(formData);
-  };
+    try {
+      if (!sparePart?.id) {
+        throw new Error('ID de repuesto no válido');
+      }
 
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setFiles(Array.from(e.target.files));
+      // Preparar los datos del formulario con el formato exacto
+      const formData = {
+        ...data,
+        // Convertir campos numéricos
+        price: parseFloat(data.price) || 0,
+        stock: parseInt(data.stock, 10) || 0,
+        rentable: Boolean(data.rentable),
+        // Mantener los medios existentes
+        media: (sparePart.media || []).map(media => ({
+          id: Number(media.id),
+          url: media.url,
+          fileType: media.fileType || 'IMAGE',
+          entityType: 'SPARE_PART',
+          displayOrder: Number(media.displayOrder) || 0
+        }))
+      };
+      
+      console.log('Enviando datos del formulario:', formData);
+      onSave(formData, selectedFiles, mediaToDelete);
+    } catch (error) {
+      console.error('Error al procesar el formulario:', error);
+      toast.error(error.message || 'Error al procesar el formulario');
     }
   };
+
+  const handleImagesChange = (files) => {
+    setSelectedFiles(files);
+  };
+
+  const handleImageDelete = (imageId) => {
+    setMediaToDelete(prev => [...prev, imageId]);
+  };
+
+  const existingImages = (sparePart?.media || []).filter(
+    img => !mediaToDelete.includes(img.id)
+  );
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -144,41 +172,15 @@ export const EditSparePartForm = ({
           <Label htmlFor="rentable">¿Disponible para renta?</Label>
         </div>
 
-        {/* Material */}
-        <div className="space-y-2">
-          <Label htmlFor="material">Material</Label>
-          <Input
-            id="material"
-            {...register('material')}
-            placeholder="Ej: Plástico, metal, etc."
-            disabled={isSaving}
-          />
-        </div>
-
-        {/* ID Externo */}
-        <div className="space-y-2">
-          <Label htmlFor="externalId">ID Externo</Label>
-          <Input
-            id="externalId"
-            {...register('externalId')}
-            placeholder="ID en sistema externo"
-            disabled={isSaving}
-          />
-        </div>
-
         {/* Imágenes */}
         <div className="space-y-2 md:col-span-2">
           <Label>Imágenes</Label>
-          <Input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleFileChange}
-            disabled={isSaving}
+          <ImageUploader
+            existingImages={existingImages}
+            onImagesChange={handleImagesChange}
+            onImageDelete={handleImageDelete}
+            maxFiles={5}
           />
-          <p className="text-sm text-gray-500">
-            Seleccione nuevas imágenes para reemplazar las existentes
-          </p>
         </div>
 
         {/* Descripción */}

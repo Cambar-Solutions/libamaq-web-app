@@ -1,11 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
-import { 
-  getActiveSpareParts, 
-  createSparePart as createSparePartService,
-  updateSparePart as updateSparePartService,
-  deleteSparePart as deleteSparePartService
-} from '../../../../../services/admin/sparePartService';
+import { getActiveSpareParts } from '../../../../../services/admin/sparePartService';
+import sparePartWorkflow from '../workflows/sparePartWorkflow';
 
 /**
  * Hook personalizado para manejar la lógica de repuestos
@@ -17,7 +13,7 @@ const useSpareParts = () => {
   const [filteredSpareParts, setFilteredSpareParts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [products, setProducts] = useState([]); // Para futura integración con productos
+  const [products, setProducts] = useState([]);
 
   // Cargar repuestos
   const loadSpareParts = useCallback(async () => {
@@ -59,85 +55,82 @@ const useSpareParts = () => {
     loadSpareParts();
   }, [loadSpareParts]);
 
-  // Crear un nuevo repuesto
+  /**
+   * Crea un nuevo repuesto
+   * @param {Object} sparePartData - Datos del repuesto
+   * @param {File[]} [files=[]] - Archivos de imágenes
+   * @returns {Promise<void>}
+   */
   const createNewSparePart = async (sparePartData, files = []) => {
     try {
-      // Primero creamos el repuesto
-      const createResponse = await createSparePartService({
-        ...sparePartData,
-        status: 'ACTIVE',
-        rentable: Boolean(sparePartData.rentable),
-        price: parseFloat(sparePartData.price) || 0,
-        stock: parseInt(sparePartData.stock, 10) || 0,
-      });
-
-      if (files.length > 0 && createResponse.data?.id) {
-        // Aquí iría la lógica para subir archivos si es necesario
-        console.log('Subiendo archivos para el repuesto:', createResponse.data.id, files);
-      }
-
-      // Recargar la lista de repuestos
+      const newSparePart = await sparePartWorkflow.createSparePart(sparePartData, files);
       await loadSpareParts();
-      return createResponse;
+      return newSparePart;
     } catch (error) {
-      console.error('Error al crear el repuesto:', error);
+      console.error('Error al crear repuesto:', error);
+      toast.error(error.response?.data?.message || 'Error al crear el repuesto');
       throw error;
     }
   };
 
-  // Actualizar un repuesto existente
-  const updateExistingSparePart = async (sparePartData, files = []) => {
+  /**
+   * Actualiza un repuesto existente
+   * @param {Object} sparePartData - Datos actualizados del repuesto
+   * @param {File[]} [newFiles=[]] - Nuevas imágenes a subir
+   * @param {string[]} [mediaToDelete=[]] - IDs de imágenes a eliminar
+   * @returns {Promise<void>}
+   */
+  const updateExistingSparePart = async (sparePartData, newFiles = [], mediaToDelete = []) => {
     try {
-      const updateResponse = await updateSparePartService(sparePartData.id, {
-        ...sparePartData,
-        rentable: Boolean(sparePartData.rentable),
-        price: parseFloat(sparePartData.price) || 0,
-        stock: parseInt(sparePartData.stock, 10) || 0,
-      });
-
-      if (files.length > 0) {
-        // Aquí iría la lógica para actualizar archivos si es necesario
-        console.log('Actualizando archivos para el repuesto:', sparePartData.id, files);
-      }
-
-      // Recargar la lista de repuestos
+      const updatedSparePart = await sparePartWorkflow.updateSparePart(
+        sparePartData,
+        newFiles,
+        mediaToDelete
+      );
       await loadSpareParts();
-      return updateResponse;
+      return updatedSparePart;
     } catch (error) {
-      console.error('Error al actualizar el repuesto:', error);
+      console.error('Error al actualizar repuesto:', error);
+      toast.error(error.response?.data?.message || 'Error al actualizar el repuesto');
       throw error;
     }
   };
 
-  // Eliminar un repuesto
-  const deleteSparePart = async (id) => {
+  /**
+   * Elimina un repuesto
+   * @param {string|number} sparePartId - ID del repuesto a eliminar
+   * @param {string[]} [mediaIds=[]] - IDs de las imágenes asociadas
+   * @returns {Promise<void>}
+   */
+  const deleteSparePart = async (sparePartId, mediaIds = []) => {
     try {
-      const response = await deleteSparePartService(id);
-      // Recargar la lista de repuestos
+      await sparePartWorkflow.deleteSparePart(sparePartId, mediaIds);
       await loadSpareParts();
-      return response;
+      toast.success('Repuesto eliminado correctamente');
     } catch (error) {
-      console.error('Error al eliminar el repuesto:', error);
+      console.error('Error al eliminar repuesto:', error);
+      toast.error(error.response?.data?.message || 'Error al eliminar el repuesto');
       throw error;
     }
+  };
+
+  // Refrescar la lista de repuestos
+  const refreshSpareParts = () => {
+    return loadSpareParts();
   };
 
   return {
-    // Estados
     spareParts,
     filteredSpareParts,
     isLoading,
     searchTerm,
-    products,
-    
-    // Setters
     setSearchTerm,
-    
-    // Funciones
+    products,
     createNewSparePart,
     updateExistingSparePart,
     deleteSparePart,
-    refreshSpareParts: loadSpareParts,
+    refreshSpareParts,
+    SparePartStatus: sparePartWorkflow.constants.SparePartStatus
   };
 };
 

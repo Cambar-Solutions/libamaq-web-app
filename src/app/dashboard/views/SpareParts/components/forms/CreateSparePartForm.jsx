@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImagePlus, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import ImageUploader from '../molecules/ImageUploader';
 
 /**
  * Componente para crear un nuevo repuesto
@@ -18,7 +19,7 @@ export const CreateSparePartForm = ({
   onCancel,
   isSaving: propIsSaving = false
 }) => {
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
     defaultValues: {
       externalId: '',
       code: '',
@@ -29,50 +30,32 @@ export const CreateSparePartForm = ({
       stock: '0',
       rentable: false,
       status: 'ACTIVE',
+      files: []
     }
   });
 
   const [isSaving, setIsSaving] = useState(propIsSaving);
-  const [files, setFiles] = useState([]);
-  const [previewUrls, setPreviewUrls] = useState([]);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  
+  // Observar cambios en el valor de rentable
+  const rentable = watch('rentable', false);
 
-  const onSubmit = (data) => {
-    // Convertir price y stock a número
+  // Manejar envío del formulario
+  const handleFormSubmit = (data) => {
     const formData = {
       ...data,
       price: parseFloat(data.price) || 0,
       stock: parseInt(data.stock, 10) || 0,
       rentable: Boolean(data.rentable),
-      files: files.length > 0 ? files : undefined
+      files: selectedFiles
     };
     
     onSave(formData);
   };
 
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const validFiles = Array.from(e.target.files).filter(file => 
-        file.type.startsWith('image/')
-      );
-
-      if (validFiles.length !== e.target.files.length) {
-        alert('Solo se permiten archivos de imagen (JPEG, PNG, GIF)');
-        return;
-      }
-
-      const newPreviewUrls = validFiles.map(file => ({
-        file,
-        preview: URL.createObjectURL(file)
-      }));
-
-      setFiles(validFiles);
-      setPreviewUrls(newPreviewUrls);
-    }
-  };
-
-  const handleRemoveImage = (index) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
-    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
+  // Manejar cambios en las imágenes seleccionadas
+  const handleImagesChange = (files) => {
+    setSelectedFiles(files);
   };
 
   useEffect(() => {
@@ -80,7 +63,7 @@ export const CreateSparePartForm = ({
   }, [propIsSaving]);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* ID Externo */}
         <div className="space-y-2">
@@ -213,43 +196,11 @@ export const CreateSparePartForm = ({
 
         {/* Imágenes */}
         <div className="space-y-2 md:col-span-2">
-          <Label>Imágenes</Label>
-          <div className="flex flex-wrap gap-4">
-            {previewUrls.map((item, index) => (
-              <div key={index} className="relative group">
-                <img
-                  src={item.preview}
-                  alt={`Vista previa ${index + 1}`}
-                  className="h-24 w-24 object-cover rounded-md border"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveImage(index)}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Eliminar imagen"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
-            <label
-              htmlFor="file-upload"
-              className="h-24 w-24 border-2 border-dashed rounded-md flex flex-col items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-400 cursor-pointer transition-colors"
-            >
-              <ImagePlus size={24} />
-              <span className="text-xs mt-1">Agregar</span>
-              <input
-                id="file-upload"
-                name="file-upload"
-                type="file"
-                className="sr-only"
-                multiple
-                accept="image/*"
-                onChange={handleFileChange}
-                disabled={isSaving}
-              />
-            </label>
-          </div>
+          <Label>Imágenes del repuesto</Label>
+          <ImageUploader
+            onImagesChange={handleImagesChange}
+            maxFiles={5}
+          />
         </div>
       </div>
 

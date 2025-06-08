@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import PropTypes from 'prop-types';
+import { useId } from 'react';
 
 /**
  * Componente de diálogo reutilizable para formularios de repuestos
@@ -19,6 +20,8 @@ export const SparePartDialog = ({
   children,
   size = 'md'
 }) => {
+  const descriptionId = useId();
+  
   // Mapeo de tamaños a clases de ancho
   const sizeClasses = {
     sm: 'sm:max-w-sm',
@@ -36,11 +39,14 @@ export const SparePartDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className={`${sizeClasses[size] || sizeClasses.md} max-h-[90vh] overflow-y-auto`}>
+      <DialogContent 
+        className={`${sizeClasses[size] || sizeClasses.md} max-h-[90vh] overflow-y-auto`}
+        aria-describedby={description ? descriptionId : undefined}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">{title}</DialogTitle>
           {description && (
-            <DialogDescription className="text-sm text-muted-foreground">
+            <DialogDescription id={descriptionId} className="text-sm text-muted-foreground">
               {description}
             </DialogDescription>
           )}
@@ -57,9 +63,9 @@ SparePartDialog.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   title: PropTypes.string.isRequired,
-  description: PropTypes.string.isRequired,
-  children: PropTypes.node.isRequired,
-  size: PropTypes.string
+  description: PropTypes.string,
+  children: PropTypes.node,
+  size: PropTypes.oneOf(['sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl', '7xl', 'full'])
 };
 
 export default SparePartDialog;
