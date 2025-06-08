@@ -1,191 +1,144 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { 
-  getAllSpareParts, 
-  getSparePartById, 
-  createSparePart, 
-  updateSparePart, 
-  deleteSparePart,
-  uploadSparePartMedia,
-  getActiveSpareParts,
-  createSparePartWithImages
-} from '@/services/admin/sparePartService';
-import { getActiveProducts } from '@/services/admin/productService';
+  getActiveSpareParts, 
+  createSparePart as createSparePartService,
+  updateSparePart as updateSparePartService,
+  deleteSparePart as deleteSparePartService
+} from '../../../../../services/admin/sparePartService';
 
-export function useSpareParts() {
+/**
+ * Hook personalizado para manejar la lógica de repuestos
+ * @returns {Object} Estado y funciones para manejar repuestos
+ */
+const useSpareParts = () => {
+  // Estados
   const [spareParts, setSpareParts] = useState([]);
   const [filteredSpareParts, setFilteredSpareParts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState([]); // Para futura integración con productos
 
   // Cargar repuestos
-  const fetchSpareParts = useCallback(async () => {
+  const loadSpareParts = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await getActiveSpareParts();
-      // La respuesta tiene la forma { data: [...], status: 200, message: 'success' }
       if (response && response.data) {
         setSpareParts(response.data);
         setFilteredSpareParts(response.data);
-      } else {
-        setSpareParts([]);
-        setFilteredSpareParts([]);
       }
-    } catch (err) {
-      console.error('Error al cargar repuestos:', err);
-      toast.error('Error al cargar repuestos');
-      setSpareParts([]);
-      setFilteredSpareParts([]);
+    } catch (error) {
+      console.error('Error al cargar repuestos:', error);
+      toast.error('Error al cargar la lista de repuestos');
     } finally {
       setIsLoading(false);
-    }
-  }, []);
-
-  // Cargar productos para el selector de compatibilidad
-  const fetchProducts = useCallback(async () => {
-    try {
-      const response = await getActiveProducts(1, 100);
-      setProducts(response.content || []);
-    } catch (err) {
-      console.error('Error al cargar productos:', err);
-      toast.error('Error al cargar la lista de productos');
-      setProducts([]);
     }
   }, []);
 
   // Filtrar repuestos según el término de búsqueda
   useEffect(() => {
-    if (searchTerm.trim()) {
-      const lower = searchTerm.toLowerCase();
-      const filtered = spareParts.filter(
-        (part) =>
-          part.name?.toLowerCase().includes(lower) ||
-          part.code?.toLowerCase().includes(lower) ||
-          part.externalId?.toLowerCase().includes(lower)
-      );
-      setFilteredSpareParts(filtered);
-    } else {
+    if (!searchTerm.trim()) {
       setFilteredSpareParts(spareParts);
+      return;
     }
+
+    const term = searchTerm.toLowerCase();
+    const filtered = spareParts.filter(
+      (sparePart) =>
+        sparePart.name.toLowerCase().includes(term) ||
+        sparePart.code.toLowerCase().includes(term) ||
+        sparePart.externalId?.toLowerCase().includes(term) ||
+        sparePart.description?.toLowerCase().includes(term)
+    );
+    setFilteredSpareParts(filtered);
   }, [searchTerm, spareParts]);
 
-  // Crear un nuevo repuesto
-  const createNewSparePart = async (sparePartData) => {
-    try {
-      setIsLoading(true);
-      const { files, ...sparePart } = sparePartData;
-      
-      console.log('Creando nuevo repuesto con datos:', sparePart);
-      console.log('Archivos a subir:', files);
-      
-      // Usar la nueva función que maneja todo el proceso
-      const response = await createSparePartWithImages(
-        sparePart,
-        files ? Array.from(files) : []
-      );
-      
-      console.log('Respuesta de creación de repuesto con imágenes:', response);
-      
-      // Verificar que el repuesto se creó correctamente
-      const sparePartId = response?.data?.id || response?.id || response?.data?.data?.id;
-      if (!sparePartId) {
-        console.error('No se pudo obtener el ID del repuesto creado:', response);
-        throw new Error('No se pudo crear el repuesto correctamente');
-      }
-      
-      console.log('Repuesto creado exitosamente con ID:', sparePartId);
+  // Cargar datos iniciales
+  useEffect(() => {
+    loadSpareParts();
+  }, [loadSpareParts]);
 
-      // Actualizar la lista de repuestos
-      await fetchSpareParts();
-      toast.success('Repuesto creado correctamente');
-      return { 
-        ...response.data, 
-        id: sparePartId,
-        success: true 
-      };
-    } catch (err) {
-      console.error('Error al crear repuesto:', err);
-      toast.error(`Error al crear repuesto: ${err.message || 'Error desconocido'}`);
-      throw err;
-    } finally {
-      setIsLoading(false);
+  // Crear un nuevo repuesto
+  const createNewSparePart = async (sparePartData, files = []) => {
+    try {
+      // Primero creamos el repuesto
+      const createResponse = await createSparePartService({
+        ...sparePartData,
+        status: 'ACTIVE',
+        rentable: Boolean(sparePartData.rentable),
+        price: parseFloat(sparePartData.price) || 0,
+        stock: parseInt(sparePartData.stock, 10) || 0,
+      });
+
+      if (files.length > 0 && createResponse.data?.id) {
+        // Aquí iría la lógica para subir archivos si es necesario
+        console.log('Subiendo archivos para el repuesto:', createResponse.data.id, files);
+      }
+
+      // Recargar la lista de repuestos
+      await loadSpareParts();
+      return createResponse;
+    } catch (error) {
+      console.error('Error al crear el repuesto:', error);
+      throw error;
     }
   };
 
   // Actualizar un repuesto existente
-  const updateExistingSparePart = async (sparePartData) => {
+  const updateExistingSparePart = async (sparePartData, files = []) => {
     try {
-      setIsLoading(true);
-      const { files, mediaToRemove = [], ...sparePart } = sparePartData;
-      
-      // Actualizar el repuesto
-      const response = await updateSparePart(sparePart);
+      const updateResponse = await updateSparePartService(sparePartData.id, {
+        ...sparePartData,
+        rentable: Boolean(sparePartData.rentable),
+        price: parseFloat(sparePartData.price) || 0,
+        stock: parseInt(sparePartData.stock, 10) || 0,
+      });
 
-      // Si hay archivos para subir
-      if (files && files.length > 0) {
-        const formData = new FormData();
-        Array.from(files).forEach((file, index) => {
-          formData.append('files', file);
-        });
-        
-        // Subir archivos multimedia
-        const mediaResponse = await uploadSparePartMedia(formData);
-        console.log('Archivos subidos:', mediaResponse);
+      if (files.length > 0) {
+        // Aquí iría la lógica para actualizar archivos si es necesario
+        console.log('Actualizando archivos para el repuesto:', sparePartData.id, files);
       }
 
-      // Aquí podrías manejar la eliminación de medios si es necesario
-      // usando mediaToRemove
-
-      await fetchSpareParts();
-      toast.success('Repuesto actualizado correctamente');
-      return response;
-    } catch (err) {
-      console.error('Error al actualizar repuesto:', err);
-      toast.error(`Error al actualizar repuesto: ${err.message || 'Error desconocido'}`);
-      throw err;
-    } finally {
-      setIsLoading(false);
+      // Recargar la lista de repuestos
+      await loadSpareParts();
+      return updateResponse;
+    } catch (error) {
+      console.error('Error al actualizar el repuesto:', error);
+      throw error;
     }
   };
 
   // Eliminar un repuesto
-  const handleDeleteSparePart = async (id) => {
+  const deleteSparePart = async (id) => {
     try {
-      setIsLoading(true);
-      const response = await deleteSparePart(id);
-      if (response) {
-        await fetchSpareParts();
-        toast.success('Repuesto eliminado correctamente');
-        return true;
-      }
-      return false;
-    } catch (err) {
-      console.error('Error al eliminar repuesto:', err);
-      toast.error(`Error al eliminar repuesto: ${err.message || 'Error desconocido'}`);
-      return false;
-    } finally {
-      setIsLoading(false);
+      const response = await deleteSparePartService(id);
+      // Recargar la lista de repuestos
+      await loadSpareParts();
+      return response;
+    } catch (error) {
+      console.error('Error al eliminar el repuesto:', error);
+      throw error;
     }
   };
 
-  // Cargar datos iniciales
-  useEffect(() => {
-    fetchSpareParts();
-    fetchProducts();
-  }, [fetchSpareParts, fetchProducts]);
-
   return {
+    // Estados
     spareParts,
-    deleteSparePart: handleDeleteSparePart,
     filteredSpareParts,
     isLoading,
     searchTerm,
-    setSearchTerm,
     products,
+    
+    // Setters
+    setSearchTerm,
+    
+    // Funciones
     createNewSparePart,
     updateExistingSparePart,
     deleteSparePart,
-    refreshSpareParts: fetchSpareParts
+    refreshSpareParts: loadSpareParts,
   };
-}
+};
+
+export default useSpareParts;

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImagePlus, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -17,194 +18,107 @@ export const CreateSparePartForm = ({
   onCancel,
   isSaving: propIsSaving = false
 }) => {
-  const [isSaving, setIsSaving] = useState(propIsSaving);
-  // Estado inicial del formulario con los campos requeridos por la API
-  const [formData, setFormData] = useState({
-    externalId: '',        // ID externo del repuesto
-    code: '',              // Código interno
-    name: '',              // Nombre del repuesto
-    description: '',        // Descripción detallada
-    material: '',           // Material del repuesto
-    price: 0,              // Precio unitario
-    stock: 0,              // Cantidad en inventario
-    rentable: false,       // Si está disponible para renta
-    status: 'ACTIVE',      // Estado por defecto
-    media: []              // Array para medios (imágenes)
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: {
+      externalId: '',
+      code: '',
+      name: '',
+      description: '',
+      material: '',
+      price: '0',
+      stock: '0',
+      rentable: false,
+      status: 'ACTIVE',
+    }
   });
 
+  const [isSaving, setIsSaving] = useState(propIsSaving);
+  const [files, setFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
-  const [selectedFiles, setSelectedFiles] = useState([]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleNumberInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value === '' ? '' : Number(value)
-    }));
-  };
-
-  const handleSwitchChange = (name, checked) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: checked
-    }));
+  const onSubmit = (data) => {
+    // Convertir price y stock a número
+    const formData = {
+      ...data,
+      price: parseFloat(data.price) || 0,
+      stock: parseInt(data.stock, 10) || 0,
+      rentable: Boolean(data.rentable),
+      files: files.length > 0 ? files : undefined
+    };
+    
+    onSave(formData);
   };
 
   const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    
-    // Validar tipos de archivo (solo imágenes)
-    const validFiles = files.filter(file => 
-      file.type.startsWith('image/')
-    );
+    if (e.target.files && e.target.files.length > 0) {
+      const validFiles = Array.from(e.target.files).filter(file => 
+        file.type.startsWith('image/')
+      );
 
-    if (validFiles.length !== files.length) {
-      alert('Solo se permiten archivos de imagen (JPEG, PNG, GIF)');
-      return;
+      if (validFiles.length !== e.target.files.length) {
+        alert('Solo se permiten archivos de imagen (JPEG, PNG, GIF)');
+        return;
+      }
+
+      const newPreviewUrls = validFiles.map(file => ({
+        file,
+        preview: URL.createObjectURL(file)
+      }));
+
+      setFiles(validFiles);
+      setPreviewUrls(newPreviewUrls);
     }
-
-    // Generar URLs de vista previa
-    const newPreviewUrls = validFiles.map(file => ({
-      file,
-      preview: URL.createObjectURL(file)
-    }));
-
-    setSelectedFiles(prev => [...prev, ...validFiles]);
-    setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
   };
 
   const handleRemoveImage = (index) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setFiles(prev => prev.filter((_, i) => i !== index));
     setPreviewUrls(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Validar campos requeridos
-    if (!formData.externalId || !formData.code || !formData.name) {
-      toast.error('Por favor complete los campos obligatorios');
-      return;
-    }
-    
-    // Validar que al menos haya una imagen si es requerido
-    if (selectedFiles.length === 0) {
-      toast.error('Por favor agregue al menos una imagen del repuesto');
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-      
-      // 1. Primero subir las imágenes
-      const { uploadMedia } = await import('@/services/admin/mediaService');
-      
-      console.log('Subiendo archivos...');
-      const uploadResponse = await uploadMedia(selectedFiles.map(file => file.file));
-      console.log('Respuesta de subida de archivos:', uploadResponse);
-      
-      if (!uploadResponse || !uploadResponse.data || uploadResponse.data.length === 0) {
-        throw new Error('No se pudieron subir las imágenes');
-      }
-      
-      const uploadedFiles = Array.isArray(uploadResponse.data) ? uploadResponse.data : [uploadResponse.data];
-      
-      // 2. Preparar el payload del repuesto con las URLs de las imágenes subidas
-      const payload = {
-        createdBy: '1', // TODO: Obtener del contexto de autenticación
-        createdAt: new Date().toISOString(),
-        externalId: formData.externalId.trim(),
-        code: formData.code.trim(),
-        name: formData.name.trim(),
-        description: formData.description.trim(),
-        material: formData.material.trim(),
-        price: Number(formData.price) || 0,
-        stock: Number(formData.stock) || 0,
-        rentable: Boolean(formData.rentable),
-        status: formData.status,
-        // Incluir las imágenes ya subidas con sus URLs de Cloudflare
-        media: uploadedFiles.map((file, index) => ({
-          id: file.id,
-          url: file.url, // URL de Cloudflare
-          fileType: 'IMAGE',
-          entityId: 0, // Se actualizará con el ID del repuesto
-          entityType: 'SPARE_PART',
-          displayOrder: index,
-          status: 'ACTIVE'
-        }))
-      };
-
-      console.log('Enviando datos del repuesto al servidor:', {
-        ...payload,
-        media: `Array(${payload.media.length} imágenes)`
-      });
-      
-      // 3. Llamar a la función onSave con los datos del formulario
-      const result = await onSave(payload);
-      
-      return result;
-    } catch (error) {
-      console.error('Error al guardar el repuesto:', error);
-      toast.error(`Error al guardar el repuesto: ${error.message || 'Error desconocido'}`);
-      throw error;
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Sincronizar el estado de carga con la prop
   useEffect(() => {
     setIsSaving(propIsSaving);
   }, [propIsSaving]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* ID Externo */}
         <div className="space-y-2">
           <Label htmlFor="externalId">ID Externo</Label>
           <Input
             id="externalId"
-            name="externalId"
-            value={formData.externalId}
-            onChange={handleInputChange}
+            {...register('externalId')}
             placeholder="Ej: SP-12345"
-            required
+            disabled={isSaving}
           />
         </div>
 
         {/* Código */}
         <div className="space-y-2">
-          <Label htmlFor="code">Código</Label>
+          <Label htmlFor="code">Código *</Label>
           <Input
             id="code"
-            name="code"
-            value={formData.code}
-            onChange={handleInputChange}
-            placeholder="Ej: RP-ABC-123"
-            required
+            {...register('code', { required: 'El código es requerido' })}
+            placeholder="Ej: RP-001"
+            disabled={isSaving}
           />
+          {errors.code && (
+            <p className="text-sm text-red-500">{errors.code.message}</p>
+          )}
         </div>
 
         {/* Nombre */}
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="name">Nombre</Label>
+          <Label htmlFor="name">Nombre *</Label>
           <Input
             id="name"
-            name="name"
-            value={formData.name}
-            onChange={handleInputChange}
+            {...register('name', { required: 'El nombre es requerido' })}
             placeholder="Ej: Pantalla OLED Galaxy S21"
-            required
+            disabled={isSaving}
           />
+          {errors.name && (
+            <p className="text-sm text-red-500">{errors.name.message}</p>
+          )}
         </div>
 
         {/* Descripción */}
@@ -212,11 +126,10 @@ export const CreateSparePartForm = ({
           <Label htmlFor="description">Descripción</Label>
           <Textarea
             id="description"
-            name="description"
-            value={formData.description}
-            onChange={handleInputChange}
-            rows={3}
+            {...register('description')}
             placeholder="Descripción detallada del repuesto..."
+            rows={4}
+            disabled={isSaving}
           />
         </div>
 
@@ -225,62 +138,67 @@ export const CreateSparePartForm = ({
           <Label htmlFor="material">Material</Label>
           <Input
             id="material"
-            name="material"
-            value={formData.material}
-            onChange={handleInputChange}
-            placeholder="Ej: Vidrio, plástico y componentes electrónicos"
+            {...register('material')}
+            placeholder="Ej: Plástico, metal, etc."
+            disabled={isSaving}
           />
         </div>
 
         {/* Precio */}
         <div className="space-y-2">
-          <Label htmlFor="price">Precio</Label>
+          <Label htmlFor="price">Precio (MXN) *</Label>
           <Input
             id="price"
-            name="price"
             type="number"
-            min="0"
             step="0.01"
-            value={formData.price}
-            onChange={handleNumberInputChange}
+            min="0"
+            {...register('price', { 
+              required: 'El precio es requerido',
+              min: { value: 0, message: 'El precio debe ser mayor o igual a 0' }
+            })}
             placeholder="0.00"
-            required
+            disabled={isSaving}
           />
+          {errors.price && (
+            <p className="text-sm text-red-500">{errors.price.message}</p>
+          )}
         </div>
 
         {/* Stock */}
         <div className="space-y-2">
-          <Label htmlFor="stock">Stock</Label>
+          <Label htmlFor="stock">Stock *</Label>
           <Input
             id="stock"
-            name="stock"
             type="number"
             min="0"
-            value={formData.stock}
-            onChange={handleNumberInputChange}
+            {...register('stock', { 
+              required: 'El stock es requerido',
+              min: { value: 0, message: 'El stock debe ser mayor o igual a 0' }
+            })}
             placeholder="0"
-            required
+            disabled={isSaving}
           />
+          {errors.stock && (
+            <p className="text-sm text-red-500">{errors.stock.message}</p>
+          )}
         </div>
 
         {/* Rentable */}
-        <div className="space-y-2 flex items-center gap-4">
-          <Label htmlFor="rentable" className="flex items-center gap-2">
-            <Switch
-              id="rentable"
-              checked={formData.rentable}
-              onCheckedChange={(checked) => handleSwitchChange('rentable', checked)}
-            />
-            <span>¿Es rentable?</span>
-          </Label>
+        <div className="flex items-center space-x-2">
+          <Switch 
+            id="rentable" 
+            {...register('rentable')} 
+            disabled={isSaving}
+          />
+          <Label htmlFor="rentable">¿Disponible para renta?</Label>
         </div>
 
         {/* Estado */}
         <div className="space-y-2">
           <Label htmlFor="status">Estado</Label>
           <Select
-            value={formData.status}
-            onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+            value={register('status').value}
+            onValueChange={(value) => register('status').onChange(value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecciona un estado" />
@@ -328,12 +246,14 @@ export const CreateSparePartForm = ({
                 multiple
                 accept="image/*"
                 onChange={handleFileChange}
+                disabled={isSaving}
               />
             </label>
           </div>
         </div>
       </div>
 
+      {/* Botones de acción */}
       <div className="flex justify-end space-x-3 pt-4">
         <Button
           type="button"
@@ -343,12 +263,15 @@ export const CreateSparePartForm = ({
         >
           Cancelar
         </Button>
-        <Button 
-          type="submit" 
-          disabled={isSaving}
-          className="bg-primary hover:bg-primary/90"
-        >
-          {isSaving ? 'Creando...' : 'Crear repuesto'}
+        <Button type="submit" disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creando...
+            </>
+          ) : (
+            'Crear repuesto'
+          )}
         </Button>
       </div>
     </form>

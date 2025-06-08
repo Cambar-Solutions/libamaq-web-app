@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import { useSpareParts } from './hooks/useSpareParts';
 import { SparePartsList } from './components/molecules/SparePartsList';
 import { SparePartDialog } from './components/molecules/SparePartDialog';
 import { CreateSparePartForm } from './components/forms/CreateSparePartForm';
+import { EditSparePartForm } from './components/forms/EditSparePartForm';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import useSpareParts from './hooks/useSpareParts';
 
 export default function SparePartsView() {
   // Usar el hook personalizado para la lógica de negocio
@@ -18,14 +19,14 @@ export default function SparePartsView() {
     products,
     createNewSparePart,
     updateExistingSparePart,
-    deleteSparePart,
+    deleteSparePart: deleteSparePartService,
     refreshSpareParts
   } = useSpareParts();
 
   // Estados para los diálogos
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [currentSparePartId, setCurrentSparePartId] = useState(null);
+  const [currentSparePart, setCurrentSparePart] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Estados para el diálogo de confirmación de eliminación
@@ -49,7 +50,7 @@ export default function SparePartsView() {
 
   // Abrir diálogo para editar un repuesto existente
   const handleEdit = (sparePart) => {
-    setCurrentSparePartId(sparePart.id);
+    setCurrentSparePart(sparePart);
     setIsEditDialogOpen(true);
   };
 
@@ -58,15 +59,8 @@ export default function SparePartsView() {
     refreshSpareParts();
     setIsCreateDialogOpen(false);
     setIsEditDialogOpen(false);
+    setCurrentSparePart(null);
     toast.success('Repuesto guardado exitosamente');
-  };
-
-  // Manejar éxito al eliminar
-  const handleDeleteSuccess = () => {
-    refreshSpareParts();
-    setIsDeleteDialogOpen(false);
-    setSparePartToDelete(null);
-    toast.success('Repuesto eliminado exitosamente');
   };
 
   // Manejar guardar repuesto (crear o actualizar)
@@ -74,58 +68,34 @@ export default function SparePartsView() {
     try {
       setIsSaving(true);
       
-      console.log('Datos del formulario recibidos en handleSaveSparePart:', {
-        ...formData,
-        // No incluir archivos en el log para no saturar la consola
-        files: formData.files ? `Array(${formData.files.length} archivos)` : 'Ningún archivo'
-      });
-      
-      // Extraer archivos del formData si existen
+      // Extraer archivos del formData
       const { files, ...sparePartData } = formData;
       
-      // Preparar los datos según la estructura esperada por la API
-      const sparePartPayload = {
-        createdBy: '1', // TODO: Obtener del contexto de autenticación
-        createdAt: new Date().toISOString(),
-        externalId: sparePartData.externalId || '',
-        code: sparePartData.code || '',
-        name: sparePartData.name || '',
-        description: sparePartData.description || '',
-        material: sparePartData.material || '',
-        price: parseFloat(sparePartData.price) || 0,
-        stock: parseInt(sparePartData.stock, 10) || 0,
-        rentable: Boolean(sparePartData.rentable),
-        status: sparePartData.status || 'ACTIVE',
-        // Mantener la estructura de media del formulario
-        media: sparePartData.media || []
-      };
-
-      console.log('Datos preparados para enviar al servicio:', {
-        ...sparePartPayload,
-        media: `Array(${sparePartPayload.media.length} elementos)`
+      console.log('Datos del formulario recibidos en handleSaveSparePart:', {
+        ...sparePartData,
+        files: files ? `Array(${files.length} archivos)` : 'Ningún archivo'
       });
 
+      // Llamar a la función correspondiente según si es creación o actualización
       let response;
-      if (formData.id) {
-        // Para actualización, agregar los campos específicos
-        const updateData = {
-          ...sparePartPayload,
-          id: formData.id,
-          updatedBy: '1', // TODO: Obtener del contexto de autenticación
-          updatedAt: new Date().toISOString(),
-          // Incluir archivos si existen
-          files: files || []
-        };
-        console.log('Actualizando repuesto existente con ID:', formData.id);
-        response = await updateExistingSparePart(updateData);
+      if (sparePartData.id) {
+        console.log('Actualizando repuesto existente con ID:', sparePartData.id);
+        response = await updateExistingSparePart({
+          ...sparePartData,
+          updatedBy: '1',
+          updatedAt: new Date().toISOString()
+        }, files);
       } else {
         console.log('Creando nuevo repuesto');
-        // Pasar tanto los datos del repuesto como los archivos
         response = await createNewSparePart({
-          ...sparePartPayload,
-          // Incluir archivos si existen
-          files: files || []
-        });
+          ...sparePartData,
+          createdBy: '1',
+          createdAt: new Date().toISOString(),
+          status: 'ACTIVE',
+          rentable: Boolean(sparePartData.rentable),
+          price: parseFloat(sparePartData.price) || 0,
+          stock: parseInt(sparePartData.stock, 10) || 0
+        }, files);
       }
 
       console.log('Respuesta del servicio:', response);
@@ -146,7 +116,7 @@ export default function SparePartsView() {
   };
 
   // Manejar la eliminación de un repuesto
-  const handleDelete = async (sparePart) => {
+  const handleDelete = (sparePart) => {
     setSparePartToDelete(sparePart);
     setIsDeleteDialogOpen(true);
   };
@@ -156,7 +126,7 @@ export default function SparePartsView() {
     if (!sparePartToDelete) return;
     
     try {
-      await deleteSparePart(sparePartToDelete.id);
+      await deleteSparePartService(sparePartToDelete.id);
       toast.success('Repuesto eliminado correctamente');
       refreshSpareParts();
     } catch (error) {
@@ -177,12 +147,7 @@ export default function SparePartsView() {
             Administra los repuestos disponibles en el inventario
           </p>
         </div>
-        <button
-          onClick={handleAddNew}
-          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4"
-        >
-          <span>Agregar Repuesto</span>
-        </button>
+       
       </div>
 
       {/* Lista de repuestos */}
@@ -209,43 +174,27 @@ export default function SparePartsView() {
         description="Complete el formulario para agregar un nuevo repuesto al inventario"
       >
         <CreateSparePartForm
-          onSave={async (formData, files) => {
-            try {
-              setIsSaving(true);
-              const result = await handleSaveSparePart({
-                ...formData,
-                files
-              });
-              if (result) {
-                handleCloseCreateDialog();
-              }
-              return result;
-            } catch (error) {
-              console.error('Error al guardar el repuesto:', error);
-              return false;
-            } finally {
-              setIsSaving(false);
-            }
-          }}
+          onSave={handleSaveSparePart}
           onCancel={handleCloseCreateDialog}
           isSaving={isSaving}
         />
       </SparePartDialog>
 
-      {/* Diálogo para editar repuesto existente */}
+      {/* Diálogo para editar un repuesto existente */}
       <SparePartDialog
         isOpen={isEditDialogOpen}
-        onClose={() => {
-          setIsEditDialogOpen(false);
-          setCurrentSparePartId(null);
-        }}
+        onClose={() => setIsEditDialogOpen(false)}
         title="Editar Repuesto"
         description="Modifique los campos que desee actualizar"
       >
-        {/* Aquí irá el componente de edición cuando lo necesites */}
-        <div className="p-4">
-          <p>Formulario de edición se cargará aquí</p>
-        </div>
+        {currentSparePart && (
+          <EditSparePartForm
+            sparePart={currentSparePart}
+            onSave={handleSaveSparePart}
+            onCancel={() => setIsEditDialogOpen(false)}
+            isSaving={isSaving}
+          />
+        )}
       </SparePartDialog>
 
       {/* Diálogo de confirmación de eliminación */}

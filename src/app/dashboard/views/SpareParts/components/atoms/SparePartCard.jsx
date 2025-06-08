@@ -1,13 +1,26 @@
 import { useState, useEffect } from 'react';
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Edit, Trash2, Box, DollarSign, Hash, Info, ExternalLink } from 'lucide-react';
+import PropTypes from 'prop-types';
 import { getSparePartById } from '@/services/admin/sparePartService';
 
-export const SparePartCard = ({ sparePart, onClick, onDelete }) => {
+/**
+ * Componente de tarjeta para mostrar información de un repuesto
+ * @param {Object} props - Propiedades del componente
+ * @param {Object} props.sparePart - Datos del repuesto a mostrar
+ * @param {Function} [props.onEdit] - Función para manejar la edición del repuesto
+ * @param {Function} [props.onDelete] - Función para manejar la eliminación del repuesto
+ * @param {Function} [props.onClick] - Función para manejar el clic en la tarjeta
+ */
+const SparePartCard = ({ sparePart, onEdit, onDelete, onClick }) => {
   const [detailedSparePart, setDetailedSparePart] = useState(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Obtener detalles completos del repuesto al montar el componente
   useEffect(() => {
@@ -29,133 +42,192 @@ export const SparePartCard = ({ sparePart, onClick, onDelete }) => {
     fetchDetails();
   }, [sparePart.id]);
 
-  // Determinar si hay imágenes disponibles
-  const hasImages = sparePart?.media &&
-    Array.isArray(sparePart.media) &&
-    sparePart.media.length > 0;
+  // Formatear el precio como moneda
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN'
+    }).format(price);
+  };
 
-  // Obtener la URL de la primera imagen si existe
-  const firstImageUrl = Array.isArray(sparePart.media) && sparePart.media.length > 0
-    ? sparePart.media[0].url
-    : null;
+  // Determinar el color del badge según el estado del stock
+  const getStockBadgeVariant = (stock) => {
+    if (stock <= 0) return 'destructive';
+    if (stock <= 5) return 'warning';
+    return 'success';
+  };
+
+  // Determinar el texto del estado
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'ACTIVE':
+        return 'Activo';
+      case 'INACTIVE':
+        return 'Inactivo';
+      case 'OUT_OF_STOCK':
+        return 'Sin stock';
+      default:
+        return status || 'Desconocido';
+    }
+  };
+
+  const handleDeleteClick = async (e) => {
+    e.stopPropagation();
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!onDelete) return;
+    
+    try {
+      setIsDeleting(true);
+      await onDelete(sparePart);
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error('Error al eliminar el repuesto:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const displayData = detailedSparePart || sparePart;
 
   return (
     <>
-      <Card
-        onClick={(e) => {
-          // Solo abrir el modal de edición si el clic no viene de un botón dentro de la tarjeta
-          if (e.target.closest('button') === null) {
-            onClick(e);
-          }
-        }}
-        className="
-          cursor-pointer
-          filter grayscale-[40%] hover:grayscale-0
-          transition-filter duration-500
-          flex flex-col h-full
-          shadow-md hover:shadow-lg
-        "
+      <Card 
+        className="h-full flex flex-col hover:shadow-md transition-shadow duration-200 overflow-hidden"
+        onClick={onClick}
       >
-        <CardHeader>
-          <div className="relative w-full h-48 overflow-hidden bg-gray-100 flex items-center justify-center">
-            {isLoadingDetails ? (
-              <div className="animate-pulse w-full h-full bg-gray-200"></div>
-            ) : firstImageUrl ? (
-              <img
-                src={firstImageUrl}
-                alt={sparePart.name}
-                className="w-full h-full object-contain"
-                onError={(e) => {
-                  // Si hay más imágenes, intentar con la siguiente
-                  const currentIndex = sparePart.media.findIndex(img => img.url === e.target.src);
-                  if (currentIndex < sparePart.media.length - 1) {
-                    e.target.src = sparePart.media[currentIndex + 1].url;
-                  } else {
-                    // No hay más imágenes, mostrar placeholder
-                    e.target.onerror = null;
-                    e.target.style.display = 'none';
-                    const placeholder = document.createElement('div');
-                    placeholder.className = 'flex flex-col items-center justify-center w-full h-full';
-                    placeholder.innerHTML = `
-                      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="text-gray-400">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                        <polyline points="21 15 16 10 5 21"></polyline>
-                      </svg>
-                      <span class="text-sm text-gray-400 mt-2">Error al cargar la imagen</span>
-                    `;
-                    e.target.parentNode.appendChild(placeholder);
-                  }
-                }}
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center w-full h-full">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-gray-400">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                  <polyline points="21 15 16 10 5 21"></polyline>
-                </svg>
-                <span className="text-sm text-gray-400 mt-2">Sin imagen</span>
+        <CardHeader className="pb-2">
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="text-lg font-semibold line-clamp-1">
+                {displayData.name}
+              </CardTitle>
+              <CardDescription className="text-sm flex items-center gap-1 mt-1">
+                <Hash className="h-3 w-3 text-muted-foreground" />
+                <span className="font-mono">{displayData.code}</span>
+                {displayData.externalId && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex items-center text-xs text-muted-foreground ml-2">
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          {displayData.externalId}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>ID Externo</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </CardDescription>
+            </div>
+            <Badge 
+              variant={displayData.status === 'ACTIVE' ? 'default' : 'secondary'}
+              className="ml-2"
+            >
+              {getStatusText(displayData.status)}
+            </Badge>
+          </div>
+        </CardHeader>
+
+        <CardContent className="flex-1">
+          {displayData.description && (
+            <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
+              {displayData.description}
+            </p>
+          )}
+
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="space-y-1">
+              <div className="flex items-center text-sm text-muted-foreground">
+                <DollarSign className="h-4 w-4 mr-1" />
+                <span>Precio</span>
+              </div>
+              <p className="font-medium">{formatPrice(displayData.price || 0)}</p>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Box className="h-4 w-4 mr-1" />
+                <span>Stock</span>
+              </div>
+              <Badge 
+                variant={getStockBadgeVariant(displayData.stock || 0)}
+                className="font-medium"
+              >
+                {displayData.stock || 0} unidades
+              </Badge>
+            </div>
+
+            {displayData.material && (
+              <div className="space-y-1 col-span-2">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Info className="h-4 w-4 mr-1" />
+                  <span>Material</span>
+                </div>
+                <p className="text-sm">{displayData.material}</p>
               </div>
             )}
           </div>
-        </CardHeader>
-        <div className="rounded-b-xl w-full px-6 py-3 bg-blue-600 text-white relative">
-          <CardTitle className="truncate whitespace-nowrap overflow-hidden text-sm md:text-base" title={sparePart.name}>
-            {sparePart.name}
-          </CardTitle>
-          <CardDescription>
-            <div className="flex flex-col text-white">
-              <span>Código: {sparePart.code}</span>
-              <span>Precio: ${sparePart.price}</span>
-              <span>Stock: {sparePart.stock}</span>
-            </div>
-          </CardDescription>
+        </CardContent>
 
-          {/* Botón de eliminar en la esquina inferior derecha */}
-          <div className="absolute bottom-2 right-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 bg-white/20 hover:bg-white/30 text-white cursor-pointer transition-colors duration-500"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsDeleteDialogOpen(true);
-              }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 6h18"></path>
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-              </svg>
-            </Button>
-          </div>
-        </div>
+        {(onEdit || onDelete) && (
+          <CardFooter className="flex justify-end gap-2 pt-2 border-t">
+            {onEdit && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(displayData);
+                }}
+                className="h-8"
+              >
+                <Edit className="h-4 w-4 mr-1" />
+                Editar
+              </Button>
+            )}
+            {onDelete && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleDeleteClick}
+                className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                disabled={isDeleting}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                {isDeleting ? 'Eliminando...' : 'Eliminar'}
+              </Button>
+            )}
+          </CardFooter>
+        )}
       </Card>
 
-      {/* Diálogo de confirmación de eliminación */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>¿Estás seguro?</DialogTitle>
             <DialogDescription>
-              Esta acción eliminará el repuesto "{sparePart.name}". Esta acción no se puede deshacer.
+              Esta acción eliminará el repuesto "{displayData.name}". Esta acción no se puede deshacer.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancelar</Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancelar
+            </Button>
             <Button 
               variant="destructive" 
-              onClick={async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const success = await onDelete(sparePart);
-                if (success) {
-                  setIsDeleteDialogOpen(false);
-                }
-              }}
+              onClick={confirmDelete}
+              disabled={isDeleting}
             >
-              Eliminar
+              {isDeleting ? 'Eliminando...' : 'Eliminar'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -163,3 +235,23 @@ export const SparePartCard = ({ sparePart, onClick, onDelete }) => {
     </>
   );
 };
+
+SparePartCard.propTypes = {
+  sparePart: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    name: PropTypes.string.isRequired,
+    code: PropTypes.string.isRequired,
+    price: PropTypes.number,
+    stock: PropTypes.number,
+    status: PropTypes.oneOf(['ACTIVE', 'INACTIVE', 'OUT_OF_STOCK']),
+    description: PropTypes.string,
+    material: PropTypes.string,
+    externalId: PropTypes.string,
+    media: PropTypes.array,
+  }).isRequired,
+  onEdit: PropTypes.func,
+  onDelete: PropTypes.func,
+  onClick: PropTypes.func,
+};
+
+export default SparePartCard;
