@@ -12,7 +12,7 @@ import { ContentView } from "./views/ContentView";
 import { StatsView } from "./views/StatsView";
 import { BrandsView } from "./views/BrandsView";
 import { CategoriesView } from "./views/CategoriesView";
-import { SparePartsView } from "./views/SparePartsView";
+import { SparePartsView } from "./views/SpareParts/SparePartsView";
 import { toast } from "sonner";
 import { AppSidebarGerente } from "@/components/app-sidebarGerente";
 
