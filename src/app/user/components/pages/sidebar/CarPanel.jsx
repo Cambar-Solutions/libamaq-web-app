@@ -189,6 +189,5 @@ export default function CarPanel() {
         </div>
       </div>
     </motion.div>
-
   );
 }

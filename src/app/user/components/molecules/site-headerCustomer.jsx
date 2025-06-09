@@ -8,7 +8,7 @@ import { RiShoppingCartFill } from "react-icons/ri";
 import { GrUserWorker } from "react-icons/gr";
 import { FaBars, FaTimes, FaStore } from "react-icons/fa";
 import { MapPin, SidebarIcon } from 'lucide-react';
-import DrawerCategories from "./drawerCategories";
+import DrawerCategories from "../../../../components/drawerCategories";
 import { getAllBrandsWithCategories } from "@/services/public/brandService";
 import {
   Select,
@@ -18,9 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export function SiteHeaderCustomer({ onViewChange }) {
+export function SiteHeaderCustomer({ onViewChange, userData }) {
   const navigate = useNavigate();
-  const [user, setUser] = useState({ name: "null", email: "null@gmail.com" });
   const [editing, setEditing] = useState(false);
   const { toggleSidebar } = useSidebar();
   const drawerRef = useRef(null);
@@ -58,28 +57,6 @@ export function SiteHeaderCustomer({ onViewChange }) {
       }
     }
   };
-
-  useEffect(() => {
-    const userId = localStorage.getItem("userId");
-    if (!userId) {
-      console.warn("No hay userId en localStorage");
-      setLoading(false);
-      return;
-    }
-
-    getCustomerUsers()
-      .then((list) => {
-        // asume que 'id' viene como número o string en los objetos
-        const me = list.find(u => u.id.toString() === userId.toString());
-        if (me) {
-          setUser({ name: me.name, email: me.email });
-        } else {
-          console.warn("Usuario no encontrado en la lista de clientes");
-        }
-      })
-      .catch((err) => console.error("Error cargando usuarios:", err))
-      .finally(() => setLoading(false));
-  }, []);
 
   if (loading) {
     return (
@@ -201,9 +178,9 @@ export function SiteHeaderCustomer({ onViewChange }) {
 
           <button
             onClick={() =>
-                navigate('/user-profile', {
-                  state: { view: 'perfil', openLocation: true }
-                })}
+              navigate('/user-profile', {
+                state: { view: 'perfil', openLocation: true }
+              })}
             className="cursor-pointer flex items-center gap-1 text-white hover:text-yellow-500 transition-colors duration-600"
           >
             <MapPin size={28} />
@@ -227,7 +204,7 @@ export function SiteHeaderCustomer({ onViewChange }) {
             <div className="relative">
               {/* Texto */}
               <span className="px-2.5 pr-4 py-1 bg-white text-black group-hover:text-white text-sm rounded-l-full group-hover:bg-gradient-to-l from-yellow-600 to-yellow-500/80 transition-colors duration-600 inline-block mr-8 max-w-[10em]">
-                Hola {user.name}
+                Hola {userData.name}
               </span>
 
               {/* Círculo del icono */}

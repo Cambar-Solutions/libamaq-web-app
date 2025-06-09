@@ -1,11 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import StepperDemo from "@/components/ui/StepperDemo";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { GrUserWorker } from "react-icons/gr";
-import { FiTrash2 } from "react-icons/fi";
+
 import {
     Dialog,
     DialogContent,
@@ -77,6 +73,7 @@ export default function OrderPanel() {
                             return (
                                 <Dialog key={prod.id}>
                                     <DialogTrigger asChild>
+                                        {/* Card Pedidos Disponibles */}
                                         <div className="cursor-pointer p-3 mt-4 bg-white shadow-sm hover:shadow-lg duration-500 rounded-2xl">
                                             <div className="flex flex-col md:flex-row items-start md:items-center">
                                                 {/* Imagen del producto - Responsive */}
@@ -157,7 +154,6 @@ export default function OrderPanel() {
                     </div>
                 </div>
             </motion.div>
-
         </>
     );
 }

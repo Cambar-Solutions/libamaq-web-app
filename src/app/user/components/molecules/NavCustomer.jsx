@@ -2,13 +2,12 @@ import { useRef, useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import { getCustomerUsers } from "@/services/admin/userService";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
 import { RiShoppingCartFill } from "react-icons/ri";
 import { GrUserWorker } from "react-icons/gr";
 import { FaBars, FaTimes, FaStore } from "react-icons/fa";
 import { MapPin, SidebarIcon } from 'lucide-react';
-import DrawerCategories from "./drawerCategories";
+import DrawerCategories from "../../../../components/drawerCategories";
 import { getAllBrandsWithCategories } from "@/services/public/brandService";
 import {
   Select,
@@ -20,7 +19,7 @@ import {
 
 export function NavCustomer({ onViewChange }) {
   const navigate = useNavigate();
-  const [user, setUser] = useState({ name: "null", email: "null@gmail.com" });
+  const [userData, setUserData] = useState({ name: "null", email: "null@gmail.com" });
   const [editing, setEditing] = useState(false);
   const { toggleSidebar } = useSidebar();
   const drawerRef = useRef(null);
@@ -60,25 +59,27 @@ export function NavCustomer({ onViewChange }) {
   };
 
   useEffect(() => {
-    const userId = localStorage.getItem("userId");
-    if (!userId) {
-      console.warn("No hay userId en localStorage");
+    const raw = localStorage.getItem("user_data");
+    if (!raw) {
+      // Si no hay nada en localStorage, dejamos loading en false para que no siga mostrando "Cargando…"
+      console.warn("No se encontró 'user_data' en localStorage");
       setLoading(false);
       return;
     }
 
-    getCustomerUsers()
-      .then((list) => {
-        // asume que 'id' viene como número o string en los objetos
-        const me = list.find(u => u.id.toString() === userId.toString());
-        if (me) {
-          setUser({ name: me.name, email: me.email });
-        } else {
-          console.warn("Usuario no encontrado en la lista de clientes");
-        }
-      })
-      .catch((err) => console.error("Error cargando usuarios:", err))
-      .finally(() => setLoading(false));
+    // Parseamos el JSON y asignamos a userData
+    try {
+      const parsed = JSON.parse(raw);
+      setUserData({
+        name: parsed.name || "",
+        email: parsed.email || ""
+      });
+    } catch (e) {
+      console.error("No se pudo parsear user_data:", e);
+    }
+
+    // ¡Muy importante! aquí decimos que ya terminamos de cargar, aunque haya error de parseo
+    setLoading(false);
   }, []);
 
   if (loading) {
@@ -175,7 +176,6 @@ export function NavCustomer({ onViewChange }) {
       {/* Desktop header */}
       <div className="hidden sm:flex items-center justify-between px-12 py-4">
         <div className="flex items-center gap-5">
-
           <Link to="/user-home">
             <img
               src="/Tipografia_LIBAMAQ_legulab_color_hor.png"
@@ -198,11 +198,9 @@ export function NavCustomer({ onViewChange }) {
               <p className="text-base">Actualizar ubicación</p>
             </div>
           </button>
-
         </div>
 
         <div className="flex items-center space-x-4 md:flex">
-
           {/* Btn Ver Marcas */}
           <DrawerCategories ref={drawerRef} />
 
@@ -214,7 +212,7 @@ export function NavCustomer({ onViewChange }) {
               <div className="relative">
                 {/* Texto */}
                 <span className="px-2.5 pr-4 py-1 bg-white text-black group-hover:text-white text-sm rounded-l-full group-hover:bg-gradient-to-l from-yellow-600 to-yellow-500/80 transition-colors duration-600 inline-block mr-8 max-w-[10em]">
-                  Hola {user.name}
+                  Hola {userData.name}
                 </span>
 
                 {/* Círculo del icono */}

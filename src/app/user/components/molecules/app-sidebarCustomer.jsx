@@ -17,7 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { NavUserCustomer } from "./nav-userCustomer"
+import { NavUserCustomer } from "../../../../components/nav-userCustomer"
 
 const data = {
   optionsMenu: [

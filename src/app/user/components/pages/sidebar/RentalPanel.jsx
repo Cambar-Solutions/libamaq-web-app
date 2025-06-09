@@ -1,6 +1,4 @@
-import React, { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -108,9 +106,7 @@ export default function RentalPanel() {
                                         <div
                                             key={prod.id}
                                             className="bg-white rounded-lg shadow-sm hover:shadow-lg duration-500 cursor-pointer"
-
                                         >
-
                                             <div className="px-10 py-4 flex mb-5 flex-col sm:flex-row items-center sm:items-center">
                                                 <img
                                                     src={prod.img}
@@ -184,7 +180,6 @@ export default function RentalPanel() {
                                                 <dd className="mt-0 text-gray-900">Precio: ${prod.price}</dd>
                                             </div>
                                         </div>
-
                                         <DialogFooter className="">
                                         </DialogFooter>
                                     </DialogContent>
@@ -192,10 +187,8 @@ export default function RentalPanel() {
                             )
                         })}
                     </div>
-
                 </div>
             </div>
         </motion.div>
-
     );
 }

@@ -25,7 +25,7 @@ const NuevoProducto = lazy(() => import('./app/dashboard/NuevoProducto'));
 const ProductoDetalle = lazy(() => import('./app/dashboard/ProductoDetalle'));
 const Nosotros = lazy(() => import('./Nosotros.jsx'));
 const UserHome = lazy(() => import('./app/user/UserHome'));
-const Account = lazy(() => import('./app/user/Account')); 
+const Account = lazy(() => import('./app/user/components/pages/Account')); 
 const PaymentMethod = lazy(() => import('./app/e-commerce/PaymentMethod'));
 const LocationLibamaq = lazy(() => import('./components/LocationLibamaq'));
 

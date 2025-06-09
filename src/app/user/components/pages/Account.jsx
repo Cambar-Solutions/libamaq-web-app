@@ -1,27 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
-import SidebarCustomer from '@/components/SidebarCustomer';
-
-import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 // Importar los paneles (verifica que las rutas sean correctas)
-import ProfilePanel from "@/app/user/sidebar/ProfilePanel";
-import BuyPanel from "@/app/user/sidebar/BuyPanel";
-import OrderPanel from "@/app/user/sidebar/OrderPanel";
-import RentalPanel from "@/app/user/sidebar/RentalPanel";
-import CarPanel from "@/app/user/sidebar/CarPanel";
-import Shopping from "./sidebar/Shopping";
-import { SiteHeaderCustomer } from "@/components/site-headerCustomer";
-import { AppSidebarCustomer } from "@/components/app-sidebarCustomer";
+import ProfilePanel from "@/app/user/components/pages/sidebar/ProfilePanel";
+import BuyPanel from "@/app/user/components/pages/sidebar/BuyPanel";
+import OrderPanel from "@/app/user/components/pages/sidebar/OrderPanel";
+import RentalPanel from "@/app/user/components/pages/sidebar/RentalPanel";
+import CarPanel from "@/app/user/components/pages/sidebar/CarPanel";
+import { SiteHeaderCustomer } from "@/app/user/components/molecules/site-headerCustomer";
+import { AppSidebarCustomer } from "@/app/user/components/molecules/app-sidebarCustomer";
 
 export default function Account() {
+    const [userData, setUserData] = useState({ name: "null", email: "null@gmail.com" });
+    const [loading, setLoading] = useState(true);
+
     const location = useLocation();
     const [currentView, setCurrentView] = useState("perfil");
     const [openLocationDialog, setOpenLocationDialog] = useState(false);
-
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
@@ -43,13 +40,47 @@ export default function Account() {
         console.log("Modo desarrollo: Acceso al dashboard sin autenticación");
     }, []);
 
+    useEffect(() => {
+        const raw = localStorage.getItem("user_data");
+        if (!raw) {
+            // Si no hay nada en localStorage, dejamos loading en false para que no siga mostrando "Cargando…"
+            console.warn("No se encontró 'user_data' en localStorage");
+            setLoading(false);
+            return;
+        }
+
+        // Parseamos el JSON y asignamos a userData
+        try {
+            const parsed = JSON.parse(raw);
+            setUserData({
+                name: parsed.name || "",
+                email: parsed.email || ""
+            });
+        } catch (e) {
+            console.error("No se pudo parsear user_data:", e);
+        }
+
+        // ¡Muy importante! aquí decimos que ya terminamos de cargar, aunque haya error de parseo
+        setLoading(false);
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                Cargando perfil…
+            </div>
+        );
+    }
+
     const renderPanel = () => {
         try {
             switch (currentView) {
                 case "perfil":
                     return <ProfilePanel
                         openLocationDialog={openLocationDialog}
-                        onCloseLocationDialog={() => setOpenLocationDialog(false)} />;
+                        onCloseLocationDialog={() => setOpenLocationDialog(false)}
+                        userData={userData}
+                    />;
                 case "compras":
                     return <BuyPanel />;
                 case "pedidos":
@@ -58,8 +89,6 @@ export default function Account() {
                     return <RentalPanel />;
                 case "carrito":
                     return <CarPanel />;
-                // case "verCompras":
-                //     return <Shopping />;
                 default:
                     return <ProfilePanel />;
             }
@@ -87,13 +116,13 @@ export default function Account() {
             </div>
         );
     }
-
     if (error) {
         return (
             <div className="flex flex-col items-center justify-center h-screen">
-                <p className="text-red-500 text-lg">{error}</p>
+                <p className="text-red-500 text-lg">{typeof error === "string" ? error : "Ha ocurrido un error inesperado"}</p>
+                <p className="text-3xl mb-2">😕</p>
                 <button
-                    className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 cursor-pointer"
                     onClick={() => window.location.reload()}
                 >
                     Recargar página
@@ -105,7 +134,10 @@ export default function Account() {
     return (
         <div className="[--header-height:calc(theme(spacing.14))]">
             <SidebarProvider className="flex flex-col">
-                <SiteHeaderCustomer onViewChange={setCurrentView} />
+                <SiteHeaderCustomer
+                    onViewChange={setCurrentView}
+                    userData={userData}
+                />
                 <div className="flex flex-1">
                     <AppSidebarCustomer onViewChange={setCurrentView} currentView={currentView} />
                     <SidebarInset>
