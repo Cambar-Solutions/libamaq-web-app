@@ -26,6 +26,8 @@ import { MdOutlineLogout } from "react-icons/md";
 import React, { useState, useEffect } from "react";
 
 export function NavUserCustomer() {
+  const [userData, setUserData] = useState({ name: "null", email: "null@gmail.com" });
+
   const { isMobile } = useSidebar()
   const navigate = useNavigate();
 
@@ -42,26 +44,28 @@ export function NavUserCustomer() {
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
-    const userId = localStorage.getItem("userId");
-    if (!userId) {
-      console.warn("No hay userId en localStorage");
-      setLoading(false);
-      return;
-    }
-
-    getCustomerUsers()
-      .then((list) => {
-        // asume que 'id' viene como número o string en los objetos
-        const me = list.find(u => u.id.toString() === userId.toString());
-        if (me) {
-          setUser({ name: me.name, email: me.email });
-        } else {
-          console.warn("Usuario no encontrado en la lista de clientes");
-        }
-      })
-      .catch((err) => console.error("Error cargando usuarios:", err))
-      .finally(() => setLoading(false));
-  }, []);
+          const raw = localStorage.getItem("user_data");
+          if (!raw) {
+              // Si no hay nada en localStorage, dejamos loading en false para que no siga mostrando "Cargando…"
+              console.warn("No se encontró 'user_data' en localStorage");
+              setLoading(false);
+              return;
+          }
+  
+          // Parseamos el JSON y asignamos a userData
+          try {
+              const parsed = JSON.parse(raw);
+              setUserData({
+                  name: parsed.name || "",
+                  email: parsed.email || ""
+              });
+          } catch (e) {
+              console.error("No se pudo parsear user_data:", e);
+          }
+  
+          // ¡Muy importante! aquí decimos que ya terminamos de cargar, aunque haya error de parseo
+          setLoading(false);
+      }, []);
 
   return (
     <SidebarMenu>
@@ -73,12 +77,12 @@ export function NavUserCustomer() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage alt={user.name} />
+                <AvatarImage alt={userData.name} />
                 <AvatarFallback className="rounded-lg">CN</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate font-medium">{userData.name}</span>
+                <span className="truncate text-xs">{userData.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -92,12 +96,12 @@ export function NavUserCustomer() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarImage src={user.avatar} alt={userData.name} />
                   <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate font-medium">{userData.name}</span>
+                  <span className="truncate text-xs">{userData.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
