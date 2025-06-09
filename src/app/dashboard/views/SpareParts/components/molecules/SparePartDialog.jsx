@@ -22,20 +22,18 @@ export const SparePartDialog = ({
 }) => {
   const descriptionId = useId();
   
-  // Mapeo de tamaños a clases de ancho
-  const sizeClasses = {
-    sm: 'sm:max-w-sm',
-    md: 'sm:max-w-md',
-    lg: 'sm:max-w-lg',
-    xl: 'sm:max-w-xl',
-    '2xl': 'sm:max-w-2xl',
-    '3xl': 'sm:max-w-3xl',
-    '4xl': 'sm:max-w-4xl',
-    '5xl': 'sm:max-w-5xl',
-    '6xl': 'sm:max-w-6xl',
-    '7xl': 'sm:max-w-7xl',
-    full: 'sm:max-w-full',
-  };
+// En SparePartDialog.jsx
+const sizeClasses = {
+  sm: 'sm:max-w-sm',
+  md: 'sm:max-w-3xl',  // Aumentado de md a 4xl por defecto
+  lg: 'sm:max-w-5xl',
+  xl: 'sm:max-w-6xl',
+  '2xl': 'sm:max-w-7xl',
+  '3xl': 'sm:max-w-[90vw]',
+  '4xl': 'sm:max-w-[95vw]',
+  '5xl': 'sm:max-w-[98vw]',
+  full: 'sm:max-w-full',
+};
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

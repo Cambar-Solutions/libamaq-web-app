@@ -11,7 +11,7 @@ const uploadImages = async (files) => {
   
   filesArray.forEach(file => formData.append('files', file));
   
-  const { data } = await apiClient.post('/media/upload', formData, {
+  const { data } = await apiClient.post('/l/media/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
   
@@ -30,7 +30,7 @@ const uploadImages = async (files) => {
  */
 const deleteImages = async (ids) => {
   const idsArray = Array.isArray(ids) ? ids : [ids];
-  const { data } = await apiClient.post('/media/delete', idsArray);
+  const { data } = await apiClient.post('/l/media/delete', idsArray);
   return data;
 };
 

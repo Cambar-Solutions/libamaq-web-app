@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { ImagePlus, X, Trash2, Eye } from 'lucide-react';
+import { ImagePlus, X, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -139,12 +139,12 @@ const ImageUploader = ({
           />
           <Button
             type="button"
-            variant="outline"
-            className="gap-2"
+            variant="default"
+            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
             disabled={selectedFiles.length >= maxFiles}
           >
             <ImagePlus className="w-4 h-4" />
-            Subir imágenes
+            Agregar imagen
           </Button>
         </div>
         <span className="text-sm text-muted-foreground">
@@ -169,91 +169,84 @@ const ImageUploader = ({
           {/* Imágenes existentes */}
           {existingImages.map((img, index) => (
             <div key={`existing-${index}`} className="relative group">
-              <div className="aspect-square overflow-hidden rounded-md border">
+              <div 
+                className="aspect-square overflow-hidden rounded-md border cursor-zoom-in transition-transform hover:scale-105"
+                onClick={() => handlePreview(img.url)}
+              >
                 <img
                   src={img.url}
                   alt={`Vista previa ${index + 1}`}
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="text-white hover:bg-white/20"
-                  onClick={() => handlePreview(img.url)}
-                  aria-label={`Ver imagen ${index + 1}`}
-                >
-                  <Eye className="w-4 h-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="text-white hover:bg-white/20"
-                  onClick={() => handleDeleteExisting(index)}
-                  aria-label={`Eliminar imagen ${index + 1}`}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute top-1 right-1 w-8 h-8 p-1.5 rounded-full bg-red-500/90 hover:bg-red-600 text-white"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteExisting(index);
+                }}
+                aria-label={`Eliminar imagen ${index + 1}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
             </div>
           ))}
 
-          {/* Nuevas imágenes */}
+          {/* Nuevas imágenes seleccionadas */}
           {previewUrls.map((url, index) => (
-            <div key={url} className="relative group">
-              <div className="aspect-square overflow-hidden rounded-md border">
+            <div key={index} className="relative group">
+              <div 
+                className="aspect-square overflow-hidden rounded-md border cursor-zoom-in transition-transform hover:scale-105"
+                onClick={() => handlePreview(url)}
+              >
                 <img
                   src={url}
-                  alt={`Vista previa ${index + 1 + existingImages.length}`}
+                  alt={`Vista previa ${index + 1}`}
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="text-white hover:bg-white/20"
-                  onClick={() => handlePreview(url)}
-                  aria-label={`Ver imagen ${index + 1 + existingImages.length}`}
-                >
-                  <Eye className="w-4 h-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="text-white hover:bg-white/20"
-                  onClick={() => handleRemoveImage(index)}
-                  aria-label={`Eliminar imagen ${index + 1 + existingImages.length}`}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute top-1 right-1 w-8 h-8 p-1.5 rounded-full bg-red-500/90 hover:bg-red-600 text-white"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveImage(index);
+                }}
+                aria-label={`Eliminar imagen ${index + 1}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
             </div>
           ))}
         </div>
       )}
 
       {/* Diálogo de vista previa */}
-      <Dialog open={!!previewImage} onOpenChange={(open) => !open && closePreview()}>
-        <DialogContent className="max-w-4xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>Vista previa de la imagen</DialogTitle>
-          </DialogHeader>
-          <div className="relative flex justify-center items-center">
-            <img
-              src={previewImage}
-              alt="Vista previa ampliada"
-              className="max-h-[70vh] max-w-full object-contain"
-              aria-describedby={dialogDescriptionId}
-            />
-            <p id={dialogDescriptionId} className="sr-only">
-              Vista previa ampliada de la imagen seleccionada
-            </p>
+      <Dialog open={!!previewImage} onOpenChange={closePreview}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-transparent border-0 shadow-none">
+          <div className="relative w-full h-full flex items-center justify-center">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 z-10 bg-black/50 text-white hover:bg-black/70 hover:text-white rounded-full w-10 h-10"
+              onClick={closePreview}
+              aria-label="Cerrar vista previa"
+            >
+              <X className="w-6 h-6" />
+            </Button>
+            <div className="w-full h-full flex items-center justify-center">
+              <img
+                src={previewImage || ''}
+                alt="Vista previa ampliada"
+                className="max-w-full max-h-[90vh] object-contain"
+              />
+            </div>
           </div>
         </DialogContent>
       </Dialog>
