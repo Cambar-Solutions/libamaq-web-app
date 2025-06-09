@@ -8,8 +8,9 @@ import {
   useUpdateBrand,
   useChangeBrandStatus
 } from "@/hooks/useBrands";
-import { getAllCategories } from "@/services/admin/categoryService";
+import { getActiveCategories } from "@/services/admin/categoryService";
 import CategoryManager from "@/components/admin/CategoryManager";
+import CategoryBadge from '@/components/admin/CategoryBadge';
 import {
   Card,
   CardContent,
@@ -43,7 +44,7 @@ import {
   SheetClose
 } from "@/components/ui/sheet";
 import { motion } from "framer-motion";
-import { Edit, Trash2, Plus, Check, X, RefreshCcw } from "lucide-react";
+import { Edit, Trash2, Plus, Check, X, RefreshCcw, Pencil } from "lucide-react";
 
 function isLightColor(hexColor) {
   const hex = hexColor?.replace("#", "") || "ffffff";
@@ -53,7 +54,6 @@ function isLightColor(hexColor) {
   const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
   return luminance > 186;
 }
-
 
 export function BrandsView() {
   const [brands, setBrands] = useState([]);
@@ -71,6 +71,13 @@ export function BrandsView() {
     categories: [] // IDs de categorías seleccionadas
   });
   const [categories, setCategories] = useState([]);
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [newCategoryForm, setNewCategoryForm] = useState({
+    name: '',
+    description: '',
+    url: '',
+    status: 'ACTIVE'
+  });
   // Las variables de estado para la gestión de categorías ahora están en el componente CategoryManager
 
   // Obtener marcas usando Tanstack Query
@@ -92,7 +99,6 @@ export function BrandsView() {
         ? allBrandsData
         : (allBrandsData.data || []);
 
-      // Asegurarse de que cada marca tenga los campos necesarios
       const processedBrands = brandsData.map(brand => ({
         id: brand.id,
         name: brand.name,
@@ -100,7 +106,10 @@ export function BrandsView() {
         url: brand.url || "",
         color: brand.color || "#000000",
         status: brand.status || "ACTIVE",
-        categories: brand.categories || brand.brandCategories || []
+        categories: brand.brandCategories 
+          ? brand.brandCategories.map(bc => Number(bc.categoryId))
+          : [],
+        brandCategories: brand.brandCategories || []
       }));
       
       setBrands(processedBrands);
@@ -114,7 +123,6 @@ export function BrandsView() {
         ? activeBrandsData
         : (activeBrandsData.data || []);
 
-      // Asegurarse de que cada marca tenga los campos necesarios
       const processedBrands = brandsData.map(brand => ({
         id: brand.id,
         name: brand.name,
@@ -122,7 +130,10 @@ export function BrandsView() {
         url: brand.url || "",
         color: brand.color || "#000000",
         status: "ACTIVE", // Todas las marcas de este endpoint son activas
-        categories: brand.categories || brand.brandCategories || []
+        categories: brand.brandCategories 
+          ? brand.brandCategories.map(bc => Number(bc.categoryId))
+          : [],
+        brandCategories: brand.brandCategories || []
       }));
       
       setFilteredBrands(processedBrands);
@@ -144,7 +155,10 @@ export function BrandsView() {
       url: brand.url || "",
       color: brand.color || "#000000",
       status: "ACTIVE",
-      categories: brand.categories || brand.brandCategories || []
+      categories: brand.brandCategories 
+        ? brand.brandCategories.map(bc => Number(bc.categoryId))
+        : [],
+      brandCategories: brand.brandCategories || []
     }));
     
     if (searchTerm.trim() === "") {
@@ -188,134 +202,95 @@ export function BrandsView() {
   };
 
   // Preparar formulario para editar marca existente
-  const handleEditBrand = (brand) => {
-    // Cargar las categorías antes de abrir el modal
-    fetchCategories();
+  const handleEditBrand = async (brand) => {
+    setCurrentBrand(brand);
+    setIsEditing(true);
     
-    setFormData({
+    // Obtener IDs de categorías asignadas a la marca
+    const assignedCategoryIds = Array.isArray(brand.brandCategories)
+      ? brand.brandCategories.map(bc => Number(bc.categoryId))
+      : [];
+    
+    // Cargar categorías activas primero
+    await fetchCategories();
+    
+    // Después de cargar las categorías, actualizar el formData
+    setFormData(prev => ({
+      ...prev,
       id: brand.id,
-      name: brand.name || "",
+      name: brand.name,
+      description: brand.description || "",
       url: brand.url || "",
       color: brand.color || "#000000",
-      description: brand.description || "",
       status: brand.status || "ACTIVE",
-      categories: (brand.categories || []).map(cat => cat.id)
-    });
-    setIsEditing(true);
-    setCurrentBrand(brand);
-    fetchCategories();
+      categories: assignedCategoryIds,
+      brandCategories: brand.brandCategories || []
+    }));
   };
 
   // Guardar marca (crear o actualizar)
-  const handleSaveBrand = async (closeDialog) => {
+  const handleSaveBrand = async (onSuccess) => {
     try {
-      // Validar campos requeridos
-      if (!formData.name || !formData.url) {
-        toast.error("Nombre y URL del logo son obligatorios");
-        return;
+      const payload = {
+        ...formData,
+        categoryIds: Array.isArray(formData.categories)
+          ? formData.categories.map(id => Number(id))
+          : []
+      };
+
+      if (isEditing && currentBrand) {
+        await updateBrandMutation.mutateAsync({
+          ...payload,
+          updatedBy: "1"
+        });
+      } else {
+        await createBrandMutation.mutateAsync({
+          ...payload,
+          createdBy: "1"
+        });
       }
 
-      // Validar formato de color hexadecimal
-      const colorRegex = /^#[0-9A-Fa-f]{6}$/;
-      if (!colorRegex.test(formData.color)) {
-        toast.error("El color debe estar en formato hexadecimal (ej: #FF0000)");
-        return;
+      // Usar el callback onSuccess solo si es una función
+      if (typeof onSuccess === 'function') {
+        onSuccess();
       }
-
-      // 1. Separar ids de categorías existentes y objetos de categorías nuevas
-      const selectedCategories = formData.categories;
-      const existingCategoryIds = categories.filter(cat => selectedCategories.includes(cat.id)).map(cat => cat.id);
-      const newCategories = selectedCategories.filter(catIdOrObj => {
-        // Si es un objeto o no existe en categories, es nueva
-        return !categories.some(cat => cat.id === catIdOrObj);
+      
+      setFormData({
+        name: "",
+        url: "",
+        color: "#000000",
+        description: "",
+        status: "ACTIVE",
+        categories: []
       });
+      setCurrentBrand(null);
+      setIsEditing(false);
 
-      // 2. Crear las categorías nuevas y obtener sus IDs
-      let newCategoryIds = [];
-      for (const cat of newCategories) {
-        // cat puede ser un id (si ya existe) o un objeto (si es nueva)
-        if (typeof cat === 'object' && cat.name) {
-          try {
-            // Solo enviar name, url y description para la categoría
-            const { name, url, description } = cat;
-            const data = await createCategory({ name, url, description });
-            if (data && data.result && data.result.id) {
-              newCategoryIds.push(data.result.id);
-              setCategories(prev => [...prev, data.result]);
-            }
-          } catch (e) {
-            toast.error('Error al crear categoría: ' + (cat.name || '')); 
-            return;
-          }
-        } else if (typeof cat === 'string' || typeof cat === 'number') {
-          // Si por alguna razón llegó un id, lo agregamos
-          newCategoryIds.push(cat);
-        }
-      }
-
-      // 3. Preparar payload final
-      const allCategoryIds = [...existingCategoryIds, ...newCategoryIds];
-      
-      // Preparar el payload según si es edición o creación
-      let brandData;
-      
-      if (isEditing) {
-        // Para actualización, usar EXACTAMENTE la estructura que espera la API
-        brandData = {
-          id: Number(formData.id),
-          updatedBy: "1",
-          updatedAt: new Date().toISOString(),
-          name: formData.name,
-          url: formData.url,
-          color: formData.color,
-          description: formData.description || "",
-          status: formData.status || "ACTIVE",
-          categoryIds: allCategoryIds.map(id => Number(id))
-        };
-      } else {
-        // Para creación, usar la estructura original
-        brandData = {
-          ...formData,
-          brandCategoryDto: allCategoryIds.map(categoryId => ({
-            categoryId: categoryId
-          }))
-        };
-      }
-
-      console.log('Enviando datos de marca:', brandData);
-      
-      if (isEditing) {
-        // Usar la mutación de Tanstack Query para actualizar
-        await updateBrandMutation.mutateAsync(brandData);
-      } else {
-        // Usar la mutación de Tanstack Query para crear
-        await createBrandMutation.mutateAsync(brandData);
-      }
-
-      // Cerrar diálogo
-      closeDialog();
+      toast.success(`Marca ${isEditing ? 'actualizada' : 'creada'} correctamente`);
+      queryClient.invalidateQueries({ queryKey: ['brands'] });
     } catch (error) {
-      console.error("Error al guardar marca:", error);
-      toast.error(`Error al ${isEditing ? 'actualizar' : 'crear'} la marca: ${error.response?.data ? JSON.stringify(error.response.data) : (error.message || 'Error desconocido')}`);
+      console.error('Error al guardar la marca:', error);
+      toast.error(`Error al ${isEditing ? 'actualizar' : 'crear'} la marca: ${error.message}`);
     }
   };
 
-  // Obtener todas las categorías
+  // Obtener todas las categorías activas
   const fetchCategories = async () => {
     try {
-      const response = await getAllCategories();
-      console.log('Respuesta de categorías:', response);
+      console.log('Obteniendo categorías activas...');
+      const response = await getActiveCategories();
+      console.log('Respuesta de categorías activas:', response);
       
       // Extraer los datos de la respuesta según su estructura
       const cats = Array.isArray(response)
         ? response
         : (response.data || response.result || []);
       
-      console.log('Categorías procesadas:', cats);
+      console.log('Categorías activas procesadas:', cats);
       setCategories(cats);
     } catch (error) {
-      console.error('Error al cargar categorías:', error);
-      toast.error("Error al cargar categorías");
+      console.error('Error al cargar categorías activas:', error);
+      toast.error("Error al cargar categorías activas");
     }
   };
 
@@ -337,11 +312,84 @@ export function BrandsView() {
     }
   };
 
+  // Función para manejar la actualización de una categoría
+  const handleCategoryUpdate = (updatedCategory) => {
+    setCategories(prevCategories => 
+      prevCategories.map(cat => 
+        cat.id === updatedCategory.id ? updatedCategory : cat
+      )
+    );
+  };
+
+  // Función para manejar la eliminación de una categoría
+  const handleCategoryDelete = (deletedCategoryId) => {
+    setCategories(prevCategories => 
+      prevCategories.filter(cat => cat.id !== deletedCategoryId)
+    );
+    
+    // Si la categoría eliminada estaba asignada a la marca actual, la quitamos
+    if (formData.categories?.includes(Number(deletedCategoryId))) {
+      setFormData(prev => ({
+        ...prev,
+        categories: prev.categories.filter(id => id !== Number(deletedCategoryId))
+      }));
+    }
+  };
+
+  // Función para manejar la creación de una nueva categoría
+  const handleCreateCategory = async () => {
+    try {
+      const response = await fetch('/l/categories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...newCategoryForm,
+          createdBy: '1' // ID del usuario actual
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al crear la categoría');
+      }
+
+      const newCategory = await response.json();
+      
+      // Añadir la nueva categoría a la lista local
+      setCategories(prev => [...prev, newCategory]);
+      
+      // Limpiar el formulario
+      setNewCategoryForm({
+        name: '',
+        description: '',
+        url: '',
+        status: 'ACTIVE'
+      });
+      
+      // Cerrar el diálogo
+      setIsCreatingCategory(false);
+      
+      toast.success(`Categoría ${newCategoryForm.name} creada correctamente`);
+    } catch (error) {
+      console.error('Error al crear categoría:', error);
+      toast.error(error.message || 'No se pudo crear la categoría');
+    }
+  };
+
+  // Manejar cambios en el formulario de nueva categoría
+  const handleNewCategoryInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewCategoryForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   // Renderizar tarjeta de marca
   const renderBrandCard = (brand) => {
     const bg = brand.color || "#f3f4f6";
     const isLight = isLightColor(bg);
-
     const isActive = brand.status === "ACTIVE";
 
     return (
@@ -351,40 +399,51 @@ export function BrandsView() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className={`overflow-hidden ${!isActive ? 'opacity-60' : ''}`}>
+        <Card className={`overflow-hidden ${!isActive ? 'opacity-60' : ''} h-full flex flex-col`}>
           <CardHeader className="pb-2">
-            <div className="flex items-center justify-center h-40 bg-gray-50 rounded-md">
-              {brand.url ? (
-                <img
-                  src={brand.url}
-                  alt={brand.name}
-                  className="max-h-36 max-w-full object-contain"
-                  onError={(e) => {
-                    e.target.src = "/placeholder-logo.png";
-                    e.target.onerror = null;
-                  }}
-                />
-              ) : (
-                <div className="text-gray-400">Sin logo</div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">{brand.name}</h3>
+              <div className="flex items-center gap-1">
+                <span 
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
+                >
+                  {isActive ? 'Activa' : 'Inactiva'}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-center h-32 bg-gray-50 rounded-md mt-2">
+                {brand.url ? (
+                  <img
+                    src={brand.url}
+                    alt={brand.name}
+                    className="max-h-28 max-w-full object-contain"
+                    onError={(e) => {
+                      e.target.src = "/placeholder-logo.png";
+                      e.target.onerror = null;
+                    }}
+                  />
+                ) : (
+                  <div className="text-gray-400">Sin logo</div>
+                )}
+              </div>
+              {brand.description && (
+                <p className="text-sm text-gray-600 text-center line-clamp-2">
+                  {brand.description}
+                </p>
               )}
             </div>
           </CardHeader>
-          <CardContent className="p-0">
-            <p className="text-sm text-gray-600 line-clamp-2 px-4 py-2">
-              {brand.description || "Sin descripción"}
-            </p>
-          </CardContent>
-          <div
-            className="w-full px-4 py-3 text-white rounded-b-xl"
-            style={{ backgroundColor: bg }}
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className={`font-semibold truncate ${isLight ? "text-black/60" : "text-white/80"}`}>{brand.name}</h3>
-                <p className={`text-sm ${isLight ? "text-black/60" : "text-white/80"}`}>
-
-                  {isActive ? "Activa" : "Inactiva"}
-                </p>
+          <div className="mt-auto border-t px-4 py-2 bg-gray-50">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-1">
+                <span 
+                  className="w-3 h-3 rounded-full border" 
+                  style={{ backgroundColor: bg }}
+                />
+                <span className="text-xs text-gray-500">
+                  {brand.brandCategories?.length || 0} categorías
+                </span>
               </div>
               <div className="flex gap-1">
                 <Dialog>
@@ -392,7 +451,7 @@ export function BrandsView() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className={`h-8 w-8 bg-white/20 hover:bg-white/30 text-white cursor-pointer ${isLight ? "text-black/60 hover:text-white hover:bg-black/30" : "text-white/80"}`}
+                      className="h-8 w-8 text-gray-600 hover:bg-gray-200"
                       onClick={() => handleEditBrand(brand)}
                     >
                       <Edit className="h-4 w-4" />
@@ -491,19 +550,87 @@ export function BrandsView() {
                           Categorías
                         </Label>
                         <div className="col-span-3">
-                          <CategoryManager 
-                            categories={categories} 
-                            selectedCategories={formData.categories} 
-                            onCategoriesChange={(newSelectedCategories) => {
-                              setFormData(f => ({
-                                ...f,
-                                categories: newSelectedCategories
-                              }));
-                            }}
-                            onCategoriesListChange={(updatedCategories) => {
-                              setCategories(updatedCategories);
-                            }}
-                          />
+                          <div className="space-y-4">
+                            {/* Categorías asignadas */}
+                            <div>
+                              <h4 className="text-sm font-medium mb-2">Categorías asignadas:</h4>
+                              <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-md min-h-10">
+                                {formData.categories?.length > 0 ? (
+                                  categories
+                                    .filter(cat => formData.categories.some(id => Number(id) === Number(cat.id)))
+                                    .map((category, index) => (
+                                      <CategoryBadge
+                                        key={index}
+                                        category={category}
+                                        brandColor={formData.color}
+                                        isAssigned={true}
+                                        onEdit={handleCategoryUpdate}
+                                        onDelete={handleCategoryDelete}
+                                        onClick={() => {
+                                          // Remover categoría de las asignadas
+                                          const newCategories = formData.categories.filter(
+                                            id => Number(id) !== Number(category.id)
+                                          );
+                                          setFormData(prev => ({
+                                            ...prev,
+                                            categories: newCategories
+                                          }));
+                                        }}
+                                        showActions={true}
+                                      />
+                                    ))
+                                ) : (
+                                  <span className="text-sm text-gray-400">No hay categorías asignadas</span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Categorías disponibles */}
+                            <div>
+                              <div className="flex justify-between items-center mb-2">
+                                <h4 className="text-sm font-medium">Categorías disponibles:</h4>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 px-2 text-xs flex items-center gap-1"
+                                  onClick={() => setIsCreatingCategory(true)}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                  Nueva categoría
+                                </Button>
+                              </div>
+                              <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-md max-h-40 overflow-y-auto">
+                                {categories
+                                  .filter(cat => !formData.categories?.some(id => Number(id) === Number(cat.id)))
+                                  .map((category, index) => {
+                                    const assignedBrand = getBrandForCategory(category.id);
+                                    return (
+                                      <CategoryBadge
+                                        key={index}
+                                        category={category}
+                                        brandColor={formData.color}
+                                        isAssigned={false}
+                                        onEdit={handleCategoryUpdate}
+                                        onDelete={handleCategoryDelete}
+                                        onClick={() => {
+                                          // Agregar categoría a las asignadas
+                                          const newCategories = [...new Set([
+                                            ...formData.categories,
+                                            category.id
+                                          ])];
+                                          setFormData(prev => ({
+                                            ...prev,
+                                            categories: newCategories
+                                          }));
+                                        }}
+                                        showActions={true}
+                                        assignedBrand={assignedBrand}
+                                      />
+                                    );
+                                  })}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -514,22 +641,26 @@ export function BrandsView() {
                         </Button>
                       </DialogClose>
                       <DialogClose asChild>
-                        <Button type="submit" className="cursor-pointer" onClick={(e) => handleSaveBrand(() => { })}>
+                        <Button type="submit" className="cursor-pointer" onClick={handleSaveBrand}>
                           Guardar cambios
                         </Button>
                       </DialogClose>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-
+                
                 <Sheet>
                   <SheetTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className={`h-8 w-8 bg-white/20 hover:bg-white/30 text-white cursor-pointer ${isLight ? "text-black/60 hover:text-white hover:bg-black/30" : "text-white/80"}`}
+                      className="h-8 w-8 text-gray-600 hover:bg-gray-200"
                     >
-                      {isActive ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+                      {isActive ? (
+                        <X className="h-4 w-4 text-red-500" />
+                      ) : (
+                        <Check className="h-4 w-4 text-green-500" />
+                      )}
                     </Button>
                   </SheetTrigger>
                   <SheetContent>
@@ -567,6 +698,19 @@ export function BrandsView() {
         </Card>
       </motion.div>
     );
+  };
+
+  // Función para obtener la marca a la que está asignada una categoría
+  const getBrandForCategory = (categoryId) => {
+    if (!brands || !categoryId) return null;
+    
+    // Buscar en todas las marcas (excepto la actual) si tienen asignada esta categoría
+    const brandWithCategory = brands.find(brand => 
+      brand.id !== currentBrand?.id && 
+      brand.brandCategories?.some(bc => Number(bc.categoryId) === Number(categoryId))
+    );
+    
+    return brandWithCategory || null;
   };
 
   return (
@@ -771,6 +915,68 @@ export function BrandsView() {
                 </Button>
               </DialogClose>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Diálogo para crear nueva categoría */}
+        <Dialog open={isCreatingCategory} onOpenChange={setIsCreatingCategory}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Nueva Categoría</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="newCategoryName" className="text-right">
+                  Nombre
+                </Label>
+                <Input
+                  id="newCategoryName"
+                  name="name"
+                  value={newCategoryForm.name}
+                  onChange={handleNewCategoryInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="newCategoryDescription" className="text-right">
+                  Descripción
+                </Label>
+                <Textarea
+                  id="newCategoryDescription"
+                  name="description"
+                  value={newCategoryForm.description}
+                  onChange={handleNewCategoryInputChange}
+                  className="col-span-3"
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="newCategoryUrl" className="text-right">
+                  URL de la imagen
+                </Label>
+                <Input
+                  id="newCategoryUrl"
+                  name="url"
+                  value={newCategoryForm.url}
+                  onChange={handleNewCategoryInputChange}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsCreatingCategory(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleCreateCategory}
+                  disabled={!newCategoryForm.name.trim()}
+                >
+                  Crear
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

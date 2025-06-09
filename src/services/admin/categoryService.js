@@ -166,6 +166,23 @@ export const getCategoriesByBrand = async (brandId) => {
 };
 
 /**
+ * Elimina una categoría
+ * @param {number} id - ID de la categoría a eliminar
+ * @returns {Promise<Object>} Objeto con la respuesta de la API
+ */
+export const deleteCategory = async (id) => {
+  try {
+    console.log(`Eliminando categoría con ID: ${id}...`);
+    const response = await apiClient.delete(`/l/categories/delete/${id}`);
+    console.log('Respuesta de eliminación de categoría:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error al eliminar categoría:', error);
+    throw error.response?.data || error.message;
+  }
+};
+
+/**
  * Prepara un objeto de categoría para crear o actualizar
  * @param {Object} categoryData - Datos básicos de la categoría
  * @param {boolean} isUpdate - Indica si es una actualización (true) o creación (false)
