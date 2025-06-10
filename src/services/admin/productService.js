@@ -7,7 +7,24 @@ export const getAllProducts = async () => {
     console.log('Obteniendo todos los productos con información de estado...');
     const response = await apiClient.get("/l/products");
     console.log('Respuesta completa de todos los productos:', response.data);
-    return response.data;
+    
+    // Verificar el formato de la respuesta
+    if (!response.data) {
+      throw new Error('No se recibieron datos de productos');
+    }
+    
+    // La nueva estructura de respuesta es { data: [...], status: 200, message: 'success' }
+    // Verificar si estamos recibiendo la nueva estructura o la antigua
+    if (response.data.data && response.data.status && response.data.message) {
+      console.log('Detectado nuevo formato de API en getAllProducts');
+      // Devolver la estructura completa para mantener consistencia
+      return response.data;
+    } else {
+      // Formato anterior donde la respuesta es directamente el array de productos
+      console.log('Detectado formato anterior en getAllProducts');
+      // Devolver la respuesta tal cual para mantener compatibilidad
+      return response.data;
+    }
   } catch (error) {
     console.error('Error fetching products:', error);
 
@@ -25,9 +42,8 @@ export const getAllProducts = async () => {
 // Obtener todos los productos activos
 export const getActiveProducts = async (page = 1, size = 50) => {
   try {
-    // Llamamos a /l/products con parámetros de paginación y, si tienes 
-    // un query param “status=ACTIVE”, agrégalo aquí. 
-    // Pero NUNCA a /l/products/active.
+    console.log(`Obteniendo productos activos (página ${page}, tamaño ${size})...`);
+    // Llamamos a /l/products con parámetros de paginación y status=ACTIVE
     const response = await apiClient.get("/l/products", {
       params: {
         page: page - 1, // si tu API usa base-0
@@ -35,7 +51,26 @@ export const getActiveProducts = async (page = 1, size = 50) => {
         status: "ACTIVE" // si tu backend admite filtrar por status
       }
     });
-    return response.data;
+    
+    console.log('Respuesta de productos activos:', response.data);
+    
+    // Verificar el formato de la respuesta
+    if (!response.data) {
+      throw new Error('No se recibieron datos de productos activos');
+    }
+    
+    // La nueva estructura de respuesta es { data: [...], status: 200, message: 'success' }
+    // Verificar si estamos recibiendo la nueva estructura o la antigua
+    if (response.data.data && response.data.status && response.data.message) {
+      console.log('Detectado nuevo formato de API en getActiveProducts');
+      // Devolver la estructura completa para mantener consistencia
+      return response.data;
+    } else {
+      // Formato anterior donde la respuesta es directamente el array de productos
+      console.log('Detectado formato anterior en getActiveProducts');
+      // Devolver la respuesta tal cual para mantener compatibilidad
+      return response.data;
+    }
   } catch (error) {
     console.error("Error fetching active products:", error.response?.data || error.message);
     throw new Error(error.response?.data?.message || error.message);
@@ -45,10 +80,27 @@ export const getActiveProducts = async (page = 1, size = 50) => {
 // Obtener vista previa de productos
 export const getProductPreviews = async () => {
   try {
-    console.log("Llamando a GET /l/products/preview …");
+    console.log("Llamando a GET /l/products/preview...");
     const response = await apiClient.get("/l/products/preview");
     console.log("→ Respuesta GET /l/products/preview:", response.data);
-    return response.data;
+    
+    // Verificar el formato de la respuesta
+    if (!response.data) {
+      throw new Error('No se recibieron datos de previsualizaciones de productos');
+    }
+    
+    // La nueva estructura de respuesta es { data: [...], status: 200, message: 'success' }
+    // Verificar si estamos recibiendo la nueva estructura o la antigua
+    if (response.data.data && response.data.status && response.data.message) {
+      console.log('Detectado nuevo formato de API en getProductPreviews');
+      // Devolver la estructura completa para mantener consistencia
+      return response.data;
+    } else {
+      // Formato anterior donde la respuesta es directamente el array de productos
+      console.log('Detectado formato anterior en getProductPreviews');
+      // Devolver la respuesta tal cual para mantener compatibilidad
+      return response.data;
+    }
   } catch (error) {
     console.error("Error fetching product previews:", {
       status: error.response?.status,
@@ -70,68 +122,105 @@ export const getProductById = async (id) => {
     
     console.log(`Datos del producto recibidos del servidor:`, response.data);
     
-    // Verificar el formato de la respuesta
-    // Puede ser { data: {...}, status: 200, message: 'success' } (nuevo formato)
-    // o directamente el objeto producto (formato anterior)
-    let productData;
+    // La nueva estructura de respuesta es { data: {...}, status: 200, message: 'success' }
+    // Verificar el formato y procesar adecuadamente
+    if (!response.data) {
+      throw new Error(`No se recibieron datos para el producto con ID ${id}`);
+    }
     
-    if (response.data && response.data.data) {
-      // Nuevo formato de API
+    // Determinar si estamos recibiendo la nueva estructura o la antigua
+    let productData = response.data;
+    let productObject;
+    
+    if (response.data.data && response.data.status && response.data.message) {
+      // Nuevo formato con estructura { data, status, message }
       console.log('Detectado nuevo formato de API en getProductById');
-      productData = response.data;
+      productObject = response.data.data;
     } else {
-      // Formato anterior o respuesta directa
-      console.log('Detectado formato anterior o respuesta directa en getProductById');
-      productData = response.data;
+      // Formato anterior donde la respuesta es directamente el objeto producto
+      console.log('Detectado formato anterior en getProductById');
+      productObject = response.data;
     }
     
-    // Verificar si los datos recibidos son válidos
-    if (productData) {
-      // En el nuevo formato, el producto real está en productData.data
-      const product = productData.data || productData;
+    // Procesar los campos que pueden venir como strings pero deben ser arrays
+    const processArrayField = (field) => {
+      // Si ya es un array, devolverlo tal cual
+      if (Array.isArray(field)) {
+        return field;
+      }
       
-      // Asegurarse de que los campos dinámicos sean objetos si son JSON válido
-      if (typeof product.technicalData === 'string' && product.technicalData.trim().startsWith('{')) {
+      // Si es string, intentar parsearlo
+      if (typeof field === 'string') {
         try {
-          product.technicalData = JSON.parse(product.technicalData);
+          const parsed = JSON.parse(field);
+          return Array.isArray(parsed) ? parsed : [parsed];
         } catch (e) {
-          console.error('Error al parsear technicalData:', e);
-          // Mantener como string si no es JSON válido
+          // Si no se puede parsear y parece una lista separada por comas
+          if (field.includes(',')) {
+            return field.split(',').map(item => item.trim());
+          }
+          // Si es un string simple, devolverlo como único elemento de un array
+          return [field];
         }
       }
       
-      if (typeof product.functionalities === 'string' && product.functionalities.trim().startsWith('{')) {
-        try {
-          product.functionalities = JSON.parse(product.functionalities);
-        } catch (e) {
-          console.error('Error al parsear functionalities:', e);
-          // Mantener como string si no es JSON válido
+      // Si es null o undefined, devolver array vacío
+      return [];
+    };
+    
+    // Procesar los campos que pueden ser objetos o arrays de objetos
+    if (productObject) {
+      // Procesar technicalData - debería ser un array de objetos {key, value}
+      if (productObject.technicalData) {
+        if (typeof productObject.technicalData === 'string') {
+          try {
+            productObject.technicalData = JSON.parse(productObject.technicalData);
+          } catch (e) {
+            console.warn('Error al parsear technicalData, manteniendo como string:', e);
+          }
         }
+        // Asegurar que sea un array
+        if (!Array.isArray(productObject.technicalData)) {
+          productObject.technicalData = [];
+        }
+      } else {
+        productObject.technicalData = [];
       }
       
-      if (typeof product.downloads === 'string' && product.downloads.trim().startsWith('{')) {
-        try {
-          product.downloads = JSON.parse(product.downloads);
-        } catch (e) {
-          console.error('Error al parsear downloads:', e);
-          // Mantener como string si no es JSON válido
-        }
+      // Procesar functionalities - debería ser un array de strings
+      if (productObject.functionalities) {
+        productObject.functionalities = processArrayField(productObject.functionalities);
+      } else {
+        productObject.functionalities = [];
       }
       
-      if (typeof product.description === 'string' && product.description.trim().startsWith('{')) {
-        try {
-          product.description = JSON.parse(product.description);
-        } catch (e) {
-          console.error('Error al parsear description:', e);
-          // Mantener como string si no es JSON válido
+      // Procesar downloads - debería ser un array de objetos {key, value}
+      if (productObject.downloads) {
+        if (typeof productObject.downloads === 'string') {
+          try {
+            productObject.downloads = JSON.parse(productObject.downloads);
+          } catch (e) {
+            console.warn('Error al parsear downloads, manteniendo como string:', e);
+          }
         }
+        // Asegurar que sea un array
+        if (!Array.isArray(productObject.downloads)) {
+          productObject.downloads = [];
+        }
+      } else {
+        productObject.downloads = [];
       }
       
-      // Si estamos en el nuevo formato, devolver el objeto completo
-      // Si no, devolver solo el producto
-      return productData;
+      // Asegurar que media sea un array
+      if (!productObject.media && productObject.multimedia) {
+        productObject.media = productObject.multimedia;
+      }
+      if (!Array.isArray(productObject.media)) {
+        productObject.media = [];
+      }
     }
     
+    // Devolver la estructura completa para mantener consistencia con la API
     return productData;
   } catch (error) {
     console.error(`Error fetching product with ID ${id}:`, error);
@@ -151,21 +240,29 @@ export const getActiveProductById = async (id) => {
   }
 };
 
-// Subir imagen
+// Importar el servicio de medios
+import mediaService from './mediaService';
+
+// Subir imagen (utilizando mediaService)
 export const uploadImage = async (file) => {
   try {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const response = await apiClient.post('/l/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
-    
-    return response.data;
+    const result = await mediaService.uploadImages(file);
+    console.log('Respuesta de subida de imagen:', result);
+    return { data: result, status: 200, message: 'success' };
   } catch (error) {
     console.error('Error uploading image:', error);
+    throw error.response?.data || error.message;
+  }
+};
+
+// Eliminar imagen por ID (utilizando mediaService)
+export const deleteImage = async (imageId) => {
+  try {
+    const result = await mediaService.deleteImages(imageId);
+    console.log(`Imagen con ID ${imageId} eliminada:`, result);
+    return result;
+  } catch (error) {
+    console.error(`Error eliminando imagen con ID ${imageId}:`, error);
     throw error.response?.data || error.message;
   }
 };
@@ -180,28 +277,36 @@ export const updateProduct = async (productData) => {
       throw new Error('El producto debe tener un ID para actualizarlo');
     }
     
-    // Procesar los campos dinámicos
-    const processField = (field) => {
-      if (!field) return {};
+    // Procesar los campos dinámicos para asegurar el formato correcto
+    const ensureArrayFormat = (field) => {
+      if (!field) return [];
       if (typeof field === 'string') {
         try {
-          return JSON.parse(field);
+          const parsed = JSON.parse(field);
+          return Array.isArray(parsed) ? parsed : [];
         } catch (e) {
-          return field;
+          return [];
         }
       }
-      return field;
+      return Array.isArray(field) ? field : [];
     };
 
-    // Preparar el DTO del producto según el formato esperado por la API
+    // Preparar el DTO del producto según la nueva estructura de la API
     const productDto = {
       id: Number(productData.id),
-      updatedBy: "1", // Deberías obtener esto del usuario autenticado
-      updatedAt: new Date().toISOString(),
+      updatedBy: productData.updatedBy || "1", // Preferiblemente del usuario autenticado
+      updatedAt: productData.updatedAt || new Date().toISOString(),
+      brandId: productData.brandId ? String(productData.brandId) : "1",
+      categoryId: productData.categoryId ? String(productData.categoryId) : "1",
       externalId: productData.externalId || `PROD-${Date.now()}`,
       name: productData.name,
       shortDescription: productData.shortDescription || '',
-      description: processField(productData.description),
+      description: productData.description || '',
+      
+      // Asegurar que functionalities y technicalData tengan el formato correcto
+      functionalities: ensureArrayFormat(productData.functionalities),
+      technicalData: ensureArrayFormat(productData.technicalData),
+      
       type: productData.type || 'PRODUCT',
       productUsage: productData.productUsage || 'GENERAL',
       price: Number(productData.price || 0),
@@ -209,57 +314,39 @@ export const updateProduct = async (productData) => {
       discount: Number(productData.discount || 0),
       stock: Number(productData.stock || 0),
       garanty: Number(productData.garanty || 0),
-      color: productData.color || '#000000',
-      downloads: processField(productData.downloads || {}),
+      color: productData.color || '',
+      
+      // Asegurar que downloads tenga el formato correcto
+      downloads: ensureArrayFormat(productData.downloads),
+      
       rentable: Boolean(productData.rentable),
       status: productData.status || 'ACTIVE',
-      brandId: Number(productData.brandId),
-      categoryId: Number(productData.categoryId),
-      technicalData: processField(productData.technicalData || {}),
-      functionalities: processField(productData.functionalities || {}),
-      media: Array.isArray(productData.media) 
-        ? productData.media.map((media, index) => ({
+      
+      // Asegurar que media tenga el formato correcto
+      media: Array.isArray(productData.media || productData.multimedia) 
+        ? (productData.media || productData.multimedia).map((media, index) => ({
             id: media.id || 0,
             url: media.url,
             fileType: media.fileType || 'IMAGE',
-            entityId: Number(productData.id),
-            entityType: 'PRODUCT',
+            entityId: media.entityId || 0,
+            entityType: media.entityType || 'PRODUCT',
             displayOrder: media.displayOrder || index
           }))
         : []
     };
 
-    console.log('Enviando datos al servidor:', JSON.stringify(productDto, null, 2));
+    console.log('Enviando datos al servidor (PUT):', JSON.stringify(productDto, null, 2));
     
-    // Usar axios directamente con la URL completa
-    const { data } = await axios({
-      method: 'put',
-      url: "https://libamaq.com/l/products",
-      data: productDto,
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem("token")}`
-      }
-    });
+    // Usar apiClient para mantener consistencia
+    const response = await apiClient.put("/l/products", productDto);
+    console.log('Respuesta de actualización de producto:', response.data);
     
-    console.log('Respuesta de la API (axios directo):', data);
-    
-    // Esperar un momento para asegurar que los cambios se hayan aplicado en el servidor
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Si la actualización fue exitosa, obtener el producto actualizado
-    if (data.type === 'SUCCESS') {
-      try {
-        // Usar un fetch directo para obtener el producto actualizado
-        const productResponse = await getProductById(productDto.id);
-        return productResponse;
-      } catch (fetchError) {
-        console.error('Error al obtener el producto actualizado:', fetchError);
-        return data;
-      }
+    // La nueva estructura de respuesta tiene el formato { data: {...}, status: 200, message: 'success' }
+    if (response.data && (response.data.status === 200 || response.data.message === 'success')) {
+      return response.data;
     }
     
-    return data;
+    return response.data;
   } catch (error) {
     console.error('Error updating product:', error);
     throw error.response?.data || error.message;
@@ -271,28 +358,68 @@ export const createProduct = async (productData) => {
   try {
     console.log('Datos del producto a crear:', productData);
     
-    // Preparar datos del producto según el formato esperado por la API NestJS
+    // Procesar los campos dinámicos para asegurar el formato correcto
+    const ensureArrayFormat = (field) => {
+      if (!field) return [];
+      if (typeof field === 'string') {
+        try {
+          const parsed = JSON.parse(field);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+          return [];
+        }
+      }
+      return Array.isArray(field) ? field : [];
+    };
+    
+    // Preparar datos del producto según la nueva estructura esperada por la API
     const productDto = {
-      ...productData,
-      // Asegurar que los campos numéricos sean números
-      brandId: productData.brandId ? Number(productData.brandId) : null,
-      categoryId: productData.categoryId ? Number(productData.categoryId) : null,
-      price: productData.price ? Number(productData.price) : 0,
-      cost: productData.cost ? Number(productData.cost) : 0,
-      discount: productData.discount ? Number(productData.discount) : 0,
-      stock: productData.stock ? Number(productData.stock) : 0,
-      garanty: productData.garanty ? Number(productData.garanty) : 0,
-      // Asegurar que el estado sea válido
-      status: productData.status || 'ACTIVE',
-      // Fecha de creación si no está presente
+      createdBy: productData.createdBy || "1", // Preferiblemente del usuario autenticado
       createdAt: productData.createdAt || new Date().toISOString(),
-      // Asegurar que media sea un array
-      media: Array.isArray(productData.media) ? productData.media : []
+      brandId: productData.brandId ? String(productData.brandId) : "1",
+      categoryId: productData.categoryId ? String(productData.categoryId) : "1",
+      externalId: productData.externalId || `PROD-${Date.now()}`,
+      name: productData.name || '',
+      shortDescription: productData.shortDescription || '',
+      description: productData.description || '',
+      
+      // Asegurar que functionalities y technicalData tengan el formato correcto
+      functionalities: ensureArrayFormat(productData.functionalities),
+      technicalData: ensureArrayFormat(productData.technicalData),
+      
+      type: productData.type || 'PRODUCT',
+      productUsage: productData.productUsage || 'GENERAL',
+      price: Number(productData.price || 0),
+      cost: Number(productData.cost || 0),
+      discount: Number(productData.discount || 0),
+      stock: Number(productData.stock || 0),
+      garanty: Number(productData.garanty || 0),
+      color: productData.color || '',
+      
+      // Asegurar que downloads tenga el formato correcto
+      downloads: ensureArrayFormat(productData.downloads),
+      
+      rentable: Boolean(productData.rentable),
+      status: productData.status || 'ACTIVE',
+      
+      // Asegurar que media tenga el formato correcto
+      media: Array.isArray(productData.media || productData.multimedia) 
+        ? (productData.media || productData.multimedia).map((media, index) => ({
+            id: media.id || 0,
+            url: media.url,
+            fileType: media.fileType || 'IMAGE',
+            entityId: media.entityId || 0,
+            entityType: media.entityType || 'PRODUCT',
+            displayOrder: media.displayOrder || index
+          }))
+        : []
     };
 
-    console.log('DTO del producto a enviar:', productDto);
+    console.log('Enviando datos al servidor (POST):', JSON.stringify(productDto, null, 2));
     const response = await apiClient.post("/l/products", productDto);
     console.log('Respuesta de creación de producto:', response.data);
+    
+    // La nueva estructura de respuesta tiene el formato { data: {...}, status: 200, message: 'success' }
     return response.data;
   } catch (error) {
     console.error('Error creating product:', error);
@@ -303,9 +430,27 @@ export const createProduct = async (productData) => {
 // Obtener productos por categoría
 export const getProductsByCategory = async (categoryId) => {
   try {
+    console.log(`Obteniendo productos por categoría ${categoryId}...`);
     const response = await apiClient.get(`/l/products/category/${categoryId}`);
     console.log(`Respuesta de productos por categoría ${categoryId}:`, response.data);
-    return response.data;
+    
+    // Verificar el formato de la respuesta
+    if (!response.data) {
+      throw new Error(`No se recibieron datos de productos para la categoría ${categoryId}`);
+    }
+    
+    // La nueva estructura de respuesta es { data: [...], status: 200, message: 'success' }
+    // Verificar si estamos recibiendo la nueva estructura o la antigua
+    if (response.data.data && response.data.status && response.data.message) {
+      console.log(`Detectado nuevo formato de API en getProductsByCategory para categoría ${categoryId}`);
+      // Devolver la estructura completa para mantener consistencia
+      return response.data;
+    } else {
+      // Formato anterior donde la respuesta es directamente el array de productos
+      console.log(`Detectado formato anterior en getProductsByCategory para categoría ${categoryId}`);
+      // Devolver la respuesta tal cual para mantener compatibilidad
+      return response.data;
+    }
   } catch (error) {
     console.error(`Error fetching products for category ${categoryId}:`, error);
     throw error.response?.data || error.message;
@@ -315,9 +460,27 @@ export const getProductsByCategory = async (categoryId) => {
 // Obtener productos por marca
 export const getProductsByBrand = async (brandId) => {
   try {
+    console.log(`Obteniendo productos por marca ${brandId}...`);
     const response = await apiClient.get(`/l/products/brand/${brandId}`);
     console.log(`Respuesta de productos por marca ${brandId}:`, response.data);
-    return response.data;
+    
+    // Verificar el formato de la respuesta
+    if (!response.data) {
+      throw new Error(`No se recibieron datos de productos para la marca ${brandId}`);
+    }
+    
+    // La nueva estructura de respuesta es { data: [...], status: 200, message: 'success' }
+    // Verificar si estamos recibiendo la nueva estructura o la antigua
+    if (response.data.data && response.data.status && response.data.message) {
+      console.log(`Detectado nuevo formato de API en getProductsByBrand para marca ${brandId}`);
+      // Devolver la estructura completa para mantener consistencia
+      return response.data;
+    } else {
+      // Formato anterior donde la respuesta es directamente el array de productos
+      console.log(`Detectado formato anterior en getProductsByBrand para marca ${brandId}`);
+      // Devolver la respuesta tal cual para mantener compatibilidad
+      return response.data;
+    }
   } catch (error) {
     console.error(`Error fetching products for brand ${brandId}:`, error);
     throw error.response?.data || error.message;
@@ -327,9 +490,27 @@ export const getProductsByBrand = async (brandId) => {
 // Obtener productos por categoría y marca
 export const getProductsByCategoryAndBrand = async (categoryId, brandId) => {
   try {
+    console.log(`Obteniendo productos por categoría ${categoryId} y marca ${brandId}...`);
     const response = await apiClient.get(`/l/products/category/${categoryId}/brand/${brandId}`);
     console.log(`Respuesta de productos por categoría ${categoryId} y marca ${brandId}:`, response.data);
-    return response.data;
+    
+    // Verificar el formato de la respuesta
+    if (!response.data) {
+      throw new Error(`No se recibieron datos de productos para la categoría ${categoryId} y marca ${brandId}`);
+    }
+    
+    // La nueva estructura de respuesta es { data: [...], status: 200, message: 'success' }
+    // Verificar si estamos recibiendo la nueva estructura o la antigua
+    if (response.data.data && response.data.status && response.data.message) {
+      console.log(`Detectado nuevo formato de API en getProductsByCategoryAndBrand para categoría ${categoryId} y marca ${brandId}`);
+      // Devolver la estructura completa para mantener consistencia
+      return response.data;
+    } else {
+      // Formato anterior donde la respuesta es directamente el array de productos
+      console.log(`Detectado formato anterior en getProductsByCategoryAndBrand para categoría ${categoryId} y marca ${brandId}`);
+      // Devolver la respuesta tal cual para mantener compatibilidad
+      return response.data;
+    }
   } catch (error) {
     console.error(`Error fetching products for category ${categoryId} and brand ${brandId}:`, error);
     throw error.response?.data || error.message;

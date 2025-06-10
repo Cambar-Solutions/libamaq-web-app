@@ -31,7 +31,7 @@ function isLightColor(hexColor) {
 }
 
 
-const CardComponent = ({ product, onClick, onDelete }) => {
+const CardComponent = ({ product, onDelete, onViewDetail }) => {
   const getImageUrl = () => {
     // Verificar si hay imágenes en el array media
     if (product.media && product.media.length > 0) {
@@ -52,7 +52,7 @@ const CardComponent = ({ product, onClick, onDelete }) => {
       e.stopPropagation();
       return;
     }
-    onClick();
+    onViewDetail(product.id);
   };
 
   return (
@@ -282,16 +282,10 @@ export function ProductsView() {
     setSelectedBrand(value === "all" ? null : parseInt(value, 10));
   };
 
-  const handleCardClick = (product) => {
-    // Guardar el ID del producto en localStorage para que ProductoDetalle pueda acceder a él
-    localStorage.setItem("selectedProductId", product.id);
-    
-    // Navegar a la vista detallada del producto
-    navigate("/producto-detalle");
-    
-    console.log(`Navegando a la vista detallada del producto con ID: ${product.id}`);
+  const handleProductClick = (productId) => {
+    navigate(`/dashboard/productos/detalle/${productId}`);
   };
-  
+
   // Función para manejar la eliminación de un producto
   const handleDeleteProduct = async (productId) => {
     try {
@@ -418,8 +412,9 @@ export function ProductsView() {
             transition={{ duration: 0.3 }}
           >
             <CardComponent
+              key={product.id}
               product={product}
-              onClick={() => handleCardClick(product)}
+              onViewDetail={handleProductClick}
               onDelete={handleDeleteProduct}
             />
           </motion.div>

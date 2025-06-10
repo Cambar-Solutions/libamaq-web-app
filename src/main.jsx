@@ -23,6 +23,7 @@ const ProductList = lazy(() => import('./app/e-commerce/Ecomerce'));
 const CategoryPage = lazy(() => import('./app/e-commerce/CategoryPage'));
 const NuevoProducto = lazy(() => import('./app/dashboard/NuevoProducto'));
 const ProductoDetalle = lazy(() => import('./app/dashboard/ProductoDetalle'));
+const ProductDetailView = lazy(() => import('./app/dashboard/views/ProductDetailView'));
 const Nosotros = lazy(() => import('./Nosotros.jsx'));
 const UserHome = lazy(() => import('./app/user/UserHome'));
 const Account = lazy(() => import('./app/user/components/pages/Account')); 
@@ -124,6 +125,13 @@ createRoot(document.getElementById('root')).render(
               <AppLayout>
                 <AuthRoute allowedRoles={['ADMIN', 'DIRECTOR']}>
                   <ProductoDetalle />
+                </AuthRoute>
+              </AppLayout>
+            } />
+            <Route path="/dashboard/productos/detalle/:id" element={
+              <AppLayout>
+                <AuthRoute allowedRoles={['ADMIN', 'DIRECTOR']}>
+                  <ProductDetailView />
                 </AuthRoute>
               </AppLayout>
             } />

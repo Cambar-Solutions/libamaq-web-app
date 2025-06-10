@@ -63,9 +63,9 @@ const NuevoProducto = () => {
     color: '#000000',
     rentable: false,
     status: 'ACTIVE',
-    technicalData: [],
-    functionalities: '',
-    downloads: ''
+    technicalData: [], // Array de objetos {key, value}
+    functionalities: [], // Array de strings
+    downloads: [] // Array de objetos {name, url}
   });
   
   // Consulta para obtener marcas
@@ -334,14 +334,14 @@ const NuevoProducto = () => {
         name: producto.name || "",
         shortDescription: producto.shortDescription || "",
         description: producto.description || "",
-        // Funcionalidades como string
-        functionalities: typeof producto.functionalities === 'string' 
+        // Funcionalidades como array de strings
+        functionalities: Array.isArray(producto.functionalities) 
           ? producto.functionalities 
-          : "",
-        // Datos técnicos como string JSON
+          : [],
+        // Datos técnicos como array de objetos {key, value}
         technicalData: Array.isArray(producto.technicalData) 
-          ? JSON.stringify(producto.technicalData, null, 2) 
-          : (typeof producto.technicalData === 'string' ? producto.technicalData : '[]'),
+          ? producto.technicalData 
+          : [],
         type: producto.type || "",
         productUsage: producto.productUsage || "",
         price: parseFloat(producto.price) || 0,
@@ -350,10 +350,10 @@ const NuevoProducto = () => {
         stock: parseInt(producto.stock) || 0,
         garanty: parseInt(producto.garanty) || 0,
         color: producto.color || "",
-        // Descargas como string
-        downloads: typeof producto.downloads === 'string' 
+        // Descargas como array de objetos {name, url}
+        downloads: Array.isArray(producto.downloads) 
           ? producto.downloads 
-          : "",
+          : [],
         rentable: Boolean(producto.rentable || false),
         status: 'ACTIVE',
         // Procesar multimedia según el formato esperado
@@ -791,17 +791,85 @@ return (
                 
                 {/* Enlace de descarga */}
                 <div className="space-y-3 mb-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="downloads">Enlace de Descarga</Label>
-                    <Input
-                      id="downloads"
-                      type="url"
-                      value={producto.downloads || ''}
-                      onChange={(e) => setProducto({ ...producto, downloads: e.target.value })}
-                      placeholder="https://ejemplo.com/manuales/s21.pdf"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Ingresa la URL del documento descargable (manual, ficha técnica, etc.)
+                  <div className="space-y-4">
+                    <Label htmlFor="downloads">Archivos Descargables</Label>
+                    
+                    {/* Lista de descargas actuales */}
+                    {Array.isArray(producto.downloads) && producto.downloads.length > 0 && (
+                      <div className="space-y-2 mb-4">
+                        {producto.downloads.map((download, index) => (
+                          <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
+                            <div className="flex-1">
+                              <div className="font-medium">{download.name || 'Archivo'}</div>
+                              <div className="text-xs text-blue-600 truncate">{download.url}</div>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => {
+                                setProducto({
+                                  ...producto,
+                                  downloads: producto.downloads.filter((_, i) => i !== index)
+                                });
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Formulario para agregar nueva descarga */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="downloadName">Nombre del archivo</Label>
+                        <Input
+                          id="downloadName"
+                          placeholder="Manual de usuario"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="downloadUrl">URL del archivo</Label>
+                        <Input
+                          id="downloadUrl"
+                          placeholder="https://ejemplo.com/manuales/s21.pdf"
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                    
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      className="mt-2"
+                      onClick={() => {
+                        const nameInput = document.getElementById('downloadName');
+                        const urlInput = document.getElementById('downloadUrl');
+                        
+                        if (urlInput?.value) {
+                          const newDownload = {
+                            name: nameInput?.value || 'Archivo',
+                            url: urlInput.value
+                          };
+                          
+                          setProducto({
+                            ...producto,
+                            downloads: [...(Array.isArray(producto.downloads) ? producto.downloads : []), newDownload]
+                          });
+                          
+                          // Limpiar campos
+                          if (nameInput) nameInput.value = '';
+                          if (urlInput) urlInput.value = '';
+                        }
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" /> Agregar archivo
+                    </Button>
+                    
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Agrega enlaces a manuales, fichas técnicas u otros documentos descargables
                     </p>
                   </div>
                 </div>
@@ -844,8 +912,19 @@ return (
                       <Label htmlFor="functionalities">Funcionalidades</Label>
                       <Textarea
                         id="functionalities"
-                        value={producto.functionalities || ''}
-                        onChange={(e) => setProducto({ ...producto, functionalities: e.target.value })}
+                        value={Array.isArray(producto.functionalities) 
+                          ? producto.functionalities.join('\n') 
+                          : ''}
+                        onChange={(e) => {
+                          // Convertir el texto a un array de strings (separados por comas o saltos de línea)
+                          const text = e.target.value;
+                          const items = text
+                            .split(/[,\n]/) // Separar por comas o saltos de línea
+                            .map(item => item.trim())
+                            .filter(item => item.length > 0); // Eliminar elementos vacíos
+                          
+                          setProducto({ ...producto, functionalities: items });
+                        }}
                         placeholder="Lista las funcionalidades del producto, separadas por comas o saltos de línea"
                         rows={4}
                       />
@@ -857,19 +936,26 @@ return (
                     <div className="space-y-2">
                       <Label>Especificaciones Técnicas</Label>
                       <InputData
-                        value={typeof producto.technicalData === 'string' 
-                          ? producto.technicalData 
-                          : Array.isArray(producto.technicalData) 
-                            ? producto.technicalData.map(item => 
-                                typeof item === 'object' 
-                                  ? `${item.key || ''}:${item.value || ''}`
-                                  : item
-                              ).join(',')
-                            : ''}
+                        value={Array.isArray(producto.technicalData) 
+                          ? producto.technicalData.map(item => 
+                              typeof item === 'object' 
+                                ? `${item.key || ''}:${item.value || ''}`
+                                : item
+                            ).join(',')
+                          : ''}
                         onChange={(value) => {
+                          // Convertir el valor a un array de objetos {key, value}
+                          const items = value
+                            .split(',')
+                            .map(item => {
+                              const [key, val] = item.split(':').map(part => part.trim());
+                              return { key: key || '', value: val || '' };
+                            })
+                            .filter(item => item.key || item.value); // Filtrar elementos vacíos
+                          
                           setProducto({ 
                             ...producto, 
-                            technicalData: value 
+                            technicalData: items 
                           });
                         }}
                         placeholder="Ej: Peso:25kg"

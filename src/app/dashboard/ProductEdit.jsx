@@ -1,50 +1,145 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { getProductById, updateProduct, uploadImage } from "@/services/admin/productService";
+import { updateProduct, uploadImage } from "@/services/admin/productService";
 import { Card } from "@/components/ui/card";
 import { ImageUpload } from "@/components/ImageUpload";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Pencil, Save, X, Package, DollarSign, Tags, FileText, Image } from "lucide-react";
+import { Pencil, Save, X, Package, DollarSign, Tags, FileText, Image, Plus, Trash2 } from "lucide-react";
 
-export default function ProductEdit() {
-  const { id } = useParams();
+// Componente para manejar listas de strings (funcionalidades)
+const StringListInput = ({ items = [], onChange, placeholder = "Agregar elemento" }) => {
+  const [inputValue, setInputValue] = useState('');
+
+  const handleAdd = () => {
+    if (inputValue.trim() && !items.includes(inputValue.trim())) {
+      onChange([...items, inputValue.trim()]);
+      setInputValue('');
+    }
+  };
+
+  const handleRemove = (index) => {
+    onChange(items.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        <Input
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          placeholder={placeholder}
+          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAdd())}
+        />
+        <Button type="button" size="icon" onClick={handleAdd}>
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+      <div className="space-y-2">
+        {items.map((item, index) => (
+          <div key={index} className="flex items-center justify-between p-2 border rounded">
+            <span>{item}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={() => handleRemove(index)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Componente para manejar pares clave-valor (datos técnicos, descargas)
+const KeyValueInput = ({ items = [], onChange, keyPlaceholder = "Clave", valuePlaceholder = "Valor" }) => {
+  const [key, setKey] = useState('');
+  const [value, setValue] = useState('');
+
+  const handleAdd = () => {
+    if (key.trim() && value.trim()) {
+      onChange([...items, { key: key.trim(), value: value.trim() }]);
+      setKey('');
+      setValue('');
+    }
+  };
+
+  const handleRemove = (index) => {
+    onChange(items.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-5 gap-2 items-end">
+        <div className="col-span-2">
+          <Input
+            value={key}
+            onChange={(e) => setKey(e.target.value)}
+            placeholder={keyPlaceholder}
+            onKeyDown={(e) => e.key === 'Enter' && document.getElementById('value-input').focus()}
+          />
+        </div>
+        <div className="col-span-2">
+          <Input
+            id="value-input"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={valuePlaceholder}
+            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAdd())}
+          />
+        </div>
+        <Button type="button" size="icon" onClick={handleAdd}>
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+      <div className="space-y-2">
+        {items.map((item, index) => (
+          <div key={index} className="grid grid-cols-5 gap-2 items-center p-2 border rounded">
+            <span className="col-span-2 font-medium truncate">{item.key}</span>
+            <span className="col-span-2 truncate">{item.value}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 ml-auto"
+              onClick={() => handleRemove(index)}
+            >
+              <Trash2 className="h-4 w-4 text-red-500" />
+            </Button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default function ProductEdit({ productData, onSave }) {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [product, setProduct] = useState(null);
   const [images, setImages] = useState([]);
   const [uploadingImages, setUploadingImages] = useState(false);
 
   useEffect(() => {
-    if (id) {
-      loadProduct(id);
-    }
-  }, [id]);
-
-  const loadProduct = async (productId) => {
-    try {
-      const response = await getProductById(productId);
-      if (response.type === "SUCCESS" && response.result) {
-        setProduct(response.result);
-        // Inicializar las imágenes existentes
-        if (response.result.multimedia) {
-          setImages(response.result.multimedia);
-        }
-      } else {
-        toast.error("No se pudo cargar el producto");
-        navigate("/dashboard");
+    if (productData) {
+      setProduct(productData);
+      // Inicializar las imágenes existentes
+      if (productData.multimedia) {
+        setImages(productData.multimedia);
+      } else if (productData.media) {
+        setImages(productData.media);
       }
-    } catch (error) {
-      toast.error("Error al cargar el producto");
-      console.error(error);
-    } finally {
       setIsLoading(false);
     }
-  };
+  }, [productData]);
 
   const handleInputChange = (e) => {
     const { name, value, type } = e.target;
@@ -104,6 +199,7 @@ export default function ProductEdit() {
     e.preventDefault();
     setIsLoading(true);
     try {
+      console.log("ProductEdit - Enviando actualización de producto:", product?.id);
       const productData = {
         ...product,
         multimedia: images.map((img, index) => ({
@@ -113,11 +209,22 @@ export default function ProductEdit() {
       };
 
       const response = await updateProduct(productData);
-      if (response.type === "SUCCESS") {
-        toast.success("Producto actualizado correctamente");
-        navigate("/dashboard");
+      console.log("ProductEdit - Respuesta de actualización:", response);
+      
+      if (response && (response.type === "SUCCESS" || response.status === 200)) {
+        // Si tenemos una función onSave (desde ProductDetailView), la llamamos
+        if (onSave && typeof onSave === 'function') {
+          console.log("ProductEdit - Llamando a onSave callback");
+          onSave(response.result || response.data || productData);
+        } else {
+          // Solo si no tenemos onSave navegamos (caso de uso independiente)
+          console.log("ProductEdit - No hay onSave, navegando a dashboard");
+          toast.success("Producto actualizado correctamente");
+          navigate("/dashboard");
+        }
       } else {
-        toast.error(response.message || "Error al actualizar el producto");
+        console.error("ProductEdit - Error en respuesta:", response);
+        toast.error(response?.message || "Error al actualizar el producto");
       }
     } catch (error) {
       toast.error("Error al actualizar el producto");
@@ -346,6 +453,43 @@ export default function ProductEdit() {
                     required
                   />
                 </div>
+                <div>
+                  <Label htmlFor="type">Tipo de Producto</Label>
+                  <Input
+                    id="type"
+                    name="type"
+                    value={product?.type || ""}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="productUsage">Uso del Producto</Label>
+                  <Input
+                    id="productUsage"
+                    name="productUsage"
+                    value={product?.productUsage || ""}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="rentable">Rentable</Label>
+                  <select
+                    id="rentable"
+                    name="rentable"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                    value={product?.rentable === true ? "true" : "false"}
+                    onChange={(e) => handleInputChange({
+                      target: {
+                        name: 'rentable',
+                        value: e.target.value === "true",
+                        type: 'boolean'
+                      }
+                    })}
+                  >
+                    <option value="true">Sí</option>
+                    <option value="false">No</option>
+                  </select>
+                </div>
               </div>
               <div>
                 <Label htmlFor="description">Descripción</Label>
@@ -358,33 +502,31 @@ export default function ProductEdit() {
                 />
               </div>
               <div>
-                <Label htmlFor="technicalData">Datos Técnicos</Label>
-                <Textarea
-                  id="technicalData"
-                  name="technicalData"
-                  rows={4}
-                  value={typeof product?.technicalData === 'object' ? JSON.stringify(product.technicalData, null, 2) : product?.technicalData || ""}
-                  onChange={(e) => handleJsonInputChange('technicalData', e.target.value)}
+                <Label>Funcionalidades</Label>
+                <StringListInput
+                  items={Array.isArray(product?.functionalities) ? product.functionalities : []}
+                  onChange={(newItems) => setProduct(prev => ({ ...prev, functionalities: newItems }))}
+                  placeholder="Agregar funcionalidad"
                 />
               </div>
+              
               <div>
-                <Label htmlFor="functionalities">Funcionalidades</Label>
-                <Textarea
-                  id="functionalities"
-                  name="functionalities"
-                  rows={4}
-                  value={typeof product?.functionalities === 'object' ? JSON.stringify(product.functionalities, null, 2) : product?.functionalities || ""}
-                  onChange={(e) => handleJsonInputChange('functionalities', e.target.value)}
+                <Label>Datos Técnicos</Label>
+                <KeyValueInput
+                  items={Array.isArray(product?.technicalData) ? product.technicalData : []}
+                  onChange={(newItems) => setProduct(prev => ({ ...prev, technicalData: newItems }))}
+                  keyPlaceholder="Ej: Potencia"
+                  valuePlaceholder="Ej: 550W"
                 />
               </div>
+              
               <div>
-                <Label htmlFor="downloads">Descargas</Label>
-                <Textarea
-                  id="downloads"
-                  name="downloads"
-                  rows={4}
-                  value={typeof product?.downloads === 'object' ? JSON.stringify(product.downloads, null, 2) : product?.downloads || ""}
-                  onChange={(e) => handleJsonInputChange('downloads', e.target.value)}
+                <Label>Descargas</Label>
+                <KeyValueInput
+                  items={Array.isArray(product?.downloads) ? product.downloads : []}
+                  onChange={(newItems) => setProduct(prev => ({ ...prev, downloads: newItems }))}
+                  keyPlaceholder="Ej: Manual de usuario"
+                  valuePlaceholder="URL de descarga"
                 />
               </div>
             </div>

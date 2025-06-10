@@ -60,7 +60,7 @@ const ProductoDetalle = () => {
       //   await actualizarProducto(id, producto);
       // }
       toast.success(`Producto ${id === 'nuevo' ? 'creado' : 'actualizado'} correctamente`);
-      navigate('/dashboard/productos');
+      navigate('/dashboard');
     } catch (error) {
       console.error('Error al guardar el producto:', error);
       toast.error('Error al guardar el producto');
