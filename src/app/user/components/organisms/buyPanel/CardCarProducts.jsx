@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function CardCarProducts({ filtered, setSelected,  }) {
+export default function CardCarProducts({ filtered, setSelected }) {
     return (
         <>
             <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-1 gap-6">
