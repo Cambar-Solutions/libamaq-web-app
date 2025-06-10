@@ -617,7 +617,7 @@ export default function CategoryPage() {
             {!brand && !category && (
               <div className="w-full mb-6 overflow-hidden">
                 {/* NUEVA ZONA */}
-                <div className="rounded-t-[3rem] px-12 pt-0 w-[95%] mx-auto flex-grow">
+                <div className="rounded-t-[3rem] px-0 pt-0 w-full mx-auto flex-grow">
                   {!brand && !selectedCategory && !searchTerm && (
                     <>
                       <div className="mb-10">
