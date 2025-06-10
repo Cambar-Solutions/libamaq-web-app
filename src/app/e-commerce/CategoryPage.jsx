@@ -643,12 +643,15 @@ export default function CategoryPage() {
                               {/* Pista del carrusel */}
                               <div
                                 className="carousel-track group p-0 flex transition-transform duration-300 ease-out justify-start"
-                                style={{paddingBottom: 14, paddingTop: 9, transform: `translateX(-${carouselPosition}%)` }}
+                                style={{ paddingBottom: 14, paddingTop: 9, transform: `translateX(-${carouselPosition}%)` }}
                               >
                                 {items.map((item, index) => (
                                   <div
                                     key={`top-${index}`}
-                                    className="carousel-item p-0 flex-shrink-0 sm:px-0 md:px-0 group-hover:bg-zinc-300"
+                                    className={`carousel-item p-0 flex-shrink-0 sm:px-0 md:px-0 
+      ${index === 0 ? 'rounded-l-lg' : ''} 
+      ${index === items.length - 1 ? 'rounded-r-lg' : ''} 
+      group-hover:bg-zinc-300`}
                                     style={{
                                       paddingInline: 0,
                                       width: `${Math.max(
@@ -666,7 +669,7 @@ export default function CategoryPage() {
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ duration: 0.3 }}
-                                        className="card group-hover:blur-[0px] hover:!rounded-lg rounded-lg  group-hover:!opacity-40 hover:!blur-none hover:!opacity-100 bg-white hover:shadow-md transition-all duration-500 overflow-hidden w-full cursor-pointer hover:scale-105 group-hover:rounded-none"
+                                        className="card group-hover:blur-[0px] hover:!rounded-lg group-hover:!opacity-40 hover:!blur-none hover:!opacity-100 bg-white hover:shadow-md transition-all duration-500 overflow-hidden w-full cursor-pointer hover:scale-105 group-hover:rounded-none"
                                       >
                                         {/* Diseño adaptativo: horizontal en móvil, vertical en tablet/desktop */}
                                         <div className="flex flex-row sm:flex-col w-full">
@@ -775,139 +778,139 @@ export default function CategoryPage() {
             <div className="w-full mx-auto">
               {items.length > 0 ? (
                 <div className="mb-10">
-                        <div className="flex items-center justify-between mb-4">
-                          <h2 className="text-xl font-bold text-gray-500">Todos los productos</h2>
-                        </div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-500">Todos los productos</h2>
+                  </div>
 
-                        <div className="mb-10">
-                          {/* Contenedor principal del carrusel con estilo minimalista */}
-                          <div className="relative group">
-                            {/* Contenedor del carrusel */}
-                            <div className="carousel-container overflow-hidden px-0 sm:px-0 bg-white rounded-lg">
-                              {/* Pista del carrusel */}
-                              <div
-                                className="carousel-track flex transition-transform duration-300 ease-out justify-start"
-                                style={{ transform: `translateX(-${carouselPosition}%)` }}
-                              >
-                                {items.map((item, index) => (
-                                  <div
-                                    key={`top-${index}`}
-                                    className="carousel-item flex-shrink-0 p-0 m-0 sm:px-0 md:px-0 hover:scale-103"
-                                    style={{
-                                      width: `${Math.max(
-                                        20,
-                                        window.innerWidth >= 1280 ? 20 : // 5 items
-                                          window.innerWidth >= 1024 ? 25 : // 4 items
-                                            window.innerWidth >= 768 ? 33.333 : // 3 items
-                                              window.innerWidth >= 640 ? 50 : // 2 items
-                                                100 // 1 item completo en móvil
-                                      )}%`
-                                    }}
-                                  >
-                                    <Link to={`/producto/${item.id}`} key={index} className="w-full hover:scale-103 p-0">
-                                      <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        transition={{ duration: 0.3 }}
-                                        className="bg-white rounded-lg hover:shadow-md transition-all duration-500 overflow-hidden w-full cursor-pointer p-0"
-                                      >
-                                        {/* Diseño adaptativo: horizontal en móvil, vertical en tablet/desktop */}
-                                        <div className="flex flex-row sm:flex-col w-full">
-                                          {/* Imagen: 1/3 del ancho en móvil, altura completa en desktop */}
-                                          <div className="w-1/3 sm:w-full h-28 sm:h-52 flex items-center justify-center p-2 sm:p-4 relative overflow-hidden">
-                                            {/* Fondo con patrón de imagen cuando no hay imagen disponible */}
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                              <div className="w-12 h-12 border-2 border-gray-300 rounded-md flex items-center justify-center">
-                                                <div className="w-6 h-6 rounded-full bg-gray-300"></div>
-                                              </div>
-                                            </div>
-
-                                            {/* La imagen real del producto */}
-                                            <img
-                                              src={item.images && item.images.length > 0 ? item.images[0] : "/placeholder-product.png"}
-                                              alt=""
-                                              className="max-h-full max-w-full object-contain relative z-10"
-                                              onError={(e) => {
-                                                e.target.style.opacity = "0"; // Ocultar la imagen si no carga
-                                              }}
-                                            />
-                                          </div>
-
-                                          {/* Contenido: 2/3 del ancho en móvil, ancho completo en desktop */}
-                                          <div className="w-2/3 sm:w-full p-3 sm:p-4 flex-grow flex flex-col justify-between sm:h-[150px]">
-                                            <div>
-                                              <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={item.name}>{item.name}</h3>
-                                              <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={item.shortDescription}>{item.shortDescription}</p>
-                                            </div>
-                                            {item.price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${item.price.toLocaleString()}</p>}
-                                          </div>
+                  <div className="mb-10">
+                    {/* Contenedor principal del carrusel con estilo minimalista */}
+                    <div className="relative group">
+                      {/* Contenedor del carrusel */}
+                      <div className="carousel-container overflow-hidden px-0 sm:px-0 bg-white rounded-lg">
+                        {/* Pista del carrusel */}
+                        <div
+                          className="carousel-track flex transition-transform duration-300 ease-out justify-start"
+                          style={{ transform: `translateX(-${carouselPosition}%)` }}
+                        >
+                          {items.map((item, index) => (
+                            <div
+                              key={`top-${index}`}
+                              className="carousel-item flex-shrink-0 p-0 m-0 sm:px-0 md:px-0 hover:scale-103"
+                              style={{
+                                width: `${Math.max(
+                                  20,
+                                  window.innerWidth >= 1280 ? 20 : // 5 items
+                                    window.innerWidth >= 1024 ? 25 : // 4 items
+                                      window.innerWidth >= 768 ? 33.333 : // 3 items
+                                        window.innerWidth >= 640 ? 50 : // 2 items
+                                          100 // 1 item completo en móvil
+                                )}%`
+                              }}
+                            >
+                              <Link to={`/producto/${item.id}`} key={index} className="w-full hover:scale-103 p-0">
+                                <motion.div
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={{ duration: 0.3 }}
+                                  className="bg-white rounded-lg hover:shadow-md transition-all duration-500 overflow-hidden w-full cursor-pointer p-0"
+                                >
+                                  {/* Diseño adaptativo: horizontal en móvil, vertical en tablet/desktop */}
+                                  <div className="flex flex-row sm:flex-col w-full">
+                                    {/* Imagen: 1/3 del ancho en móvil, altura completa en desktop */}
+                                    <div className="w-1/3 sm:w-full h-28 sm:h-52 flex items-center justify-center p-2 sm:p-4 relative overflow-hidden">
+                                      {/* Fondo con patrón de imagen cuando no hay imagen disponible */}
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="w-12 h-12 border-2 border-gray-300 rounded-md flex items-center justify-center">
+                                          <div className="w-6 h-6 rounded-full bg-gray-300"></div>
                                         </div>
-                                      </motion.div>
-                                    </Link>
+                                      </div>
+
+                                      {/* La imagen real del producto */}
+                                      <img
+                                        src={item.images && item.images.length > 0 ? item.images[0] : "/placeholder-product.png"}
+                                        alt=""
+                                        className="max-h-full max-w-full object-contain relative z-10"
+                                        onError={(e) => {
+                                          e.target.style.opacity = "0"; // Ocultar la imagen si no carga
+                                        }}
+                                      />
+                                    </div>
+
+                                    {/* Contenido: 2/3 del ancho en móvil, ancho completo en desktop */}
+                                    <div className="w-2/3 sm:w-full p-3 sm:p-4 flex-grow flex flex-col justify-between sm:h-[150px]">
+                                      <div>
+                                        <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={item.name}>{item.name}</h3>
+                                        <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={item.shortDescription}>{item.shortDescription}</p>
+                                      </div>
+                                      {item.price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${item.price.toLocaleString()}</p>}
+                                    </div>
                                   </div>
-                                ))}
-                              </div>
+                                </motion.div>
+                              </Link>
                             </div>
-
-                            {/* Botones de navegación simplificados */}
-                            <>
-                              {showLeftArrow && (
-                                <button
-                                  className="carousel-prev absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
-                                  onClick={() => {
-                                    // Calcular el ancho de un item según el tamaño de pantalla
-                                    let itemWidth = 20; // Por defecto 5 items (20%)
-                                    if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25; // 4 items
-                                    else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333; // 3 items
-                                    else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50; // 2 items
-                                    else if (window.innerWidth < 640) itemWidth = 100; // 1 item completo en móvil
-
-                                    // Calcular nueva posición
-                                    const newPosition = Math.max(0, carouselPosition - itemWidth);
-                                    setCarouselPosition(newPosition);
-
-                                    // Actualizar visibilidad de flechas
-                                    setShowLeftArrow(newPosition > 0);
-                                    setShowRightArrow(true);
-                                  }}
-                                  aria-label="Anterior"
-                                >
-                                  <ChevronLeft className="text-blue-600" size={20} />
-                                </button>
-                              )}
-
-                              {showRightArrow && (
-                                <button
-                                  className="carousel-next absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
-                                  onClick={() => {
-                                    // Calcular el ancho de un item según el tamaño de pantalla
-                                    let itemWidth = 20; // Por defecto 5 items (20%)
-                                    if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25; // 4 items
-                                    else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333; // 3 items
-                                    else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50; // 2 items
-                                    else if (window.innerWidth < 640) itemWidth = 100; // 1 item completo en móvil
-
-                                    // Calcular nueva posición y límite máximo
-                                    const maxPosition = Math.max(0, (topSellingProducts.length * itemWidth) - 100);
-                                    const newPosition = Math.min(maxPosition, carouselPosition + itemWidth);
-                                    setCarouselPosition(newPosition);
-
-                                    // Actualizar visibilidad de flechas
-                                    setShowLeftArrow(true);
-                                    setShowRightArrow(newPosition < maxPosition);
-                                  }}
-                                  aria-label="Siguiente"
-                                >
-                                  <ChevronRight className="text-blue-600" size={20} />
-                                </button>
-                              )}
-                            </>
-                          </div>
-
-                          {/* Carrusel con diseño de fila flexible */}
-
+                          ))}
                         </div>
                       </div>
+
+                      {/* Botones de navegación simplificados */}
+                      <>
+                        {showLeftArrow && (
+                          <button
+                            className="carousel-prev absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
+                            onClick={() => {
+                              // Calcular el ancho de un item según el tamaño de pantalla
+                              let itemWidth = 20; // Por defecto 5 items (20%)
+                              if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25; // 4 items
+                              else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333; // 3 items
+                              else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50; // 2 items
+                              else if (window.innerWidth < 640) itemWidth = 100; // 1 item completo en móvil
+
+                              // Calcular nueva posición
+                              const newPosition = Math.max(0, carouselPosition - itemWidth);
+                              setCarouselPosition(newPosition);
+
+                              // Actualizar visibilidad de flechas
+                              setShowLeftArrow(newPosition > 0);
+                              setShowRightArrow(true);
+                            }}
+                            aria-label="Anterior"
+                          >
+                            <ChevronLeft className="text-blue-600" size={20} />
+                          </button>
+                        )}
+
+                        {showRightArrow && (
+                          <button
+                            className="carousel-next absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
+                            onClick={() => {
+                              // Calcular el ancho de un item según el tamaño de pantalla
+                              let itemWidth = 20; // Por defecto 5 items (20%)
+                              if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25; // 4 items
+                              else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333; // 3 items
+                              else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50; // 2 items
+                              else if (window.innerWidth < 640) itemWidth = 100; // 1 item completo en móvil
+
+                              // Calcular nueva posición y límite máximo
+                              const maxPosition = Math.max(0, (topSellingProducts.length * itemWidth) - 100);
+                              const newPosition = Math.min(maxPosition, carouselPosition + itemWidth);
+                              setCarouselPosition(newPosition);
+
+                              // Actualizar visibilidad de flechas
+                              setShowLeftArrow(true);
+                              setShowRightArrow(newPosition < maxPosition);
+                            }}
+                            aria-label="Siguiente"
+                          >
+                            <ChevronRight className="text-blue-600" size={20} />
+                          </button>
+                        )}
+                      </>
+                    </div>
+
+                    {/* Carrusel con diseño de fila flexible */}
+
+                  </div>
+                </div>
               ) : (
                 <div className="text-center py-10 bg-white rounded-lg shadow-sm">
                   <p className="text-gray-500">No se encontraron productos que coincidan con tu búsqueda.</p>
