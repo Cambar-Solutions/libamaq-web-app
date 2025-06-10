@@ -635,21 +635,22 @@ export default function CategoryPage() {
                           </button>
                         </div>
 
-                        <div className="mb-10">
+                        <div className="">
                           {/* Contenedor principal del carrusel con estilo minimalista */}
-                          <div className="relative group">
+                          <div className="relative group ">
                             {/* Contenedor del carrusel */}
-                            <div className="carousel-container overflow-hidden px-0 sm:px-0 bg-white rounded-lg">
+                            <div className="carousel-container overflow-hidden px-0 sm:px-0 rounded-lg">
                               {/* Pista del carrusel */}
                               <div
-                                className="carousel-track flex transition-transform duration-300 ease-out justify-start"
-                                style={{ transform: `translateX(-${carouselPosition}%)` }}
+                                className="carousel-track group p-0 flex transition-transform duration-300 ease-out justify-start"
+                                style={{paddingBottom: 14, paddingTop: 9, transform: `translateX(-${carouselPosition}%)` }}
                               >
                                 {items.map((item, index) => (
                                   <div
                                     key={`top-${index}`}
-                                    className="carousel-item flex-shrink-0 p-0 m-0 sm:px-0 md:px-0 hover:scale-103"
+                                    className="carousel-item p-0 flex-shrink-0 sm:px-0 md:px-0 group-hover:bg-zinc-300"
                                     style={{
+                                      paddingInline: 0,
                                       width: `${Math.max(
                                         20,
                                         window.innerWidth >= 1280 ? 20 : // 5 items
@@ -660,12 +661,12 @@ export default function CategoryPage() {
                                       )}%`
                                     }}
                                   >
-                                    <Link to={`/producto/${item.id}`} key={index} className="w-full hover:scale-103 p-0">
+                                    <Link to={`/producto/${item.id}`} key={index} className="w-full p-0 m-0 space-x-0 ">
                                       <motion.div
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ duration: 0.3 }}
-                                        className="bg-white rounded-lg hover:shadow-md transition-all duration-500 overflow-hidden w-full cursor-pointer p-0"
+                                        className="card group-hover:blur-[0px] hover:!rounded-lg rounded-lg  group-hover:!opacity-40 hover:!blur-none hover:!opacity-100 bg-white hover:shadow-md transition-all duration-500 overflow-hidden w-full cursor-pointer hover:scale-105 group-hover:rounded-none"
                                       >
                                         {/* Diseño adaptativo: horizontal en móvil, vertical en tablet/desktop */}
                                         <div className="flex flex-row sm:flex-col w-full">
@@ -759,12 +760,8 @@ export default function CategoryPage() {
                               )}
                             </>
                           </div>
-
-                          {/* Carrusel con diseño de fila flexible */}
-
                         </div>
                       </div>
-
                     </>
                   )}
                 </div>
@@ -772,6 +769,7 @@ export default function CategoryPage() {
               </div>
             )}
           </div>
+
           <div className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full mx-auto flex-grow">
             {/* Contenedor principal con ancho ajustado */}
             <div className="w-full mx-auto">
