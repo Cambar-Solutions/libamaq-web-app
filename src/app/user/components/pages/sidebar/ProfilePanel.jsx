@@ -9,7 +9,7 @@ import SheetTerms from "../../organisms/SheetTerms";
 import DialogAddresses from "../../organisms/DialogAddresses";
 
 
-export default function ProfilePanel({ openLocationDialog = false, onCloseLocationDialog, userInfo }) {
+export default function ProfilePanel({ openLocationDialog = false, onCloseLocationDialog, userInfo, setUserInfo }) {
     const [isDialogOpen, setIsDialogOpen] = useState(openLocationDialog);
     const navigate = useNavigate();
     const [editing, setEditing] = useState(false);
@@ -26,6 +26,14 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
         animate: { opacity: 1, x: 0 },
         exit: { opacity: 0, x: -50 }
     };
+
+    if (!userInfo?.name || !userInfo?.email) {
+        return (
+            <div className="text-gray-500 text-center mt-8">
+                Cargando información del perfil…
+            </div>
+        );
+    }
 
     return (
         <>
@@ -90,10 +98,11 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
                                     {/* Editar Perfil */}
                                     <EditProfile
                                         userInfo={userInfo}
+                                        setUserInfo={setUserInfo}
                                         setEditing={setEditing}
                                     />
 
-                                    
+
                                 </motion.div>
                             )}
                         </AnimatePresence>

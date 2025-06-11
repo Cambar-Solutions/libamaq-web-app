@@ -81,6 +81,7 @@ export default function Account() {
                         openLocationDialog={openLocationDialog}
                         onCloseLocationDialog={() => setOpenLocationDialog(false)}
                         userInfo={userInfo}
+                        setUserInfo={setUserInfo}
                     />;
                 case "compras":
                     return <BuyPanel />;
@@ -140,7 +141,12 @@ export default function Account() {
                     userInfo={userInfo}
                 />
                 <div className="flex flex-1">
-                    <AppSidebarCustomer onViewChange={setCurrentView} currentView={currentView} />
+                    <AppSidebarCustomer 
+                    onViewChange={setCurrentView} 
+                    currentView={currentView} 
+                    setUserInfo={setUserInfo}
+                    userInfo={userInfo}
+                    />
                     <SidebarInset>
                         <div className="flex flex-1 flex-col gap-4 p-4">
                             {renderPanel()}

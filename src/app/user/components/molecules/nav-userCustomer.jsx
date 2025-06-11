@@ -16,18 +16,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { MdOutlineLogout } from "react-icons/md";
 import React, { useState, useEffect } from "react";
-import {jwtDecode} from "jwt-decode";
-import { getUserById } from "@/services/admin/userService"; 
 
-export function NavUserCustomer() {
-  const [userInfo, setUserInfo] = useState({ name: "null", email: "null@gmail.com" });
-
+export function NavUserCustomer({ userInfo, setUserInfo }) {
   const { isMobile } = useSidebar()
   const navigate = useNavigate();
 
@@ -42,26 +35,6 @@ export function NavUserCustomer() {
   const [user, setUser] = useState({ name: "null", email: "null@gmail.com" });
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
-
-  useEffect(() => {
-          const fetchUserData = async () => {
-              try {
-                  const token = localStorage.getItem("auth_token");
-                  if (!token) return;
-  
-                  const decoded = jwtDecode(token);
-                  const userId = decoded.sub;
-  
-                  const user = await getUserById(userId);
-                  setUserInfo({ name: user.name, email: user.email });
-                  setLoading(false); 
-              } catch (error) {
-                  console.error("Error al obtener el usuario:", error);
-              }
-          };
-  
-          fetchUserData();
-      }, []);
 
   return (
     <SidebarMenu>

@@ -4,14 +4,46 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import BtnDelete from "../atoms/BtnDelete";
 import BtnSave from "../atoms/BtnSave";
+import { updateUserProfile } from "@/services/admin/userService";
+import { jwtDecode } from "jwt-decode";
 
 
-export default function EditProfile({ userInfo, setEditing }) {
+export default function EditProfile({ userInfo, setUserInfo, setEditing }) {
     const [newName, setNewName] = useState("");
     const [newEmail, setNewEmail] = useState("");
     const [showCurrent, setShowCurrent] = useState(false);
     const [showNew, setShowNew] = useState(false);
     const [newPassword, setNewPassword] = useState("");
+
+    const handleUpdate = async () => {
+        try {
+            const token = localStorage.getItem("auth_token");
+            const decoded = jwtDecode(token);
+            const userId = decoded.sub;
+
+            const updatedData = {
+                name: newName || userInfo.name,
+                email: newEmail || userInfo.email,
+                ...(newPassword && { password: newPassword })
+            };
+
+            const updatedUser = await updateUserProfile(userId, updatedData);
+
+            // Verifica qué devuelve exactamente:
+            console.log("Respuesta actualizada:", updatedUser);
+
+            // Asegúrate de que el objeto tiene `name` y `email`
+            setUserInfo({
+                name: updatedUser.data.name,
+                email: updatedUser.data.email
+            });
+
+            setEditing(false);
+        } catch (error) {
+            console.error("Error al actualizar:", error);
+        }
+    };
+
 
     return (
         <div>
@@ -109,7 +141,7 @@ export default function EditProfile({ userInfo, setEditing }) {
                 <div className="flex justify-end space-x-3 mt-6">
                     <BtnDelete setEditing={setEditing} />
 
-                    <BtnSave setEditing={setEditing} />
+                    <BtnSave onClick={handleUpdate} />
                 </div>
             </div>
         </div>

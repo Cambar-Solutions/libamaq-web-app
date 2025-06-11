@@ -17,7 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { NavUserCustomer } from "../../../../components/nav-userCustomer"
+import { NavUserCustomer } from "./nav-userCustomer"
 
 const data = {
   optionsMenu: [
@@ -51,7 +51,7 @@ const data = {
   ],
 }
 
-export function AppSidebarCustomer({ onViewChange, currentView, ...props }) {
+export function AppSidebarCustomer({ onViewChange, currentView, userInfo, setUserInfo, ...props }) {
   return (
     <Sidebar
       className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
@@ -88,7 +88,10 @@ export function AppSidebarCustomer({ onViewChange, currentView, ...props }) {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        <NavUserCustomer />
+        <NavUserCustomer
+          userInfo={userInfo}
+          setUserInfo={setUserInfo}
+        />
 
       </SidebarFooter>
     </Sidebar>
