@@ -4,8 +4,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import BtnDelete from "../atoms/BtnDelete";
 import BtnSave from "../atoms/BtnSave";
-import { updateUserProfile } from "@/services/admin/userService";
+import { updateUserProfile, resetUserPassword } from "@/services/admin/userService";
 import { jwtDecode } from "jwt-decode";
+import BtnResetPassword from "../atoms/BtnResetPassword";
 
 
 export default function EditProfile({ userInfo, setUserInfo, setEditing }) {
@@ -43,6 +44,30 @@ export default function EditProfile({ userInfo, setUserInfo, setEditing }) {
             console.error("Error al actualizar:", error);
         }
     };
+
+    const handleReset = async () => {
+        try {
+            const token = localStorage.getItem("auth_token");
+            const decoded = jwtDecode(token);
+            const userId = decoded.sub;
+
+            // Validar antes de enviar
+            if (newPassword.trim() !== "") {
+                const response = await resetUserPassword(userId, newPassword);
+                console.log("Contraseña actualizada:", response);
+            }
+
+            // También podrías actualizar nombre o correo aquí (si tienes otro servicio)
+            // await updateUserProfile(userId, { name: newName, email: newEmail });
+
+            // Volver al perfil
+            setEditing(false);
+        } catch (error) {
+            console.error("Error al guardar cambios:", error);
+            alert("Hubo un error al actualizar la información");
+        }
+    };
+
 
 
     return (
@@ -142,6 +167,8 @@ export default function EditProfile({ userInfo, setUserInfo, setEditing }) {
                     <BtnDelete setEditing={setEditing} />
 
                     <BtnSave onClick={handleUpdate} />
+
+                    <BtnResetPassword onClick={handleReset} />
                 </div>
             </div>
         </div>
