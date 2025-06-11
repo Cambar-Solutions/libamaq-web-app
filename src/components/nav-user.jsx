@@ -40,11 +40,37 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
+import { getUserById } from "@/services/admin/userService";
+import { useEffect } from "react";
+import { useState } from "react";
 
 
 export function NavUser({ user }) {
+  const [userInfo, setUserInfo] = useState({ name: "null", lastName: "null", email: "null@gmail.com" });
+
   const { isMobile } = useSidebar()
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem("auth_token");
+        if (!token) return;
+
+        const decoded = jwtDecode(token);
+        const userId = decoded.sub;
+
+        const user = await getUserById(userId);
+        setUserInfo({ name: user.name, lastName: user.lastName, email: user.email });
+        setLoading(false);
+      } catch (error) {
+        console.error("Error al obtener el usuario:", error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -64,12 +90,12 @@ export function NavUser({ user }) {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarImage src={user.avatar} alt={userInfo.name} />
                 <AvatarFallback className="rounded-lg">CN</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate font-medium">{userInfo.name} {userInfo.lastName}</span>
+                <span className="truncate text-xs">{userInfo.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -83,12 +109,12 @@ export function NavUser({ user }) {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarImage src={user.avatar} alt={userInfo.name} />
                   <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate font-medium">{userInfo.name} {userInfo.lastName}</span>
+                  <span className="truncate text-xs">{userInfo.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
@@ -116,7 +142,7 @@ export function NavUser({ user }) {
                       </Label>
                       <Input
                         id="name"
-                        defaultValue={user.name}
+                        defaultValue={userInfo.name}
                         className="col-span-3"
                       />
                     </div>
@@ -126,7 +152,7 @@ export function NavUser({ user }) {
                       </Label>
                       <Input
                         id="email"
-                        defaultValue={user.email}
+                        defaultValue={userInfo.email}
                         className="col-span-3"
                       />
                     </div>
