@@ -7,7 +7,7 @@ export default function BtnSave({ onClick }) {
         <div>
             <Button onClick={onClick}
                 className="cursor-pointer bg-blue-500 hover:bg-blue-800 transition-colors duration-300">
-                Guardar
+                Guardar cambios
             </Button>
         </div>
     )

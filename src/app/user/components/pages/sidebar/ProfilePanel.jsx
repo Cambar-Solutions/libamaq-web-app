@@ -4,10 +4,9 @@ import { GrUserWorker } from "react-icons/gr";
 import { SquarePen } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
 import EditProfile from "../../forms/EditProfile";
-
 import SheetTerms from "../../organisms/SheetTerms";
 import DialogAddresses from "../../organisms/DialogAddresses";
-
+import toast, { Toaster } from "react-hot-toast";
 
 export default function ProfilePanel({ openLocationDialog = false, onCloseLocationDialog, userInfo, setUserInfo }) {
     const [isDialogOpen, setIsDialogOpen] = useState(openLocationDialog);
@@ -100,15 +99,39 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
                                         userInfo={userInfo}
                                         setUserInfo={setUserInfo}
                                         setEditing={setEditing}
+                                        toast={toast}
                                     />
-
-
                                 </motion.div>
                             )}
                         </AnimatePresence>
                     </div>
                 </div>
             </motion.div>
+            <Toaster
+                position="top-center"
+                reverseOrder={false}
+                toastOptions={{
+                    duration: 3000,
+                    style: {
+                        background: '#363636',
+                        color: '#fff',
+                    },
+                    success: {
+                        duration: 3000,
+                        iconTheme: {
+                            primary: '#10B981',
+                            secondary: '#fff',
+                        },
+                    },
+                    error: {
+                        duration: 4000,
+                        iconTheme: {
+                            primary: '#EF4444',
+                            secondary: '#fff',
+                        },
+                    },
+                }}
+            />
         </>
     );
 }

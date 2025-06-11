@@ -8,8 +8,7 @@ import { updateUserProfile, resetUserPassword } from "@/services/admin/userServi
 import { jwtDecode } from "jwt-decode";
 import BtnResetPassword from "../atoms/BtnResetPassword";
 
-
-export default function EditProfile({ userInfo, setUserInfo, setEditing }) {
+export default function EditProfile({ userInfo, setUserInfo, setEditing, toast }) {
     const [newName, setNewName] = useState("");
     const [newEmail, setNewEmail] = useState("");
     const [showCurrent, setShowCurrent] = useState(false);
@@ -25,13 +24,13 @@ export default function EditProfile({ userInfo, setUserInfo, setEditing }) {
             const updatedData = {
                 name: newName || userInfo.name,
                 email: newEmail || userInfo.email,
-                ...(newPassword && { password: newPassword })
             };
 
             const updatedUser = await updateUserProfile(userId, updatedData);
 
             // Verifica qué devuelve exactamente:
             console.log("Respuesta actualizada:", updatedUser);
+            toast.success("Perfil actualizado");
 
             // Asegúrate de que el objeto tiene `name` y `email`
             setUserInfo({
@@ -42,6 +41,7 @@ export default function EditProfile({ userInfo, setUserInfo, setEditing }) {
             setEditing(false);
         } catch (error) {
             console.error("Error al actualizar:", error);
+            toast.error("Error al actualizar el perfil");
         }
     };
 
@@ -55,6 +55,7 @@ export default function EditProfile({ userInfo, setUserInfo, setEditing }) {
             if (newPassword.trim() !== "") {
                 const response = await resetUserPassword(userId, newPassword);
                 console.log("Contraseña actualizada:", response);
+                toast.success("Contraseña actualizada");
             }
 
             // También podrías actualizar nombre o correo aquí (si tienes otro servicio)
@@ -64,7 +65,7 @@ export default function EditProfile({ userInfo, setUserInfo, setEditing }) {
             setEditing(false);
         } catch (error) {
             console.error("Error al guardar cambios:", error);
-            alert("Hubo un error al actualizar la información");
+            toast.error("Error al actualizar la contraseña ");
         }
     };
 
@@ -161,14 +162,11 @@ export default function EditProfile({ userInfo, setUserInfo, setEditing }) {
                             </button>
                         </div>
                     </div>
-
                 </div>
-                <div className="flex justify-end space-x-3 mt-6">
+                <div className="flex justify-end space-x-3">
                     <BtnDelete setEditing={setEditing} />
-
-                    <BtnSave onClick={handleUpdate} />
-
                     <BtnResetPassword onClick={handleReset} />
+                    <BtnSave onClick={handleUpdate} />
                 </div>
             </div>
         </div>
