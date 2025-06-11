@@ -16,10 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {jwtDecode} from "jwt-decode";
+import { getUserById } from "@/services/admin/userService"; 
 
 export function NavCustomer({ onViewChange }) {
   const navigate = useNavigate();
-  const [userData, setUserData] = useState({ name: "null", email: "null@gmail.com" });
+  const [userInfo, setUserInfo] = useState({ name: "null", email: "null@gmail.com" });
   const [editing, setEditing] = useState(false);
   const { toggleSidebar } = useSidebar();
   const drawerRef = useRef(null);
@@ -59,28 +61,24 @@ export function NavCustomer({ onViewChange }) {
   };
 
   useEffect(() => {
-    const raw = localStorage.getItem("user_data");
-    if (!raw) {
-      // Si no hay nada en localStorage, dejamos loading en false para que no siga mostrando "Cargando…"
-      console.warn("No se encontró 'user_data' en localStorage");
-      setLoading(false);
-      return;
-    }
+        const fetchUserData = async () => {
+            try {
+                const token = localStorage.getItem("auth_token");
+                if (!token) return;
 
-    // Parseamos el JSON y asignamos a userData
-    try {
-      const parsed = JSON.parse(raw);
-      setUserData({
-        name: parsed.name || "",
-        email: parsed.email || ""
-      });
-    } catch (e) {
-      console.error("No se pudo parsear user_data:", e);
-    }
+                const decoded = jwtDecode(token);
+                const userId = decoded.sub;
 
-    // ¡Muy importante! aquí decimos que ya terminamos de cargar, aunque haya error de parseo
-    setLoading(false);
-  }, []);
+                const user = await getUserById(userId);
+                setUserInfo({ name: user.name, email: user.email });
+                setLoading(false); 
+            } catch (error) {
+                console.error("Error al obtener el usuario:", error);
+            }
+        };
+
+        fetchUserData();
+    }, []);
 
   if (loading) {
     return (
@@ -212,7 +210,7 @@ export function NavCustomer({ onViewChange }) {
               <div className="relative">
                 {/* Texto */}
                 <span className="px-2.5 pr-4 py-1 bg-white text-black group-hover:text-white text-sm rounded-l-full group-hover:bg-gradient-to-l from-yellow-600 to-yellow-500/80 transition-colors duration-600 inline-block mr-8 max-w-[10em]">
-                  Hola {userData.name}
+                  Hola {userInfo.name}
                 </span>
 
                 {/* Círculo del icono */}

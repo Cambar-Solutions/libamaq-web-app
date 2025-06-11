@@ -2,8 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import BtnDelete from "../atoms/BtnDelete";
+import BtnSave from "../atoms/BtnSave";
 
-export default function EditProfile({ userData, setEditing }) {
+
+export default function EditProfile({ userInfo, setEditing }) {
     const [newName, setNewName] = useState("");
     const [newEmail, setNewEmail] = useState("");
     const [showCurrent, setShowCurrent] = useState(false);
@@ -28,7 +31,7 @@ export default function EditProfile({ userData, setEditing }) {
                 <div className="flex flex-col lg:flex-row bg-white p-5 rounded-lg leading-none gap-y-4 lg:gap-20 justify-around">
                     <div className="flex flex-col">
                         <Label className="text-sm text-gray-600 mb-1">Nombre actual:</Label>
-                        <span className="font-medium mb-3">{userData.name}</span>
+                        <span className="font-medium mb-3">{userInfo.name}</span>
                     </div>
                     <div className="flex flex-col">
                         <Label className="text-sm text-gray-600 mb-1">Nombre nuevo:</Label>
@@ -44,7 +47,7 @@ export default function EditProfile({ userData, setEditing }) {
                 <div className="flex flex-col lg:flex-row bg-white p-5 rounded-lg leading-none gap-y-4 lg:gap-20 justify-around">
                     <div className="flex flex-col">
                         <Label className="text-sm text-gray-600 mb-1">Correo actual:</Label>
-                        <span className="font-medium mb-3">{userData.email}</span>
+                        <span className="font-medium mb-3">{userInfo.email}</span>
                     </div>
                     <div className="flex flex-col">
                         <Label className="text-sm text-gray-600 mb-1">Correo nuevo:</Label>
@@ -101,6 +104,12 @@ export default function EditProfile({ userData, setEditing }) {
                             </button>
                         </div>
                     </div>
+
+                </div>
+                <div className="flex justify-end space-x-3 mt-6">
+                    <BtnDelete setEditing={setEditing} />
+
+                    <BtnSave setEditing={setEditing} />
                 </div>
             </div>
         </div>

@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export function SiteHeaderCustomer({ onViewChange, userData }) {
+export function SiteHeaderCustomer({ onViewChange, userInfo }) {
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const { toggleSidebar } = useSidebar();
@@ -204,7 +204,7 @@ export function SiteHeaderCustomer({ onViewChange, userData }) {
             <div className="relative">
               {/* Texto */}
               <span className="px-2.5 pr-4 py-1 bg-white text-black group-hover:text-white text-sm rounded-l-full group-hover:bg-gradient-to-l from-yellow-600 to-yellow-500/80 transition-colors duration-600 inline-block mr-8 max-w-[10em]">
-                Hola {userData.name}
+                Hola {userInfo.name}
               </span>
 
               {/* Círculo del icono */}

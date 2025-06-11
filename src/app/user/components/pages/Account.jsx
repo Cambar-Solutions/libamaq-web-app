@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import {jwtDecode} from "jwt-decode";
+import { getUserById } from "@/services/admin/userService"; 
 
 // Importar los paneles (verifica que las rutas sean correctas)
 import ProfilePanel from "@/app/user/components/pages/sidebar/ProfilePanel";
@@ -13,7 +15,7 @@ import { SiteHeaderCustomer } from "@/app/user/components/molecules/site-headerC
 import { AppSidebarCustomer } from "@/app/user/components/molecules/app-sidebarCustomer";
 
 export default function Account() {
-    const [userData, setUserData] = useState({ name: "null", email: "null@gmail.com" });
+    const [userInfo, setUserInfo] = useState({ name: "null", email: "null@gmail.com" });
     const [loading, setLoading] = useState(true);
 
     const location = useLocation();
@@ -23,6 +25,26 @@ export default function Account() {
     const [error, setError] = useState(null);
     const navigate = useNavigate();
 
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const token = localStorage.getItem("auth_token");
+                if (!token) return;
+
+                const decoded = jwtDecode(token);
+                const userId = decoded.sub;
+
+                const user = await getUserById(userId);
+                setUserInfo({ name: user.name, email: user.email });
+                setLoading(false); 
+            } catch (error) {
+                console.error("Error al obtener el usuario:", error);
+            }
+        };
+
+        fetchUserData();
+    }, []);
+    
     // Cuando cambia la location al navegar, inicializa ambos estados:
     useEffect(() => {
         if (location.state?.view) {
@@ -40,29 +62,6 @@ export default function Account() {
         console.log("Modo desarrollo: Acceso al dashboard sin autenticación");
     }, []);
 
-    useEffect(() => {
-        const raw = localStorage.getItem("user_data");
-        if (!raw) {
-            // Si no hay nada en localStorage, dejamos loading en false para que no siga mostrando "Cargando…"
-            console.warn("No se encontró 'user_data' en localStorage");
-            setLoading(false);
-            return;
-        }
-
-        // Parseamos el JSON y asignamos a userData
-        try {
-            const parsed = JSON.parse(raw);
-            setUserData({
-                name: parsed.name || "",
-                email: parsed.email || ""
-            });
-        } catch (e) {
-            console.error("No se pudo parsear user_data:", e);
-        }
-
-        // ¡Muy importante! aquí decimos que ya terminamos de cargar, aunque haya error de parseo
-        setLoading(false);
-    }, []);
 
     if (loading) {
         return (
@@ -72,6 +71,8 @@ export default function Account() {
         );
     }
 
+    
+
     const renderPanel = () => {
         try {
             switch (currentView) {
@@ -79,7 +80,7 @@ export default function Account() {
                     return <ProfilePanel
                         openLocationDialog={openLocationDialog}
                         onCloseLocationDialog={() => setOpenLocationDialog(false)}
-                        userData={userData}
+                        userInfo={userInfo}
                     />;
                 case "compras":
                     return <BuyPanel />;
@@ -136,7 +137,7 @@ export default function Account() {
             <SidebarProvider className="flex flex-col">
                 <SiteHeaderCustomer
                     onViewChange={setCurrentView}
-                    userData={userData}
+                    userInfo={userInfo}
                 />
                 <div className="flex flex-1">
                     <AppSidebarCustomer onViewChange={setCurrentView} currentView={currentView} />

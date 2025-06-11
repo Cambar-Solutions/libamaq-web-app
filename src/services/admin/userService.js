@@ -210,9 +210,9 @@ export const sendVerificationCode = async (userId) => {
 // Pero mantendré la existente y crearé un hook para ella.
 
 // Nueva función para actualizar perfil de usuario
-export const updateUserProfile = async (userId, profileData) => {
+export const updateUserProfile = async (id, profileData) => {
   try {
-    const response = await apiClient.put(`/l/users/update-profile/${userId}`, profileData);
+    const response = await apiClient.put(`/l/users/update-profile/${id}`, profileData);
     console.log('Respuesta completa updateUserProfile:', response);
     return response.data;
   } catch (error) {

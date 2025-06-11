@@ -4,12 +4,12 @@ import { GrUserWorker } from "react-icons/gr";
 import { SquarePen } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
 import EditProfile from "../../forms/EditProfile";
-import BtnDelete from "../../atoms/BtnDelete";
-import BtnSave from "../../atoms/BtnSave";
+
 import SheetTerms from "../../organisms/SheetTerms";
 import DialogAddresses from "../../organisms/DialogAddresses";
 
-export default function ProfilePanel({ openLocationDialog = false, onCloseLocationDialog, userData }) {
+
+export default function ProfilePanel({ openLocationDialog = false, onCloseLocationDialog, userInfo }) {
     const [isDialogOpen, setIsDialogOpen] = useState(openLocationDialog);
     const navigate = useNavigate();
     const [editing, setEditing] = useState(false);
@@ -47,8 +47,8 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
                             >
                                 <SquarePen size={18} className="text-gray-400" />
                             </button>
-                            <p className="text-gray-700 text-3xl font-semibold">{userData.name}</p>
-                            <p className="text-gray-500 text-sm">{userData.email}</p>
+                            <p className="text-gray-700 text-3xl font-semibold">{userInfo.name}</p>
+                            <p className="text-gray-500 text-sm">{userInfo.email}</p>
                         </div>
                     </div>
 
@@ -89,15 +89,11 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
                                 >
                                     {/* Editar Perfil */}
                                     <EditProfile
-                                        userData={userData}
+                                        userInfo={userInfo}
                                         setEditing={setEditing}
                                     />
 
-                                    <div className="flex justify-end space-x-3 mt-6">
-                                        <BtnDelete setEditing={setEditing} />
-
-                                        <BtnSave setEditing={setEditing} />
-                                    </div>
+                                    
                                 </motion.div>
                             )}
                         </AnimatePresence>

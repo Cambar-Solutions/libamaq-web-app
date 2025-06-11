@@ -1,7 +1,5 @@
 "use client";
-import { getCustomerUsers } from "@/services/admin/userService";
 import { ChevronsUpDown } from "lucide-react";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -24,9 +22,11 @@ import { Input } from "@/components/ui/input";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { MdOutlineLogout } from "react-icons/md";
 import React, { useState, useEffect } from "react";
+import {jwtDecode} from "jwt-decode";
+import { getUserById } from "@/services/admin/userService"; 
 
 export function NavUserCustomer() {
-  const [userData, setUserData] = useState({ name: "null", email: "null@gmail.com" });
+  const [userInfo, setUserInfo] = useState({ name: "null", email: "null@gmail.com" });
 
   const { isMobile } = useSidebar()
   const navigate = useNavigate();
@@ -44,27 +44,23 @@ export function NavUserCustomer() {
   const [editing, setEditing] = useState(false);
 
   useEffect(() => {
-          const raw = localStorage.getItem("user_data");
-          if (!raw) {
-              // Si no hay nada en localStorage, dejamos loading en false para que no siga mostrando "Cargando…"
-              console.warn("No se encontró 'user_data' en localStorage");
-              setLoading(false);
-              return;
-          }
+          const fetchUserData = async () => {
+              try {
+                  const token = localStorage.getItem("auth_token");
+                  if (!token) return;
   
-          // Parseamos el JSON y asignamos a userData
-          try {
-              const parsed = JSON.parse(raw);
-              setUserData({
-                  name: parsed.name || "",
-                  email: parsed.email || ""
-              });
-          } catch (e) {
-              console.error("No se pudo parsear user_data:", e);
-          }
+                  const decoded = jwtDecode(token);
+                  const userId = decoded.sub;
   
-          // ¡Muy importante! aquí decimos que ya terminamos de cargar, aunque haya error de parseo
-          setLoading(false);
+                  const user = await getUserById(userId);
+                  setUserInfo({ name: user.name, email: user.email });
+                  setLoading(false); 
+              } catch (error) {
+                  console.error("Error al obtener el usuario:", error);
+              }
+          };
+  
+          fetchUserData();
       }, []);
 
   return (
@@ -77,12 +73,12 @@ export function NavUserCustomer() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage alt={userData.name} />
+                <AvatarImage alt={userInfo.name} />
                 <AvatarFallback className="rounded-lg">CN</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{userData.name}</span>
-                <span className="truncate text-xs">{userData.email}</span>
+                <span className="truncate font-medium">{userInfo.name}</span>
+                <span className="truncate text-xs">{userInfo.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -96,12 +92,12 @@ export function NavUserCustomer() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={userData.name} />
+                  <AvatarImage src={user.avatar} alt={userInfo.name} />
                   <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{userData.name}</span>
-                  <span className="truncate text-xs">{userData.email}</span>
+                  <span className="truncate font-medium">{userInfo.name}</span>
+                  <span className="truncate text-xs">{userInfo.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>

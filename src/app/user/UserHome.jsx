@@ -7,8 +7,12 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { NavCustomer } from "@/app/user/components/molecules/NavCustomer";
 import SearchBar from "./components/organisms/SearchBar";
 import CardProducts from "./components/organisms/CardProducts";
+import {jwtDecode} from "jwt-decode";
+import { getUserById } from "@/services/admin/userService"; 
 
 export default function UserHome() {
+    const [userInfo, setUserInfo] = useState({ name: "null", email: "null@gmail.com" });
+
     const navigate = useNavigate();
     const { brand, category } = useParams();
     const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -46,6 +50,25 @@ export default function UserHome() {
             item.category?.toLowerCase() === selectedCategory.toLowerCase();
         return matchSearch && matchCat;
     });
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const token = localStorage.getItem("auth_token");
+                if (!token) return;
+
+                const decoded = jwtDecode(token);
+                const userId = decoded.sub;
+
+                const user = await getUserById(userId);
+                setUserInfo({ name: user.name, email: user.email });
+            } catch (error) {
+                console.error("Error al obtener el usuario:", error);
+            }
+        };
+
+        fetchUserData();
+    }, []);
 
     return (
         <>
