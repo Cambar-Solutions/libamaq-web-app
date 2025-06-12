@@ -1,25 +1,15 @@
 import apiClient from "../apiClient";
 
-// Obtener todos los productos activos (sin filtro de marca o categoría)
-export const getAllPublicProducts = async () => {
+// Obtener vista previa de productos activos
+export const getActiveProductPreviews = async () => {
   try {
-    const response = await apiClient.get("/l/products/active");
-    console.log('Respuesta completa de productos activos:', response.data);
+    const response = await apiClient.get("/l/products/preview", {
+      params: { status: "ACTIVE" },
+    });
+    console.log("Vista previa de productos activos:", response.data);
     return response.data;
   } catch (error) {
-    console.error('Error fetching public products:', error);
-    throw error.response?.data || error.message;
-  }
-};
-
-// Obtener un producto específico por ID
-export const getProductById = async (id) => {
-  try {
-    const response = await apiClient.get(`/l/products/active/${id}`);
-    console.log('Respuesta de producto activo por ID:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error(`Error fetching product with ID ${id}:`, error);
+    console.error("Error al obtener vista previa de productos activos:", error);
     throw error.response?.data || error.message;
   }
 };
@@ -28,46 +18,34 @@ export const getProductById = async (id) => {
 export const getProductsByBrand = async (brandId) => {
   try {
     const response = await apiClient.get(`/l/products/brand/${brandId}`);
-    console.log('Respuesta de productos por marca:', response.data);
+    console.log("Productos por marca:", response.data);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching products for brand ${brandId}:`, error);
+    console.error(`Error al obtener productos para la marca ${brandId}:`, error);
     throw error.response?.data || error.message;
   }
 };
 
-// Obtener productos por categoría y marca
-export const getProductsByCategoryAndBrand = async (categoryId, brandId) => {
+// Obtener un producto activo por ID
+export const getActiveProductById = async (productId) => {
   try {
-    const response = await apiClient.get(`/l/products/category/${categoryId}/brand/${brandId}`);
-    console.log('Respuesta de productos por categoría y marca:', response.data);
+    const response = await apiClient.get(`/l/products/active/${productId}`);
+    console.log(`Producto activo con ID ${productId}:`, response.data);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching products for category ${categoryId} and brand ${brandId}:`, error);
+    console.error(`Error al obtener producto con ID ${productId}:`, error);
     throw error.response?.data || error.message;
   }
 };
 
-// Obtener productos por categoría
-export const getProductsByCategory = async (categoryId) => {
+// Obtener productos más vendidos
+export const getTopSellingProductss = async () => {
   try {
-    const response = await apiClient.get(`/l/products/category/${categoryId}`);
-    console.log(`Respuesta de productos por categoría ${categoryId}:`, response.data);
-    return response.data;
+    const response = await apiClient.get("/l/products/stats/top-selling");
+    console.log("Productos más vendidos:", response.data);
+    return response.data.data; // ⬅️ Extrae solo la lista
   } catch (error) {
-    console.error(`Error fetching products for category ${categoryId}:`, error);
-    throw error.response?.data || error.message;
-  }
-};
-
-// Obtener vista previa de productos
-export const getProductPreviews = async () => {
-  try {
-    const response = await apiClient.get("/l/products/preview");
-    console.log('Respuesta completa de vista previa de productos:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching product previews:', error);
+    console.error("Error al obtener productos más vendidos:", error);
     throw error.response?.data || error.message;
   }
 };

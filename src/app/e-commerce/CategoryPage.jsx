@@ -6,102 +6,10 @@ import Nav2 from "@/components/Nav2";
 import { simulatedProductsByBrand } from "@data/simulatedProducts";
 import "@/styles/carousel-vanilla.css";
 import { Link } from "react-router-dom";
-import { getAllPublicProducts, getProductsByBrand, getProductsByCategoryAndBrand } from "@/services/public/productService";
+import { getTopSellingProductss } from "@/services/public/productService";
 import { getAllBrandsWithCategories } from "@/services/public/brandService";
-import { toast } from "sonner";
 
-const items = [
-  {
-    id: 1,
-    name: "Auriculares Inalámbricos Bluetooth",
-    shortDescription: "Auriculares con cancelación de ruido y micrófono",
-    price: 1299,
-    images: ["/images/auriculares.jpg"],
-  },
-  {
-    id: 2,
-    name: "Smartwatch Deportivo",
-    shortDescription: "Reloj inteligente con monitoreo cardíaco Lorem ipsum dolor sit amet consectetur adipisicing elit. Nam, quibusdam aliquid laboriosam sit nobis soluta error accusantium vel sint fugit officiis rerum, expedita nisi, et impedit ut quis similique deserunt?",
-    price: 2499,
-    images: ["/images/smartwatch.jpg"],
-  },
-  {
-    id: 3,
-    name: "Teclado Mecánico RGB",
-    shortDescription: "Teclado retroiluminado con switches azules",
-    price: 1899,
-    images: ["/images/teclado.jpg"],
-  },
-  {
-    id: 4,
-    name: "Cámara Web Full HD",
-    shortDescription: "Webcam 1080p con micrófono integrado",
-    price: 899,
-    images: ["/images/webcam.jpg"],
-  },
-  {
-    id: 5,
-    name: "Altavoz Bluetooth Portátil",
-    shortDescription: "Resistente al agua y con sonido envolvente",
-    price: 1599,
-    images: ["/images/altavoz.jpg"],
-  },
-  {
-    id: 6,
-    name: "Lámpara LED Escritorio",
-    shortDescription: "Luz blanca regulable con puerto USB",
-    price: 599,
-    images: ["/images/lampara.jpg"],
-  },
-  {
-    id: 7,
-    name: "Mouse Gamer Inalámbrico",
-    shortDescription: "Mouse con DPI ajustable y luces RGB",
-    price: 799,
-    images: ["/images/mouse.jpg"],
-  },
-  {
-    id: 8,
-    name: "Silla Ergonómica de Oficina",
-    shortDescription: "Silla ajustable con soporte lumbar",
-    price: 5599,
-    images: ["/images/silla.jpg"],
-  },
-  {
-    id: 9,
-    name: "Tablet 10 Pulgadas",
-    shortDescription: "Tablet con Android 12 y 64GB de almacenamiento",
-    price: 7299,
-    images: ["/images/tablet.jpg"],
-  },
-  {
-    id: 10,
-    name: "Monitor Curvo 27\"",
-    shortDescription: "Monitor con resolución Full HD y 75Hz",
-    price: 8799,
-    images: ["/images/monitor.jpg"],
-  }
-];
 
-// Función para obtener productos destacados de la API
-const getFeaturedProducts = async () => {
-  try {
-    const response = await getAllPublicProducts();
-    if (response && response.type === "SUCCESS" && Array.isArray(response.result)) {
-      // Filtrar solo productos activos
-      const activeProducts = response.result.filter(product => product.status === "ACTIVE");
-      console.log(`Productos activos: ${activeProducts.length} de ${response.result.length}`);
-
-      // Limitamos a 12 productos destacados
-      return activeProducts.slice(0, 12);
-    }
-    return [];
-  } catch (error) {
-    console.error("Error al obtener productos destacados:", error);
-    toast.error("Error al cargar productos destacados");
-    return [];
-  }
-};
 
 const getTopSellingProducts = () => {
   const topSelling = [];
@@ -124,7 +32,12 @@ const getTopSellingProducts = () => {
   return topSelling;
 };
 
+// Importamos el componente LoadingScreen
+const LoadingScreen = React.lazy(() => import('@/components/LoadingScreen'));
+
 export default function CategoryPage() {
+  const [items, setItems] = useState([]);
+
   const sectionRef = useRef(null);
   const carouselRef = useRef(null);
   const carouselTrackRef = useRef(null);
@@ -178,6 +91,21 @@ export default function CategoryPage() {
     setCurrentSlide((prev) => (prev === 0 ? carouselImages.length - 1 : prev - 1));
   }, [carouselImages.length]);
 
+
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const products = await getTopSellingProductss();
+        setItems(products);
+      } catch (error) {
+        console.error("Error cargando productos más vendidos:", error);
+      }
+    }
+
+    fetchProducts();
+  }, []);
+
+  
   // Configurar autoplay
   useEffect(() => {
     if (!autoplayEnabled) return;
@@ -339,30 +267,6 @@ export default function CategoryPage() {
     }
   }, [carouselImagesLoaded, productsImagesLoaded]);
 
-  // Cargar productos destacados al iniciar
-  useEffect(() => {
-    const loadFeaturedProducts = async () => {
-      setIsLoading(true);
-      try {
-        const products = await getFeaturedProducts();
-        setFeaturedProducts(products);
-
-        // Calcular el número total de imágenes a cargar (carrusel + productos)
-        const totalImages = carouselImages.length + products.length;
-        setTotalImagesToLoad(totalImages);
-        console.log(`Total de imágenes a cargar: ${totalImages}`);
-      } catch (error) {
-        console.error("Error al cargar productos destacados:", error);
-        // En caso de error, mostrar el contenido de todas formas
-        setProductsImagesLoaded(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadFeaturedProducts();
-  }, []);
-
   // Cargar marcas con categorías
   useEffect(() => {
     const loadBrandsWithCategories = async () => {
@@ -501,9 +405,6 @@ export default function CategoryPage() {
 
   // Si no se han cargado todas las imágenes, mostrar el LoadingScreen
   if (!showContent) {
-    // Importamos el componente LoadingScreen
-    const LoadingScreen = React.lazy(() => import('@/components/LoadingScreen'));
-
     // Renderizamos un div oculto con las imágenes del carrusel para precargarlas
     return (
       <>
@@ -648,10 +549,7 @@ export default function CategoryPage() {
                                 {items.map((item, index) => (
                                   <div
                                     key={`top-${index}`}
-                                    className={`carousel-item p-0 flex-shrink-0 sm:px-0 md:px-0 
-      ${index === 0 ? 'rounded-l-lg' : ''} 
-      ${index === items.length - 1 ? 'rounded-r-lg' : ''} 
-      group-hover:bg-zinc-300`}
+                                    className={`carousel-item p-0 flex-shrink-0 sm:px-0 md:px-0 ${index === 0 ? 'rounded-l-lg' : ''} ${index === items.length - 1 ? 'rounded-r-lg' : ''} group-hover:bg-zinc-300`}
                                     style={{
                                       paddingInline: 0,
                                       width: `${Math.max(
@@ -664,7 +562,7 @@ export default function CategoryPage() {
                                       )}%`
                                     }}
                                   >
-                                    <Link to={`/producto/${item.id}`} key={index} className="w-full p-0 m-0 space-x-0 ">
+                                    <Link to={`/producto/${item.product_id}`} key={index} className="w-full p-0 m-0 space-x-0 ">
                                       <motion.div
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
@@ -696,10 +594,10 @@ export default function CategoryPage() {
                                           {/* Contenido: 2/3 del ancho en móvil, ancho completo en desktop */}
                                           <div className="w-2/3 sm:w-full p-3 sm:p-4 flex-grow flex flex-col justify-between sm:h-[150px]">
                                             <div>
-                                              <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={item.name}>{item.name}</h3>
-                                              <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={item.shortDescription}>{item.shortDescription}</p>
+                                              <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={item.product_name}>{item.product_name}</h3>
+                                              <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={item.product_description}>{item.product_description}</p>
                                             </div>
-                                            {item.price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${item.price.toLocaleString()}</p>}
+                                            {item.product_price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${item.product_price}</p>}
                                           </div>
                                         </div>
                                       </motion.div>
@@ -842,7 +740,7 @@ export default function CategoryPage() {
                                         <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={item.name}>{item.name}</h3>
                                         <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={item.shortDescription}>{item.shortDescription}</p>
                                       </div>
-                                      {item.price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${item.price.toLocaleString()}</p>}
+                                      {item.price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${item.price}</p>}
                                     </div>
                                   </div>
                                 </motion.div>
