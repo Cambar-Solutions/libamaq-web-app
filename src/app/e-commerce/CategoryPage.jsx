@@ -69,6 +69,7 @@ export default function CategoryPage() {
 
   // Estados para el carrusel de productos más vendidos
   const [carouselPosition, setCarouselPosition] = useState(0);
+  const [carouselPositionTwo, setCarouselPositionTwo] = useState(0);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
   const [touchEnd, setTouchEnd] = useState(0);
@@ -557,7 +558,7 @@ export default function CategoryPage() {
 
                         <div className="">
                           {/* Contenedor principal del carrusel con estilo minimalista */}
-                          <div className="relative group ">
+                          <div className="relative group">
                             {/* Contenedor del carrusel */}
                             <div className="carousel-container overflow-hidden px-0 sm:px-0 rounded-lg">
                               {/* Pista del carrusel */}
@@ -586,7 +587,7 @@ export default function CategoryPage() {
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ duration: 0.3 }}
-                                        className="card group-hover:blur-[0px] hover:!rounded-lg group-hover:!opacity-40 hover:!blur-none hover:!opacity-100 bg-white hover:shadow-md transition-all duration-500 overflow-hidden w-full cursor-pointer hover:scale-105 group-hover:rounded-none"
+                                        className="cardgroup-hover:blur-[0px] hover:!rounded-lg group-hover:!opacity-40 hover:!blur-none hover:!opacity-100 bg-white hover:shadow-md transition-all duration-500 overflow-hidden w-full cursor-pointer hover:scale-105 group-hover:rounded-none"
                                       >
                                         {/* Diseño adaptativo: horizontal en móvil, vertical en tablet/desktop */}
                                         <div className="flex flex-row sm:flex-col w-full">
@@ -690,9 +691,9 @@ export default function CategoryPage() {
             )}
           </div>
 
-          <div className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full mx-auto flex-grow">
+          <div className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full flex-grow">
             {/* Contenedor principal con ancho ajustado */}
-            <div className="w-full mx-auto">
+            <div className="w-full">
               {activeItems.length > 0 ? (
                 <div className="mb-10">
                   <div className="flex items-center justify-between mb-4">
@@ -703,17 +704,20 @@ export default function CategoryPage() {
                     {/* Contenedor principal del carrusel con estilo minimalista */}
                     <div className="relative group">
                       {/* Contenedor del carrusel */}
-                      <div className="carousel-container overflow-hidden px-0 sm:px-0 bg-white rounded-lg">
+                      <div className="carousel-container overflow-hidden px-0 sm:px-0 rounded-lg">
                         {/* Pista del carrusel */}
                         <div
-                          className="carousel-track flex transition-transform duration-300 ease-out justify-start"
-                          style={{ transform: `translateX(-${carouselPosition}%)` }}
+                          className="carousel-track group p-0 flex transition-transform duration-300 ease-out justify-start"
+                          style={{
+                            paddingBottom: 14, paddingTop: 9, 
+                            transform: `translateX(-${carouselPositionTwo}%)` }}
                         >
                           {activeItems.map((activeItem, index) => (
                             <div
                               key={`top-${index}`}
-                              className="carousel-item flex-shrink-0 p-0 m-0 sm:px-0 md:px-0 hover:scale-103"
+                              className={`carousel-item p-0 flex-shrink-0 sm:px-0 md:px-0 ${index === 0 ? 'rounded-l-lg' : ''} ${index === activeItem.length - 1 ? 'rounded-r-lg' : ''} group-hover:bg-zinc-300`}
                               style={{
+                                paddingInline: 0,
                                 width: `${Math.max(
                                   20,
                                   window.innerWidth >= 1280 ? 20 : // 5 items
@@ -724,12 +728,12 @@ export default function CategoryPage() {
                                 )}%`
                               }}
                             >
-                              <Link to={`/producto/${activeItem.id}`} key={index} className="w-full hover:scale-103 p-0">
+                              <Link to={`/producto/${activeItem.id}`} key={index} className="w-full p-0 m-0 space-x-0">
                                 <motion.div
                                   initial={{ opacity: 0 }}
                                   animate={{ opacity: 1 }}
                                   transition={{ duration: 0.3 }}
-                                  className="bg-white rounded-lg hover:shadow-md transition-all duration-500 overflow-hidden w-full cursor-pointer p-0"
+                                  className="cardgroup-hover:blur-[0px] hover:!rounded-lg group-hover:!opacity-40 hover:!blur-none hover:!opacity-100 bg-white hover:shadow-md transition-all duration-500 overflow-hidden w-full cursor-pointer hover:scale-105 group-hover:rounded-none"
                                 >
                                   {/* Diseño adaptativo: horizontal en móvil, vertical en tablet/desktop */}
                                   <div className="flex flex-row sm:flex-col w-full">
@@ -783,8 +787,8 @@ export default function CategoryPage() {
                               else if (window.innerWidth < 640) itemWidth = 100; // 1 item completo en móvil
 
                               // Calcular nueva posición
-                              const newPosition = Math.max(0, carouselPosition - itemWidth);
-                              setCarouselPosition(newPosition);
+                              const newPosition = Math.max(0, carouselPositionTwo - itemWidth);
+                              setCarouselPositionTwo(newPosition);
 
                               // Actualizar visibilidad de flechas
                               setShowLeftArrow(newPosition > 0);
@@ -809,8 +813,8 @@ export default function CategoryPage() {
 
                               // Calcular nueva posición y límite máximo
                               const maxPosition = Math.max(0, (topSellingProducts.length * itemWidth) - 100);
-                              const newPosition = Math.min(maxPosition, carouselPosition + itemWidth);
-                              setCarouselPosition(newPosition);
+                              const newPosition = Math.min(maxPosition, carouselPositionTwo + itemWidth);
+                              setCarouselPositionTwo(newPosition);
 
                               // Actualizar visibilidad de flechas
                               setShowLeftArrow(true);
