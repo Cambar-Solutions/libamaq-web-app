@@ -6,10 +6,8 @@ import Nav2 from "@/components/Nav2";
 import { simulatedProductsByBrand } from "@data/simulatedProducts";
 import "@/styles/carousel-vanilla.css";
 import { Link } from "react-router-dom";
-import { getTopSellingProductss } from "@/services/public/productService";
+import { getTopSellingProductss, getActiveProductPreviews } from "@/services/public/productService";
 import { getAllBrandsWithCategories } from "@/services/public/brandService";
-
-
 
 const getTopSellingProducts = () => {
   const topSelling = [];
@@ -36,7 +34,9 @@ const getTopSellingProducts = () => {
 const LoadingScreen = React.lazy(() => import('@/components/LoadingScreen'));
 
 export default function CategoryPage() {
-  const [items, setItems] = useState([]);
+  const [topSellingItems, setTopSellingItems] = useState([]);
+  const [activeItems, setActiveItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const sectionRef = useRef(null);
   const carouselRef = useRef(null);
@@ -91,12 +91,12 @@ export default function CategoryPage() {
     setCurrentSlide((prev) => (prev === 0 ? carouselImages.length - 1 : prev - 1));
   }, [carouselImages.length]);
 
-
+  // Obtener todos los productos más vendidos
   useEffect(() => {
     async function fetchProducts() {
       try {
         const products = await getTopSellingProductss();
-        setItems(products);
+        setTopSellingItems(products);
       } catch (error) {
         console.error("Error cargando productos más vendidos:", error);
       }
@@ -105,7 +105,26 @@ export default function CategoryPage() {
     fetchProducts();
   }, []);
 
-  
+  // Obtener todos los productos activos
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const data = await getActiveProductPreviews();
+        const products = Array.isArray(data.data) ? data.data : [];
+        console.log("Productos activos recibidos:", data);
+        setActiveItems(products);
+        setShowRightArrow(products.length > 1);
+      } catch (error) {
+        console.error("Error cargando productos activos:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+
   // Configurar autoplay
   useEffect(() => {
     if (!autoplayEnabled) return;
@@ -546,10 +565,10 @@ export default function CategoryPage() {
                                 className="carousel-track group p-0 flex transition-transform duration-300 ease-out justify-start"
                                 style={{ paddingBottom: 14, paddingTop: 9, transform: `translateX(-${carouselPosition}%)` }}
                               >
-                                {items.map((item, index) => (
+                                {topSellingItems.map((topSellingItem, index) => (
                                   <div
                                     key={`top-${index}`}
-                                    className={`carousel-item p-0 flex-shrink-0 sm:px-0 md:px-0 ${index === 0 ? 'rounded-l-lg' : ''} ${index === items.length - 1 ? 'rounded-r-lg' : ''} group-hover:bg-zinc-300`}
+                                    className={`carousel-item p-0 flex-shrink-0 sm:px-0 md:px-0 ${index === 0 ? 'rounded-l-lg' : ''} ${index === topSellingItem.length - 1 ? 'rounded-r-lg' : ''} group-hover:bg-zinc-300`}
                                     style={{
                                       paddingInline: 0,
                                       width: `${Math.max(
@@ -562,7 +581,7 @@ export default function CategoryPage() {
                                       )}%`
                                     }}
                                   >
-                                    <Link to={`/producto/${item.product_id}`} key={index} className="w-full p-0 m-0 space-x-0 ">
+                                    <Link to={`/producto/${topSellingItem.product_id}`} key={index} className="w-full p-0 m-0 space-x-0 ">
                                       <motion.div
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
@@ -582,7 +601,7 @@ export default function CategoryPage() {
 
                                             {/* La imagen real del producto */}
                                             <img
-                                              src={item.images && item.images.length > 0 ? item.images[0] : "/placeholder-product.png"}
+                                              src={topSellingItem.images && topSellingItem.images.length > 0 ? topSellingItem.images[0] : "/placeholder-product.png"}
                                               alt=""
                                               className="max-h-full max-w-full object-contain relative z-10"
                                               onError={(e) => {
@@ -594,10 +613,10 @@ export default function CategoryPage() {
                                           {/* Contenido: 2/3 del ancho en móvil, ancho completo en desktop */}
                                           <div className="w-2/3 sm:w-full p-3 sm:p-4 flex-grow flex flex-col justify-between sm:h-[150px]">
                                             <div>
-                                              <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={item.product_name}>{item.product_name}</h3>
-                                              <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={item.product_description}>{item.product_description}</p>
+                                              <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={topSellingItem.product_name}>{topSellingItem.product_name}</h3>
+                                              <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={topSellingItem.product_description}>{topSellingItem.product_description}</p>
                                             </div>
-                                            {item.product_price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${item.product_price}</p>}
+                                            {topSellingItem.product_price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${topSellingItem.product_price}</p>}
                                           </div>
                                         </div>
                                       </motion.div>
@@ -674,7 +693,7 @@ export default function CategoryPage() {
           <div className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full mx-auto flex-grow">
             {/* Contenedor principal con ancho ajustado */}
             <div className="w-full mx-auto">
-              {items.length > 0 ? (
+              {activeItems.length > 0 ? (
                 <div className="mb-10">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold text-gray-500">Todos los productos</h2>
@@ -690,7 +709,7 @@ export default function CategoryPage() {
                           className="carousel-track flex transition-transform duration-300 ease-out justify-start"
                           style={{ transform: `translateX(-${carouselPosition}%)` }}
                         >
-                          {items.map((item, index) => (
+                          {activeItems.map((activeItem, index) => (
                             <div
                               key={`top-${index}`}
                               className="carousel-item flex-shrink-0 p-0 m-0 sm:px-0 md:px-0 hover:scale-103"
@@ -705,7 +724,7 @@ export default function CategoryPage() {
                                 )}%`
                               }}
                             >
-                              <Link to={`/producto/${item.id}`} key={index} className="w-full hover:scale-103 p-0">
+                              <Link to={`/producto/${activeItem.id}`} key={index} className="w-full hover:scale-103 p-0">
                                 <motion.div
                                   initial={{ opacity: 0 }}
                                   animate={{ opacity: 1 }}
@@ -725,7 +744,7 @@ export default function CategoryPage() {
 
                                       {/* La imagen real del producto */}
                                       <img
-                                        src={item.images && item.images.length > 0 ? item.images[0] : "/placeholder-product.png"}
+                                        src={activeItem.images && activeItem.images.length > 0 ? activeItem.images[0] : "/placeholder-product.png"}
                                         alt=""
                                         className="max-h-full max-w-full object-contain relative z-10"
                                         onError={(e) => {
@@ -737,10 +756,10 @@ export default function CategoryPage() {
                                     {/* Contenido: 2/3 del ancho en móvil, ancho completo en desktop */}
                                     <div className="w-2/3 sm:w-full p-3 sm:p-4 flex-grow flex flex-col justify-between sm:h-[150px]">
                                       <div>
-                                        <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={item.name}>{item.name}</h3>
-                                        <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={item.shortDescription}>{item.shortDescription}</p>
+                                        <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={activeItem.name}>{activeItem.name}</h3>
+                                        <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={activeItem.description}>{activeItem.description}</p>
                                       </div>
-                                      {item.price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${item.price}</p>}
+                                      {activeItem.price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${activeItem.price}</p>}
                                     </div>
                                   </div>
                                 </motion.div>
