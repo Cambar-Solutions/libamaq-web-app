@@ -22,103 +22,6 @@ import { toast } from "sonner";
 
 // Los brands ahora se cargarán desde la API
 
-const brandDetails = {
-  bosch: {
-    name: "Bosch",
-    description:
-      "Líder mundial en herramientas eléctricas profesionales y accesorios. Bosch ofrece soluciones innovadoras y de alta calidad para todo tipo de aplicaciones.",
-    products: [
-      "Rotomartillos y taladros",
-      "Amoladoras",
-      "Herramienta para madera",
-      "Herramientas de medición",
-      "Herramienta a Batería 12V y 18V",
-      "Limpieza y jardineria",
-    ],
-    image: "/logo_bosch.png",
-  },
-  makita: {
-    name: "Makita",
-    description:
-      "Reconocida por su durabilidad y rendimiento excepcional. Makita ofrece una amplia gama de herramientas eléctricas y accesorios para profesionales.",
-    products: [
-      "Taladros inalámbricos",
-      "Amoladoras",
-      "Herramienta para madera",
-      "Herramientas de medición",
-      "Herramienta a Batería 12V y 18V",
-      "Limpieza y jardineria",
-    ],
-    image: "/makita.png",
-  },
-  husqvarna: {
-    name: "Husqvarna",
-    description:
-      "Especialistas en equipos para exteriores y construcción. Husqvarna combina potencia y precisión en cada una de sus herramientas.",
-    products: [
-      "Cortadoras de concreto",
-      "Apisonadoras o bailarinas",
-      "Placas Vibratorias",
-      "Rodillos Vibratorios",
-      "Desbaste y pulido de concreto",
-      "Barrenadores",
-      "Accesorios y Herramientas de diamante",
-    ],
-    image: "/husq.png",
-  },
-  honda: {
-    name: "Honda",
-    description:
-      "Líder en motores y equipos de fuerza. Honda ofrece productos confiables y eficientes para diversas aplicaciones.",
-    products: ["Generadores", "Motobombas 2 y 3 pulgadas", "Motores de 6.5hp, 9hp y 14hp"],
-    image: "/honda-fuerza.png",
-  },
-  marshalltown: {
-    name: "Marshalltown",
-    description:
-      "Expertos en herramientas manuales para construcción. Marshalltown es sinónimo de calidad y precisión en el acabado.",
-    products: [
-      "Llanas tipo avión",
-      "Llanas tipo fresno",
-      "Texturizadores 1/2, 3/4 y 1 pulgada",
-      "Regla Vibratoria",
-      "Llanas Manuales",
-      "Orilladores",
-      "Barredoras de concreto",
-      "Cortadores de concreto",
-    ],
-    image: "/marshalltown.png",
-  },
-  mpower: {
-    name: "Mpower",
-    description:
-      "Innovación y calidad en herramientas eléctricas. Mpower ofrece soluciones efectivas para profesionales y entusiastas.",
-    products: [
-      "Motores a gasolina 6.5, 9, 15hp.",
-      "Motobombas 2 y 3 pulgadas.",
-      "Generadores de luz de 3,500w a 8000w.",
-      "Soldadora 200 A.",
-      "Discos de 14 in para corte de concreto",
-      "Accesorios",
-    ],
-    image: "/m-power.webp",
-  },
-  cipsa: {
-    name: "Cipsa",
-    description:
-      "Cipsa es especialistas en herramientas y maquinaria para construcción.",
-    products: [
-      "Revolvedoras para concreto de 1 y 2 sacos",
-      "Vibradores a gasolina para concreto",
-      "Rodillos Vibratorios",
-      "Apisonadores o bailarinas",
-      "Torres de ilumiación",
-      "Soldadoras",
-      "Bombas para concreto",
-    ],
-    image: "/cipsa.avif",
-  },
-};
 
 const DrawerCategories = forwardRef((props, ref) => {
   const [open, setOpen] = useState(false);
@@ -132,27 +35,44 @@ const DrawerCategories = forwardRef((props, ref) => {
     const loadBrands = async () => {
       try {
         setLoading(true);
-        const response = await getAllBrandsWithCategories();
-        if (response && response.type === "SUCCESS" && Array.isArray(response.result)) {
-          // Filtrar solo marcas activas
-          const activeBrands = response.result.filter(brand => brand.status === "ACTIVE");
-          setBrands(activeBrands.map(brand => ({
-            id: brand.id,
-            name: brand.name,
-            slogan: brand.description || "",
-            logo: brand.url || "/placeholder-brand.png",
-            color: brand.color || "#0000FF",
-            categories: brand.categories.filter(cat => cat.status === "ACTIVE")
-          })));
+        const { data: brandsData, error } = await getAllBrandsWithCategories();
+        
+        if (error) {
+          throw new Error(error.message || 'Error al cargar marcas');
         }
+  
+        if (!brandsData || !Array.isArray(brandsData)) {
+          throw new Error('Formato de datos inválido');
+        }
+  
+        // Transformar los datos de la API al formato esperado
+        const transformedBrands = brandsData
+          .filter(brand => brand.status === "ACTIVE")
+          .map(brand => {
+            // Filtrar solo categorías activas
+            const activeCategories = (brand.brandCategories || [])
+              .filter(bc => bc.category?.status === "ACTIVE")
+              .map(bc => bc.category);
+  
+            return {
+              id: brand.id,
+              name: brand.name,
+              slogan: brand.description || "",
+              logo: brand.url || "/placeholder-brand.png",
+              color: brand.color || "#0000FF",
+              categories: activeCategories
+            };
+          });
+  
+        setBrands(transformedBrands);
       } catch (error) {
         console.error("Error al cargar marcas:", error);
-        toast.error("Error al cargar marcas");
+        toast.error(error.message || "Error al cargar marcas");
       } finally {
         setLoading(false);
       }
     };
-
+  
     loadBrands();
   }, []);
 

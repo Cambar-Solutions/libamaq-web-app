@@ -3,7 +3,7 @@ import apiClient from "../apiClient";
 // Obtener todas las marcas con sus categorías activas
 export const getAllBrandsWithCategories = async () => {
   try {
-    const { data } = await apiClient.get("/l/brands/categories");
+    const { data } = await apiClient.get("/l/brands/active");
     console.log('Respuesta completa de marcas con categorías:', data);
     return data;
   } catch (error) {
