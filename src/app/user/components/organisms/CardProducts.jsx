@@ -8,7 +8,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 
-export default function CardProducts({ sectionRef, brand, selectedCategory, isLoading, filteredProducts }) {
+export default function CardProducts({ sectionRef, brand, selectedCategory, isLoading, filteredProducts, activeItems }) {
     return (
         <div className="max-w-full mx-auto">
             <div ref={sectionRef} className="max-w-8xl w-full mx-auto px-4">
@@ -27,9 +27,9 @@ export default function CardProducts({ sectionRef, brand, selectedCategory, isLo
                     <div className="w-full mx-auto">
                         {isLoading ? (
                             <p className="text-center">Cargando productos...</p>
-                        ) : filteredProducts.length > 0 ? (
+                        ) : activeItems.length > 0 ? (
                             <div className="cursor-pointer grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-8 mb-8">
-                                {filteredProducts.map((item, index) => (
+                                {activeItems.map((item, index) => (
                                     <Link to={`/producto/${item.id}`} key={index} className="w-full">
                                         <Card className="h-[25em] flex flex-col bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden mx-auto w-full cursor-pointer">
                                             <CardHeader>

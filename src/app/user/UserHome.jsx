@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getAllPublicProducts } from "@/services/public/productService";
-import { toast } from "sonner";
+import { getActiveProductPreviews } from "@/services/public/productService";
+import toast, { Toaster } from "react-hot-toast";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { NavCustomer } from "@/app/user/components/molecules/NavCustomer";
 import SearchBar from "./components/organisms/SearchBar";
 import CardProducts from "./components/organisms/CardProducts";
-import {jwtDecode} from "jwt-decode";
-import { getUserById } from "@/services/admin/userService"; 
+import { jwtDecode } from "jwt-decode";
+import { getUserById } from "@/services/admin/userService";
 
 export default function UserHome() {
     const [userInfo, setUserInfo] = useState({ name: "null", email: "null@gmail.com" });
+    const [activeItems, setActiveItems] = useState([]);
 
     const navigate = useNavigate();
     const { brand, category } = useParams();
@@ -19,27 +20,10 @@ export default function UserHome() {
     const [isLoading, setIsLoading] = useState(true);
     const sectionRef = useRef(null);
     const [selectedCategory, setSelectedCategory] = useState(category || "");
+    const [loading, setLoading] = useState(true);
 
-    // Carga productos destacados
-    useEffect(() => {
-        const loadProds = async () => {
-            setIsLoading(true);
-            try {
-                const resp = await getAllPublicProducts();
-                if (resp?.type === "SUCCESS" && Array.isArray(resp.result)) {
-                    const active = resp.result.filter(p => p.status === "ACTIVE");
-                    setFeaturedProducts(active);
-                } else {
-                    toast.error("No se pudo cargar productos");
-                }
-            } catch {
-                toast.error("Error al cargar productos");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        loadProds();
-    }, []);
+    // Obtener todos los productos activos
+
 
     // Filtrado por búsqueda y categoría
     const filteredProducts = featuredProducts.filter(item => {
@@ -70,6 +54,24 @@ export default function UserHome() {
         fetchUserData();
     }, []);
 
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                const data = await getActiveProductPreviews();
+                const products = Array.isArray(data.data) ? data.data : [];
+                console.log("Productos activos recibidos:", data);
+                setActiveItems(products);
+                // setShowRightArrow(products.length > 1);
+            } catch (error) {
+                console.error("Error cargando productos activos:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProducts();
+    }, []);
+
     return (
         <>
             <SidebarProvider>
@@ -97,11 +99,38 @@ export default function UserHome() {
                                 selectedCategory={selectedCategory}
                                 isLoading={isLoading}
                                 filteredProducts={filteredProducts}
+                                activeItems={activeItems}
                             />
                         </div>
                     </motion.div>
                 </div>
             </SidebarProvider>
+
+            <Toaster
+                position="top-center"
+                reverseOrder={false}
+                toastOptions={{
+                    duration: 3000,
+                    style: {
+                        background: '#363636',
+                        color: '#fff',
+                    },
+                    success: {
+                        duration: 3000,
+                        iconTheme: {
+                            primary: '#10B981',
+                            secondary: '#fff',
+                        },
+                    },
+                    error: {
+                        duration: 4000,
+                        iconTheme: {
+                            primary: '#EF4444',
+                            secondary: '#fff',
+                        },
+                    },
+                }}
+            />
         </>
     );
 }

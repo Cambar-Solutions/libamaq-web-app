@@ -21,7 +21,7 @@ export default function SearchBar({ selectedCategory, setSelectedCategory, brand
                     setAllCategories(cats);
                 }
             } catch {
-                toast.error("Error al cargar categorías");
+                // toast.error("Error al cargar categorías");
             }
         };
         loadCats();
