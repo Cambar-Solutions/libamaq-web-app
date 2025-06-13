@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, CreditCard, Clock, ArrowLeft, Share2, Shield, Home, ChevronLeft } from "lucide-react";
-import { getProductById } from "@/services/public/productService";
+import { getActiveProductById } from "@/services/public/productService";
 import ShareProduct from "@/components/ShareProduct";
 import { toast } from "sonner";
 import Nav2 from "@/components/Nav2";
@@ -70,7 +70,7 @@ export default function PaymentMethod() {
         const fetchProductDetails = async () => {
             setLoading(true);
             try {
-                const response = await getProductById(id);
+                const response = await getActiveProductById(id);
                 if (response && response.type === "SUCCESS") {
                     console.log('Producto obtenido:', response.result);
                     setProduct(response.result);
