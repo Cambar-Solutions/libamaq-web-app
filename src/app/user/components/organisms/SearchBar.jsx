@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ArrowLeft, Search, Filter } from "lucide-react";
 
-export default function SearchBar({ selectedCategory, setSelectedCategory, brand, category }) {
-    const [searchTerm, setSearchTerm] = useState("");
+export default function SearchBar({ selectedCategory, setSelectedCategory, brand, category, searchTerm, setSearchTerm }) {
     const [showFilters, setShowFilters] = useState(false);
     const [allCategories, setAllCategories] = useState([]);
     const handleBack = () => navigate("/tienda");

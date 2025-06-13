@@ -21,20 +21,19 @@ export default function UserHome() {
     const sectionRef = useRef(null);
     const [selectedCategory, setSelectedCategory] = useState(category || "");
     const [loading, setLoading] = useState(true);
-
-    // Obtener todos los productos activos
-
+    const [searchTerm, setSearchTerm] = useState("");
 
     // Filtrado por búsqueda y categoría
-    const filteredProducts = featuredProducts.filter(item => {
+    const filteredProducts = activeItems.filter(item => {
         const matchSearch = !searchTerm ||
             item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.shortDescription?.toLowerCase().includes(searchTerm.toLowerCase());
+            item.description?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchCat = !selectedCategory ||
             item.category?.toLowerCase() === selectedCategory.toLowerCase();
         return matchSearch && matchCat;
     });
 
+    // Obtiene el usuario
     useEffect(() => {
         const fetchUserData = async () => {
             try {
@@ -54,6 +53,7 @@ export default function UserHome() {
         fetchUserData();
     }, []);
 
+    // Obtener todos los productos activos
     useEffect(() => {
         const fetchProducts = async () => {
             try {
@@ -90,6 +90,8 @@ export default function UserHome() {
                                 setSelectedCategory={setSelectedCategory}
                                 brand={brand}
                                 category={category}
+                                searchTerm={searchTerm}
+                                setSearchTerm={setSearchTerm}
                             />
 
                             {/* CARDS */}
