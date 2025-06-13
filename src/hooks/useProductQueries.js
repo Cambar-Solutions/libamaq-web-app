@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { 
-  getAllPublicProducts, 
-  getProductById, 
+  getActiveProductPreviews, 
+  getActiveProductById, 
   getProductsByBrand, 
-  getProductsByCategoryAndBrand 
+  // getProductsByCategoryAndBrand 
 } from '@/services/public/productService';
 
 /**
@@ -12,7 +12,7 @@ import {
 export function useAllProducts() {
   return useQuery({
     queryKey: ['products', 'all'],
-    queryFn: getAllPublicProducts,
+    queryFn: getActiveProductPreviews,
     staleTime: 5 * 60 * 1000, // 5 minutos
     cacheTime: 60 * 60 * 1000, // 1 hora
   });
@@ -25,7 +25,7 @@ export function useAllProducts() {
 export function useProductById(id) {
   return useQuery({
     queryKey: ['products', 'detail', id],
-    queryFn: () => getProductById(id),
+    queryFn: () => getActiveProductById(id),
     staleTime: 5 * 60 * 1000, // 5 minutos
     cacheTime: 60 * 60 * 1000, // 1 hora
     enabled: !!id, // Solo ejecutar la consulta si hay un ID
@@ -46,17 +46,17 @@ export function useProductsByBrand(brandId) {
   });
 }
 
-/**
- * Hook para obtener productos por categoría y marca
- * @param {string|number} categoryId - ID de la categoría
- * @param {string|number} brandId - ID de la marca
- */
-export function useProductsByCategoryAndBrand(categoryId, brandId) {
-  return useQuery({
-    queryKey: ['products', 'category', categoryId, 'brand', brandId],
-    queryFn: () => getProductsByCategoryAndBrand(categoryId, brandId),
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    cacheTime: 60 * 60 * 1000, // 1 hora
-    enabled: !!categoryId && !!brandId, // Solo ejecutar si hay categoryId y brandId
-  });
-}
+// /**
+//  * Hook para obtener productos por categoría y marca
+//  * @param {string|number} categoryId - ID de la categoría
+//  * @param {string|number} brandId - ID de la marca
+//  */
+// export function useProductsByCategoryAndBrand(categoryId, brandId) {
+//   return useQuery({
+//     queryKey: ['products', 'category', categoryId, 'brand', brandId],
+//     queryFn: () => getProductsByCategoryAndBrand(categoryId, brandId),
+//     staleTime: 5 * 60 * 1000, // 5 minutos
+//     cacheTime: 60 * 60 * 1000, // 1 hora
+//     enabled: !!categoryId && !!brandId, // Solo ejecutar si hay categoryId y brandId
+//   });
+// }
