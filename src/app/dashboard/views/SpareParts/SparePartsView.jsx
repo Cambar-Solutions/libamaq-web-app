@@ -33,8 +33,8 @@ export default function SparePartsView() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Manejador para la búsqueda
-  const handleSearch = (e) => {
-    setSearchTerm(e.target ? e.target.value : e);
+  const handleSearch = (searchValue) => {
+    setSearchTerm(searchValue);
   };
 
   // Abrir diálogo para crear un nuevo repuesto

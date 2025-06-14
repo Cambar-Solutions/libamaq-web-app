@@ -3,6 +3,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from '@tanstack/react-query';
+import { SearchBar } from "@/components/ui/SearchBar";
 import { getAllProducts, updateProduct, getProductPreviews, deleteProduct } from "@/services/admin/productService";
 import { getAllBrands, getAllActiveBrands } from "@/services/admin/brandService";
 import { toast } from "sonner";
@@ -330,9 +331,14 @@ export function ProductsView() {
   }
 
   return (
-    <>
+    <div className="space-y-4 mt-3">
+      {/* Título */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold tracking-tight">Gestión de Productos</h2>
+      </div>
+
       {/* Responsive Header */}
-      <div className="mb-6 space-y-4">
+      <div className="space-y-4">
         {/* Controles superiores - filtros y búsqueda */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-center">
           {/* Select de marcas */}
@@ -381,12 +387,11 @@ export function ProductsView() {
           
           {/* Barra de búsqueda */}
           <div className="w-full">
-            <input
-              type="text"
-              placeholder="Buscar por nombre o ID"
-              className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
+            <SearchBar
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={setSearchTerm}
+              placeholder="Buscar por nombre o ID"
+              className="w-full"
             />
           </div>
           
@@ -420,6 +425,6 @@ export function ProductsView() {
           </motion.div>
         ))}
       </div>
-    </>
+    </div>
   );
 }

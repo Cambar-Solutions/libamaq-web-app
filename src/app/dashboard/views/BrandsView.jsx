@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { SearchBar } from "@/components/ui/SearchBar";
 import {
   useAllBrands,
   useActiveBrands,
@@ -714,17 +715,21 @@ export function BrandsView() {
   };
 
   return (
-    <>
+    <div className="space-y-4 mt-3">
+      {/* Título */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold tracking-tight">Gestión de Marcas</h2>
+      </div>
+
       {/* Cabecera con controles */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="w-full sm:w-64">
-            <input
-              type="text"
-              placeholder="Buscar marcas..."
+            <SearchBar
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-blue-200"
+              onChange={setSearchTerm}
+              placeholder="Buscar marcas..."
+              className="w-full"
             />
           </div>
           <Button
@@ -1002,6 +1007,6 @@ export function BrandsView() {
           {filteredBrands.map(renderBrandCard)}
         </div>
       )}
-    </>
+    </div>
   );
 }

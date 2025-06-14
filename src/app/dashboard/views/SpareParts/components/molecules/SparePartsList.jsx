@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, Edit, Trash2, Plus, Smartphone, Table2 } from 'lucide-react';
+import { Edit, Trash2, Plus, Smartphone, Table2 } from 'lucide-react';
+import { SearchBar } from "@/components/ui/SearchBar";
 import SparePartsCardView from './SparePartsCardView';
 
 /**
@@ -85,18 +85,23 @@ export const SparePartsList = ({
     return sortConfig.direction === 'asc' ? '↑' : '↓';
   };
 
+  // Función para manejar la búsqueda
+  const handleSearch = (searchValue) => {
+    onSearchChange(searchValue);
+  };
+
   // Barra de búsqueda
   const renderSearchBar = () => (
-    <div className="relative flex-1 max-w-2xl">
-      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      <Input
-        type="search"
-        placeholder="Buscar repuestos..."
-        className="pl-9 w-full"
-        value={searchTerm}
-        onChange={(e) => onSearchChange(e.target.value)}
-        disabled={isLoading}
-      />
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+      <div className="w-full md:max-w-md">
+        <SearchBar 
+          value={searchTerm}
+          onChange={onSearchChange}
+          onSearchClick={handleSearch}
+          placeholder="Buscar repuestos..."
+          className="w-full"
+        />
+      </div>
     </div>
   );
 
@@ -185,70 +190,91 @@ export const SparePartsList = ({
         />
       ) : (
         /* Vista de tabla (escritorio) */
-        <div className="rounded-md border overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="relative overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
+            <Table className="min-w-full divide-y divide-gray-200">
+              <TableHeader className="bg-gray-50">
+                <TableRow className="border-b border-gray-200">
                   <TableHead 
-                    className="cursor-pointer hover:bg-accent"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-150"
                     onClick={() => handleSort('name')}
                   >
-                    Nombre {getSortIcon('name')}
+                    <div className="flex items-center">
+                      <span>Nombre</span>
+                      <span className="ml-1">{getSortIcon('name')}</span>
+                    </div>
                   </TableHead>
-                  <TableHead>Descripción</TableHead>
+                  <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Descripción
+                  </TableHead>
                   <TableHead 
-                    className="text-right cursor-pointer hover:bg-accent"
+                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-150"
                     onClick={() => handleSort('price')}
                   >
-                    Precio {getSortIcon('price')}
+                    <div className="flex justify-end items-center">
+                      <span>Precio</span>
+                      <span className="ml-1">{getSortIcon('price')}</span>
+                    </div>
                   </TableHead>
                   <TableHead 
-                    className="text-right cursor-pointer hover:bg-accent"
+                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-150"
                     onClick={() => handleSort('stock')}
                   >
-                    Stock {getSortIcon('stock')}
+                    <div className="flex justify-end items-center">
+                      <span>Stock</span>
+                      <span className="ml-1">{getSortIcon('stock')}</span>
+                    </div>
                   </TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="w-[100px]">Acciones</TableHead>
+                  <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Estado
+                  </TableHead>
+                  <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="bg-white divide-y divide-gray-200">
                 {sortedSpareParts.map((sparePart) => (
-                  <TableRow key={sparePart.id}>
-                    <TableCell className="font-medium">{sparePart.name}</TableCell>
-                    <TableCell className="text-muted-foreground line-clamp-1 max-w-[200px]">
+                  <TableRow 
+                    key={sparePart.id}
+                    className="hover:bg-gray-50 transition-colors duration-150"
+                  >
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {sparePart.name}
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-sm text-gray-500 line-clamp-1 max-w-[200px]">
                       {sparePart.description}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right text-gray-900">
                       {formatCurrency(sparePart.price)}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-right">
                       <Badge 
                         variant="outline" 
-                        className="border-purple-500 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/30"
+                        className="bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
                       >
                         {sparePart.stock} unidades
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap">
                       <Badge 
                         variant={
                           sparePart.status === 'ACTIVE' ? 'default' : 
                           sparePart.status === 'INACTIVE' ? 'secondary' : 'destructive'
                         }
+                        className="font-medium"
                       >
                         {sparePart.status === 'ACTIVE' ? 'Activo' : 
                          sparePart.status === 'INACTIVE' ? 'Inactivo' : 'Sin stock'}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-1">
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end space-x-1">
                         <Button 
                           variant="ghost" 
                           size="icon" 
                           onClick={() => onEdit(sparePart)}
-                          className="h-8 w-8"
+                          className="h-8 w-8 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -256,7 +282,7 @@ export const SparePartsList = ({
                           variant="ghost" 
                           size="icon" 
                           onClick={() => onDelete(sparePart)}
-                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          className="h-8 w-8 text-red-600 hover:text-red-900 hover:bg-red-50"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
