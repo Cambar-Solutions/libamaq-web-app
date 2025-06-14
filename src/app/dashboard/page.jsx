@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { ProductsView } from "./views/ProductsView";
 import { OrdersView } from "./views/OrdersView";
 import { ClientsView } from "./views/ClientsView";
 import { EmployeesView } from "./views/EmployeesView";
@@ -13,10 +12,9 @@ import { StatsView } from "./views/StatsView";
 import { BrandsView } from "./views/BrandsView";
 import { CategoriesView } from "./views/CategoriesView";
 import SparePartsView from "./views/SpareParts/SparePartsView";
-import { toast } from "sonner";
 
 export default function Page() {
-  const [currentView, setCurrentView] = useState("productos");
+  const [currentView, setCurrentView] = useState("repuestos"); 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -31,8 +29,6 @@ export default function Page() {
   const renderView = () => {
     try {
       switch (currentView) {
-        case "productos":
-          return <ProductsView />;
         case "repuestos":
           return <SparePartsView />;
         case "pedidos":
@@ -50,7 +46,7 @@ export default function Page() {
         case "categorias":
           return <CategoriesView />;
         default:
-          return <ProductsView />;
+          return <SparePartsView />; 
       }
     } catch (error) {
       console.error("Error al renderizar vista:", error);
@@ -60,9 +56,9 @@ export default function Page() {
           <p className="text-red-500 text-lg">Error al cargar la vista</p>
           <button 
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            onClick={() => setCurrentView("productos")}
+            onClick={() => setCurrentView("repuestos")} 
           >
-            Intentar cargar vista de productos
+            Intentar cargar vista de repuestos
           </button>
         </div>
       );
