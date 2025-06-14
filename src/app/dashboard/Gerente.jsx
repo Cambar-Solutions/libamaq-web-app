@@ -1,10 +1,9 @@
-// Page.jsx (dashboard)
+// Gerente.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { ProductsView } from "./views/ProductsView";
 import { OrdersView } from "./views/OrdersView";
 import { ClientsView } from "./views/ClientsView";
 import { EmployeesView } from "./views/EmployeesView";
@@ -13,11 +12,12 @@ import { StatsView } from "./views/StatsView";
 import { BrandsView } from "./views/BrandsView";
 import { CategoriesView } from "./views/CategoriesView";
 import SparePartsView from "./views/SpareParts/SparePartsView";
+import ProductsView from "./views/Products/ProductsView";
 import { toast } from "sonner";
 import { AppSidebarGerente } from "@/components/app-sidebarGerente";
 
 export default function Gerente() {
-  const [currentView, setCurrentView] = useState("productos");
+  const [currentView, setCurrentView] = useState("pedidos"); 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -51,7 +51,7 @@ export default function Gerente() {
         case "empleados":
           return <EmployeesView />;
         default:
-          return <ProductsView />;
+          return <OrdersView />; 
       }
     } catch (error) {
       console.error("Error al renderizar vista:", error);
@@ -61,9 +61,9 @@ export default function Gerente() {
           <p className="text-red-500 text-lg">Error al cargar la vista</p>
           <button 
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            onClick={() => setCurrentView("productos")}
+            onClick={() => setCurrentView("pedidos")} 
           >
-            Intentar cargar vista de productos
+            Intentar cargar vista de pedidos
           </button>
         </div>
       );
@@ -98,10 +98,8 @@ export default function Gerente() {
         <SiteHeader />
         <div className="flex flex-1">
           <AppSidebarGerente onViewChange={setCurrentView} currentView={currentView} />
-          <SidebarInset>
-            <div className="flex flex-1 flex-col gap-4 p-4">
-              {renderView()}
-            </div>
+          <SidebarInset className="flex-1 p-6">
+            {renderView()}
           </SidebarInset>
         </div>
       </SidebarProvider>
