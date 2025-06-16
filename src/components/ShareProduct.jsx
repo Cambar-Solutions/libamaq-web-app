@@ -14,50 +14,51 @@ import MetaDecorator from './MetaDecorator';
  */
 const ShareProduct = ({ product, baseUrl = window.location.origin }) => {
   const [showOptions, setShowOptions] = useState(false);
-  
+
   if (!product) return null;
-  
+
   // Construir la URL completa del producto
   const productUrl = `${baseUrl}/producto/${product.id}`;
-  
+
   // Preparar los datos para compartir
   const title = product.name || 'Producto Libamaq';
   const description = product.shortDescription || product.description?.general || product.description?.details || 'Descubre este producto en nuestra tienda';
-  
+
   // Obtener la URL de la imagen del producto
   // La API devuelve las imágenes en el array multimedia
   let imageUrl = '';
-  
-  if (product.multimedia && product.multimedia.length > 0) {
-    imageUrl = product.multimedia[0].url;
-    console.log('Imagen encontrada en multimedia:', imageUrl);
+
+  if (product.media && product.media.length > 0) {
+    const activeImage = product.media.find(m => m.fileType === "IMAGE" && m.status === "ACTIVE");
+    imageUrl = activeImage?.url || '';
+    console.log('Imagen encontrada en media:', imageUrl);
   } else if (product.image) {
     imageUrl = product.image;
     console.log('Imagen encontrada en product.image:', imageUrl);
   } else {
     console.warn('No se encontró imagen para el producto:', product.id);
   }
-  
+
   // Verificar que la URL de la imagen sea válida y accesible
   if (imageUrl) {
     // Asegurarse de que la URL sea absoluta
     if (!imageUrl.startsWith('http')) {
       imageUrl = `${window.location.origin}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
     }
-    
+
     console.log('URL final de la imagen para compartir:', imageUrl);
   }
-  
+
   // Log para depuración
-  console.log('Datos completos para compartir:', { 
-    title, 
-    description, 
-    imageUrl, 
+  console.log('Datos completos para compartir:', {
+    title,
+    description,
+    imageUrl,
     productUrl,
     productId: product.id,
     multimedia: product.multimedia
   });
-  
+
   // Función para copiar el enlace al portapapeles
   const copyToClipboard = () => {
     navigator.clipboard.writeText(productUrl)
@@ -69,7 +70,7 @@ const ShareProduct = ({ product, baseUrl = window.location.origin }) => {
         toast.error('No se pudo copiar el enlace');
       });
   };
-  
+
   // Funciones para compartir en redes sociales
   const shareOnWhatsApp = () => {
     // Formatear el precio con separador de miles y dos decimales
@@ -81,42 +82,42 @@ const ShareProduct = ({ product, baseUrl = window.location.origin }) => {
         minimumFractionDigits: 2
       }).format(price);
     };
-    
+
     // Calcular precio con descuento si aplica
     const finalPrice = product.discount && product.discount > 0
       ? product.price - (product.price * (product.discount / 100))
       : product.price;
-    
+
     // Crear un mensaje personalizado con detalles del producto
     const whatsappText = encodeURIComponent(
       `¡Mira este producto en Libamaq! ${title}${product.shortDescription ? ` - ${product.shortDescription}` : ''} ${formatPrice(finalPrice)}\n${productUrl}`
     );
-    
+
     window.open(`https://wa.me/?text=${whatsappText}`, '_blank');
     setShowOptions(false);
   };
-  
+
   const shareOnFacebook = () => {
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(productUrl)}`, '_blank');
     setShowOptions(false);
   };
-  
+
   const shareOnTwitter = () => {
     const twitterText = encodeURIComponent(`${title} - ${description}`);
     window.open(`https://twitter.com/intent/tweet?text=${twitterText}&url=${encodeURIComponent(productUrl)}`, '_blank');
     setShowOptions(false);
   };
-  
+
   return (
     <>
       {/* Componente que maneja los metadatos Open Graph */}
-      <MetaDecorator 
+      <MetaDecorator
         title={title}
         description={description}
         imageUrl={imageUrl}
         url={productUrl}
       />
-      
+
       {/* Botón para mostrar opciones de compartir */}
       <div className="relative">
         <Button
@@ -128,7 +129,7 @@ const ShareProduct = ({ product, baseUrl = window.location.origin }) => {
         >
           <Share2 className="h-4 w-4" />
         </Button>
-        
+
         {/* Opciones de compartir */}
         {showOptions && (
           <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">

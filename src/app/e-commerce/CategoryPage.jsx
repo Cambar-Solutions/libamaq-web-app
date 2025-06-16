@@ -84,12 +84,16 @@ export default function CategoryPage() {
 
   // Función para navegar al siguiente slide
   const nextSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev === carouselImages.length - 1 ? 0 : prev + 1));
+    setCurrentSlide(
+      // (prev) => (prev === carouselImages.length - 1 ? 0 : prev + 1)
+    );
   }, [carouselImages.length]);
 
   // Función para navegar al slide anterior
   const prevSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev === 0 ? carouselImages.length - 1 : prev - 1));
+    setCurrentSlide(
+      // (prev) => (prev === 0 ? carouselImages.length - 1 : prev - 1)
+    );
   }, [carouselImages.length]);
 
   // Obtener todos los productos más vendidos

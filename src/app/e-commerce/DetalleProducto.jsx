@@ -32,7 +32,8 @@ const DetalleProducto = () => {
   } = useProductById(id);
 
   // Extraer el producto de la respuesta de la API
-  const product = productData?.type === "SUCCESS" ? productData.result : null;
+  const product = productData && productData.status === 200 ? productData.data : null;
+
 
   // Función para regresar a la página de categorías
   const handleBack = () => {
@@ -49,8 +50,8 @@ const DetalleProducto = () => {
 
   // Establecer la imagen principal cuando el producto se carga
   useEffect(() => {
-    if (product?.multimedia?.length > 0) {
-      setMainImage(product.multimedia[0].url);
+    if (product?.media?.length > 0) {
+      setMainImage(product.media[0].url);
     }
   }, [product]);
 
@@ -124,7 +125,7 @@ const DetalleProducto = () => {
             <div className="flex flex-row gap-4">
               {/* Miniaturas verticales */}
               <div className="hidden sm:flex flex-col space-y-2 overflow-y-auto max-h-96">
-                {product?.multimedia?.map((img, index) => (
+                {product?.media?.map((img, index) => (
                   <img
                     key={index}
                     src={img.url}
@@ -134,7 +135,7 @@ const DetalleProducto = () => {
                     onClick={() => setMainImage(img.url)}
                   />
                 ))}
-                {(!product?.multimedia || product.multimedia.length === 0) && (
+                {(!product?.media || product.media.length === 0) && (
                   <img
                     src="/placeholder-product.png"
                     alt="Imagen no disponible"
@@ -151,8 +152,8 @@ const DetalleProducto = () => {
                 </div>
                 <div className="w-full h-80 sm:h-96 flex justify-center items-center bg-white rounded-lg">
                   <img
-                    src={product?.multimedia && product.multimedia.length > 0
-                      ? mainImage || product.multimedia[0].url
+                    src={product?.media && product.media.length > 0
+                      ? mainImage || product.media[0].url
                       : "/placeholder-product.png"}
                     alt={product?.name}
                     className="max-h-full max-w-full object-contain"
@@ -163,7 +164,7 @@ const DetalleProducto = () => {
 
             {/* Miniaturas horizontales (solo móvil) */}
             <div className="flex sm:hidden mt-4 space-x-2 overflow-x-auto pb-2">
-              {product?.multimedia?.map((img, index) => (
+              {product?.media?.map((img, index) => (
                 <img
                   key={index}
                   src={img.url}
@@ -173,7 +174,7 @@ const DetalleProducto = () => {
                   onClick={() => setMainImage(img.url)}
                 />
               ))}
-              {(!product?.multimedia || product.multimedia.length === 0) && (
+              {(!product?.media || product.media.length === 0) && (
                 <img
                   src="/placeholder-product.png"
                   alt="Imagen no disponible"
