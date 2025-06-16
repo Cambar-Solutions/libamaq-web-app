@@ -13,6 +13,8 @@ import toast from 'react-hot-toast';
 import { useProducts } from './hooks/useProducts';
 import ProductCard from './components/atoms/ProductCard';
 import { getAllActiveBrands } from '../../../../../src/services/admin/brandService';
+import { getActiveCategories } from '../../../../../src/services/admin/categoryService';
+
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import {
   AlertDialog,
@@ -131,6 +133,7 @@ const ProductsView = () => {
       technicalData: [],
     }
   });
+  
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -165,27 +168,43 @@ const ProductsView = () => {
   }, [error]);
 
   // Estados locales (sin tipos)
-  const [brands, setBrands] = useState([]);
+  const [brands, setBrands] = useState([]);      
+  const [loading, setLoading] = useState(true);  
   const [selectedBrand, setSelectedBrand] = useState('ALL');
-  const categories = [...new Set(products?.flatMap(p => p.categories || []).filter(Boolean) || [])];
+  const [categories, setCategories] = useState([]);
+  const [dataLoading, setDataLoading] = useState(true); // Nuevo estado para la carga inicial de datos
 
-  // Fetch active brands
-  useEffect(() => {
-    const fetchBrands = async () => {
-      try {
-        const response = await getAllActiveBrands();
-        if (response && Array.isArray(response.data)) {
-          setBrands(response.data);
-        } else {
-          toast.error('Formato de respuesta inesperado al cargar las marcas');
-        }
-      } catch (error) {
-        toast.error('Error al cargar las marcas');
+
+  // Fetch active brands and categories
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const [brandsResponse, categoriesResponse] = await Promise.all([
+        getAllActiveBrands(),
+        getActiveCategories() // <-- ¡Asegúrate de tener esta función y servicio!
+      ]);
+
+      if (brandsResponse && Array.isArray(brandsResponse.data)) {
+        setBrands(brandsResponse.data);
+      } else {
+        toast.error('Formato de respuesta inesperado al cargar las marcas.');
       }
-    };
 
-    fetchBrands();
-  }, []);
+      if (categoriesResponse && Array.isArray(categoriesResponse.data)) {
+        setCategories(categoriesResponse.data);
+      } else {
+        toast.error('Formato de respuesta inesperado al cargar las categorías.');
+      }
+    } catch (error) {
+      console.error("Error al cargar marcas o categorías:", error);
+      toast.error('Error al cargar las marcas o categorías.');
+    } finally {
+      setDataLoading(false); // Marca la carga como completa
+    }
+  };
+
+  fetchData();
+}, []);
 
   // Handle brand filter change
   const handleBrandFilterChange = (value) => {
@@ -470,11 +489,12 @@ const ProductsView = () => {
                 <ProductCard
                   key={product.id}
                   product={product}
-                  onEdit={openEditDialog}
+                  onEdit={updateProduct}
                   onDelete={openDeleteDialog}
                   onView={(product) => {
                     console.log('Ver producto:', product);
                   }}
+                  isCreating={isCreating}
                 />
               ))}
             </div>

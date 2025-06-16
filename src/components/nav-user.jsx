@@ -49,8 +49,9 @@ import { useState } from "react";
 export function NavUser({ user }) {
   const [userInfo, setUserInfo] = useState({ name: "null", lastName: "null", email: "null@gmail.com" });
 
-  const { isMobile } = useSidebar()
+  const { isMobile } = useSidebar();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserData = async () => {

@@ -1,10 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter
+} from '@/components/ui/dialog';
 import { Edit, Trash2, ShoppingCart, Box, DollarSign, Tag, Info } from 'lucide-react';
 import PropTypes from 'prop-types';
+import EditProductFormDialog from './EditProductFormDialog';
 
 // Función local para formatear moneda
 const formatCurrency = (amount) => {
@@ -36,14 +46,28 @@ const getStatusText = (status) => {
   }
 };
 
-const ProductCard = ({ 
-  product, 
+const ProductCard = ({
+  product,
   onEdit, 
   onDelete,
-  onView
+  onView,
+  brands,
+  categories,
+  isCreating
 }) => {
   const mainImage = product.media?.find(m => m.fileType === 'IMAGE')?.url || '/placeholder-product.jpg';
-  
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    
+
+
+  const handleProductUpdate = async (productId, updatedData) => {
+    console.log("Updating product:", productId, updatedData);
+    if (onEdit) {
+      await onEdit(productId, updatedData); // Call the onEdit prop with ID and data
+    }
+    setIsEditDialogOpen(false); // Close dialog after successful update
+  };
+
   return (
     <Card className="w-full flex flex-col hover:shadow-md transition-shadow duration-200 h-full">
       <CardHeader className="p-3 pb-1 border-b">
@@ -51,7 +75,7 @@ const ProductCard = ({
           <CardTitle className="text-base font-medium line-clamp-1">
             {product.name}
           </CardTitle>
-          <Badge 
+          <Badge
             variant={product.status === 'ACTIVE' ? 'default' : 'secondary'}
             className="ml-2 text-xs h-5"
           >
@@ -93,10 +117,10 @@ const ProductCard = ({
               <div className="flex items-center text-xs text-muted-foreground mb-0.5">
                 <span className="truncate">Marca</span>
               </div>
-              <Badge 
-                className="text-xs font-normal truncate w-fit" 
-                style={{ 
-                  backgroundColor: `${product.brand.color}15`, 
+              <Badge
+                className="text-xs font-normal truncate w-fit"
+                style={{
+                  backgroundColor: `${product.brand.color}15`,
                   color: product.brand.color,
                   borderColor: product.brand.color
                 }}
@@ -124,8 +148,8 @@ const ProductCard = ({
           {onView && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="icon"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -141,31 +165,47 @@ const ProductCard = ({
               </TooltipContent>
             </Tooltip>
           )}
+
+          {/* Edit Dialog Integration */}
           {onEdit && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(product);
-                  }}
-                  className="h-7 w-7"
-                >
-                  <Edit className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="bg-gray-600 text-white text-xs px-2 py-1 rounded-sm shadow-md">
-                Editar
-              </TooltipContent>
-            </Tooltip>
+            <Dialog>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      // onClick is removed from here as DialogTrigger handles it
+                      className="h-7 w-7"
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                    </Button>
+                  </DialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="bg-gray-600 text-white text-xs px-2 py-1 rounded-sm shadow-md">
+                  Editar
+                </TooltipContent>
+              </Tooltip>
+
+              <DialogContent className="sm:max-w-[425px]">
+                <EditProductFormDialog
+                product={product}
+                  brands={brands}
+                  categories={categories}
+                  onSave={handleProductUpdate}
+                  onClose={() => setIsEditDialogOpen(false)} // Pass onClose to allow form to close dialog
+                  isCreating={isCreating}
+                />
+                
+              </DialogContent>
+            </Dialog>
           )}
+
           {onDelete && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="icon"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -205,7 +245,8 @@ ProductCard.propTypes = {
     ),
     brand: PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-      name: PropTypes.string
+      name: PropTypes.string,
+      color: PropTypes.string, // Assuming brand also has a color property
     }),
     category: PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -214,7 +255,9 @@ ProductCard.propTypes = {
   }).isRequired,
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
-  onView: PropTypes.func
+  onView: PropTypes.func,
+  brands: PropTypes.array.isRequired, // PropType for brands
+  categories: PropTypes.array.isRequired // PropType for categories
 };
 
 export default ProductCard;
