@@ -32,13 +32,19 @@ export const useProducts = () => {
     error,
     refetch: refetchProducts 
   } = useQuery({
-    queryKey: ['products'],
+    queryKey: ['products', filters],
     queryFn: async () => {
-      const response = await getProductPreviews();
-      return response.data || [];
+      const response = await getProductPreviews(filters);
+      // Asegurarse de manejar tanto el formato antiguo como el nuevo de la respuesta
+      return Array.isArray(response) ? response : (response?.data || []);
     },
     initialData: []
   });
+  
+  // Forzar un refetch cuando los filtros cambien
+  useEffect(() => {
+    refetchProducts();
+  }, [filters, refetchProducts]);
 
   // Consulta para obtener todos los productos (sin paginación)
   const { data: allProducts = [] } = useQuery({

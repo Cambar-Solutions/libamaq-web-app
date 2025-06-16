@@ -77,11 +77,23 @@ export const getActiveProducts = async (page = 1, size = 50) => {
   }
 };
 
-// Obtener vista previa de productos
-export const getProductPreviews = async () => {
+// Obtener vista previa de productos con filtros opcionales
+export const getProductPreviews = async (filters = {}) => {
   try {
-    console.log("Llamando a GET /l/products/preview...");
-    const response = await apiClient.get("/l/products/preview");
+    console.log("Llamando a GET /l/products/preview con filtros:", filters);
+    
+    // Construir los parámetros de consulta
+    const params = new URLSearchParams();
+    
+    // Aplicar filtros si están presentes
+    if (filters.status) params.append('status', filters.status);
+    if (filters.brand) params.append('brandId', filters.brand);
+    if (filters.category) params.append('categoryId', filters.category);
+    
+    const url = `/l/products/preview${params.toString() ? `?${params.toString()}` : ''}`;
+    console.log("URL de la petición:", url);
+    
+    const response = await apiClient.get(url);
     console.log("→ Respuesta GET /l/products/preview:", response.data);
     
     // Verificar el formato de la respuesta
