@@ -195,6 +195,7 @@ const ProductCard = ({
                   onSave={handleProductUpdate}
                   onClose={() => setIsEditDialogOpen(false)} // Pass onClose to allow form to close dialog
                   isCreating={isCreating}
+                 
                 />
 
               </DialogContent>

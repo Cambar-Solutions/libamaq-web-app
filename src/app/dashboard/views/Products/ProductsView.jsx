@@ -14,7 +14,6 @@ import { useProducts } from './hooks/useProducts';
 import ProductCard from './components/atoms/ProductCard';
 import { getAllActiveBrands } from '../../../../../src/services/admin/brandService';
 import { getActiveCategories } from '../../../../../src/services/admin/categoryService';
-
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import {
   AlertDialog,
@@ -101,6 +100,8 @@ const ProductsView = () => {
     handleSubmit,
     control,
     reset,
+    setValue,
+    getValues,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(productSchema),
@@ -233,6 +234,8 @@ const ProductsView = () => {
             register={register}
             errors={errors}
             control={control}
+            setValue={setValue}
+            getValues={getValues}
           />
         </div>
 
@@ -300,6 +303,9 @@ const ProductsView = () => {
                     console.log('Ver producto:', product);
                   }}
                   isCreating={isCreating}
+
+                  setValue={setValue}
+                  getValues={getValues}
                 />
               ))}
             </div>

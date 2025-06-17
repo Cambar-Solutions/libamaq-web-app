@@ -1,13 +1,13 @@
-import React from 'react'
+import React, { useState } from 'react' // Importa useState
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -17,8 +17,31 @@ import { Plus, Loader2, Search, X, Drill } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { generateDescriptionIA } from '@/services/admin/AIService';
 
-export default function CreateProductFormDialog({ isCreateDialogOpen, openCreateDialog, closeCreateDialog, handleCreateSubmit, handleSubmit, isCreating, brands = [], categories = [], fields, register, errors, control }) {
+export default function CreateProductFormDialog({ isCreateDialogOpen, openCreateDialog, closeCreateDialog, handleCreateSubmit, handleSubmit, isCreating, brands = [], categories = [], fields, register, errors, control, setValue, getValues }) { // Agrega setValue y getValues de react-hook-form
+    const [isGeneratingDescription, setIsGeneratingDescription] = useState(false); // Nuevo estado para el loader del botón
+
+    const handleGenerateDescription = async () => {
+        const productName = getValues('name'); // Obtiene el valor del campo 'name'
+        if (!productName) {
+            alert('Por favor, ingresa un nombre de producto para generar la descripción.');
+            return;
+        }
+
+        setIsGeneratingDescription(true);
+        try {
+            // Puedes ajustar el 'type' basado en alguna lógica si tienes una forma de detectarlo
+            const description = await generateDescriptionIA(productName, "PRODUCT"); // Llama al servicio
+            setValue('description', description, { shouldValidate: true }); // Establece la descripción en el textarea
+        } catch (error) {
+            console.error('Error al generar la descripción:', error);
+            alert(`Error al generar la descripción: ${error}`); // Muestra un mensaje de error al usuario
+        } finally {
+            setIsGeneratingDescription(false);
+        }
+    };
+
     return (
         <>
             <Dialog open={isCreateDialogOpen} onOpenChange={(isOpen) => !isOpen && closeCreateDialog()}>
@@ -66,7 +89,21 @@ export default function CreateProductFormDialog({ isCreateDialogOpen, openCreate
                             {/* Descripción Larga */}
                             <div className="space-y-2 md:col-span-2">
                                 <Label htmlFor="description">Descripción</Label>
-                                <Textarea id="description" {...register('description')} placeholder="El Galaxy S21 cuenta con una pantalla de 6.2 pulgadas..." disabled={isCreating} />
+                                <div className="flex flex-col sm:flex-row gap-2"> {/* Contenedor para textarea y botón */}
+                                    <Textarea id="description" {...register('description')} placeholder="El Galaxy S21 cuenta con una pantalla de 6.2 pulgadas..." disabled={isCreating} className="flex-grow" />
+                                    <Button
+                                        type="button" // Importante: tipo "button" para evitar que se envíe el formulario
+                                        onClick={handleGenerateDescription}
+                                        disabled={isGeneratingDescription || isCreating}
+                                        className="whitespace-nowrap"
+                                    >
+                                        {isGeneratingDescription ? (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ) : (
+                                            'Generar descripción con Gemini'
+                                        )}
+                                    </Button>
+                                </div>
                             </div>
 
                             {/* ID Externo */}

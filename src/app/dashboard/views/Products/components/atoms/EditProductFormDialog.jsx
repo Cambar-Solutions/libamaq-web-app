@@ -23,6 +23,9 @@ import { Switch } from '@/components/ui/switch';
 import { Drill, Plus, X, Loader2 } from 'lucide-react';
 import PropTypes from 'prop-types';
 
+// Importa el nuevo servicio de IA
+import { generateDescriptionIA } from '@/services/admin/AIService';
+
 // --- Form Schema for Validation (adjust as per your actual backend schema) ---
 const editProductSchema = z.object({
     name: z.string().min(1, 'El nombre es obligatorio.'),
@@ -63,14 +66,17 @@ const editProductSchema = z.object({
 });
 
 
-const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, onClose, isCreating }) => {
+const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, onClose }) => {
     const [isUpdating, setIsUpdating] = useState(false); // State for loading during update
+    const [isGeneratingDescription, setIsGeneratingDescription] = useState(false); // Nuevo estado para el loader del botón de IA
 
     const {
         register,
         handleSubmit,
         control,
         reset,
+        setValue, // Asegúrate de tener setValue de useForm
+        getValues, // Asegúrate de tener getValues de useForm
         formState: { errors }
     } = useForm({
         resolver: zodResolver(editProductSchema),
@@ -136,8 +142,29 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
         } catch (error) {
             console.error("Error updating product:", error);
             // You might want to show an error message to the user here
+            alert(`Error al actualizar el producto: ${error.message || error}`);
         } finally {
             setIsUpdating(false);
+        }
+    };
+
+    const handleGenerateDescription = async () => {
+        const productName = getValues('name'); // Obtiene el valor del campo 'name'
+        if (!productName) {
+            alert('Por favor, ingresa un nombre de producto para generar la descripción.');
+            return;
+        }
+
+        setIsGeneratingDescription(true);
+        try {
+            // Puedes ajustar el 'type' basado en alguna lógica si tienes una forma de detectarlo
+            const description = await generateDescriptionIA(productName, "PRODUCT"); // Llama al servicio
+            setValue('description', description, { shouldValidate: true }); // Establece la descripción en el textarea
+        } catch (error) {
+            console.error('Error al generar la descripción:', error);
+            alert(`Error al generar la descripción: ${error.message || error}`); // Muestra un mensaje de error al usuario
+        } finally {
+            setIsGeneratingDescription(false);
         }
     };
 
@@ -177,7 +204,21 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
                     {/* Descripción Larga */}
                     <div className="space-y-2 md:col-span-2">
                         <Label htmlFor="description">Descripción</Label>
-                        <Textarea id="description" {...register('description')} placeholder="El Galaxy S21 cuenta con una pantalla de 6.2 pulgadas..." disabled={isUpdating} />
+                        <div className="flex flex-col sm:flex-row gap-2"> {/* Contenedor para textarea y botón */}
+                            <Textarea id="description" {...register('description')} placeholder="El Galaxy S21 cuenta con una pantalla de 6.2 pulgadas..." disabled={isUpdating} className="flex-grow" />
+                            <Button
+                                type="button"
+                                onClick={handleGenerateDescription}
+                                disabled={isGeneratingDescription || isUpdating}
+                                className="whitespace-nowrap"
+                            >
+                                {isGeneratingDescription ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    'Generar descripción con Gemini'
+                                )}
+                            </Button>
+                        </div>
                     </div>
 
                     {/* ID Externo */}
@@ -215,25 +256,14 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
                             name="categoryId"
                             control={control}
                             render={({ field }) => (
-                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isUpdating}> {/* Corregido isCreating a isUpdating */}
+                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isUpdating}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Selecciona una categoría" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {/* Si categories está vacío, el map no se ejecutará, lo cual es bueno.
-                Si quieres un mensaje de "Cargando..." explícito, hazlo fuera del Select.Item
-                O, si categories se usa para inicializar el valor del campo,
-                asegúrate de que field.value sea una cadena vacía si no hay categoría seleccionada
-            */}
                                         {categories.map(category => (
-                                            // Asegúrate de que category.id nunca sea nulo/indefinido en tus datos
                                             <SelectItem key={category.id} value={String(category.id)}>{category.name}</SelectItem>
                                         ))}
-
-                                        {/* Puedes quitar esta parte ya que no debe haber un SelectItem con value="" */}
-                                        {/* {categories.length === 0 && (
-                <SelectItem value="" disabled>Cargando categorías...</SelectItem>
-            )} */}
                                     </SelectContent>
                                 </Select>
                             )}
