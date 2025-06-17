@@ -48,7 +48,7 @@ const getStatusText = (status) => {
 
 const ProductCard = ({
   product,
-  onEdit, 
+  onEdit,
   onDelete,
   onView,
   brands,
@@ -56,8 +56,8 @@ const ProductCard = ({
   isCreating
 }) => {
   const mainImage = product.media?.find(m => m.fileType === 'IMAGE')?.url || '/placeholder-product.jpg';
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-    
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
 
 
   const handleProductUpdate = async (productId, updatedData) => {
@@ -189,14 +189,14 @@ const ProductCard = ({
 
               <DialogContent className="sm:max-w-[425px]">
                 <EditProductFormDialog
-                product={product}
+                  product={product}
                   brands={brands}
                   categories={categories}
                   onSave={handleProductUpdate}
                   onClose={() => setIsEditDialogOpen(false)} // Pass onClose to allow form to close dialog
                   isCreating={isCreating}
                 />
-                
+
               </DialogContent>
             </Dialog>
           )}

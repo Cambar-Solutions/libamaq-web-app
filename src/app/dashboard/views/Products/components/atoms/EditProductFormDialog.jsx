@@ -215,18 +215,25 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
                             name="categoryId"
                             control={control}
                             render={({ field }) => (
-                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isCreating}>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isUpdating}> {/* Corregido isCreating a isUpdating */}
                                     <SelectTrigger>
                                         <SelectValue placeholder="Selecciona una categoría" />
                                     </SelectTrigger>
                                     <SelectContent>
+                                        {/* Si categories está vacío, el map no se ejecutará, lo cual es bueno.
+                Si quieres un mensaje de "Cargando..." explícito, hazlo fuera del Select.Item
+                O, si categories se usa para inicializar el valor del campo,
+                asegúrate de que field.value sea una cadena vacía si no hay categoría seleccionada
+            */}
                                         {categories.map(category => (
+                                            // Asegúrate de que category.id nunca sea nulo/indefinido en tus datos
                                             <SelectItem key={category.id} value={String(category.id)}>{category.name}</SelectItem>
                                         ))}
-                                        {/* Puedes añadir una opción "Cargando categorías..." si el array está vacío y sabes que se están cargando */}
-                                        {categories.length === 0 && (
-                                            <SelectItem value="" disabled>Cargando categorías...</SelectItem>
-                                        )}
+
+                                        {/* Puedes quitar esta parte ya que no debe haber un SelectItem con value="" */}
+                                        {/* {categories.length === 0 && (
+                <SelectItem value="" disabled>Cargando categorías...</SelectItem>
+            )} */}
                                     </SelectContent>
                                 </Select>
                             )}
