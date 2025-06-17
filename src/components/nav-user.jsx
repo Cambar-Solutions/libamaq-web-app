@@ -54,24 +54,26 @@ export function NavUser({ user }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (user && user.name && user.email) {
+      setUserInfo({ name: user.name, lastName: user.lastName || "", email: user.email });
+      setLoading(false);
+      return;
+    }
     const fetchUserData = async () => {
       try {
         const token = localStorage.getItem("auth_token");
         if (!token) return;
-
         const decoded = jwtDecode(token);
         const userId = decoded.sub;
-
-        const user = await getUserById(userId);
-        setUserInfo({ name: user.name, lastName: user.lastName, email: user.email });
+        const userFetched = await getUserById(userId);
+        setUserInfo({ name: userFetched.name, lastName: userFetched.lastName, email: userFetched.email });
         setLoading(false);
       } catch (error) {
         console.error("Error al obtener el usuario:", error);
       }
     };
-
     fetchUserData();
-  }, []);
+  }, [user]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");

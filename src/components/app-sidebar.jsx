@@ -21,6 +21,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { getCurrentUser } from "@/services/authService"
 
 const data = {
   user: {
@@ -74,6 +75,7 @@ const data = {
 }
 
 export function AppSidebar({ onViewChange, currentView, ...props }) {
+  const user = getCurrentUser();
   return (
     <Sidebar
       className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
@@ -110,7 +112,7 @@ export function AppSidebar({ onViewChange, currentView, ...props }) {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   );

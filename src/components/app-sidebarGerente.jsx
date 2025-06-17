@@ -21,6 +21,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { getCurrentUser } from "@/services/authService"
 
 const data = {
   user: {
@@ -76,8 +77,8 @@ const data = {
 }
 
 export function AppSidebarGerente({ onViewChange, currentView, ...props }) {
+  const user = getCurrentUser();
   // Obtener el rol del usuario actual
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
   const userRole = user?.role;
 
   // Filtrar las opciones del menú según el rol del usuario
@@ -124,7 +125,7 @@ export function AppSidebarGerente({ onViewChange, currentView, ...props }) {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   );
