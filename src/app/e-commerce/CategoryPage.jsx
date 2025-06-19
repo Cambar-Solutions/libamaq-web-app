@@ -606,7 +606,7 @@ export default function CategoryPage() {
 
                                             {/* La imagen real del producto */}
                                             <img
-                                              src={topSellingItem.media?.[0]?.url || ""} 
+                                              src={topSellingItem.media?.[0]?.url || ""}
                                               alt={topSellingItem.name || "Producto"}
                                               className="max-h-full max-w-full object-contain relative z-10"
                                               onError={(e) => {
@@ -716,8 +716,9 @@ export default function CategoryPage() {
                         <div
                           className="carousel-track group p-0 flex transition-transform duration-300 ease-out justify-start"
                           style={{
-                            paddingBottom: 14, paddingTop: 9, 
-                            transform: `translateX(-${carouselPositionTwo}%)` }}
+                            paddingBottom: 14, paddingTop: 9,
+                            transform: `translateX(-${carouselPositionTwo}%)`
+                          }}
                         >
                           {activeItems.map((activeItem, index) => (
                             <div
@@ -755,7 +756,7 @@ export default function CategoryPage() {
 
                                       {/* La imagen real del producto */}
                                       <img
-                                        src={activeItem.images && activeItem.images.length > 0 ? activeItem.images[0] : "/placeholder-product.png"}
+                                        src={activeItem.media && activeItem.media.length > 0 ? activeItem.media[0].url : "/placeholder-product.png"}
                                         alt=""
                                         className="max-h-full max-w-full object-contain relative z-10"
                                         onError={(e) => {
