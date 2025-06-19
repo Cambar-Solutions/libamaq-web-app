@@ -41,9 +41,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import { getUserById } from "@/services/admin/userService";
-import { useEffect } from "react";
+import { getUserById, updateUserProfile } from "@/services/admin/userService";
+import { useEffect, useRef } from "react";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 
 export function NavUser({ user }) {
@@ -53,7 +54,33 @@ export function NavUser({ user }) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
+  // Estado para el formulario de edición de perfil
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+
+  const dropdownMenuRef = useRef();
+  // Estado controlado para el DropdownMenu
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
   useEffect(() => {
+    // Siempre sincroniza userInfo con localStorage al montar o cambiar de vista
+    const userData = localStorage.getItem("user_data");
+    if (userData) {
+      try {
+        const parsed = JSON.parse(userData);
+        if (parsed.name && parsed.email) {
+          setUserInfo({
+            name: parsed.name,
+            lastName: parsed.lastName || "",
+            email: parsed.email
+          });
+          setLoading(false);
+          return;
+        }
+      } catch {}
+    }
     if (user && user.name && user.email) {
       setUserInfo({ name: user.name, lastName: user.lastName || "", email: user.email });
       setLoading(false);
@@ -73,7 +100,15 @@ export function NavUser({ user }) {
       }
     };
     fetchUserData();
-  }, [user]);
+  }, [user, location?.pathname]); // location.pathname si usas react-router-dom
+
+  // Sincronizar valores actuales al abrir el diálogo
+  useEffect(() => {
+    if (editDialogOpen && userInfo) {
+      setEditName(`${userInfo.name}${userInfo.lastName ? ` ${userInfo.lastName}` : ""}`.trim());
+      setEditEmail(userInfo.email || "");
+    }
+  }, [editDialogOpen, userInfo]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -86,8 +121,8 @@ export function NavUser({ user }) {
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+          <DropdownMenuTrigger asChild ref={dropdownMenuRef}>
             <SidebarMenuButton
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer"
@@ -123,49 +158,10 @@ export function NavUser({ user }) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <Dialog>
-                <DialogTrigger asChild className="cursor-pointer">
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                    <BadgeCheck />
-                    Editar perfil
-                  </DropdownMenuItem>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Editar perfil</DialogTitle>
-                    <DialogDescription>
-                      Realiza cambios en tu perfil aquí. Da clic en guardar
-                      cuando termines.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="name" className="text-right">
-                        Nombre
-                      </Label>
-                      <Input
-                        id="name"
-                        defaultValue={userInfo.name}
-                        className="col-span-3"
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="email" className="text-right">
-                        Correo
-                      </Label>
-                      <Input
-                        id="email"
-                        defaultValue={userInfo.email}
-                        className="col-span-3"
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="submit" className="cursor-pointer">Guardar cambios</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
+              <DropdownMenuItem onSelect={e => { e.preventDefault(); setEditDialogOpen(true); setDropdownOpen(false); }} className="cursor-pointer">
+                <BadgeCheck />
+                Editar perfil
+              </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer">
                 <Bell />
                 Notificaciones
@@ -177,6 +173,73 @@ export function NavUser({ user }) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        {/* Dialog de edición de perfil fuera del DropdownMenu */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Editar perfil</DialogTitle>
+              <DialogDescription>
+                Realiza cambios en tu perfil aquí. Da clic en guardar cuando termines.
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              onSubmit={async e => {
+                e.preventDefault();
+                setEditLoading(true);
+                try {
+                  const token = localStorage.getItem("auth_token");
+                  if (!token) throw new Error("No autenticado");
+                  const { sub: userId } = jwtDecode(token);
+                  // Separar nombre y apellido
+                  const [name, ...rest] = editName.trim().split(" ");
+                  const lastName = rest.join(" ");
+                  const profileData = { name, lastName, email: editEmail };
+                  const updated = await updateUserProfile(userId, profileData);
+                  // Actualizar estado y localStorage
+                  setUserInfo(prev => ({ ...prev, name, lastName, email: editEmail }));
+                  const userData = JSON.parse(localStorage.getItem("user_data") || "{}");
+                  localStorage.setItem("user_data", JSON.stringify({ ...userData, name, lastName, email: editEmail }));
+                  toast.success("Perfil actualizado correctamente");
+                  setEditDialogOpen(false);
+                } catch (err) {
+                  const msg = err?.message || err?.error || err?.response?.data?.message || "Error al actualizar perfil";
+                  toast.error(msg.includes("email") ? "El correo ya está registrado" : msg);
+                } finally {
+                  setEditLoading(false);
+                }
+              }}
+            >
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-name" className="text-right">Nombre y Apellido</Label>
+                  <Input
+                    id="edit-name"
+                    value={editName}
+                    onChange={e => setEditName(e.target.value)}
+                    className="col-span-3"
+                    required
+                    placeholder="Ej: Juan Pérez"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-email" className="text-right">Correo</Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={editEmail}
+                    onChange={e => setEditEmail(e.target.value)}
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)} className="cursor-pointer">Cancelar</Button>
+                <Button type="submit" className="cursor-pointer" disabled={editLoading}>{editLoading ? "Guardando..." : "Guardar cambios"}</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </SidebarMenuItem>
     </SidebarMenu>
   );
