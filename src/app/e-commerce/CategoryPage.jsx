@@ -480,7 +480,7 @@ export default function CategoryPage() {
       <Nav2 />
 
       <div className="min-h-screen bg-gray-50 flex flex-col pt-20">
-        <div ref={sectionRef} className="max-w-7xl w-full mx-auto px-4">
+        <div className="max-w-7xl w-full mx-auto px-4">
           <div className="sticky top-20 z-10 bg-white shadow-xl rounded-lg mb-6 p-3">
             <div className="flex flex-row items-center gap-2">
               <div className="relative w-4/5">
@@ -683,7 +683,7 @@ export default function CategoryPage() {
             )}
           </div>
 
-          <div className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full flex-grow">
+          <div ref={sectionRef} className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full flex-grow">
             {/* Contenedor principal con ancho ajustado */}
             <div className="w-full">
               {activeItems.length > 0 ? (
