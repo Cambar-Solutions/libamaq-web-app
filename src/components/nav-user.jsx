@@ -65,27 +65,7 @@ export function NavUser({ user }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
-    // Siempre sincroniza userInfo con localStorage al montar o cambiar de vista
-    const userData = localStorage.getItem("user_data");
-    if (userData) {
-      try {
-        const parsed = JSON.parse(userData);
-        if (parsed.name && parsed.email) {
-          setUserInfo({
-            name: parsed.name,
-            lastName: parsed.lastName || "",
-            email: parsed.email
-          });
-          setLoading(false);
-          return;
-        }
-      } catch {}
-    }
-    if (user && user.name && user.email) {
-      setUserInfo({ name: user.name, lastName: user.lastName || "", email: user.email });
-      setLoading(false);
-      return;
-    }
+    // Siempre sincroniza userInfo con el backend primero
     const fetchUserData = async () => {
       try {
         const token = localStorage.getItem("auth_token");
@@ -94,13 +74,48 @@ export function NavUser({ user }) {
         const userId = decoded.sub;
         const userFetched = await getUserById(userId);
         setUserInfo({ name: userFetched.name, lastName: userFetched.lastName, email: userFetched.email });
+        // Actualiza localStorage con el valor real del backend
+        localStorage.setItem("user_data", JSON.stringify({
+          name: userFetched.name,
+          lastName: userFetched.lastName || "",
+          email: userFetched.email
+        }));
         setLoading(false);
+        return;
       } catch (error) {
-        console.error("Error al obtener el usuario:", error);
+        // Si falla el backend, intenta con localStorage
+        const userData = localStorage.getItem("user_data");
+        if (userData) {
+          try {
+            const parsed = JSON.parse(userData);
+            if (parsed.name && parsed.email) {
+              setUserInfo({
+                name: parsed.name,
+                lastName: parsed.lastName || "",
+                email: parsed.email
+              });
+              setLoading(false);
+              return;
+            }
+          } catch {}
+        }
+      }
+      // Fallback: user prop
+      if (user && user.name && user.email) {
+        setUserInfo({ name: user.name, lastName: user.lastName || "", email: user.email });
+        setLoading(false);
       }
     };
     fetchUserData();
-  }, [user, location?.pathname]); // location.pathname si usas react-router-dom
+    // Escucha cambios en localStorage para sincronizar entre ventanas
+    const handleStorage = (e) => {
+      if (e.key === "user_data") {
+        fetchUserData();
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [user, location?.pathname]);
 
   // Sincronizar valores actuales al abrir el diálogo
   useEffect(() => {
@@ -132,7 +147,7 @@ export function NavUser({ user }) {
                 <AvatarFallback className="rounded-lg">CN</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{userInfo.name} {userInfo.lastName}</span>
+                <span className="truncate font-medium">{userInfo.name}{userInfo.lastName ? ` ${userInfo.lastName}` : ''}</span>
                 <span className="truncate text-xs">{userInfo.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
@@ -151,7 +166,7 @@ export function NavUser({ user }) {
                   <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{userInfo.name} {userInfo.lastName}</span>
+                  <span className="truncate font-medium">{userInfo.name}{userInfo.lastName ? ` ${userInfo.lastName}` : ''}</span>
                   <span className="truncate text-xs">{userInfo.email}</span>
                 </div>
               </div>
