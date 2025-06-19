@@ -6,9 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ImagePlus, Trash2, FileText } from 'lucide-react';
+import { ImagePlus, Trash2, FileText, Wand2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import ImageUploader from '../molecules/ImageUploader';
+import { generateDescriptionIA } from '@/services/admin/AIService';
 
 /**
  * Componente para crear un nuevo repuesto
@@ -36,9 +37,80 @@ export const CreateSparePartForm = ({
 
   const [isSaving, setIsSaving] = useState(propIsSaving);
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+  const [showNameError, setShowNameError] = useState(false);
+  const [shouldShake, setShouldShake] = useState(false);
   
   // Observar cambios en el valor de rentable
   const rentable = watch('rentable', false);
+  const name = watch('name', '');
+
+  // Efecto para manejar la animación de shake
+  useEffect(() => {
+    if (shouldShake) {
+      const timer = setTimeout(() => setShouldShake(false), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [shouldShake]);
+
+  // Función para generar descripción con IA
+  const handleGenerateDescription = async () => {
+    if (!name.trim()) {
+      setShowNameError(true);
+      setShouldShake(true);
+      
+      // Hacer scroll al campo de nombre
+      const nameInput = document.getElementById('name');
+      if (nameInput) {
+        nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        nameInput.focus();
+      }
+      
+      toast.error('¡Ups! Necesitas ingresar un nombre primero', {
+        style: {
+          border: '1px solid #ef4444',
+          padding: '16px',
+          color: '#b91c1c',
+          background: '#fef2f2',
+          fontWeight: '500',
+        },
+        icon: '✏️',
+        duration: 3000,
+      });
+      
+      return;
+    }
+
+    setShowNameError(false);
+    setIsGeneratingDescription(true);
+    try {
+      const description = await generateDescriptionIA(name, 'SPARE_PART');
+      setValue('description', description);
+      toast.success('¡Descripción generada con éxito!', {
+        icon: '✨',
+        style: {
+          border: '1px solid #10b981',
+          padding: '16px',
+          color: '#065f46',
+          background: '#ecfdf5',
+          fontWeight: '500',
+        },
+      });
+    } catch (error) {
+      console.error('Error al generar descripción:', error);
+      toast.error(error.message || 'Error al generar la descripción', {
+        style: {
+          border: '1px solid #ef4444',
+          padding: '16px',
+          color: '#b91c1c',
+          background: '#fef2f2',
+          fontWeight: '500',
+        },
+      });
+    } finally {
+      setIsGeneratingDescription(false);
+    }
+  };
 
   // Manejar envío del formulario
   const handleFormSubmit = (data) => {
@@ -105,31 +177,82 @@ export const CreateSparePartForm = ({
           </div>
 
           {/* Nombre */}
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="name" className="text-sm font-medium text-gray-700">Nombre *</Label>
-            <Input
-              id="name"
-              {...register('name', { required: 'El nombre es requerido' })}
-              placeholder="Ej: Pantalla OLED Galaxy S21"
-              disabled={isSaving}
-              className="h-10 focus:ring-blue-500 focus:border-blue-500"
-            />
+          <div className={`space-y-2 md:col-span-2 transition-all duration-200 ${showNameError ? 'animate-[pulse_0.5s_ease-in-out]' : ''}`}>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+                Nombre *
+              </Label>
+              {showNameError && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                  <svg className="-ml-0.5 mr-1.5 h-2 w-2 text-red-400" fill="currentColor" viewBox="0 0 8 8">
+                    <circle cx="4" cy="4" r="3" />
+                  </svg>
+                  Requerido
+                </span>
+              )}
+            </div>
+            <div className={`relative ${shouldShake ? 'animate-[shake_0.6s_ease-in-out]' : ''}`}>
+              <Input
+                id="name"
+                {...register('name', { 
+                  required: 'El nombre es requerido',
+                  onChange: () => setShowNameError(false)
+                })}
+                placeholder="Ej: Pantalla OLED Galaxy S21"
+                disabled={isSaving}
+                className={`h-10 focus:ring-blue-500 focus:border-blue-500 pr-10 ${
+                  showNameError ? 'border-red-500 focus:ring-red-500 focus:border-red-500 bg-red-50' : ''
+                }`}
+              />
+              {showNameError && (
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+            </div>
             {errors.name && (
               <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+            )}
+            {showNameError && (
+              <p className="mt-1 text-sm text-red-600">
+                Por favor ingresa un nombre para el repuesto antes de generar una descripción
+              </p>
             )}
           </div>
 
           {/* Descripción */}
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="description" className="text-sm font-medium text-gray-700">Descripción</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+                Descripción
+              </Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleGenerateDescription}
+                disabled={isGeneratingDescription || isSaving}
+                className={`text-xs text-blue-600 hover:bg-blue-50 flex items-center gap-1.5 transition-all duration-200 ${
+                  shouldShake && !name.trim() ? 'animate-[shake_0.6s_ease-in-out]' : ''
+                }`}
+              >
+                <Wand2 className="h-3.5 w-3.5" />
+                {isGeneratingDescription ? 'Generando...' : 'Generar con IA'}
+              </Button>
+            </div>
             <Textarea
               id="description"
               {...register('description')}
               placeholder="Descripción detallada del repuesto..."
               rows={3}
               disabled={isSaving}
-              className="focus:ring-blue-500 focus:border-blue-500"
+              className="focus:ring-blue-500 focus:border-blue-500 min-h-[100px]"
             />
+            <p className="text-xs text-gray-500">
+              Escribe manualmente o genera una descripción con IA basada en el nombre del repuesto.
+            </p>
           </div>
 
           {/* Material */}

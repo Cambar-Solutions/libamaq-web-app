@@ -606,11 +606,14 @@ export default function CategoryPage() {
 
                                             {/* La imagen real del producto */}
                                             <img
-                                              src={topSellingItem.images && topSellingItem.images.length > 0 ? topSellingItem.images[0] : "/placeholder-product.png"}
-                                              alt=""
+                                              src={topSellingItem.media?.[0]?.url || ""} 
+                                              alt={topSellingItem.name || "Producto"}
                                               className="max-h-full max-w-full object-contain relative z-10"
                                               onError={(e) => {
                                                 e.target.style.opacity = "0"; // Ocultar la imagen si no carga
+                                              }}
+                                              onLoad={(e) => {
+                                                e.target.style.opacity = "1"; // Mostrar la imagen cuando cargue
                                               }}
                                             />
                                           </div>
