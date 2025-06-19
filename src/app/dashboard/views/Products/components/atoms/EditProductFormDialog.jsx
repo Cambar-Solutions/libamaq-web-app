@@ -25,6 +25,8 @@ import PropTypes from 'prop-types';
 
 // Importa el nuevo servicio de IA
 import { generateDescriptionIA } from '@/services/admin/AIService';
+// Importa el componente ImageUploader
+import ImageUploader from './ImageUploader';
 
 // --- Form Schema for Validation
 const editProductSchema = z.object({
@@ -104,11 +106,116 @@ const getDefaultValues = (product) => ({
 const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, onClose }) => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [productCategories, setProductCategories] = useState([]);
+    const [selectedBrandId, setSelectedBrandId] = useState('');
     
     const form = useForm({
         resolver: zodResolver(editProductSchema),
         defaultValues: getDefaultValues(product)
     });
+
+    // Cargar categorías cuando cambie la marca seleccionada
+    useEffect(() => {
+        if (product?.brandId) {
+            setSelectedBrandId(String(product.brandId));
+            loadCategoriesByBrand(product.brandId);
+        }
+    }, [product]);
+
+    const loadCategoriesByBrand = async (brandId) => {
+        try {
+            const response = await getCategoriesByBrand(brandId);
+            setProductCategories(response.data || []);
+        } catch (error) {
+            console.error('Error al cargar categorías:', error);
+            setProductCategories([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Efecto para actualizar los valores del formulario cuando cambie el producto
+    useEffect(() => {
+        if (product) {
+            console.log('Producto recibido:', product); // Debug
+            
+            // Formatear technicalData si es un array de strings
+            const formatTechnicalData = (data) => {
+                if (!data) return [];
+                if (Array.isArray(data) && data.length > 0) {
+                    if (typeof data[0] === 'string') {
+                        return data.map(item => {
+                            const [key, ...valueParts] = item.split(':');
+                            return {
+                                key: key?.trim() || '',
+                                value: valueParts.join(':').trim() || ''
+                            };
+                        });
+                    }
+                    // Si ya es un array de objetos, asegurarse de que tengan el formato correcto
+                    return data.map(item => ({
+                        key: item.key || '',
+                        value: item.value || ''
+                    }));
+                }
+                return [{ key: '', value: '' }];
+            };
+
+            // Asegurarse de que los valores sean correctos antes de resetear
+            const defaultValues = {
+                ...product,
+                // Asegurar que los IDs sean strings
+                brandId: String(product.brandId || ''),
+                categoryId: String(product.categoryId || ''),
+                // Asegurar que los valores numéricos estén presentes
+                price: product.price || 0,
+                cost: product.cost || '',
+                discount: product.discount || 0,
+                stock: product.stock || 0,
+                garanty: product.garanty || 0,
+                // Asegurar que los arrays estén definidos y en el formato correcto
+                functionalities: Array.isArray(product.functionalities) 
+                    ? product.functionalities 
+                    : [],
+                technicalData: formatTechnicalData(product.technicalData),
+                downloads: Array.isArray(product.downloads) 
+                    ? product.downloads.map(dl => ({
+                        key: dl.key || '',
+                        value: dl.value || ''
+                    })) 
+                    : [{ key: '', value: '' }],
+                // Asegurar que las imágenes tengan la estructura correcta
+                media: Array.isArray(product.media) 
+                    ? product.media.map(img => ({
+                        ...img,
+                        id: img.id || Date.now(),
+                        url: img.url || '',
+                        fileType: img.fileType || 'IMAGE',
+                        entityId: img.entityId || product.id,
+                        entityType: 'PRODUCT',
+                        displayOrder: img.displayOrder || 0
+                    })) 
+                    : []
+            };
+            
+            console.log('Valores por defecto del formulario:', defaultValues); // Debug
+            
+            // Usar setTimeout para asegurar que el reset se realice después de que el componente esté montado
+            const timer = setTimeout(() => {
+                form.reset(defaultValues);
+                
+                // Si hay un costo, calcular el precio
+                if (product.cost) {
+                    const precioPublico = calcularPrecioPublico(product.cost);
+                    form.setValue('price', precioPublico.toFixed(2));
+                    // No sobreescribir el descuento existente
+                }
+            }, 0);
+            
+            return () => clearTimeout(timer);
+        }
+    }, [product, form]);
 
     const { fields: functionalityFields, append: appendFunctionality, remove: removeFunctionality } = useFieldArray({
         control: form.control,
@@ -130,27 +237,85 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
         name: 'media'
     });
 
+    const calcularPrecioConIVA = (precio) => {
+        return precio * 1.16;
+    };
+
+    const calcularPrecioPublico = (costo) => {
+        if (!costo) return 0;
+        const precioBase = parseFloat(costo) / 0.8; // División entre 0.8 (20% de ganancia)
+        return calcularPrecioConIVA(precioBase);
+    };
+
+    const calcularPrecioFrecuente = (costo) => {
+        if (!costo) return 0;
+        const precioBase = parseFloat(costo) / 0.9; // División entre 0.9 (10% de ganancia)
+        return calcularPrecioConIVA(precioBase);
+    };
+
+    const handleCostoChange = (e) => {
+        const costo = e.target.value;
+        form.setValue('cost', costo);
+        
+        if (costo && parseFloat(costo) > 0) {
+            // Calcular y establecer el precio público general
+            const precioPublico = calcularPrecioPublico(costo);
+            form.setValue('price', precioPublico.toFixed(2));
+            
+            // Calcular y establecer el descuento para clientes frecuentes
+            const precioFrecuente = calcularPrecioFrecuente(costo);
+            const descuento = ((precioPublico - precioFrecuente) / precioPublico * 100).toFixed(2);
+            form.setValue('discount', parseFloat(descuento));
+        } else {
+            // Limpiar los campos si el costo es 0 o vacío
+            form.setValue('price', '');
+            form.setValue('discount', 0);
+        }
+    };
+
     const handleEditSubmit = async (data) => {
         setIsSubmitting(true);
         try {
-            // Prepare data for API: convert numeric strings back to numbers if needed, ensure correct types
+            // Preparar los datos para la API
             const payload = {
-                ...data,
+                id: product.id, // Asegurarse de incluir el ID del producto
+                brandId: data.brandId,
+                categoryId: data.categoryId,
+                externalId: data.externalId,
+                name: data.name,
+                shortDescription: data.shortDescription,
+                description: data.description,
                 price: parseFloat(data.price),
                 cost: data.cost ? parseFloat(data.cost) : null,
+                discount: parseFloat(data.discount) || 0,
                 stock: parseInt(data.stock, 10),
-                // Ensure technicalData is an array of objects with key and value
-                technicalData: data.technicalData.filter(item => item.key && item.value),
-                // If your API expects brand and category IDs as numbers, convert them here
-                brandId: parseInt(data.brandId, 10),
-                categoryId: parseInt(data.categoryId, 10),
+                garanty: parseInt(data.garanty, 10) || 0,
+                color: data.color || '',
+                rentable: data.rentable || false,
+                status: data.status || 'ACTIVE',
+                functionalities: data.functionalities || [],
+                // Formatear technicalData como array de strings si es necesario
+                technicalData: data.technicalData 
+                    ? data.technicalData
+                        .filter(item => item.key && item.value)
+                        .map(item => `${item.key}: ${item.value}`)
+                    : [],
+                downloads: data.downloads || [],
+                // Incluir solo los campos necesarios para las imágenes
+                media: data.media.map(media => ({
+                    id: media.id,
+                    url: media.url,
+                    fileType: media.fileType || 'IMAGE',
+                    entityId: media.entityId || product.id,
+                    entityType: 'PRODUCT',
+                    displayOrder: media.displayOrder || 0
+                }))
             };
 
-            await onSave(product.id, payload); // Pass product ID and updated data
-            onClose(); // Close the dialog on successful save
+            await onSave(payload); // Enviar los datos al componente padre
+            onClose(); // Cerrar el diálogo
         } catch (error) {
-            console.error("Error updating product:", error);
-            // You might want to show an error message to the user here
+            console.error("Error al actualizar el producto:", error);
             alert(`Error al actualizar el producto: ${error.message || error}`);
         } finally {
             setIsSubmitting(false);
@@ -198,58 +363,52 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
             <form onSubmit={form.handleSubmit(handleEditSubmit)} className="space-y-6 pt-0">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Nombre */}
-                    <div className="space-y-2 ">
+                    <div className="space-y-2">
                         <Label htmlFor="name">Nombre *</Label>
-                        <Input id="name" {...form.register('name')} placeholder="Ej: Smartphone Galaxy S21" disabled={isSubmitting} />
+                        <Input 
+                            id="name" 
+                            {...form.register('name', { required: 'El nombre es requerido' })} 
+                            placeholder="Ej: Smartphone Galaxy S21" 
+                            disabled={isSubmitting} 
+                        />
                         {form.formState.errors.name && <p className="text-sm text-red-600">{form.formState.errors.name.message}</p>}
-                    </div>
-
-                    {/* Descripción Corta */}
-                    <div className="space-y-2 ">
-                        <Label htmlFor="shortDescription">Descripción Corta</Label>
-                        <Input id="shortDescription" {...form.register('shortDescription')} placeholder="Smartphone de última generación" disabled={isSubmitting} />
-                    </div>
-
-                    {/* Descripción Larga */}
-                    <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="description">Descripción</Label>
-                        <div className="flex flex-col sm:flex-row gap-2"> {/* Contenedor para textarea y botón */}
-                            <Textarea id="description" {...form.register('description')} placeholder="El Galaxy S21 cuenta con una pantalla de 6.2 pulgadas..." disabled={isSubmitting} className="flex-grow" />
-                            <Button
-                                type="button"
-                                onClick={handleGenerateDescription}
-                                disabled={isGenerating || isSubmitting}
-                                className="whitespace-nowrap"
-                            >
-                                {isGenerating ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                ) : (
-                                    'Generar descripción con Gemini'
-                                )}
-                            </Button>
-                        </div>
                     </div>
 
                     {/* ID Externo */}
                     <div className="space-y-2">
                         <Label htmlFor="externalId">ID Externo</Label>
-                        <Input id="externalId" {...form.register('externalId')} placeholder="Ej: PROD-12345" disabled={isSubmitting} />
+                        <Input 
+                            id="externalId" 
+                            {...form.register('externalId')} 
+                            placeholder="Ej: PROD-12345" 
+                            disabled={isSubmitting} 
+                        />
                     </div>
 
-                    {/* ID de Marca */}
+                    {/* Marca */}
                     <div className="space-y-2">
                         <Label htmlFor="brandId">Marca *</Label>
                         <Controller
                             name="brandId"
                             control={form.control}
+                            rules={{ required: 'La marca es requerida' }}
                             render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
+                                <Select 
+                                    onValueChange={(value) => {
+                                        field.onChange(value);
+                                        // Aquí iría la lógica de handleBrandChange si es necesaria
+                                    }} 
+                                    value={field.value} 
+                                    disabled={isSubmitting}
+                                >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Selecciona una marca" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {brands.map(brand => (
-                                            <SelectItem key={brand.id} value={String(brand.id)}>{brand.name}</SelectItem>
+                                            <SelectItem key={brand.id} value={String(brand.id)}>
+                                                {brand.name}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -258,109 +417,312 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
                         {form.formState.errors.brandId && <p className="text-sm text-red-600">{form.formState.errors.brandId.message}</p>}
                     </div>
 
-                    {/* ID de Categoría */}
+                    {/* Categoría */}
                     <div className="space-y-2">
                         <Label htmlFor="categoryId">Categoría *</Label>
                         <Controller
                             name="categoryId"
                             control={form.control}
+                            rules={{ 
+                                required: 'La categoría es requerida',
+                                validate: value => {
+                                    if (!form.watch('brandId')) {
+                                        return 'Selecciona una marca primero';
+                                    }
+                                    return true;
+                                }
+                            }}
                             render={({ field }) => (
-                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
+                                <Select 
+                                    onValueChange={field.onChange} 
+                                    value={field.value} 
+                                    disabled={!form.watch('brandId') || isSubmitting}
+                                >
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Selecciona una categoría" />
+                                        <SelectValue 
+                                            placeholder={!form.watch('brandId') 
+                                                ? "Selecciona una marca primero" 
+                                                : categories.length === 0 
+                                                    ? "No hay categorías disponibles"
+                                                    : "Selecciona una categoría"
+                                            } 
+                                        />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {categories.map(category => (
-                                            <SelectItem key={category.id} value={String(category.id)}>{category.name}</SelectItem>
-                                        ))}
+                                        {categories.length > 0 ? (
+                                            categories.map(category => (
+                                                <SelectItem key={category.id} value={String(category.id)}>
+                                                    {category.name}
+                                                </SelectItem>
+                                            ))
+                                        ) : (
+                                            <div className="px-3 py-2 text-sm text-muted-foreground">
+                                                No hay categorías disponibles para esta marca
+                                            </div>
+                                        )}
                                     </SelectContent>
                                 </Select>
                             )}
                         />
-                        {form.formState.errors.categoryId && <p className="text-sm text-red-600">{form.formState.errors.categoryId.message}</p>}
-                    </div>
-
-                    {/* Precio */}
-                    <div className="space-y-2">
-                        <Label htmlFor="price">Precio (MXN) *</Label>
-                        <div className="relative">
-                            <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 sm:text-sm">$</span>
-                            <Input id="price" type="number" step="0.01" {...form.register('price')} placeholder="0.00" className="pl-7" disabled={isSubmitting} />
-                        </div>
-                        {form.formState.errors.price && <p className="text-sm text-red-600">{form.formState.errors.price.message}</p>}
+                        {form.formState.errors.categoryId && (
+                            <p className="text-sm text-red-600">
+                                {form.formState.errors.categoryId.message}
+                            </p>
+                        )}
                     </div>
 
                     {/* Costo */}
                     <div className="space-y-2">
-                        <Label htmlFor="cost">Costo (MXN)</Label>
+                        <Label htmlFor="cost">Costo (sin IVA)</Label>
                         <div className="relative">
-                            <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 sm:text-sm">$</span>
-                            <Input id="cost" type="number" step="0.01" {...form.register('cost')} placeholder="0.00" className="pl-7" disabled={isSubmitting} />
+                            <Input
+                                id="cost"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                {...form.register('cost', { 
+                                    required: 'El costo es requerido',
+                                    min: { value: 0, message: 'El costo no puede ser negativo' }
+                                })}
+                                onChange={handleCostoChange}
+                                disabled={isSubmitting}
+                                className="pl-3"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                                MXN
+                            </span>
                         </div>
-                        {form.formState.errors.cost && <p className="text-sm text-red-600">{form.formState.errors.cost.message}</p>}
+                        {form.formState.errors.cost && (
+                            <span className="text-sm text-red-500">
+                                {form.formState.errors.cost.message}
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Precio */}
+                    <div className="space-y-2">
+                        <Label htmlFor="price">Precio Público General (con IVA)</Label>
+                        <div className="relative">
+                            <Input
+                                id="price"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                {...form.register('price', { 
+                                    required: 'El precio es requerido',
+                                    min: { value: 0, message: 'El precio no puede ser negativo' }
+                                })}
+                                readOnly
+                                className="pl-3 bg-gray-50"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                                MXN
+                            </span>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                            Precio calculado automáticamente (Costo / 0.8 + 16% IVA)
+                        </p>
                     </div>
 
                     {/* Descuento */}
                     <div className="space-y-2">
-                        <Label htmlFor="discount">Descuento (%)</Label>
-                        <Input id="discount" type="number" {...form.register('discount')} placeholder="0" disabled={isSubmitting} />
+                        <div className="flex justify-between items-center">
+                            <Label htmlFor="discount">Descuento Cliente Frecuente</Label>
+                            <span className="text-sm text-gray-500">
+                                Precio: ${(form.watch('price') * (1 - (form.watch('discount') || 0) / 100)).toFixed(2)} MXN
+                            </span>
+                        </div>
+                        <div className="relative">
+                            <Input
+                                id="discount"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="100"
+                                {...form.register('discount', { 
+                                    min: { value: 0, message: 'El descuento no puede ser negativo' },
+                                    max: { value: 100, message: 'El descuento no puede ser mayor a 100%' }
+                                })}
+                                disabled={isSubmitting}
+                                className="pl-3"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                                %
+                            </span>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                            Descuento calculado para precio de cliente frecuente (Costo / 0.9 + 16% IVA)
+                        </p>
+                        {form.formState.errors.discount && (
+                            <span className="text-sm text-red-500">
+                                {form.formState.errors.discount.message}
+                            </span>
+                        )}
                     </div>
 
                     {/* Stock */}
                     <div className="space-y-2">
                         <Label htmlFor="stock">Stock *</Label>
-                        <Input id="stock" type="number" {...form.register('stock')} placeholder="0" disabled={isSubmitting} />
+                        <Input 
+                            id="stock" 
+                            type="number" 
+                            {...form.register('stock', { 
+                                required: 'El stock es requerido',
+                                min: { value: 0, message: 'El stock no puede ser negativo' }
+                            })} 
+                            placeholder="0" 
+                            disabled={isSubmitting} 
+                        />
                         {form.formState.errors.stock && <p className="text-sm text-red-600">{form.formState.errors.stock.message}</p>}
                     </div>
 
                     {/* Garantía */}
                     <div className="space-y-2">
                         <Label htmlFor="garanty">Garantía (meses)</Label>
-                        <Input id="garanty" type="number" {...form.register('garanty')} placeholder="0" disabled={isSubmitting} />
+                        <Input 
+                            id="garanty" 
+                            type="number" 
+                            {...form.register('garanty', {
+                                min: { value: 0, message: 'La garantía no puede ser negativa' }
+                            })} 
+                            placeholder="12" 
+                            disabled={isSubmitting} 
+                        />
+                        {form.formState.errors.garanty && <p className="text-sm text-red-600">{form.formState.errors.garanty.message}</p>}
                     </div>
 
                     {/* Color */}
                     <div className="space-y-2">
-                        <Label htmlFor="color">Color</Label>
-                        <Input id="color" {...form.register('color')} placeholder="Ej: Negro" disabled={isSubmitting} />
+                        <div className="flex justify-between items-center">
+                            <Label htmlFor="color">Color</Label>
+                            {form.watch('brandId') && (
+                                <span 
+                                    className="text-xs text-muted-foreground cursor-pointer hover:underline"
+                                    onClick={() => {
+                                        const selectedBrand = brands.find(b => b.id === form.watch('brandId'));
+                                        if (selectedBrand?.color) {
+                                            form.setValue('color', selectedBrand.color, { shouldDirty: true });
+                                        }
+                                    }}
+                                >
+                                    Usar color de la marca
+                                </span>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="relative flex-1">
+                                <Input 
+                                    id="color" 
+                                    type="text"
+                                    {...form.register('color')} 
+                                    placeholder="Ej: #1428A0 o Negro" 
+                                    disabled={isSubmitting}
+                                    className="pl-10"
+                                />
+                                <input 
+                                    type="color" 
+                                    value={form.watch('color') || '#ffffff'}
+                                    onChange={(e) => form.setValue('color', e.target.value, { shouldDirty: true })}
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded overflow-hidden border border-gray-300 cursor-pointer"
+                                    title="Seleccionar color"
+                                />
+                            </div>
+                            <div 
+                                className="w-10 h-10 rounded-md border flex-shrink-0"
+                                style={{ 
+                                    backgroundColor: form.watch('color') || 'transparent',
+                                    borderColor: 'hsl(var(--border))'
+                                }}
+                                title={form.watch('color') || 'Sin color'}
+                            />
+                        </div>
                     </div>
 
-                    {/* Estado */}
-                    <div className="space-y-2">
-                        <Label htmlFor="status">Estado</Label>
-                        <Controller
-                            name="status"
-                            control={form.control}
-                            render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Selecciona un estado" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="ACTIVE">
-                                            <div className="flex items-center"><span className="h-2 w-2 rounded-full bg-green-500 mr-2"></span>Activo</div>
-                                        </SelectItem>
-                                        <SelectItem value="INACTIVE">
-                                            <div className="flex items-center"><span className="h-2 w-2 rounded-full bg-red-500 mr-2"></span>Inactivo</div>
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            )}
+                    {/* Estado y Renta */}
+                    <div className="flex items-center justify-between pt-6 md:col-span-2">
+                        {/* Estado */}
+                        <div className="flex items-center space-x-2">
+                            <Label htmlFor="status" className="text-sm font-medium text-gray-700">Estado</Label>
+                            <div className="flex items-center space-x-2">
+                                <span className="text-sm font-medium">Inactivo</span>
+                                <Controller
+                                    name="status"
+                                    control={form.control}
+                                    render={({ field }) => (
+                                        <Switch
+                                            id="status"
+                                            checked={field.value === 'ACTIVE'}
+                                            onCheckedChange={(checked) => {
+                                                field.onChange(checked ? 'ACTIVE' : 'INACTIVE');
+                                            }}
+                                            disabled={isSubmitting}
+                                        />
+                                    )}
+                                />
+                                <span className="text-sm font-medium">Activo</span>
+                            </div>
+                        </div>
+
+                        {/* Rentable */}
+                        <div className="flex items-center space-x-2">
+                            <Label htmlFor="rentable" className="text-sm font-medium text-gray-700">
+                                ¿Disponible para renta?
+                            </Label>
+                            <Controller
+                                name="rentable"
+                                control={form.control}
+                                render={({ field }) => (
+                                    <Switch 
+                                        id="rentable" 
+                                        checked={field.value} 
+                                        onCheckedChange={field.onChange} 
+                                        disabled={isSubmitting} 
+                                    />
+                                )}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Descripción Corta */}
+                    <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="shortDescription">Descripción Corta</Label>
+                        <Input 
+                            id="shortDescription" 
+                            {...form.register('shortDescription')} 
+                            placeholder="Smartphone de última generación" 
+                            disabled={isSubmitting} 
                         />
                     </div>
 
-                    {/* Rentable */}
-                    <div className="flex items-center space-x-3 pt-5">
-                        <Controller
-                            name="rentable"
-                            control={form.control}
-                            render={({ field }) => (
-                                <Switch id="rentable" checked={field.value} onCheckedChange={field.onChange} disabled={isSubmitting} />
-                            )}
+                    {/* Descripción Larga */}
+                    <div className="space-y-2 md:col-span-2">
+                        <div className="flex justify-between items-center">
+                            <Label htmlFor="description">Descripción Larga</Label>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleGenerateDescription}
+                                disabled={isGenerating || isSubmitting}
+                                className="bg-gradient-to-l from-cyan-500 via-violet-500 to-purple-500 text-white hover:text-white text-sm font-semibold px-4 py-2 rounded-full transition cursor-pointer w-full sm:w-auto"
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <Loader2 className="mr-1 h-3 w-3 animate-spin inline-block" />
+                                        Generando...
+                                    </>
+                                ) : (
+                                    'Generar con Gemini'
+                                )}
+                            </Button>
+                        </div>
+                        <Textarea 
+                            id="description" 
+                            {...form.register('description')} 
+                            placeholder="El Galaxy S21 cuenta con una pantalla de 6.2 pulgadas..."
+                            disabled={isSubmitting}
+                            className="min-h-[100px]"
                         />
-                        <Label htmlFor="rentable" className="text-sm font-medium text-gray-700 cursor-pointer">
-                            ¿Disponible para renta?
-                        </Label>
                     </div>
 
                     {/* Funcionalidades */}
@@ -449,30 +811,35 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
                         </Button>
                     </div>
 
-                    {/* Medios */}
+                    {/* Imágenes del Producto */}
                     <div className="space-y-4 md:col-span-2">
                         <div>
-                            <Label className="text-base font-semibold">Medios</Label>
-                            <p className="text-sm text-gray-500">Añade imágenes o videos del producto.</p>
+                            <Label className="text-base font-semibold">Imágenes del Producto</Label>
+                            <p className="text-sm text-gray-500">Sube imágenes del producto (máx. 5 imágenes, formato JPG, PNG o WEBP).</p>
                         </div>
-                        {mediaFields.map((item, index) => (
-                            <div key={item.id} className="flex items-center gap-4 p-3 border rounded-lg bg-gray-50">
-                                <Input {...form.register(`media.${index}`)} placeholder="URL del medio" className="flex-1" disabled={isSubmitting} />
-                                <Button type="button" variant="destructive" size="icon" onClick={() => removeMedia(index)} disabled={isSubmitting}>
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        ))}
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => appendMedia('')}
-                            className="mt-2"
-                            disabled={isSubmitting}
-                        >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Añadir Medio
-                        </Button>
+                        <Controller
+                            name="media"
+                            control={form.control}
+                            render={({ field: { onChange, value = [] } }) => (
+                                <ImageUploader
+                                    existingImages={value.filter(m => m?.url)}
+                                    onImagesChange={(files) => {
+                                        // Convertir archivos a formato compatible con el backend
+                                        onChange([...value, ...files.map(file => ({ file }))]);
+                                    }}
+                                    onImageDelete={(index) => {
+                                        // Eliminar la imagen del array
+                                        const newMedia = [...value];
+                                        newMedia.splice(index, 1);
+                                        onChange(newMedia);
+                                    }}
+                                    maxFiles={5}
+                                />
+                            )}
+                        />
+                        {form.formState.errors.media && (
+                            <p className="text-sm text-red-600">{form.formState.errors.media.message}</p>
+                        )}
                     </div>
                 </div>
 
