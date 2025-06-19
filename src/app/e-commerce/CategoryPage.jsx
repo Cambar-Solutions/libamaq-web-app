@@ -8,6 +8,7 @@ import "@/styles/carousel-vanilla.css";
 import { Link } from "react-router-dom";
 import { getTopSellingProductss, getActiveProductPreviews } from "@/services/public/productService";
 import { getAllBrandsWithCategories } from "@/services/public/brandService";
+import ProductImageWithFallback from "./ProductImageWithFallback";
 
 const getTopSellingProducts = () => {
   const topSelling = [];
@@ -596,27 +597,11 @@ export default function CategoryPage() {
                                         {/* Diseño adaptativo: horizontal en móvil, vertical en tablet/desktop */}
                                         <div className="flex flex-row sm:flex-col w-full">
                                           {/* Imagen: 1/3 del ancho en móvil, altura completa en desktop */}
-                                          <div className="w-1/3 sm:w-full h-28 sm:h-52 flex items-center justify-center p-2 sm:p-4 relative overflow-hidden">
-                                            {/* Fondo con patrón de imagen cuando no hay imagen disponible */}
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                              <div className="w-12 h-12 border-2 border-gray-300 rounded-md flex items-center justify-center">
-                                                <div className="w-6 h-6 rounded-full bg-gray-300"></div>
-                                              </div>
-                                            </div>
-
-                                            {/* La imagen real del producto */}
-                                            <img
-                                              src={topSellingItem.media?.[0]?.url || ""}
-                                              alt={topSellingItem.name || "Producto"}
-                                              className="max-h-full max-w-full object-contain relative z-10"
-                                              onError={(e) => {
-                                                e.target.style.opacity = "0"; // Ocultar la imagen si no carga
-                                              }}
-                                              onLoad={(e) => {
-                                                e.target.style.opacity = "1"; // Mostrar la imagen cuando cargue
-                                              }}
-                                            />
-                                          </div>
+                                          <ProductImageWithFallback
+                                            src={topSellingItem.media?.[0]?.url || "/placeholder-product.png"} // Asegúrate de tener el placeholder aquí
+                                            alt={topSellingItem.product_name || "Producto"} // Usar product_name para el alt
+                                            className="max-h-full max-w-full object-contain relative z-10"
+                                          />
 
                                           {/* Contenido: 2/3 del ancho en móvil, ancho completo en desktop */}
                                           <div className="w-2/3 sm:w-full p-3 sm:p-4 flex-grow flex flex-col justify-between sm:h-[150px]">
@@ -746,24 +731,11 @@ export default function CategoryPage() {
                                   {/* Diseño adaptativo: horizontal en móvil, vertical en tablet/desktop */}
                                   <div className="flex flex-row sm:flex-col w-full">
                                     {/* Imagen: 1/3 del ancho en móvil, altura completa en desktop */}
-                                    <div className="w-1/3 sm:w-full h-28 sm:h-52 flex items-center justify-center p-2 sm:p-4 relative overflow-hidden">
-                                      {/* Fondo con patrón de imagen cuando no hay imagen disponible */}
-                                      <div className="absolute inset-0 flex items-center justify-center">
-                                        <div className="w-12 h-12 border-2 border-gray-300 rounded-md flex items-center justify-center">
-                                          <div className="w-6 h-6 rounded-full bg-gray-300"></div>
-                                        </div>
-                                      </div>
-
-                                      {/* La imagen real del producto */}
-                                      <img
-                                        src={activeItem.media && activeItem.media.length > 0 ? activeItem.media[0].url : "/placeholder-product.png"}
-                                        alt=""
-                                        className="max-h-full max-w-full object-contain relative z-10"
-                                        onError={(e) => {
-                                          e.target.style.opacity = "0"; // Ocultar la imagen si no carga
-                                        }}
-                                      />
-                                    </div>
+                                    <ProductImageWithFallback
+                                      src={activeItem.media && activeItem.media.length > 0 ? activeItem.media[0].url : "/placeholder-product.png"}
+                                      alt={activeItem.name || "Producto"}
+                                      className="max-h-full max-w-full object-contain relative z-10"
+                                    />
 
                                     {/* Contenido: 2/3 del ancho en móvil, ancho completo en desktop */}
                                     <div className="w-2/3 sm:w-full p-3 sm:p-4 flex-grow flex flex-col justify-between sm:h-[150px]">
