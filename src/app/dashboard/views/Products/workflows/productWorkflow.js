@@ -99,21 +99,52 @@ const productWorkflow = {
       );
 
       // 4. Crear el objeto final con solo los campos necesarios
-      const { id, ...restData } = productData;
       const updatedProduct = {
-        ...restData,
+        id: Number(productData.id),
+        updatedBy: "1", // Obtener del usuario autenticado
+        brandId: String(productData.brandId || ""),
+        categoryId: String(productData.categoryId || ""),
+        externalId: productData.externalId || `PROD-${Date.now()}`,
+        name: productData.name || '',
+        shortDescription: productData.shortDescription || '',
+        description: productData.description || '',
+        functionalities: Array.isArray(productData.functionalities) 
+          ? productData.functionalities.map(String) 
+          : [],
+        technicalData: Array.isArray(productData.technicalData)
+          ? productData.technicalData.map(item => ({
+              key: String(item.key || ''),
+              value: String(item.value || '')
+            }))
+          : [],
+        price: Number(productData.price || 0),
+        cost: Number(productData.cost || 0),
+        discount: Number(productData.discount || 0),
+        stock: Number(productData.stock || 0),
+        garanty: Number(productData.garanty || 0),
+        color: productData.color || '',
+        downloads: Array.isArray(productData.downloads)
+          ? productData.downloads.map(item => ({
+              key: String(item.key || ''),
+              value: String(item.value || '')
+            }))
+          : [],
+        rentable: Boolean(productData.rentable),
+        status: productData.status || 'ACTIVE',
         media: [
           ...existingMedia.map(img => ({
-            ...img,
-            id: Number(img.id),
-            entityId: Number(id),
-            entityType: 'PRODUCT'
+            id: Number(img.id) || 0,
+            url: String(img.url || ''),
+            fileType: img.fileType || 'IMAGE',
+            entityId: Number(productData.id) || 0,
+            entityType: 'PRODUCT',
+            displayOrder: Number(img.displayOrder) || 0
           })),
           ...newMedia.map((img, index) => ({
             id: 0, // 0 para nuevas imágenes, el backend asignará un ID
-            url: img.url,
+            url: String(img.url || ''),
             fileType: 'IMAGE',
-            entityId: Number(id),
+            entityId: Number(productData.id) || 0,
             entityType: 'PRODUCT',
             displayOrder: existingMedia.length + index
           }))
@@ -121,7 +152,7 @@ const productWorkflow = {
       };
 
       // 5. Actualizar el producto
-      const response = await updateProductService(id, updatedProduct);
+      const response = await updateProductService(updatedProduct);
       toast.success('Producto actualizado exitosamente');
       return response;
     } catch (error) {

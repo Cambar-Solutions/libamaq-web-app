@@ -303,24 +303,27 @@ export const updateProduct = async (productData) => {
       return Array.isArray(field) ? field : [];
     };
 
-    // Preparar el DTO del producto según la nueva estructura de la API
+    // Preparar el DTO del producto según la estructura de la API
     const productDto = {
       id: Number(productData.id),
-      updatedBy: productData.updatedBy || "1", // Preferiblemente del usuario autenticado
-      updatedAt: productData.updatedAt || new Date().toISOString(),
-      brandId: productData.brandId ? String(productData.brandId) : "1",
-      categoryId: productData.categoryId ? String(productData.categoryId) : "1",
+      updatedBy: productData.updatedBy || "1",
+      updatedAt: new Date().toISOString(),
+      brandId: String(productData.brandId || "1"),
+      categoryId: String(productData.categoryId || "1"),
       externalId: productData.externalId || `PROD-${Date.now()}`,
-      name: productData.name,
+      name: productData.name || '',
       shortDescription: productData.shortDescription || '',
       description: productData.description || '',
       
-      // Asegurar que functionalities y technicalData tengan el formato correcto
-      functionalities: ensureArrayFormat(productData.functionalities),
-      technicalData: ensureArrayFormat(productData.technicalData),
+      // Asegurar que functionalities sea un array de strings
+      functionalities: ensureArrayFormat(productData.functionalities || []).map(String),
       
-      type: productData.type || 'PRODUCT',
-      productUsage: productData.productUsage || 'GENERAL',
+      // Asegurar que technicalData sea un array de objetos con key y value
+      technicalData: ensureArrayFormat(productData.technicalData || []).map(item => ({
+        key: String(item.key || ''),
+        value: String(item.value || '')
+      })),
+      
       price: Number(productData.price || 0),
       cost: Number(productData.cost || 0),
       discount: Number(productData.discount || 0),
@@ -328,35 +331,30 @@ export const updateProduct = async (productData) => {
       garanty: Number(productData.garanty || 0),
       color: productData.color || '',
       
-      // Asegurar que downloads tenga el formato correcto
-      downloads: ensureArrayFormat(productData.downloads),
+      // Asegurar que downloads sea un array de objetos con key y value
+      downloads: ensureArrayFormat(productData.downloads || []).map(item => ({
+        key: String(item.key || ''),
+        value: String(item.value || '')
+      })),
       
       rentable: Boolean(productData.rentable),
       status: productData.status || 'ACTIVE',
       
       // Asegurar que media tenga el formato correcto
-      media: Array.isArray(productData.media || productData.multimedia) 
-        ? (productData.media || productData.multimedia).map((media, index) => ({
-            id: media.id || 0,
-            url: media.url,
-            fileType: media.fileType || 'IMAGE',
-            entityId: media.entityId || 0,
-            entityType: media.entityType || 'PRODUCT',
-            displayOrder: media.displayOrder || index
-          }))
-        : []
+      media: ensureArrayFormat(productData.media || []).map(media => ({
+        id: Number(media.id) || 0,
+        url: String(media.url || ''),
+        fileType: media.fileType || 'IMAGE',
+        entityId: Number(media.entityId) || 0,
+        entityType: media.entityType || 'PRODUCT',
+        displayOrder: Number(media.displayOrder) || 0
+      }))
     };
 
     console.log('Enviando datos al servidor (PUT):', JSON.stringify(productDto, null, 2));
     
-    // Usar apiClient para mantener consistencia
     const response = await apiClient.put("/l/products", productDto);
     console.log('Respuesta de actualización de producto:', response.data);
-    
-    // La nueva estructura de respuesta tiene el formato { data: {...}, status: 200, message: 'success' }
-    if (response.data && (response.data.status === 200 || response.data.message === 'success')) {
-      return response.data;
-    }
     
     return response.data;
   } catch (error) {

@@ -26,8 +26,9 @@ import PropTypes from 'prop-types';
 // Importa el nuevo servicio de IA
 import { generateDescriptionIA } from '@/services/admin/AIService';
 
-// --- Form Schema for Validation (adjust as per your actual backend schema) ---
+// --- Form Schema for Validation
 const editProductSchema = z.object({
+    id: z.number().optional(),
     name: z.string().min(1, 'El nombre es obligatorio.'),
     shortDescription: z.string().optional(),
     description: z.string().optional(),
@@ -39,90 +40,98 @@ const editProductSchema = z.object({
         z.number().min(0.01, 'El precio debe ser mayor a 0.')
     ),
     cost: z.preprocess(
-        (val) => parseFloat(val),
-        z.number().optional().nullable() // Allow optional cost
+        (val) => (val === '' ? null : parseFloat(val)),
+        z.number().min(0, 'El costo no puede ser negativo.').nullable().optional()
+    ),
+    discount: z.preprocess(
+        (val) => parseFloat(val || 0),
+        z.number().min(0, 'El descuento no puede ser negativo.').optional()
     ),
     stock: z.preprocess(
         (val) => parseInt(val, 10),
         z.number().int().min(0, 'El stock no puede ser negativo.')
     ),
+    garanty: z.preprocess(
+        (val) => parseInt(val || 0, 10),
+        z.number().int().min(0, 'La garantía no puede ser negativa.').optional()
+    ),
     color: z.string().optional(),
-    status: z.enum(['ACTIVE', 'INACTIVE', 'OUT_OF_STOCK'], {
-        message: 'Selecciona un estado válido.'
-    }),
     rentable: z.boolean().default(false),
+    status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
+    functionalities: z.array(z.string()).default([]),
     technicalData: z.array(
         z.object({
-            key: z.string().min(1, 'La clave es obligatoria.'),
-            value: z.string().min(1, 'El valor es obligatorio.'),
+            key: z.string().min(1, 'La clave es requerida'),
+            value: z.string().min(1, 'El valor es requerido')
         })
-    ).optional().default([]).refine(data => {
-        // Custom refinement to ensure both key and value are present if any are provided
-        return data.every(item => (item.key && item.value) || (!item.key && !item.value));
-    }, {
-        message: "Ambos campos (clave y valor) son requeridos para los datos técnicos.",
-        path: ["technicalData"], // This associates the error with the technicalData field
-    }),
+    ).default([]),
+    downloads: z.array(
+        z.object({
+            key: z.string().min(1, 'El nombre es requerido'),
+            value: z.string().min(1, 'La URL es requerida').url('Debe ser una URL válida')
+        })
+    ).default([]),
+    media: z.array(z.any()).default([])
 });
 
+// Helper function to set default values
+const getDefaultValues = (product) => ({
+    id: product?.id || undefined,
+    name: product?.name || '',
+    shortDescription: product?.shortDescription || '',
+    description: product?.description || '',
+    externalId: product?.externalId || '',
+    brandId: product?.brandId?.toString() || '',
+    categoryId: product?.categoryId?.toString() || '',
+    price: product?.price || 0,
+    cost: product?.cost || '',
+    discount: product?.discount || 0,
+    stock: product?.stock || 0,
+    garanty: product?.garanty || 0,
+    color: product?.color || '',
+    rentable: product?.rentable || false,
+    status: product?.status || 'ACTIVE',
+    functionalities: Array.isArray(product?.functionalities) ? product.functionalities : [],
+    technicalData: Array.isArray(product?.technicalData) 
+        ? product.technicalData 
+        : [{ key: '', value: '' }],
+    downloads: Array.isArray(product?.downloads) 
+        ? product.downloads 
+        : [{ key: '', value: '' }],
+    media: Array.isArray(product?.media) ? product.media : []
+});
 
 const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, onClose }) => {
-    const [isUpdating, setIsUpdating] = useState(false); // State for loading during update
-    const [isGeneratingDescription, setIsGeneratingDescription] = useState(false); // Nuevo estado para el loader del botón de IA
-
-    const {
-        register,
-        handleSubmit,
-        control,
-        reset,
-        setValue, // Asegúrate de tener setValue de useForm
-        getValues, // Asegúrate de tener getValues de useForm
-        formState: { errors }
-    } = useForm({
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    const form = useForm({
         resolver: zodResolver(editProductSchema),
-        defaultValues: {
-            name: product.name || '',
-            shortDescription: product.shortDescription || '',
-            description: product.description || '',
-            externalId: product.externalId || '',
-            brandId: String(product.brand?.id) || '', // Convert to string for Select
-            categoryId: String(product.category?.id) || '', // Convert to string for Select
-            price: product.price || 0,
-            cost: product.cost || 0,
-            stock: product.stock || 0,
-            color: product.color || '',
-            status: product.status || 'ACTIVE',
-            rentable: product.rentable || false,
-            technicalData: product.technicalData || [],
-        }
+        defaultValues: getDefaultValues(product)
     });
 
-    const { fields, append, remove } = useFieldArray({
-        control,
-        name: "technicalData",
+    const { fields: functionalityFields, append: appendFunctionality, remove: removeFunctionality } = useFieldArray({
+        control: form.control,
+        name: 'functionalities'
     });
 
-    // Reset form when product prop changes (useful if the dialog is reused for different products)
-    useEffect(() => {
-        reset({
-            name: product.name || '',
-            shortDescription: product.shortDescription || '',
-            description: product.description || '',
-            externalId: product.externalId || '',
-            brandId: String(product.brand?.id) || '',
-            categoryId: String(product.category?.id) || '',
-            price: product.price || 0,
-            cost: product.cost || 0,
-            stock: product.stock || 0,
-            color: product.color || '',
-            status: product.status || 'ACTIVE',
-            rentable: product.rentable || false,
-            technicalData: product.technicalData || [],
-        });
-    }, [product, reset]);
+    const { fields: technicalDataFields, append: appendTechnicalData, remove: removeTechnicalData } = useFieldArray({
+        control: form.control,
+        name: 'technicalData'
+    });
+
+    const { fields: downloadFields, append: appendDownload, remove: removeDownload } = useFieldArray({
+        control: form.control,
+        name: 'downloads'
+    });
+
+    const { fields: mediaFields, append: appendMedia, remove: removeMedia } = useFieldArray({
+        control: form.control,
+        name: 'media'
+    });
 
     const handleEditSubmit = async (data) => {
-        setIsUpdating(true);
+        setIsSubmitting(true);
         try {
             // Prepare data for API: convert numeric strings back to numbers if needed, ensure correct types
             const payload = {
@@ -144,27 +153,27 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
             // You might want to show an error message to the user here
             alert(`Error al actualizar el producto: ${error.message || error}`);
         } finally {
-            setIsUpdating(false);
+            setIsSubmitting(false);
         }
     };
 
     const handleGenerateDescription = async () => {
-        const productName = getValues('name'); // Obtiene el valor del campo 'name'
+        const productName = form.getValues('name'); // Obtiene el valor del campo 'name'
         if (!productName) {
             alert('Por favor, ingresa un nombre de producto para generar la descripción.');
             return;
         }
 
-        setIsGeneratingDescription(true);
+        setIsGenerating(true);
         try {
             // Puedes ajustar el 'type' basado en alguna lógica si tienes una forma de detectarlo
             const description = await generateDescriptionIA(productName, "PRODUCT"); // Llama al servicio
-            setValue('description', description, { shouldValidate: true }); // Establece la descripción en el textarea
+            form.setValue('description', description, { shouldValidate: true }); // Establece la descripción en el textarea
         } catch (error) {
             console.error('Error al generar la descripción:', error);
             alert(`Error al generar la descripción: ${error.message || error}`); // Muestra un mensaje de error al usuario
         } finally {
-            setIsGeneratingDescription(false);
+            setIsGenerating(false);
         }
     };
 
@@ -186,33 +195,33 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
                 </div>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit(handleEditSubmit)} className="space-y-6 pt-0">
+            <form onSubmit={form.handleSubmit(handleEditSubmit)} className="space-y-6 pt-0">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Nombre */}
                     <div className="space-y-2 ">
                         <Label htmlFor="name">Nombre *</Label>
-                        <Input id="name" {...register('name')} placeholder="Ej: Smartphone Galaxy S21" disabled={isUpdating} />
-                        {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+                        <Input id="name" {...form.register('name')} placeholder="Ej: Smartphone Galaxy S21" disabled={isSubmitting} />
+                        {form.formState.errors.name && <p className="text-sm text-red-600">{form.formState.errors.name.message}</p>}
                     </div>
 
                     {/* Descripción Corta */}
                     <div className="space-y-2 ">
                         <Label htmlFor="shortDescription">Descripción Corta</Label>
-                        <Input id="shortDescription" {...register('shortDescription')} placeholder="Smartphone de última generación" disabled={isUpdating} />
+                        <Input id="shortDescription" {...form.register('shortDescription')} placeholder="Smartphone de última generación" disabled={isSubmitting} />
                     </div>
 
                     {/* Descripción Larga */}
                     <div className="space-y-2 md:col-span-2">
                         <Label htmlFor="description">Descripción</Label>
                         <div className="flex flex-col sm:flex-row gap-2"> {/* Contenedor para textarea y botón */}
-                            <Textarea id="description" {...register('description')} placeholder="El Galaxy S21 cuenta con una pantalla de 6.2 pulgadas..." disabled={isUpdating} className="flex-grow" />
+                            <Textarea id="description" {...form.register('description')} placeholder="El Galaxy S21 cuenta con una pantalla de 6.2 pulgadas..." disabled={isSubmitting} className="flex-grow" />
                             <Button
                                 type="button"
                                 onClick={handleGenerateDescription}
-                                disabled={isGeneratingDescription || isUpdating}
+                                disabled={isGenerating || isSubmitting}
                                 className="whitespace-nowrap"
                             >
-                                {isGeneratingDescription ? (
+                                {isGenerating ? (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 ) : (
                                     'Generar descripción con Gemini'
@@ -224,7 +233,7 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
                     {/* ID Externo */}
                     <div className="space-y-2">
                         <Label htmlFor="externalId">ID Externo</Label>
-                        <Input id="externalId" {...register('externalId')} placeholder="Ej: PROD-12345" disabled={isUpdating} />
+                        <Input id="externalId" {...form.register('externalId')} placeholder="Ej: PROD-12345" disabled={isSubmitting} />
                     </div>
 
                     {/* ID de Marca */}
@@ -232,9 +241,9 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
                         <Label htmlFor="brandId">Marca *</Label>
                         <Controller
                             name="brandId"
-                            control={control}
+                            control={form.control}
                             render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value} disabled={isUpdating}>
+                                <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Selecciona una marca" />
                                     </SelectTrigger>
@@ -246,7 +255,7 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
                                 </Select>
                             )}
                         />
-                        {errors.brandId && <p className="text-sm text-red-600">{errors.brandId.message}</p>}
+                        {form.formState.errors.brandId && <p className="text-sm text-red-600">{form.formState.errors.brandId.message}</p>}
                     </div>
 
                     {/* ID de Categoría */}
@@ -254,9 +263,9 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
                         <Label htmlFor="categoryId">Categoría *</Label>
                         <Controller
                             name="categoryId"
-                            control={control}
+                            control={form.control}
                             render={({ field }) => (
-                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isUpdating}>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Selecciona una categoría" />
                                     </SelectTrigger>
@@ -268,7 +277,7 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
                                 </Select>
                             )}
                         />
-                        {errors.categoryId && <p className="text-sm text-red-600">{errors.categoryId.message}</p>}
+                        {form.formState.errors.categoryId && <p className="text-sm text-red-600">{form.formState.errors.categoryId.message}</p>}
                     </div>
 
                     {/* Precio */}
@@ -276,9 +285,9 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
                         <Label htmlFor="price">Precio (MXN) *</Label>
                         <div className="relative">
                             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 sm:text-sm">$</span>
-                            <Input id="price" type="number" step="0.01" {...register('price')} placeholder="0.00" className="pl-7" disabled={isUpdating} />
+                            <Input id="price" type="number" step="0.01" {...form.register('price')} placeholder="0.00" className="pl-7" disabled={isSubmitting} />
                         </div>
-                        {errors.price && <p className="text-sm text-red-600">{errors.price.message}</p>}
+                        {form.formState.errors.price && <p className="text-sm text-red-600">{form.formState.errors.price.message}</p>}
                     </div>
 
                     {/* Costo */}
@@ -286,22 +295,34 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
                         <Label htmlFor="cost">Costo (MXN)</Label>
                         <div className="relative">
                             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 sm:text-sm">$</span>
-                            <Input id="cost" type="number" step="0.01" {...register('cost')} placeholder="0.00" className="pl-7" disabled={isUpdating} />
+                            <Input id="cost" type="number" step="0.01" {...form.register('cost')} placeholder="0.00" className="pl-7" disabled={isSubmitting} />
                         </div>
-                        {errors.cost && <p className="text-sm text-red-600">{errors.cost.message}</p>}
+                        {form.formState.errors.cost && <p className="text-sm text-red-600">{form.formState.errors.cost.message}</p>}
+                    </div>
+
+                    {/* Descuento */}
+                    <div className="space-y-2">
+                        <Label htmlFor="discount">Descuento (%)</Label>
+                        <Input id="discount" type="number" {...form.register('discount')} placeholder="0" disabled={isSubmitting} />
                     </div>
 
                     {/* Stock */}
                     <div className="space-y-2">
                         <Label htmlFor="stock">Stock *</Label>
-                        <Input id="stock" type="number" {...register('stock')} placeholder="0" disabled={isUpdating} />
-                        {errors.stock && <p className="text-sm text-red-600">{errors.stock.message}</p>}
+                        <Input id="stock" type="number" {...form.register('stock')} placeholder="0" disabled={isSubmitting} />
+                        {form.formState.errors.stock && <p className="text-sm text-red-600">{form.formState.errors.stock.message}</p>}
+                    </div>
+
+                    {/* Garantía */}
+                    <div className="space-y-2">
+                        <Label htmlFor="garanty">Garantía (meses)</Label>
+                        <Input id="garanty" type="number" {...form.register('garanty')} placeholder="0" disabled={isSubmitting} />
                     </div>
 
                     {/* Color */}
                     <div className="space-y-2">
                         <Label htmlFor="color">Color</Label>
-                        <Input id="color" {...register('color')} placeholder="Ej: Negro" disabled={isUpdating} />
+                        <Input id="color" {...form.register('color')} placeholder="Ej: Negro" disabled={isSubmitting} />
                     </div>
 
                     {/* Estado */}
@@ -309,9 +330,9 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
                         <Label htmlFor="status">Estado</Label>
                         <Controller
                             name="status"
-                            control={control}
+                            control={form.control}
                             render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value} disabled={isUpdating}>
+                                <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Selecciona un estado" />
                                     </SelectTrigger>
@@ -321,9 +342,6 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
                                         </SelectItem>
                                         <SelectItem value="INACTIVE">
                                             <div className="flex items-center"><span className="h-2 w-2 rounded-full bg-red-500 mr-2"></span>Inactivo</div>
-                                        </SelectItem>
-                                        <SelectItem value="OUT_OF_STOCK">
-                                            <div className="flex items-center"><span className="h-2 w-2 rounded-full bg-orange-500 mr-2"></span>Sin Stock</div>
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -335,14 +353,40 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
                     <div className="flex items-center space-x-3 pt-5">
                         <Controller
                             name="rentable"
-                            control={control}
+                            control={form.control}
                             render={({ field }) => (
-                                <Switch id="rentable" checked={field.value} onCheckedChange={field.onChange} disabled={isUpdating} />
+                                <Switch id="rentable" checked={field.value} onCheckedChange={field.onChange} disabled={isSubmitting} />
                             )}
                         />
                         <Label htmlFor="rentable" className="text-sm font-medium text-gray-700 cursor-pointer">
                             ¿Disponible para renta?
                         </Label>
+                    </div>
+
+                    {/* Funcionalidades */}
+                    <div className="space-y-4 md:col-span-2">
+                        <div>
+                            <Label className="text-base font-semibold">Funcionalidades</Label>
+                            <p className="text-sm text-gray-500">Añade funcionalidades del producto.</p>
+                        </div>
+                        {functionalityFields.map((item, index) => (
+                            <div key={item.id} className="flex items-center gap-4 p-3 border rounded-lg bg-gray-50">
+                                <Input {...form.register(`functionalities.${index}`)} placeholder="Funcionalidad" className="flex-1" disabled={isSubmitting} />
+                                <Button type="button" variant="destructive" size="icon" onClick={() => removeFunctionality(index)} disabled={isSubmitting}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ))}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => appendFunctionality('')}
+                            className="mt-2"
+                            disabled={isSubmitting}
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Añadir Funcionalidad
+                        </Button>
                     </div>
 
                     {/* Datos Técnicos */}
@@ -351,39 +395,95 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
                             <Label className="text-base font-semibold">Datos Técnicos</Label>
                             <p className="text-sm text-gray-500">Añade especificaciones técnicas como potencia, voltaje, etc.</p>
                         </div>
-                        {fields.map((item, index) => (
+                        {technicalDataFields.map((item, index) => (
                             <div key={item.id} className="flex items-center gap-4 p-3 border rounded-lg bg-gray-50">
-                                <Input {...register(`technicalData.${index}.key`)} placeholder="Clave (Ej: Potencia)" className="flex-1" disabled={isUpdating} />
-                                <Input {...register(`technicalData.${index}.value`)} placeholder="Valor (Ej: 550w)" className="flex-1" disabled={isUpdating} />
-                                <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)} disabled={isUpdating}>
+                                <Input {...form.register(`technicalData.${index}.key`)} placeholder="Clave (Ej: Potencia)" className="flex-1" disabled={isSubmitting} />
+                                <Input {...form.register(`technicalData.${index}.value`)} placeholder="Valor (Ej: 550w)" className="flex-1" disabled={isSubmitting} />
+                                <Button type="button" variant="destructive" size="icon" onClick={() => removeTechnicalData(index)} disabled={isSubmitting}>
                                     <X className="h-4 w-4" />
                                 </Button>
                             </div>
                         ))}
-                        {(errors.technicalData && typeof errors.technicalData.message === 'string') && (
-                            <p className="text-sm text-red-600">{errors.technicalData.message}</p>
+                        {(form.formState.errors.technicalData && typeof form.formState.errors.technicalData.message === 'string') && (
+                            <p className="text-sm text-red-600">{form.formState.errors.technicalData.message}</p>
                         )}
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => append({ key: "", value: "" })}
+                            onClick={() => appendTechnicalData({ key: "", value: "" })}
                             className="mt-2"
-                            disabled={isUpdating}
+                            disabled={isSubmitting}
                         >
                             <Plus className="h-4 w-4 mr-2" />
                             Añadir Dato Técnico
+                        </Button>
+                    </div>
+
+                    {/* Descargas */}
+                    <div className="space-y-4 md:col-span-2">
+                        <div>
+                            <Label className="text-base font-semibold">Descargas</Label>
+                            <p className="text-sm text-gray-500">Añade enlaces de descarga para el producto.</p>
+                        </div>
+                        {downloadFields.map((item, index) => (
+                            <div key={item.id} className="flex items-center gap-4 p-3 border rounded-lg bg-gray-50">
+                                <Input {...form.register(`downloads.${index}.key`)} placeholder="Nombre del archivo" className="flex-1" disabled={isSubmitting} />
+                                <Input {...form.register(`downloads.${index}.value`)} placeholder="URL de descarga" className="flex-1" disabled={isSubmitting} />
+                                <Button type="button" variant="destructive" size="icon" onClick={() => removeDownload(index)} disabled={isSubmitting}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ))}
+                        {(form.formState.errors.downloads && typeof form.formState.errors.downloads.message === 'string') && (
+                            <p className="text-sm text-red-600">{form.formState.errors.downloads.message}</p>
+                        )}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => appendDownload({ key: "", value: "" })}
+                            className="mt-2"
+                            disabled={isSubmitting}
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Añadir Descarga
+                        </Button>
+                    </div>
+
+                    {/* Medios */}
+                    <div className="space-y-4 md:col-span-2">
+                        <div>
+                            <Label className="text-base font-semibold">Medios</Label>
+                            <p className="text-sm text-gray-500">Añade imágenes o videos del producto.</p>
+                        </div>
+                        {mediaFields.map((item, index) => (
+                            <div key={item.id} className="flex items-center gap-4 p-3 border rounded-lg bg-gray-50">
+                                <Input {...form.register(`media.${index}`)} placeholder="URL del medio" className="flex-1" disabled={isSubmitting} />
+                                <Button type="button" variant="destructive" size="icon" onClick={() => removeMedia(index)} disabled={isSubmitting}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ))}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => appendMedia('')}
+                            className="mt-2"
+                            disabled={isSubmitting}
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Añadir Medio
                         </Button>
                     </div>
                 </div>
 
                 <DialogFooter className="border-t pt-4">
                     <DialogClose asChild>
-                        <Button type="button" variant="outline" disabled={isUpdating}>
+                        <Button type="button" variant="outline" disabled={isSubmitting}>
                             Cancelar
                         </Button>
                     </DialogClose>
-                    <Button type="submit" disabled={isUpdating} className="bg-blue-600 hover:bg-blue-700">
-                        {isUpdating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</> : 'Guardar Cambios'}
+                    <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
+                        {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</> : 'Guardar Cambios'}
                     </Button>
                 </DialogFooter>
             </form>
@@ -392,21 +492,56 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
 };
 
 EditProductFormDialog.propTypes = {
-    product: PropTypes.object.isRequired,
+    product: PropTypes.shape({
+        id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        name: PropTypes.string,
+        shortDescription: PropTypes.string,
+        description: PropTypes.string,
+        externalId: PropTypes.string,
+        brandId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        categoryId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        price: PropTypes.number,
+        cost: PropTypes.number,
+        discount: PropTypes.number,
+        stock: PropTypes.number,
+        garanty: PropTypes.number,
+        color: PropTypes.string,
+        rentable: PropTypes.bool,
+        status: PropTypes.string,
+        functionalities: PropTypes.arrayOf(PropTypes.string),
+        technicalData: PropTypes.arrayOf(
+            PropTypes.shape({
+                key: PropTypes.string,
+                value: PropTypes.string
+            })
+        ),
+        downloads: PropTypes.arrayOf(
+            PropTypes.shape({
+                key: PropTypes.string,
+                value: PropTypes.string
+            })
+        ),
+        media: PropTypes.arrayOf(PropTypes.any)
+    }).isRequired,
     brands: PropTypes.arrayOf(
         PropTypes.shape({
             id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-            name: PropTypes.string.isRequired,
+            name: PropTypes.string.isRequired
         })
-    ).isRequired,
+    ),
     categories: PropTypes.arrayOf(
         PropTypes.shape({
             id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-            name: PropTypes.string.isRequired,
+            name: PropTypes.string.isRequired
         })
-    ).isRequired,
+    ),
     onSave: PropTypes.func.isRequired,
-    onClose: PropTypes.func.isRequired, // Function to close the dialog
+    onClose: PropTypes.func.isRequired
+};
+
+EditProductFormDialog.defaultProps = {
+    brands: [],
+    categories: []
 };
 
 export default EditProductFormDialog;
