@@ -343,7 +343,7 @@ const EditProductFormDialog = ({ product, brands = [], categories = [], onSave, 
     };
 
     return (
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-auto">
             <DialogHeader className="border-b pb-4">
                 <div className="flex items-center space-x-3">
                     <div className="sm:text-center">
