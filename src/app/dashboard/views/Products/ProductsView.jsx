@@ -240,8 +240,8 @@ const ProductsView = () => {
         </div>
 
         {/* Search and Filter */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 max-w-2xl">
+        <div className="flex flex-col sm:flex-row gap-4 ">
+          <div className="flex-1 max-w-xl">
             <SearchBar
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -253,8 +253,9 @@ const ProductsView = () => {
             <Select
               value={selectedBrand}
               onValueChange={handleBrandFilterChange}
+              
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full bg-white rounded-full">
                 <SelectValue placeholder="Filtrar por marca" />
               </SelectTrigger>
               <SelectContent>

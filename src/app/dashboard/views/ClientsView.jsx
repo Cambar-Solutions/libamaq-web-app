@@ -483,7 +483,7 @@ export function ClientsView() {
               value={selectedRole}
               onValueChange={handleRoleFilterChange}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full bg-white rounded-full">
                 <SelectValue placeholder="Filtrar por Rol" />
               </SelectTrigger>
               <SelectContent>

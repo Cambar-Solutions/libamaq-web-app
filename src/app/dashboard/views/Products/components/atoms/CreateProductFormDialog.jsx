@@ -1,4 +1,4 @@
-import React, { useState } from 'react' // Importa useState
+import React, { useState, useEffect } from 'react';
 import {
     Dialog,
     DialogClose,
@@ -13,17 +13,130 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Loader2, Search, X, Drill } from 'lucide-react';
+import { Plus, Loader2, X, Drill, FileText, Download, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import ImageUploader from '../../../SpareParts/components/molecules/ImageUploader';
 import { generateDescriptionIA } from '@/services/admin/AIService';
 
-export default function CreateProductFormDialog({ isCreateDialogOpen, openCreateDialog, closeCreateDialog, handleCreateSubmit, handleSubmit, isCreating, brands = [], categories = [], fields, register, errors, control, setValue, getValues }) { // Agrega setValue y getValues de react-hook-form
-    const [isGeneratingDescription, setIsGeneratingDescription] = useState(false); // Nuevo estado para el loader del botón
+export default function CreateProductFormDialog({ 
+    isCreateDialogOpen, 
+    openCreateDialog, 
+    closeCreateDialog, 
+    handleCreateSubmit, 
+    isCreating, 
+    brands = [], 
+    categories = [] 
+}) {
+    const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+    const [filteredCategories, setFilteredCategories] = useState([]);
+
+    const { register, handleSubmit, control, watch, setValue, getValues, reset, formState: { errors } } = useForm({
+        defaultValues: {
+            name: '',
+            shortDescription: '',
+            description: '',
+            externalId: '',
+            brandId: '',
+            categoryId: '',
+            price: '',
+            cost: '',
+            discount: 0,
+            stock: 0,
+            garanty: 12,
+            color: '',
+            rentable: false,
+            status: 'ACTIVE',
+            functionalities: [],
+            technicalData: [],
+            downloads: [],
+            media: []
+        }
+    });
+
+    const { fields: technicalFields, append: appendTechnical, remove: removeTechnical } = useFieldArray({
+        control,
+        name: 'technicalData'
+    });
+
+    const { fields: functionalityFields, append: appendFunctionality, remove: removeFunctionality } = useFieldArray({
+        control,
+        name: 'functionalities'
+    });
+
+    const { fields: downloadFields, append: appendDownload, remove: removeDownload } = useFieldArray({
+        control,
+        name: 'downloads'
+    });
+
+    useEffect(() => {
+        setFilteredCategories(categories);
+    }, [categories]);
+
+    useEffect(() => {
+        if (!isCreateDialogOpen) {
+            reset({
+                name: '',
+                shortDescription: '',
+                description: '',
+                externalId: '',
+                brandId: '',
+                categoryId: '',
+                price: '',
+                cost: '',
+                discount: 0,
+                stock: 0,
+                garanty: 12,
+                color: '',
+                rentable: false,
+                status: 'ACTIVE',
+                functionalities: [],
+                technicalData: [],
+                downloads: [],
+                media: []
+            });
+            setFilteredCategories(categories);
+        }
+    }, [isCreateDialogOpen, reset, categories]);
+
+    const handleBrandChange = (brandId) => {
+        // Si no hay marca seleccionada, mostrar todas las categorías
+        if (!brandId) {
+            setFilteredCategories(categories);
+            return;
+        }
+
+        // Encontrar la marca seleccionada
+        const selectedBrand = brands.find(brand => brand.id === brandId);
+        
+        // Si la marca tiene categorías asociadas, filtrar por ellas
+        if (selectedBrand) {
+            // Si la marca tiene categorías, filtrarlas
+            if (selectedBrand.brandCategories && selectedBrand.brandCategories.length > 0) {
+                const brandCategoryIds = selectedBrand.brandCategories.map(bc => bc.category.id);
+                const filtered = categories.filter(cat => 
+                    brandCategoryIds.includes(cat.id)
+                );
+                setFilteredCategories(filtered);
+            } else {
+                setFilteredCategories([]);
+            }
+            
+            // Establecer el color de la marca si tiene uno definido
+            if (selectedBrand.color) {
+                setValue('color', selectedBrand.color, { shouldDirty: true });
+            }
+        } else {
+            setFilteredCategories(categories);
+        }
+        
+        // Resetear la categoría seleccionada
+        setValue('categoryId', '');
+    };
 
     const handleGenerateDescription = async () => {
-        const productName = getValues('name'); // Obtiene el valor del campo 'name'
+        const productName = getValues('name');
         if (!productName) {
             alert('Por favor, ingresa un nombre de producto para generar la descripción.');
             return;
@@ -31,208 +144,554 @@ export default function CreateProductFormDialog({ isCreateDialogOpen, openCreate
 
         setIsGeneratingDescription(true);
         try {
-            // Puedes ajustar el 'type' basado en alguna lógica si tienes una forma de detectarlo
-            const description = await generateDescriptionIA(productName, "PRODUCT"); // Llama al servicio
-            setValue('description', description, { shouldValidate: true }); // Establece la descripción en el textarea
+            const description = await generateDescriptionIA(productName, "PRODUCT");
+            setValue('description', description, { shouldValidate: true });
         } catch (error) {
             console.error('Error al generar la descripción:', error);
-            alert(`Error al generar la descripción: ${error}`); // Muestra un mensaje de error al usuario
+            alert(`Error al generar la descripción: ${error}`);
         } finally {
             setIsGeneratingDescription(false);
         }
     };
 
+    const handleImageUpload = (files) => {
+        const newMedia = files.map((file, index) => ({
+            id: index,
+            url: URL.createObjectURL(file),
+            fileType: file.type.startsWith('image/') ? 'IMAGE' : 'OTHER',
+            entityType: 'PRODUCT',
+            displayOrder: index,
+            file // Keep the file reference for upload
+        }));
+        setValue('media', newMedia);
+    };
+
+    const handleImageDelete = (index) => {
+        const currentMedia = [...getValues('media')];
+        currentMedia.splice(index, 1);
+        setValue('media', currentMedia);
+    };
+
+    const calcularPrecioConIVA = (precio) => {
+        return precio * 1.16;
+    };
+
+    const calcularPrecioPublico = (costo) => {
+        if (!costo) return 0;
+        const precioBase = parseFloat(costo) / 0.8; // División entre 0.8 (20% de ganancia)
+        return calcularPrecioConIVA(precioBase);
+    };
+
+    const calcularPrecioFrecuente = (costo) => {
+        if (!costo) return 0;
+        const precioBase = parseFloat(costo) / 0.9; // División entre 0.9 (10% de ganancia)
+        return calcularPrecioConIVA(precioBase);
+    };
+
+    const handleCostoChange = (e) => {
+        const costo = e.target.value;
+        setValue('cost', costo);
+        
+        if (costo && parseFloat(costo) > 0) {
+            // Calcular y establecer el precio público general
+            const precioPublico = calcularPrecioPublico(costo);
+            setValue('price', precioPublico.toFixed(2));
+            
+            // Calcular y establecer el descuento para clientes frecuentes
+            const precioFrecuente = calcularPrecioFrecuente(costo);
+            const descuento = ((precioPublico - precioFrecuente) / precioPublico * 100).toFixed(2);
+            setValue('discount', parseFloat(descuento));
+        } else {
+            // Limpiar los campos si el costo es 0 o vacío
+            setValue('price', '');
+            setValue('discount', 0);
+        }
+    };
+
+    const onSubmit = (data) => {
+        const formattedData = {
+            ...data,
+            brandId: String(data.brandId),
+            categoryId: String(data.categoryId),
+            price: parseFloat(data.price),
+            cost: data.cost ? parseFloat(data.cost) : undefined,
+            discount: data.discount ? parseFloat(data.discount) : 0,
+            stock: parseInt(data.stock, 10),
+            garanty: parseInt(data.garanty, 10) || 0,
+            functionalities: data.functionalities.filter(f => f && f.trim() !== ''),
+            technicalData: data.technicalData.filter(td => td.key && td.value),
+            downloads: data.downloads.filter(d => d.key && d.value),
+            // media will be handled separately in the parent component
+        };
+        handleCreateSubmit(formattedData);
+    };
+
     return (
-        <>
-            <Dialog open={isCreateDialogOpen} onOpenChange={(isOpen) => !isOpen && closeCreateDialog()}>
-                <DialogTrigger asChild>
-                    <Button
-                        onClick={openCreateDialog}
-                        className="w-full sm:w-auto"
-                    >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Nuevo Producto
-                    </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader className="border-b pb-4">
-                        <div className="flex items-center space-x-3">
-                            <div className="sm:text-center">
-                                <DialogTitle className="text-xl font-semibold text-gray-900">
-                                    <div className="flex items-center space-x-3">
-                                        <Drill className="h-6 w-6 text-blue-600" />
-                                        <h2 className="text-xl font-semibold text-gray-900">Nuevo Producto</h2>
+        <Dialog open={isCreateDialogOpen} onOpenChange={(isOpen) => !isOpen && closeCreateDialog()}>
+            <DialogTrigger asChild>
+                <Button onClick={openCreateDialog} className="w-full sm:w-auto">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nuevo Producto
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader className="border-b pb-4">
+                    <div className="flex items-center space-x-3">
+                        <div className="sm:text-center">
+                            <DialogTitle className="text-xl font-semibold text-gray-900">
+                                <div className="flex items-center space-x-3">
+                                    <Drill className="h-6 w-6 text-blue-600" />
+                                    <h2>Nuevo Producto</h2>
+                                </div>
+                            </DialogTitle>
+                            <DialogDescription className="mt-1 text-sm text-gray-500">
+                                Completa la información del producto. Los campos marcados con * son obligatorios.
+                            </DialogDescription>
+                        </div>
+                    </div>
+                </DialogHeader>
+
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Sección de información básica */}
+                        <div className="md:col-span-2">
+                            <h3 className="text-lg font-medium mb-4 flex items-center">
+                                <Settings className="h-5 w-5 mr-2 text-blue-600" />
+                                Información Básica
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <Label htmlFor="name">Nombre *</Label>
+                                    <Input 
+                                        id="name" 
+                                        {...register('name', { required: 'El nombre es requerido' })} 
+                                        placeholder="Ej: Smartphone Galaxy S21" 
+                                        disabled={isCreating} 
+                                    />
+                                    {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="externalId">ID Externo</Label>
+                                    <Input 
+                                        id="externalId" 
+                                        {...register('externalId')} 
+                                        placeholder="Ej: PROD-12345" 
+                                        disabled={isCreating} 
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="brandId">Marca *</Label>
+                                    <Controller
+                                        name="brandId"
+                                        control={control}
+                                        rules={{ required: 'La marca es requerida' }}
+                                        render={({ field }) => (
+                                            <Select 
+                                                onValueChange={(value) => {
+                                                    field.onChange(value);
+                                                    handleBrandChange(value);
+                                                }} 
+                                                value={field.value} 
+                                                disabled={isCreating}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Selecciona una marca" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {brands.map(brand => (
+                                                        <SelectItem key={brand.id} value={String(brand.id)}>
+                                                            {brand.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
+                                    {errors.brandId && <p className="text-sm text-red-600">{errors.brandId.message}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="categoryId">Categoría *</Label>
+                                    <Controller
+                                        name="categoryId"
+                                        control={control}
+                                        rules={{ 
+                                            required: 'La categoría es requerida',
+                                            validate: value => {
+                                                if (!watch('brandId')) {
+                                                    return 'Selecciona una marca primero';
+                                                }
+                                                return true;
+                                            }
+                                        }}
+                                        render={({ field }) => (
+                                            <Select 
+                                                onValueChange={field.onChange} 
+                                                value={field.value} 
+                                                disabled={!watch('brandId') || isCreating}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue 
+                                                        placeholder={!watch('brandId') 
+                                                            ? "Selecciona una marca primero" 
+                                                            : filteredCategories.length === 0 
+                                                                ? "No hay categorías disponibles"
+                                                                : "Selecciona una categoría"
+                                                        } 
+                                                    />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {filteredCategories.length > 0 ? (
+                                                        filteredCategories.map(category => (
+                                                            <SelectItem key={category.id} value={String(category.id)}>
+                                                                {category.name}
+                                                            </SelectItem>
+                                                        ))
+                                                    ) : (
+                                                        <div className="px-3 py-2 text-sm text-muted-foreground">
+                                                            No hay categorías disponibles para esta marca
+                                                        </div>
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
+                                    {errors.categoryId && (
+                                        <p className="text-sm text-red-600">
+                                            {errors.categoryId.message}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="cost">Costo (sin IVA)</Label>
+                                    <div className="relative">
+                                        <Input
+                                            id="cost"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            {...register('cost', { 
+                                                required: 'El costo es requerido',
+                                                min: { value: 0, message: 'El costo no puede ser negativo' }
+                                            })}
+                                            onChange={handleCostoChange}
+                                            disabled={isCreating}
+                                            className="pl-3"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                                            MXN
+                                        </span>
                                     </div>
-                                </DialogTitle>
-                                <DialogDescription className="mt-1 text-sm text-gray-500">
-                                    Completa la información del producto. Los campos marcados con * son obligatorios.
-                                </DialogDescription>
+                                    {errors.cost && (
+                                        <span className="text-sm text-red-500">
+                                            {errors.cost.message}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="price">Precio Público General (con IVA)</Label>
+                                    <div className="relative">
+                                        <Input
+                                            id="price"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            {...register('price', { 
+                                                required: 'El precio es requerido',
+                                                min: { value: 0, message: 'El precio no puede ser negativo' }
+                                            })}
+                                            readOnly
+                                            className="pl-3 bg-gray-50"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                                            MXN
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-gray-500">
+                                        Precio calculado automáticamente (Costo / 0.8 + 16% IVA)
+                                    </p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <Label htmlFor="discount">Descuento Cliente Frecuente</Label>
+                                        <span className="text-sm text-gray-500">
+                                            Precio: ${(watch('price') * (1 - (watch('discount') || 0) / 100)).toFixed(2)} MXN
+                                        </span>
+                                    </div>
+                                    <div className="relative">
+                                        <Input
+                                            id="discount"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            max="100"
+                                            {...register('discount', { 
+                                                min: { value: 0, message: 'El descuento no puede ser negativo' },
+                                                max: { value: 100, message: 'El descuento no puede ser mayor a 100%' }
+                                            })}
+                                            disabled={isCreating}
+                                            className="pl-3"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                                            %
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-gray-500">
+                                        Descuento calculado para precio de cliente frecuente (Costo / 0.9 + 16% IVA)
+                                    </p>
+                                    {errors.discount && (
+                                        <span className="text-sm text-red-500">
+                                            {errors.discount.message}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="stock">Stock *</Label>
+                                    <Input 
+                                        id="stock" 
+                                        type="number" 
+                                        {...register('stock', { 
+                                            required: 'El stock es requerido',
+                                            min: { value: 0, message: 'El stock no puede ser negativo' }
+                                        })} 
+                                        placeholder="0" 
+                                        disabled={isCreating} 
+                                    />
+                                    {errors.stock && <p className="text-sm text-red-600">{errors.stock.message}</p>}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="garanty">Garantía (meses)</Label>
+                                    <Input 
+                                        id="garanty" 
+                                        type="number" 
+                                        {...register('garanty')} 
+                                        placeholder="12" 
+                                        disabled={isCreating} 
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <Label htmlFor="color">Color</Label>
+                                        {watch('brandId') && (
+                                            <span 
+                                                className="text-xs text-muted-foreground cursor-pointer hover:underline"
+                                                onClick={() => {
+                                                    const selectedBrand = brands.find(b => b.id === watch('brandId'));
+                                                    if (selectedBrand?.color) {
+                                                        setValue('color', selectedBrand.color, { shouldDirty: true });
+                                                    }
+                                                }}
+                                            >
+                                                Usar color de la marca
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="relative flex-1">
+                                            <Input 
+                                                id="color" 
+                                                type="text"
+                                                {...register('color')} 
+                                                placeholder="Ej: #1428A0 o Negro" 
+                                                disabled={isCreating}
+                                                className="pl-10"
+                                            />
+                                            <input 
+                                                type="color" 
+                                                value={watch('color') || '#ffffff'}
+                                                onChange={(e) => setValue('color', e.target.value, { shouldDirty: true })}
+                                                className="absolute left-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded overflow-hidden border border-gray-300 cursor-pointer"
+                                                title="Seleccionar color"
+                                            />
+                                        </div>
+                                        <div 
+                                            className="w-10 h-10 rounded-md border flex-shrink-0"
+                                            style={{ 
+                                                backgroundColor: watch('color') || 'transparent',
+                                                borderColor: 'hsl(var(--border))'
+                                            }}
+                                            title={watch('color') || 'Sin color'}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center space-x-3 pt-6">
+                                    <Controller
+                                        name="rentable"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <Switch 
+                                                id="rentable" 
+                                                checked={field.value} 
+                                                onCheckedChange={field.onChange} 
+                                                disabled={isCreating} 
+                                            />
+                                        )}
+                                    />
+                                    <Label htmlFor="rentable" className="text-sm font-medium text-gray-700 cursor-pointer">
+                                        ¿Disponible para renta?
+                                    </Label>
+                                </div>
+
+                                <div className="flex items-center space-x-3 pt-6">
+                                    <div className="flex items-center space-x-2">
+                                        <Switch 
+                                            id="status" 
+                                            checked={true} 
+                                            disabled={true}
+                                            className="opacity-70"
+                                        />
+                                        <Label htmlFor="status" className="text-sm font-medium text-gray-700">
+                                            Activo
+                                        </Label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </DialogHeader>
 
-                    <form onSubmit={handleSubmit(handleCreateSubmit)} className="space-y-6 pt-0">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Nombre */}
-                            <div className="space-y-2 ">
-                                <Label htmlFor="name">Nombre *</Label>
-                                <Input id="name" {...register('name')} placeholder="Ej: Smartphone Galaxy S21" disabled={isCreating} />
-                                {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
-                            </div>
+                        {/* Sección de descripciones */}
+                        <div className="md:col-span-2">
+                            <h3 className="text-lg font-medium mb-4 flex items-center">
+                                <FileText className="h-5 w-5 mr-2 text-blue-600" />
+                                Descripciones
+                            </h3>
+                            <div className="grid grid-cols-1 gap-6">
+                                <div className="space-y-2">
+                                    <Label htmlFor="shortDescription">Descripción Corta</Label>
+                                    <Input 
+                                        id="shortDescription" 
+                                        {...register('shortDescription')} 
+                                        placeholder="Smartphone de última generación" 
+                                        disabled={isCreating} 
+                                    />
+                                </div>
 
-                            {/* Descripción Corta */}
-                            <div className="space-y-2 ">
-                                <Label htmlFor="shortDescription">Descripción Corta</Label>
-                                <Input id="shortDescription" {...register('shortDescription')} placeholder="Smartphone de última generación" disabled={isCreating} />
-                            </div>
-
-                            {/* Descripción Larga */}
-                            <div className="space-y-2 md:col-span-2">
-                                <Label htmlFor="description">Descripción</Label>
-                                <div className="flex flex-col sm:flex-row gap-2"> {/* Contenedor para textarea y botón */}
-                                    <Textarea id="description" {...register('description')} placeholder="El Galaxy S21 cuenta con una pantalla de 6.2 pulgadas..." disabled={isCreating} className="flex-grow" />
-                                    <Button
-                                        type="button" // Importante: tipo "button" para evitar que se envíe el formulario
-                                        onClick={handleGenerateDescription}
-                                        disabled={isGeneratingDescription || isCreating}
-                                        className="whitespace-nowrap"
-                                    >
-                                        {isGeneratingDescription ? (
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        ) : (
-                                            'Generar descripción con Gemini'
-                                        )}
-                                    </Button>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <Label htmlFor="description">Descripción Larga</Label>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleGenerateDescription}
+                                            disabled={isGeneratingDescription || isCreating}
+                                            className=" bg-gradient-to-l from-cyan-500 from via-violet-500 to-purple-500 text-white hover:text-white text-sm font-semibold px-4 py-2 rounded-full transition cursor-pointer w-full sm:w-auto"
+                                        >
+                                            {isGeneratingDescription ? (
+                                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                            ) : (
+                                                'Generar con Gemini'
+                                            )}
+                                        </Button>
+                                    </div>
+                                    <Textarea 
+                                        id="description" 
+                                        {...register('description')} 
+                                        placeholder="El Galaxy S21 cuenta con una pantalla de 6.2 pulgadas..." 
+                                        disabled={isCreating} 
+                                        className="min-h-[100px]"
+                                    />
                                 </div>
                             </div>
+                        </div>
 
-                            {/* ID Externo */}
-                            <div className="space-y-2">
-                                <Label htmlFor="externalId">ID Externo</Label>
-                                <Input id="externalId" {...register('externalId')} placeholder="Ej: PROD-12345" disabled={isCreating} />
-                            </div>
-
-                            {/* ID de Marca */}
-                            <div className="space-y-2">
-                                <Label htmlFor="brandId">Marca *</Label>
-                                <Controller
-                                    name="brandId"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isCreating}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Selecciona una marca" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {brands.map(brand => (
-                                                    <SelectItem key={brand.id} value={String(brand.id)}>{brand.name}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    )}
-                                />
-                                {errors.brandId && <p className="text-sm text-red-600">{errors.brandId.message}</p>}
-                            </div>
-
-                            {/* ID de Categoría (Ejemplo) */}
-                            <div className="space-y-2">
-                                <Label htmlFor="categoryId">ID de Categoría *</Label>
-                                <Input id="categoryId" {...register('categoryId')} placeholder="Ej: 1 (Smartphones)" disabled={isCreating} />
-                                {errors.categoryId && <p className="text-sm text-red-600">{errors.categoryId.message}</p>}
-                            </div>
-
-                            {/* Precio */}
-                            <div className="space-y-2">
-                                <Label htmlFor="price">Precio (MXN) *</Label>
-                                <div className="relative">
-                                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 sm:text-sm">$</span>
-                                    <Input id="price" type="number" step="0.01" {...register('price')} placeholder="0.00" className="pl-7" disabled={isCreating} />
-                                </div>
-                                {errors.price && <p className="text-sm text-red-600">{errors.price.message}</p>}
-                            </div>
-
-                            {/* Costo */}
-                            <div className="space-y-2">
-                                <Label htmlFor="cost">Costo (MXN)</Label>
-                                <div className="relative">
-                                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 sm:text-sm">$</span>
-                                    <Input id="cost" type="number" step="0.01" {...register('cost')} placeholder="0.00" className="pl-7" disabled={isCreating} />
-                                </div>
-                                {errors.cost && <p className="text-sm text-red-600">{errors.cost.message}</p>}
-                            </div>
-
-                            {/* Stock */}
-                            <div className="space-y-2">
-                                <Label htmlFor="stock">Stock *</Label>
-                                <Input id="stock" type="number" {...register('stock')} placeholder="0" disabled={isCreating} />
-                                {errors.stock && <p className="text-sm text-red-600">{errors.stock.message}</p>}
-                            </div>
-
-                            {/* Color */}
-                            <div className="space-y-2">
-                                <Label htmlFor="color">Color</Label>
-                                <Input id="color" {...register('color')} placeholder="Ej: Negro" disabled={isCreating} />
-                            </div>
-
-                            {/* Estado */}
-                            <div className="space-y-2">
-                                <Label htmlFor="status">Estado</Label>
-                                <Controller
-                                    name="status"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isCreating}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Selecciona un estado" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="ACTIVE">
-                                                    <div className="flex items-center"><span className="h-2 w-2 rounded-full bg-green-500 mr-2"></span>Activo</div>
-                                                </SelectItem>
-                                                <SelectItem value="INACTIVE">
-                                                    <div className="flex items-center"><span className="h-2 w-2 rounded-full bg-red-500 mr-2"></span>Inactivo</div>
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    )}
+                        {/* Sección de imágenes */}
+                        <div className="md:col-span-2">
+                            <h3 className="text-lg font-medium mb-4 flex items-center">
+                                <FileText className="h-5 w-5 mr-2 text-blue-600" />
+                                Imágenes del Producto
+                            </h3>
+                            <div className="space-y-4">
+                                <ImageUploader
+                                    onImagesChange={handleImageUpload}
+                                    onImageDelete={handleImageDelete}
+                                    maxFiles={5}
                                 />
                             </div>
+                        </div>
 
-                            {/* Rentable */}
-                            <div className="flex items-center space-x-3 pt-5">
-                                <Controller
-                                    name="rentable"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <Switch id="rentable" checked={field.value} onCheckedChange={field.onChange} disabled={isCreating} />
-                                    )}
-                                />
-                                <Label htmlFor="rentable" className="text-sm font-medium text-gray-700 cursor-pointer">
-                                    ¿Disponible para renta?
-                                </Label>
-                            </div>
-
-                            {/* Datos Técnicos */}
-                            <div className="space-y-4 md:col-span-2">
-                                <div>
-                                    <Label className="text-base font-semibold">Datos Técnicos</Label>
-                                    <p className="text-sm text-gray-500">Añade especificaciones técnicas como potencia, voltaje, etc.</p>
-                                </div>
-                                {fields.map((item, index) => (
-                                    <div key={item.id} className="flex items-center gap-4 p-3 border rounded-lg bg-gray-50">
-                                        <Input {...register(`technicalData.${index}.key`)} placeholder="Clave (Ej: Potencia)" className="flex-1" disabled={isCreating} />
-                                        <Input {...register(`technicalData.${index}.value`)} placeholder="Valor (Ej: 550w)" className="flex-1" disabled={isCreating} />
-                                        <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)} disabled={isCreating}>
+                        {/* Sección de funcionalidades */}
+                        <div className="md:col-span-2">
+                            <h3 className="text-lg font-medium mb-4 flex items-center">
+                                <Settings className="h-5 w-5 mr-2 text-blue-600" />
+                                Funcionalidades
+                            </h3>
+                            <div className="space-y-4">
+                                {functionalityFields.map((field, index) => (
+                                    <div key={field.id} className="flex items-center gap-2">
+                                        <Input
+                                            {...register(`functionalities.${index}`)}
+                                            placeholder="Ej: Reconocimiento facial"
+                                            className="flex-1"
+                                            disabled={isCreating}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            onClick={() => removeFunctionality(index)}
+                                            disabled={isCreating}
+                                        >
                                             <X className="h-4 w-4" />
                                         </Button>
                                     </div>
                                 ))}
-                                {(errors.technicalData) && <p className="text-sm text-red-600">Ambos campos de datos técnicos son requeridos.</p>}
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={() => append({ key: "", value: "" })}
-                                    className="mt-2"
+                                    onClick={() => appendFunctionality('')}
+                                    disabled={isCreating}
+                                >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Añadir Funcionalidad
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Sección de datos técnicos */}
+                        <div className="md:col-span-2">
+                            <h3 className="text-lg font-medium mb-4 flex items-center">
+                                <Settings className="h-5 w-5 mr-2 text-blue-600" />
+                                Datos Técnicos
+                            </h3>
+                            <div className="space-y-4">
+                                {technicalFields.map((field, index) => (
+                                    <div key={field.id} className="flex items-center gap-2">
+                                        <Input
+                                            {...register(`technicalData.${index}.key`)}
+                                            placeholder="Clave (Ej: Potencia)"
+                                            className="flex-1"
+                                            disabled={isCreating}
+                                        />
+                                        <Input
+                                            {...register(`technicalData.${index}.value`)}
+                                            placeholder="Valor (Ej: 550w)"
+                                            className="flex-1"
+                                            disabled={isCreating}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            onClick={() => removeTechnical(index)}
+                                            disabled={isCreating}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => appendTechnical({ key: '', value: '' })}
                                     disabled={isCreating}
                                 >
                                     <Plus className="h-4 w-4 mr-2" />
@@ -241,19 +700,86 @@ export default function CreateProductFormDialog({ isCreateDialogOpen, openCreate
                             </div>
                         </div>
 
-                        <DialogFooter className="border-t pt-4">
-                            <DialogClose asChild>
-                                <Button type="button" variant="outline" disabled={isCreating}>
-                                    Cancelar
+                        {/* Sección de descargas */}
+                        <div className="md:col-span-2">
+                            <h3 className="text-lg font-medium mb-4 flex items-center">
+                                <Download className="h-5 w-5 mr-2 text-blue-600" />
+                                Archivos para Descargar
+                            </h3>
+                            <div className="space-y-4">
+                                {downloadFields.map((field, index) => (
+                                    <div key={field.id} className="flex items-center gap-2">
+                                        <Input
+                                            {...register(`downloads.${index}.key`)}
+                                            placeholder="Nombre del archivo (Ej: Manual de usuario)"
+                                            className="flex-1"
+                                            disabled={isCreating}
+                                        />
+                                        <Input
+                                            {...register(`downloads.${index}.value`)}
+                                            placeholder="URL del archivo (Ej: https://...)"
+                                            className="flex-1"
+                                            disabled={isCreating}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            onClick={() => removeDownload(index)}
+                                            disabled={isCreating}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => appendDownload({ key: '', value: '' })}
+                                    disabled={isCreating}
+                                >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Añadir Archivo para Descargar
                                 </Button>
-                            </DialogClose>
-                            <Button type="submit" disabled={isCreating} className="bg-blue-600 hover:bg-blue-700">
-                                {isCreating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</> : 'Guardar Producto'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="border-t pt-4">
+                        <DialogClose asChild>
+                            <Button type="button" variant="outline" disabled={isCreating}>
+                                Cancelar
                             </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
-        </>
-    )
+                        </DialogClose>
+                        <Button type="submit" disabled={isCreating} className="bg-blue-600 hover:bg-blue-700">
+                            {isCreating ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Guardando...
+                                </>
+                            ) : (
+                                'Guardar Producto'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
 }
+
+const calcularPrecioConIVA = (precio) => {
+    return precio * 1.16;
+};
+
+const calcularPrecioPublico = (costo) => {
+    if (!costo) return 0;
+    const precioBase = parseFloat(costo) / 0.8; // División entre 0.8 (20% de ganancia)
+    return calcularPrecioConIVA(precioBase);
+};
+
+const calcularPrecioFrecuente = (costo) => {
+    if (!costo) return 0;
+    const precioBase = parseFloat(costo) / 0.9; // División entre 0.9 (10% de ganancia)
+    return calcularPrecioConIVA(precioBase);
+};
