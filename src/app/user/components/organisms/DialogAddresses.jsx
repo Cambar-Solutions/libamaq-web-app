@@ -33,7 +33,10 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[725px]">
                     <DialogHeader>
-                        <DialogTitle className="text-2xl">Direcciones</DialogTitle>
+                        <DialogTitle className="flex text-2xl gap-1 items-center">
+                            <MapPin className="w-6 h-6 text-blue-500" />
+                            Direcciones
+                        </DialogTitle>
                         <DialogDescription>
                             En esta sección, puede modificar la dirección de entrega.
                         </DialogDescription>
@@ -53,7 +56,7 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
                                 <Input id="newLocation" placeholder="Escribe tu nueva dirección" className="col-span-3" />
                             </div>
                         </div>
-                        
+
                         <div className="w-full h-[300px] rounded-xl overflow-hidden shadow-xl">
                             <iframe
                                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3774.4661262655997!2d-99.17959492373906!3d18.91969495427647!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85ce7481d3aed4c3%3A0x9f4e9f76e3752738!2sBlvd.%20Paseo%20Cuauhn%C3%A1huac%201742%2C%20Puente%20Blanco%2C%2062577%20Jiutepec%2C%20Mor.!5e0!3m2!1ses!2smx!4v1715572500000!5m2!1ses!2smx"

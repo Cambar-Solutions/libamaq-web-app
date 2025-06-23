@@ -8,6 +8,7 @@ import SheetTerms from "../../organisms/SheetTerms";
 import DialogAddresses from "../../organisms/DialogAddresses";
 import toast, { Toaster } from "react-hot-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import DialogGenerateQR from "../../organisms/DialogGenerateQR";
 
 export default function ProfilePanel({ openLocationDialog = false, onCloseLocationDialog, userInfo, setUserInfo }) {
     const [isDialogOpen, setIsDialogOpen] = useState(openLocationDialog);
@@ -79,7 +80,7 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
                                     animate="animate"
                                     exit="exit"
                                     transition={{ duration: 0.3 }}
-                                    className="flex flex-col w-full h-60 shadow-md rounded-lg bg-stone-50"
+                                    className="flex flex-col w-full h-60 rounded-lg bg-stone-50"
                                 >
                                     {/* — Card de Direcciones — */}
                                     <DialogAddresses
@@ -88,6 +89,9 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
                                         onCloseLocationDialog={onCloseLocationDialog}
                                         setEditing={setEditing}
                                     />
+
+                                    {/* QR CODE */}
+                                    <DialogGenerateQR />
 
                                     {/* — Hoja de Términos y condiciones — */}
                                     <SheetTerms />
