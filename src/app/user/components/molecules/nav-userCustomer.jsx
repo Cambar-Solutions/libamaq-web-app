@@ -50,7 +50,7 @@ export function NavUserCustomer({ userInfo, setUserInfo }) {
                 <AvatarFallback className="rounded-lg">CN</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{userInfo.name}</span>
+                <span className="truncate font-medium">{userInfo.name} {userInfo.lastName}</span>
                 <span className="truncate text-xs">{userInfo.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
@@ -69,7 +69,7 @@ export function NavUserCustomer({ userInfo, setUserInfo }) {
                   <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{userInfo.name}</span>
+                  <span className="truncate font-medium">{userInfo.name} {userInfo.lastName}</span>
                   <span className="truncate text-xs">{userInfo.email}</span>
                 </div>
               </div>

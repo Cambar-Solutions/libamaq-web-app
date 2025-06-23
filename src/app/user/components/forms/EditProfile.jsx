@@ -10,6 +10,7 @@ import BtnResetPassword from "../atoms/BtnResetPassword";
 
 export default function EditProfile({ userInfo, setUserInfo, setEditing, toast }) {
     const [newName, setNewName] = useState("");
+    const [newLastName, setNewLastName] = useState("");
     const [newEmail, setNewEmail] = useState("");
     const [showCurrent, setShowCurrent] = useState(false);
     const [showNew, setShowNew] = useState(false);
@@ -23,6 +24,7 @@ export default function EditProfile({ userInfo, setUserInfo, setEditing, toast }
 
             const updatedData = {
                 name: newName || userInfo.name,
+                lastName: newLastName || userInfo.lastName,
                 email: newEmail || userInfo.email,
             };
 
@@ -32,9 +34,10 @@ export default function EditProfile({ userInfo, setUserInfo, setEditing, toast }
             console.log("Respuesta actualizada:", updatedUser);
             toast.success("Perfil actualizado");
 
-            // Asegúrate de que el objeto tiene `name` y `email`
+            // Asegúrate de que el objeto tiene `name`, `lastName` y `email`
             setUserInfo({
                 name: updatedUser.data.name,
+                lastName: updatedUser.data.lastName,
                 email: updatedUser.data.email
             });
 
@@ -101,6 +104,22 @@ export default function EditProfile({ userInfo, setUserInfo, setEditing, toast }
                     </div>
                 </div>
 
+                {/* Apellido */}
+                <div className="flex flex-col lg:flex-row bg-white p-5 rounded-lg leading-none gap-y-4 lg:gap-20 justify-around">
+                    <div className="flex flex-col">
+                        <Label className="text-sm text-gray-600 mb-1">Apellido actual:</Label>
+                        <span className="font-medium mb-3">{userInfo.lastName}</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <Label className="text-sm text-gray-600 mb-1">Apellido nuevo:</Label>
+                        <Input
+                            value={newLastName}
+                            onChange={e => setNewLastName(e.target.value)}
+                            placeholder="Ingresa el nuevo apellido"
+                        />
+                    </div>
+                </div>
+
                 {/* Correo */}
                 <div className="flex flex-col lg:flex-row bg-white p-5 rounded-lg leading-none gap-y-4 lg:gap-20 justify-around">
                     <div className="flex flex-col">
@@ -118,6 +137,11 @@ export default function EditProfile({ userInfo, setUserInfo, setEditing, toast }
                     </div>
                 </div>
 
+                <div className="flex w-full justify-end">
+                    <BtnSave onClick={handleUpdate} />
+                </div>
+
+                <h2 className="text-2xl font-semibold text-center mb-4 text-gray-500">Cambiar contraseña</h2>
                 {/* Contraseña */}
                 <div className="flex flex-col lg:flex-row bg-white p-5 rounded-lg leading-none gap-y-4 lg:gap-20 justify-around">
                     {/* Contraseña actual */}
@@ -126,7 +150,7 @@ export default function EditProfile({ userInfo, setUserInfo, setEditing, toast }
                         <div className="relative items-center">
                             <Input
                                 type={showCurrent ? "text" : "password"}
-                                placeholder={showCurrent ? "dawdwadaw" : "•••••"}
+                                placeholder={showCurrent ? "Contraseña123." : "•••••"}
                                 disabled
                                 className="pr-10 w-60"
                             />
@@ -136,7 +160,7 @@ export default function EditProfile({ userInfo, setUserInfo, setEditing, toast }
                                 className="absolute inset-y-0 right-3 flex items-center pt-1 text-gray-500 hover:text-gray-700 px-0 "
                                 aria-label={showCurrent ? "Ocultar contraseña" : "Mostrar contraseña"}
                             >
-                                {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
+                                {showCurrent ? <Eye size={18} /> : <EyeOff size={18} />}
                             </button>
                         </div>
                     </div>
@@ -158,15 +182,14 @@ export default function EditProfile({ userInfo, setUserInfo, setEditing, toast }
                                 className="absolute inset-y-0 right-3 flex items-center pt-1 text-gray-500 hover:text-gray-700"
                                 aria-label={showNew ? "Ocultar contraseña" : "Mostrar contraseña"}
                             >
-                                {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
+                                {showNew ? <Eye size={18} /> : <EyeOff size={18} />}
                             </button>
                         </div>
                     </div>
                 </div>
                 <div className="flex justify-end space-x-3">
-                    <BtnDelete setEditing={setEditing} />
+                    {/* <BtnDelete setEditing={setEditing} /> */}
                     <BtnResetPassword onClick={handleReset} />
-                    <BtnSave onClick={handleUpdate} />
                 </div>
             </div>
         </div>

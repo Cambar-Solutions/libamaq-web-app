@@ -15,7 +15,7 @@ import { SiteHeaderCustomer } from "@/app/user/components/molecules/site-headerC
 import { AppSidebarCustomer } from "@/app/user/components/molecules/app-sidebarCustomer";
 
 export default function Account() {
-    const [userInfo, setUserInfo] = useState({ name: "null", email: "null@gmail.com" });
+    const [userInfo, setUserInfo] = useState({ name: "null", lastName: "null", email: "null@gmail.com" });
     const [loading, setLoading] = useState(true);
 
     const location = useLocation();
@@ -35,7 +35,7 @@ export default function Account() {
                 const userId = decoded.sub;
 
                 const user = await getUserById(userId);
-                setUserInfo({ name: user.name, email: user.email });
+                setUserInfo({ name: user.name, lastName: user.lastName, email: user.email });
                 setLoading(false); 
             } catch (error) {
                 console.error("Error al obtener el usuario:", error);

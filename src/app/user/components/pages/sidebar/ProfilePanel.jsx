@@ -7,6 +7,7 @@ import EditProfile from "../../forms/EditProfile";
 import SheetTerms from "../../organisms/SheetTerms";
 import DialogAddresses from "../../organisms/DialogAddresses";
 import toast, { Toaster } from "react-hot-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function ProfilePanel({ openLocationDialog = false, onCloseLocationDialog, userInfo, setUserInfo }) {
     const [isDialogOpen, setIsDialogOpen] = useState(openLocationDialog);
@@ -47,14 +48,21 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
                             <GrUserWorker size={80} className="text-white" />
                         </div>
                         <div className="relative flex flex-col bg-white mt-5 w-full lg:w-[30%] text-center rounded-2xl shadow-sm p-4">
-                            <button
-                                onClick={() => setEditing(true)}
-                                className="absolute top-2 right-2 p-1 hover:bg-gray-200 rounded-full cursor-pointer transition-colors duration-300"
-                                aria-label="Editar"
-                            >
-                                <SquarePen size={18} className="text-gray-400" />
-                            </button>
-                            <p className="text-gray-700 text-3xl font-semibold">{userInfo.name}</p>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => setEditing(true)}
+                                        className="absolute top-2 right-2 p-1 hover:bg-gray-200 rounded-full cursor-pointer transition-colors duration-300"
+                                        aria-label="Editar"
+                                    >
+                                        <SquarePen size={18} className="text-gray-400" />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                                    <p>Editar Perfil</p>
+                                </TooltipContent>
+                            </Tooltip>
+                            <p className="text-gray-700 text-3xl font-semibold">{userInfo.name} {userInfo.lastName}</p>
                             <p className="text-gray-500 text-sm">{userInfo.email}</p>
                         </div>
                     </div>
