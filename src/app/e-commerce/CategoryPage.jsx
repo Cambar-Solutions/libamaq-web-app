@@ -37,12 +37,17 @@ const LoadingScreen = React.lazy(() => import('@/components/LoadingScreen'));
 export default function CategoryPage() {
   const [topSellingItems, setTopSellingItems] = useState([]);
   const [activeItems, setActiveItems] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   const { brand, category } = useParams();
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedBrand, setSelectedBrand] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [allCategories, setAllCategories] = useState([]);
   const [allBrands, setAllBrands] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [loadingFilteredProducts, setLoadingFilteredProducts] = useState(true);
+
 
   const sectionRef = useRef(null);
   const carouselRef = useRef(null);
@@ -130,6 +135,48 @@ export default function CategoryPage() {
 
     fetchProducts();
   }, []);
+
+  useEffect(() => {
+    const fetchFilteredProducts = async () => {
+      setLoadingFilteredProducts(true); // Activar carga antes de la petición
+      try {
+        let fetchedData = [];
+        // Lógica de filtrado:
+        // Si tienes tanto marca como categoría seleccionadas
+        if (selectedBrand && selectedCategory) {
+          const response = await getProductsByBrandAndCategory(selectedBrand, selectedCategory);
+          fetchedData = response.data;
+        }
+        // Si solo tienes marca seleccionada (y quieres mostrar todos de esa marca, ignorando la categoría)
+        else if (selectedBrand) {
+          const response = await getProductsByBrand(selectedBrand);
+          fetchedData = response.data;
+        }
+        // Si solo tienes categoría seleccionada (y quieres mostrar todos de esa categoría, ignorando la marca)
+        else if (selectedCategory) {
+          const response = await getProductsByCategory(selectedCategory);
+          fetchedData = response.data;
+        }
+        // Si no hay marca ni categoría seleccionadas (este es el caso de la carga inicial si no quieres mostrar nada)
+        else {
+          // Puedes optar por no cargar nada, o cargar un conjunto predeterminado
+          // fetchedData = []; // No muestra nada hasta que se filtre
+          // O: Puedes cargar todos los productos activos aquí si quieres que sean el valor por defecto
+          // const data = await getActiveProductPreviews();
+          // fetchedData = Array.isArray(data.data) ? data.data : [];
+        }
+
+        setFilteredProducts(fetchedData); // Actualiza el estado con los productos filtrados
+      } catch (error) {
+        console.error("Error al obtener productos filtrados:", error);
+        setFilteredProducts([]); // Limpia los productos en caso de error
+      } finally {
+        setLoadingFilteredProducts(false); // Desactivar carga después de la petición
+      }
+    };
+
+    fetchFilteredProducts();
+  }, [selectedBrand, selectedCategory]); // Este useEffect se ejecuta cada vez que selectedBrand o selectedCategory cambian
 
 
   // Configurar autoplay
@@ -372,97 +419,81 @@ export default function CategoryPage() {
     }
   }, [category]);
 
-  // Cargar productos según los filtros seleccionados (marca y/o categoría)
+  // Cargar productos según los filtros seleccionados (marca, categoría y término de búsqueda)
   useEffect(() => {
     const loadFilteredProducts = async () => {
-      // Si no hay filtros iniciales de brand ni category, podrías decidir mostrar destacados
-      // O esperar a que se seleccione algo. Para este caso, solo cargamos los destacados si no hay filtros.
-      if (!brand && !selectedCategory && !searchTerm) {
-        setIsLoading(true);
-        try {
-          const featured = await getActiveProductPreviews();
-          setActiveItems(featured.data || []);
-        } catch (error) {
-          console.error('Error al cargar productos destacados iniciales:', error);
-          setActiveItems([]);
-        } finally {
-          setIsLoading(false);
-        }
-        return; // Salir de la función si no hay filtros aplicados
-      }
-
-      setIsLoading(true);
+      setLoadingFilteredProducts(true);
       try {
-        console.log('Buscando marca:', brand);
-        console.log('Todas las marcas disponibles (para búsqueda):', allBrands);
+        let productsFromApi = []; // Usaremos este array para guardar los resultados de la API
 
-        let productsResponse = { data: [], status: 200, message: 'success' }; // Default response
-
-        // Solo intentar buscar por marca/categoría si allBrands ya está cargado
-        if (allBrands.length > 0) {
-          const selectedBrand = allBrands.find(b =>
+        // 1. Lógica para obtener productos de la API según marca y categoría
+        if (brand || selectedCategory) { // Si hay marca O categoría en la URL
+          // Buscar la marca seleccionada
+          const selectedBrandObject = allBrands.find(b =>
             b.name?.toLowerCase() === brand?.toLowerCase()
           );
+          const brandId = selectedBrandObject?.id;
 
-          console.log('Marca seleccionada (found):', selectedBrand);
-          const brandId = selectedBrand?.id;
-
-          if (!brandId && brand) {
-            console.log('No se encontró la marca seleccionada en los datos cargados. Mostrando destacados.');
-            // Si la marca de la URL no se encuentra en allBrands, mostramos destacados
-            productsResponse = await getActiveProductPreviews();
-          } else if (brandId && selectedCategory) {
-            // Buscando productos por marca y categoría
-            console.log(`Buscando productos para marca ${brandId} y categoría ${selectedCategory}`);
-
-            const categoryObj = selectedBrand?.categories?.find(
+          // Lógica para determinar qué API llamar
+          if (brandId && selectedCategory) {
+            const categoryObj = selectedBrandObject?.categories?.find(
               cat => cat.name.toLowerCase() === selectedCategory.toLowerCase()
             );
-
             if (categoryObj?.id) {
-              productsResponse = await getProductsByCategoryAndBrand(categoryObj.id, brandId);
+              const response = await getProductsByCategoryAndBrand(categoryObj.id, brandId);
+              productsFromApi = response.data || [];
             } else {
               console.log('Categoría no encontrada en la marca, buscando solo por marca');
-              productsResponse = await getProductsByBrand(brandId);
+              const response = await getProductsByBrand(brandId);
+              productsFromApi = response.data || [];
             }
           } else if (brandId) {
-            // Buscando productos solo por marca
-            console.log(`Buscando productos para marca ${brandId}`);
-            productsResponse = await getProductsByBrand(brandId);
+            const response = await getProductsByBrand(brandId);
+            productsFromApi = response.data || [];
           } else if (selectedCategory) {
-            // Si hay categoría pero no marca, puedes buscar por categoría solamente
-            // Necesitarías un servicio getProductsByCategory si no lo tienes
-            console.log(`Buscando productos para categoría ${selectedCategory} (sin marca específica)`);
-            // productsResponse = await getProductsByCategory(selectedCategory); // Descomenta si tienes este servicio
-            productsResponse = await getActiveProductPreviews(); // Fallback si no hay servicio getProductsByCategory
+            // Si hay categoría pero no marca, necesitas un servicio para solo categoría
+            // O puedes decidir que siempre necesitas marca para filtrar por categoría
+            // Por ahora, si no tienes ese servicio, podría caer a destacados o a la lista completa
+            // Si tienes un getProductsByCategory:
+            // const response = await getProductsByCategory(selectedCategory);
+            // productsFromApi = response.data || [];
+            console.warn('Solo categoría seleccionada sin marca, esto puede no estar cubierto por la API actual.');
+            // Fallback a todos los productos activos si no hay un endpoint de solo categoría
+            const response = await getActiveProductPreviews();
+            productsFromApi = response.data || [];
           }
         } else {
-          console.log("Marcas no cargadas aún, esperando o mostrando destacados por defecto.");
-          productsResponse = await getActiveProductPreviews();
+          // Si no hay filtros de marca/categoría en la URL, se cargan los productos activos por defecto
+          const response = await getActiveProductPreviews();
+          productsFromApi = response.data || [];
         }
 
-        // --- Manejo de la respuesta de productos ---
-        if (productsResponse && productsResponse.status === 200 && Array.isArray(productsResponse.data) && productsResponse.data.length > 0) {
-          setActiveItems(productsResponse.data);
-          console.log('Productos encontrados y mostrados:', productsResponse.data.length);
-        } else {
-          console.log('No se encontraron productos para los filtros aplicados, mostrando productos destacados.');
-          const featured = await getActiveProductPreviews();
-          setActiveItems(featured.data || []);
+        // 2. APLICAR EL FILTRO POR TÉRMINO DE BÚSQUEDA A LOS productosFromApi
+        let finalFilteredProducts = productsFromApi;
+        if (searchTerm) {
+          finalFilteredProducts = productsFromApi.filter(
+            item =>
+              item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              item.shortDescription?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              item.description?.toLowerCase().includes(searchTerm.toLowerCase()) // Añadí también descripción si existe
+          );
         }
+
+        // 3. Actualizar el estado con los productos finalmentes filtrados
+        setFilteredProducts(finalFilteredProducts);
 
       } catch (error) {
         console.error('Error al cargar productos filtrados:', error);
-        // En caso de error, siempre mostrar productos destacados
+        // En caso de error, muestra los productos activos como fallback
         const featured = await getActiveProductPreviews();
-        setActiveItems(featured.data || []);
+        setFilteredProducts(featured.data || []);
       } finally {
-        setIsLoading(false);
+        setLoadingFilteredProducts(false);
       }
     };
 
     loadFilteredProducts();
-  }, [brand, selectedCategory, allBrands, getProductsByCategoryAndBrand, getProductsByBrand, getActiveProductPreviews]); // Dependencias
+  }, [brand, selectedCategory, searchTerm, allBrands]); // Asegúrate de incluir 'searchTerm' en las dependencias
 
   // Cargar productos más vendidos (siempre se muestran independientemente de filtros)
   useEffect(() => {
@@ -493,14 +524,7 @@ export default function CategoryPage() {
   };
 
 
-  // Filtrar productos por término de búsqueda
-  const filteredProducts = searchTerm
-    ? featuredProducts.filter(
-      item =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.shortDescription?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    : featuredProducts;
+
 
   // Si no se han cargado todas las imágenes, mostrar el LoadingScreen
   if (!showContent) {
@@ -555,6 +579,7 @@ export default function CategoryPage() {
 
       <div className="min-h-screen bg-gray-50 flex flex-col pt-20">
         <div className="max-w-7xl w-full mx-auto px-4">
+          {/* Barra de búsqueda y filtros (tu código actual, se mantiene) */}
           <div className="sticky top-20 z-10 bg-white shadow-xl rounded-lg mb-6 p-3">
             <div className="flex flex-row items-center gap-2">
               <div className="relative w-4/5">
@@ -574,9 +599,10 @@ export default function CategoryPage() {
                 <Filter size={18} />
                 <span className="hidden sm:inline">Filtros</span>
               </button>
-              {brand && (
+              {/* Asegúrate de que 'brand' aquí se refiera a tu 'selectedBrand' si es lo que usas para filtrar */}
+              {(brand || selectedCategory) && ( // Muestra el botón de regresar si hay alguna selección
                 <button
-                  onClick={handleBack}
+                  onClick={handleBack} // Esta función debería limpiar selectedBrand y selectedCategory
                   className="flex items-center justify-center md:justify-start gap-2 text-blue-600 py-2 px-4 rounded-full hover:bg-blue-50 transition-colors"
                 >
                   <ArrowLeft size={18} />
@@ -591,7 +617,7 @@ export default function CategoryPage() {
                   {allCategories.map(cat => (
                     <button
                       key={cat}
-                      onClick={() => handleCategoryChange(cat)}
+                      onClick={() => handleCategoryChange(cat)} // Esta función DEBE actualizar `selectedCategory`
                       className={`px-3 py-1 rounded-full text-sm ${selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
                     >
                       {cat.replace(/-/g, ' ')}
@@ -601,89 +627,247 @@ export default function CategoryPage() {
               </div>
             )}
           </div>
+
+          {/* Título de la sección de productos */}
           <div className="mb-6 mt-8 w-full">
             <h1 className="text-xl md:text-2xl font-bold text-gray-800">
-              {brand
-                ? selectedCategory
-                  ? `${brand.charAt(0).toUpperCase() + brand.slice(1)} - ${selectedCategory.replace(/-/g, ' ')}`
-                  : `Productos ${brand.charAt(0).toUpperCase() + brand.slice(1)}`
-                : selectedCategory
-                  ? selectedCategory.replace(/-/g, ' ')
-                  : ' '}
+              {/* Aquí la lógica de título debe reflejar los productos que se están mostrando */}
+              {/* Asumiendo que 'brand' y 'selectedCategory' son tus estados de filtro */}
+              {brand && selectedCategory
+                ? `${brand.charAt(0).toUpperCase() + brand.slice(1)} - ${selectedCategory.replace(/-/g, ' ')}`
+                : brand
+                  ? `Productos ${brand.charAt(0).toUpperCase() + brand.slice(1)}`
+                  : selectedCategory
+                    ? `Productos de la categoría ${selectedCategory.replace(/-/g, ' ')}`
+                    : searchTerm // Si hay un término de búsqueda, muestra ese título
+                      ? `Resultados para "${searchTerm}"`
+                      : ''} {/* Título por defecto si no hay filtros ni búsqueda */}
             </h1>
           </div>
 
           <div className="w-full">
-            {!brand && !category && (
-              <div className="w-full mb-6 overflow-hidden">
-                {/* NUEVA ZONA */}
-                <div className="rounded-t-[3rem] px-0 pt-0 w-full mx-auto flex-grow">
-                  {!brand && !selectedCategory && !searchTerm && (
-                    <>
+            {/* Lógica de Visualización:
+                1. Si hay una marca o categoría seleccionada (selectedBrand / selectedCategory), 
+                   o un término de búsqueda (searchTerm), muestra los productos filtrados.
+                2. De lo contrario, muestra las secciones de "Los más vendidos" y "Todos los productos".
+            */}
+            {(brand || selectedCategory || searchTerm) ? (
+              // --- MUESTRA LOS PRODUCTOS FILTRADOS/BUSCADOS ---
+              <div className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full flex-grow h-[calc(100vh-15rem)]">
+                {loadingFilteredProducts ? (
+                  <div className="text-center py-10">
+                    <p className="text-gray-500">Cargando productos...</p>
+                    {/* Puedes agregar un spinner aquí */}
+                  </div>
+                ) : (
+                  filteredProducts.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                      {filteredProducts.map((product) => (
+                        <Link to={`/producto/${product.product_id || product.id}`} key={product.id} className="block"> {/* Asegúrate de usar la ID correcta */}
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.3 }}
+                            className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer h-full flex flex-col"
+                          >
+                            <ProductImageWithFallback
+                              src={product.media?.[0]?.url || "/placeholder-product.png"}
+                              alt={product.product_name || product.name || "Producto"}
+                              className="w-full h-48 object-contain p-4" // Ajusta la altura de la imagen si es necesario
+                            />
+                            <div className="p-4 flex-grow flex flex-col justify-between">
+                              <div>
+                                <h3 className="text-lg font-semibold text-gray-800 truncate" title={product.product_name || product.name}>{product.product_name || product.name}</h3>
+                                <p className="text-sm text-gray-500 line-clamp-2" title={product.product_description || product.description}>{product.product_description || product.description}</p>
+                              </div>
+                              {(product.product_price || product.price) && <p className="text-xl font-bold text-blue-700 mt-2">${product.product_price || product.price}</p>}
+                            </div>
+                          </motion.div>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-10 bg-white rounded-lg shadow-sm">
+                      <p className="text-gray-500">No se encontraron productos que coincidan con tu selección.</p>
+                      {/* Puedes ofrecer opciones para limpiar filtros aquí */}
+                      <button onClick={() => { setBrand(null); setSelectedCategory(null); setSearchTerm(''); }} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Limpiar filtros</button>
+                    </div>
+                  )
+                )}
+              </div>
+            ) : (
+              // --- MUESTRA LAS SECCIONES PREDETERMINADAS (más vendidos y activos) ---
+              <>
+                {/* Sección "Los más vendidos" */}
+                <div className="w-full mb-6 overflow-hidden">
+                  <div className="rounded-t-[3rem] px-0 pt-0 w-full mx-auto flex-grow">
+                    <div className="mb-10">
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold text-gray-500">Los más vendidos</h2>
+                        <button
+                          className="text-blue-800 underline underline-offset-4 hover:text-indigo-800 hover:font-bold hover:transition-all hover:duration-200 hover:ease-in-out flex items-center cursor-pointer"
+                          onClick={() => {
+                            setSearchTerm("");
+                            scrollToSection();
+                          }}
+                        > Ver todos <ChevronRight size={16} />
+                        </button>
+                      </div>
+                      <div className="">
+                        <div className="relative group">
+                          <div className="carousel-container overflow-hidden px-0 sm:px-0 rounded-lg">
+                            <div
+                              className="carousel-track group p-0 flex transition-transform duration-300 ease-out justify-start"
+                              style={{ paddingBottom: 14, paddingTop: 9, transform: `translateX(-${carouselPosition}%)` }}
+                            >
+                              {topSellingItems.map((topSellingItem, index) => (
+                                <div
+                                  key={`top-${index}`}
+                                  className={`carousel-item p-0 flex-shrink-0 sm:px-0 md:px-0 ${index === 0 ? 'rounded-l-lg' : ''} ${index === topSellingItem.length - 1 ? 'rounded-r-lg' : ''} group-hover:bg-zinc-300`}
+                                  style={{
+                                    paddingInline: 0,
+                                    width: `${Math.max(
+                                      20,
+                                      window.innerWidth >= 1280 ? 20 :
+                                        window.innerWidth >= 1024 ? 25 :
+                                          window.innerWidth >= 768 ? 33.333 :
+                                            window.innerWidth >= 640 ? 50 :
+                                              100
+                                    )}%`
+                                  }}
+                                >
+                                  <Link to={`/producto/${topSellingItem.product_id}`} key={index} className="w-full p-0 m-0 space-x-0 ">
+                                    <motion.div
+                                      initial={{ opacity: 0 }}
+                                      animate={{ opacity: 1 }}
+                                      transition={{ duration: 0.3 }}
+                                      className="cardgroup-hover:blur-[0px] hover:!rounded-lg group-hover:!opacity-40 hover:!blur-none hover:!opacity-100 bg-white hover:shadow-md transition-all duration-500 overflow-hidden w-full cursor-pointer hover:scale-105 group-hover:rounded-none"
+                                    >
+                                      <div className="flex flex-row sm:flex-col w-full">
+                                        <ProductImageWithFallback
+                                          src={topSellingItem.media?.[0]?.url || "/placeholder-product.png"}
+                                          alt={topSellingItem.product_name || "Producto"}
+                                          className="max-h-full max-w-full object-contain relative z-10"
+                                        />
+                                        <div className="w-2/3 sm:w-full p-3 sm:p-4 flex-grow flex flex-col justify-between sm:h-[150px]">
+                                          <div>
+                                            <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={topSellingItem.product_name}>{topSellingItem.product_name}</h3>
+                                            <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={topSellingItem.product_description}>{topSellingItem.product_description}</p>
+                                          </div>
+                                          {topSellingItem.product_price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${topSellingItem.product_price}</p>}
+                                        </div>
+                                      </div>
+                                    </motion.div>
+                                  </Link>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          {/* Botones de navegación simplificados para topSellingItems */}
+                          <>
+                            {showLeftArrow && (
+                              <button
+                                className="carousel-prev absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
+                                onClick={() => {
+                                  let itemWidth = 20;
+                                  if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25;
+                                  else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333;
+                                  else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50;
+                                  else if (window.innerWidth < 640) itemWidth = 100;
+                                  const newPosition = Math.max(0, carouselPosition - itemWidth);
+                                  setCarouselPosition(newPosition);
+                                  setShowLeftArrow(newPosition > 0);
+                                  setShowRightArrow(true); // Siempre que te muevas a la izquierda, la flecha derecha debería aparecer
+                                }}
+                                aria-label="Anterior"
+                              >
+                                <ChevronLeft className="text-blue-600" size={20} />
+                              </button>
+                            )}
+                            {/* Nota: Necesitas calcular maxPosition para showRightArrow correctamente */}
+                            {showRightArrow && (
+                              <button
+                                className="carousel-next absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
+                                onClick={() => {
+                                  let itemWidth = 20;
+                                  if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25;
+                                  else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333;
+                                  else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50;
+                                  else if (window.innerWidth < 640) itemWidth = 100;
+
+                                  // Asegúrate de que topSellingProducts sea el array de productos correcto
+                                  const maxPosition = Math.max(0, (topSellingItems.length * itemWidth) - 100); // Usar topSellingItems aquí
+                                  const newPosition = Math.min(maxPosition, carouselPosition + itemWidth);
+                                  setCarouselPosition(newPosition);
+
+                                  setShowLeftArrow(true); // Siempre que te muevas a la derecha, la flecha izquierda debería aparecer
+                                  setShowRightArrow(newPosition < maxPosition);
+                                }}
+                                aria-label="Siguiente"
+                              >
+                                <ChevronRight className="text-blue-600" size={20} />
+                              </button>
+                            )}
+                          </>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sección "Todos los productos" / Productos Activos */}
+                <div ref={sectionRef} className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full flex-grow">
+                  <div className="w-full">
+                    {activeItems.length > 0 ? (
                       <div className="mb-10">
                         <div className="flex items-center justify-between mb-4">
-                          <h2 className="text-xl font-bold text-gray-500">Los más vendidos</h2>
-                          <button
-                            className="text-blue-800 underline underline-offset-4 hover:text-indigo-800 hover:font-bold hover:transition-all hover:duration-200 hover:ease-in-out flex items-center cursor-pointer"
-                            onClick={() => {
-                              // limpia búsqueda si quieres
-                              setSearchTerm("");
-                              // hace scroll al contenedor
-                              scrollToSection();
-                            }}
-                          > Ver todos <ChevronRight size={16} />
-                          </button>
+                          <h2 className="text-xl font-bold text-gray-500">Todos los productos</h2>
                         </div>
-
-                        <div className="">
-                          {/* Contenedor principal del carrusel con estilo minimalista */}
+                        <div className="mb-10">
                           <div className="relative group">
-                            {/* Contenedor del carrusel */}
                             <div className="carousel-container overflow-hidden px-0 sm:px-0 rounded-lg">
-                              {/* Pista del carrusel */}
                               <div
                                 className="carousel-track group p-0 flex transition-transform duration-300 ease-out justify-start"
-                                style={{ paddingBottom: 14, paddingTop: 9, transform: `translateX(-${carouselPosition}%)` }}
+                                style={{
+                                  paddingBottom: 14, paddingTop: 9,
+                                  transform: `translateX(-${carouselPositionTwo}%)`
+                                }}
                               >
-                                {topSellingItems.map((topSellingItem, index) => (
+                                {activeItems.map((activeItem, index) => (
                                   <div
-                                    key={`top-${index}`}
-                                    className={`carousel-item p-0 flex-shrink-0 sm:px-0 md:px-0 ${index === 0 ? 'rounded-l-lg' : ''} ${index === topSellingItem.length - 1 ? 'rounded-r-lg' : ''} group-hover:bg-zinc-300`}
+                                    key={`active-${index}`} // Cambiado de `top-${index}` a `active-${index}` para evitar duplicados de key
+                                    className={`carousel-item p-0 flex-shrink-0 sm:px-0 md:px-0 ${index === 0 ? 'rounded-l-lg' : ''} ${index === activeItem.length - 1 ? 'rounded-r-lg' : ''} group-hover:bg-zinc-300`}
                                     style={{
                                       paddingInline: 0,
                                       width: `${Math.max(
                                         20,
-                                        window.innerWidth >= 1280 ? 20 : // 5 items
-                                          window.innerWidth >= 1024 ? 25 : // 4 items
-                                            window.innerWidth >= 768 ? 33.333 : // 3 items
-                                              window.innerWidth >= 640 ? 50 : // 2 items
-                                                100 // 1 item completo en móvil
+                                        window.innerWidth >= 1280 ? 20 :
+                                          window.innerWidth >= 1024 ? 25 :
+                                            window.innerWidth >= 768 ? 33.333 :
+                                              window.innerWidth >= 640 ? 50 :
+                                                100
                                       )}%`
                                     }}
                                   >
-                                    <Link to={`/producto/${topSellingItem.product_id}`} key={index} className="w-full p-0 m-0 space-x-0 ">
+                                    <Link to={`/producto/${activeItem.id}`} key={activeItem.id} className="w-full p-0 m-0 space-x-0">
                                       <motion.div
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         transition={{ duration: 0.3 }}
                                         className="cardgroup-hover:blur-[0px] hover:!rounded-lg group-hover:!opacity-40 hover:!blur-none hover:!opacity-100 bg-white hover:shadow-md transition-all duration-500 overflow-hidden w-full cursor-pointer hover:scale-105 group-hover:rounded-none"
                                       >
-                                        {/* Diseño adaptativo: horizontal en móvil, vertical en tablet/desktop */}
                                         <div className="flex flex-row sm:flex-col w-full">
-                                          {/* Imagen: 1/3 del ancho en móvil, altura completa en desktop */}
                                           <ProductImageWithFallback
-                                            src={topSellingItem.media?.[0]?.url || "/placeholder-product.png"} // Asegúrate de tener el placeholder aquí
-                                            alt={topSellingItem.product_name || "Producto"} // Usar product_name para el alt
+                                            src={activeItem.media && activeItem.media.length > 0 ? activeItem.media[0].url : "/placeholder-product.png"}
+                                            alt={activeItem.name || "Producto"}
                                             className="max-h-full max-w-full object-contain relative z-10"
                                           />
-
-                                          {/* Contenido: 2/3 del ancho en móvil, ancho completo en desktop */}
                                           <div className="w-2/3 sm:w-full p-3 sm:p-4 flex-grow flex flex-col justify-between sm:h-[150px]">
                                             <div>
-                                              <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={topSellingItem.product_name}>{topSellingItem.product_name}</h3>
-                                              <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={topSellingItem.product_description}>{topSellingItem.product_description}</p>
+                                              <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={activeItem.name}>{activeItem.name}</h3>
+                                              <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={activeItem.description}>{activeItem.description}</p>
                                             </div>
-                                            {topSellingItem.product_price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${topSellingItem.product_price}</p>}
+                                            {activeItem.price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${activeItem.price}</p>}
                                           </div>
                                         </div>
                                       </motion.div>
@@ -692,25 +876,19 @@ export default function CategoryPage() {
                                 ))}
                               </div>
                             </div>
-
-                            {/* Botones de navegación simplificados */}
+                            {/* Botones de navegación simplificados para activeItems */}
                             <>
-                              {showLeftArrow && (
+                              {showLeftArrow && ( // Considera usar un estado separado para las flechas de este carrusel
                                 <button
                                   className="carousel-prev absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
                                   onClick={() => {
-                                    // Calcular el ancho de un item según el tamaño de pantalla
-                                    let itemWidth = 20; // Por defecto 5 items (20%)
-                                    if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25; // 4 items
-                                    else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333; // 3 items
-                                    else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50; // 2 items
-                                    else if (window.innerWidth < 640) itemWidth = 100; // 1 item completo en móvil
-
-                                    // Calcular nueva posición
-                                    const newPosition = Math.max(0, carouselPosition - itemWidth);
-                                    setCarouselPosition(newPosition);
-
-                                    // Actualizar visibilidad de flechas
+                                    let itemWidth = 20;
+                                    if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25;
+                                    else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333;
+                                    else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50;
+                                    else if (window.innerWidth < 640) itemWidth = 100;
+                                    const newPosition = Math.max(0, carouselPositionTwo - itemWidth);
+                                    setCarouselPositionTwo(newPosition);
                                     setShowLeftArrow(newPosition > 0);
                                     setShowRightArrow(true);
                                   }}
@@ -719,24 +897,21 @@ export default function CategoryPage() {
                                   <ChevronLeft className="text-blue-600" size={20} />
                                 </button>
                               )}
-
-                              {showRightArrow && (
+                              {showRightArrow && ( // Considera usar un estado separado para las flechas de este carrusel
                                 <button
                                   className="carousel-next absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
                                   onClick={() => {
-                                    // Calcular el ancho de un item según el tamaño de pantalla
-                                    let itemWidth = 20; // Por defecto 5 items (20%)
-                                    if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25; // 4 items
-                                    else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333; // 3 items
-                                    else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50; // 2 items
-                                    else if (window.innerWidth < 640) itemWidth = 100; // 1 item completo en móvil
+                                    let itemWidth = 20;
+                                    if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25;
+                                    else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333;
+                                    else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50;
+                                    else if (window.innerWidth < 640) itemWidth = 100;
 
-                                    // Calcular nueva posición y límite máximo
-                                    const maxPosition = Math.max(0, (topSellingProducts.length * itemWidth) - 100);
-                                    const newPosition = Math.min(maxPosition, carouselPosition + itemWidth);
-                                    setCarouselPosition(newPosition);
+                                    // Asegúrate de que activeItems sea el array de productos correcto
+                                    const maxPosition = Math.max(0, (activeItems.length * itemWidth) - 100); // Usar activeItems aquí
+                                    const newPosition = Math.min(maxPosition, carouselPositionTwo + itemWidth);
+                                    setCarouselPositionTwo(newPosition);
 
-                                    // Actualizar visibilidad de flechas
                                     setShowLeftArrow(true);
                                     setShowRightArrow(newPosition < maxPosition);
                                   }}
@@ -749,150 +924,15 @@ export default function CategoryPage() {
                           </div>
                         </div>
                       </div>
-                    </>
-                  )}
-                </div>
-
-              </div>
-            )}
-          </div>
-
-          <div ref={sectionRef} className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full flex-grow">
-            {/* Contenedor principal con ancho ajustado */}
-            <div className="w-full">
-              {activeItems.length > 0 ? (
-                <div className="mb-10">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-gray-500">Todos los productos</h2>
-                  </div>
-
-                  <div className="mb-10">
-                    {/* Contenedor principal del carrusel con estilo minimalista */}
-                    <div className="relative group">
-                      {/* Contenedor del carrusel */}
-                      <div className="carousel-container overflow-hidden px-0 sm:px-0 rounded-lg">
-                        {/* Pista del carrusel */}
-                        <div
-                          className="carousel-track group p-0 flex transition-transform duration-300 ease-out justify-start"
-                          style={{
-                            paddingBottom: 14, paddingTop: 9,
-                            transform: `translateX(-${carouselPositionTwo}%)`
-                          }}
-                        >
-                          {activeItems.map((activeItem, index) => (
-                            <div
-                              key={`top-${index}`}
-                              className={`carousel-item p-0 flex-shrink-0 sm:px-0 md:px-0 ${index === 0 ? 'rounded-l-lg' : ''} ${index === activeItem.length - 1 ? 'rounded-r-lg' : ''} group-hover:bg-zinc-300`}
-                              style={{
-                                paddingInline: 0,
-                                width: `${Math.max(
-                                  20,
-                                  window.innerWidth >= 1280 ? 20 : // 5 items
-                                    window.innerWidth >= 1024 ? 25 : // 4 items
-                                      window.innerWidth >= 768 ? 33.333 : // 3 items
-                                        window.innerWidth >= 640 ? 50 : // 2 items
-                                          100 // 1 item completo en móvil
-                                )}%`
-                              }}
-                            >
-                              <Link to={`/producto/${activeItem.id}`} key={index} className="w-full p-0 m-0 space-x-0">
-                                <motion.div
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  transition={{ duration: 0.3 }}
-                                  className="cardgroup-hover:blur-[0px] hover:!rounded-lg group-hover:!opacity-40 hover:!blur-none hover:!opacity-100 bg-white hover:shadow-md transition-all duration-500 overflow-hidden w-full cursor-pointer hover:scale-105 group-hover:rounded-none"
-                                >
-                                  {/* Diseño adaptativo: horizontal en móvil, vertical en tablet/desktop */}
-                                  <div className="flex flex-row sm:flex-col w-full">
-                                    {/* Imagen: 1/3 del ancho en móvil, altura completa en desktop */}
-                                    <ProductImageWithFallback
-                                      src={activeItem.media && activeItem.media.length > 0 ? activeItem.media[0].url : "/placeholder-product.png"}
-                                      alt={activeItem.name || "Producto"}
-                                      className="max-h-full max-w-full object-contain relative z-10"
-                                    />
-
-                                    {/* Contenido: 2/3 del ancho en móvil, ancho completo en desktop */}
-                                    <div className="w-2/3 sm:w-full p-3 sm:p-4 flex-grow flex flex-col justify-between sm:h-[150px]">
-                                      <div>
-                                        <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={activeItem.name}>{activeItem.name}</h3>
-                                        <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={activeItem.description}>{activeItem.description}</p>
-                                      </div>
-                                      {activeItem.price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${activeItem.price}</p>}
-                                    </div>
-                                  </div>
-                                </motion.div>
-                              </Link>
-                            </div>
-                          ))}
-                        </div>
+                    ) : (
+                      <div className="text-center py-10 bg-white rounded-lg shadow-sm">
+                        <p className="text-gray-500">No se encontraron productos activos.</p>
                       </div>
-
-                      {/* Botones de navegación simplificados */}
-                      <>
-                        {showLeftArrow && (
-                          <button
-                            className="carousel-prev absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
-                            onClick={() => {
-                              // Calcular el ancho de un item según el tamaño de pantalla
-                              let itemWidth = 20; // Por defecto 5 items (20%)
-                              if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25; // 4 items
-                              else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333; // 3 items
-                              else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50; // 2 items
-                              else if (window.innerWidth < 640) itemWidth = 100; // 1 item completo en móvil
-
-                              // Calcular nueva posición
-                              const newPosition = Math.max(0, carouselPositionTwo - itemWidth);
-                              setCarouselPositionTwo(newPosition);
-
-                              // Actualizar visibilidad de flechas
-                              setShowLeftArrow(newPosition > 0);
-                              setShowRightArrow(true);
-                            }}
-                            aria-label="Anterior"
-                          >
-                            <ChevronLeft className="text-blue-600" size={20} />
-                          </button>
-                        )}
-
-                        {showRightArrow && (
-                          <button
-                            className="carousel-next absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
-                            onClick={() => {
-                              // Calcular el ancho de un item según el tamaño de pantalla
-                              let itemWidth = 20; // Por defecto 5 items (20%)
-                              if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25; // 4 items
-                              else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333; // 3 items
-                              else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50; // 2 items
-                              else if (window.innerWidth < 640) itemWidth = 100; // 1 item completo en móvil
-
-                              // Calcular nueva posición y límite máximo
-                              const maxPosition = Math.max(0, (topSellingProducts.length * itemWidth) - 100);
-                              const newPosition = Math.min(maxPosition, carouselPositionTwo + itemWidth);
-                              setCarouselPositionTwo(newPosition);
-
-                              // Actualizar visibilidad de flechas
-                              setShowLeftArrow(true);
-                              setShowRightArrow(newPosition < maxPosition);
-                            }}
-                            aria-label="Siguiente"
-                          >
-                            <ChevronRight className="text-blue-600" size={20} />
-                          </button>
-                        )}
-                      </>
-                    </div>
-
-                    {/* Carrusel con diseño de fila flexible */}
-
+                    )}
                   </div>
                 </div>
-              ) : (
-                <div className="text-center py-10 bg-white rounded-lg shadow-sm">
-                  <p className="text-gray-500">No se encontraron productos que coincidan con tu búsqueda.</p>
-                  <button onClick={() => setSearchTerm('')} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Ver todos los productos</button>
-                </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </div>
       </div>
