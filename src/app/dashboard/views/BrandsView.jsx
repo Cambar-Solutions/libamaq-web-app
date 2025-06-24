@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/sheet";
 import { motion } from "framer-motion";
 import { Edit, Trash2, Plus, Check, X, RefreshCcw, Pencil } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 function isLightColor(hexColor) {
   const hex = hexColor?.replace("#", "") || "ffffff";
@@ -84,12 +85,12 @@ export function BrandsView() {
   // Obtener marcas usando Tanstack Query
   const { data: allBrandsData, isLoading: isLoadingAllBrands } = useAllBrands();
   const { data: activeBrandsData, isLoading: isLoadingActiveBrands } = useActiveBrands();
-  
+
   // Mutaciones para crear, actualizar y cambiar estado
   const createBrandMutation = useCreateBrand();
   const updateBrandMutation = useUpdateBrand();
   const changeBrandStatusMutation = useChangeBrandStatus();
-  
+
   // Cliente de consulta para invalidar consultas y forzar recargas
   const queryClient = useQueryClient();
 
@@ -107,16 +108,16 @@ export function BrandsView() {
         url: brand.url || "",
         color: brand.color || "#000000",
         status: brand.status || "ACTIVE",
-        categories: brand.brandCategories 
+        categories: brand.brandCategories
           ? brand.brandCategories.map(bc => Number(bc.categoryId))
           : [],
         brandCategories: brand.brandCategories || []
       }));
-      
+
       setBrands(processedBrands);
     }
   }, [allBrandsData]);
-  
+
   // Procesar datos de marcas activas cuando se cargan
   useEffect(() => {
     if (activeBrandsData) {
@@ -131,24 +132,24 @@ export function BrandsView() {
         url: brand.url || "",
         color: brand.color || "#000000",
         status: "ACTIVE", // Todas las marcas de este endpoint son activas
-        categories: brand.brandCategories 
+        categories: brand.brandCategories
           ? brand.brandCategories.map(bc => Number(bc.categoryId))
           : [],
         brandCategories: brand.brandCategories || []
       }));
-      
+
       setFilteredBrands(processedBrands);
     }
   }, [activeBrandsData]);
-  
+
   // Filtrar marcas cuando cambia el término de búsqueda
   useEffect(() => {
     if (!activeBrandsData) return;
-    
+
     const brandsData = Array.isArray(activeBrandsData)
       ? activeBrandsData
       : (activeBrandsData.data || []);
-    
+
     const processedBrands = brandsData.map(brand => ({
       id: brand.id,
       name: brand.name,
@@ -156,12 +157,12 @@ export function BrandsView() {
       url: brand.url || "",
       color: brand.color || "#000000",
       status: "ACTIVE",
-      categories: brand.brandCategories 
+      categories: brand.brandCategories
         ? brand.brandCategories.map(bc => Number(bc.categoryId))
         : [],
       brandCategories: brand.brandCategories || []
     }));
-    
+
     if (searchTerm.trim() === "") {
       setFilteredBrands(processedBrands);
     } else {
@@ -206,15 +207,15 @@ export function BrandsView() {
   const handleEditBrand = async (brand) => {
     setCurrentBrand(brand);
     setIsEditing(true);
-    
+
     // Obtener IDs de categorías asignadas a la marca
     const assignedCategoryIds = Array.isArray(brand.brandCategories)
       ? brand.brandCategories.map(bc => Number(bc.categoryId))
       : [];
-    
+
     // Cargar categorías activas primero
     await fetchCategories();
-    
+
     // Después de cargar las categorías, actualizar el formData
     setFormData(prev => ({
       ...prev,
@@ -255,7 +256,7 @@ export function BrandsView() {
       if (typeof onSuccess === 'function') {
         onSuccess();
       }
-      
+
       setFormData({
         name: "",
         url: "",
@@ -281,12 +282,12 @@ export function BrandsView() {
       console.log('Obteniendo categorías activas...');
       const response = await getActiveCategories();
       console.log('Respuesta de categorías activas:', response);
-      
+
       // Extraer los datos de la respuesta según su estructura
       const cats = Array.isArray(response)
         ? response
         : (response.data || response.result || []);
-      
+
       console.log('Categorías activas procesadas:', cats);
       setCategories(cats);
     } catch (error) {
@@ -300,12 +301,12 @@ export function BrandsView() {
     try {
       // Determinar el nuevo estado (inverso al actual)
       const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
-      
+
       console.log(`Cambiando estado de marca ${brandId} de ${currentStatus} a ${newStatus}`);
-      
+
       // Usar la mutación de Tanstack Query para cambiar el estado
       await changeBrandStatusMutation.mutateAsync({ id: brandId, newStatus });
-      
+
       // La actualización de la interfaz se maneja automáticamente por la invalidación de consultas
     } catch (error) {
       console.error('Error al cambiar estado de la marca:', error);
@@ -315,8 +316,8 @@ export function BrandsView() {
 
   // Función para manejar la actualización de una categoría
   const handleCategoryUpdate = (updatedCategory) => {
-    setCategories(prevCategories => 
-      prevCategories.map(cat => 
+    setCategories(prevCategories =>
+      prevCategories.map(cat =>
         cat.id === updatedCategory.id ? updatedCategory : cat
       )
     );
@@ -324,10 +325,10 @@ export function BrandsView() {
 
   // Función para manejar la eliminación de una categoría
   const handleCategoryDelete = (deletedCategoryId) => {
-    setCategories(prevCategories => 
+    setCategories(prevCategories =>
       prevCategories.filter(cat => cat.id !== deletedCategoryId)
     );
-    
+
     // Si la categoría eliminada estaba asignada a la marca actual, la quitamos
     if (formData.categories?.includes(Number(deletedCategoryId))) {
       setFormData(prev => ({
@@ -356,10 +357,10 @@ export function BrandsView() {
       }
 
       const newCategory = await response.json();
-      
+
       // Añadir la nueva categoría a la lista local
       setCategories(prev => [...prev, newCategory]);
-      
+
       // Limpiar el formulario
       setNewCategoryForm({
         name: '',
@@ -367,10 +368,10 @@ export function BrandsView() {
         url: '',
         status: 'ACTIVE'
       });
-      
+
       // Cerrar el diálogo
       setIsCreatingCategory(false);
-      
+
       toast.success(`Categoría ${newCategoryForm.name} creada correctamente`);
     } catch (error) {
       console.error('Error al crear categoría:', error);
@@ -405,7 +406,7 @@ export function BrandsView() {
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">{brand.name}</h3>
               <div className="flex items-center gap-1">
-                <span 
+                <span
                   className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
                 >
                   {isActive ? 'Activa' : 'Inactiva'}
@@ -438,8 +439,8 @@ export function BrandsView() {
           <div className="mt-auto border-t px-4 py-2 bg-gray-50">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-1">
-                <span 
-                  className="w-3 h-3 rounded-full border" 
+                <span
+                  className="w-3 h-3 rounded-full border"
                   style={{ backgroundColor: bg }}
                 />
                 <span className="text-xs text-gray-500">
@@ -449,14 +450,21 @@ export function BrandsView() {
               <div className="flex gap-1">
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-gray-600 hover:bg-gray-200"
-                      onClick={() => handleEditBrand(brand)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-gray-600 hover:bg-gray-200"
+                          onClick={() => handleEditBrand(brand)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                        <p>Editar</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[600px] md:max-w-[700px] max-h-[90vh] flex flex-col overflow-hidden">
                     <DialogHeader className="sticky top-0 z-10 pb-2 border-b">
@@ -508,8 +516,8 @@ export function BrandsView() {
                             </div>
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <div 
-                                  className="w-8 h-8 rounded-full border shadow-sm" 
+                                <div
+                                  className="w-8 h-8 rounded-full border shadow-sm"
                                   style={{ backgroundColor: formData.color }}
                                 />
                                 <Input
@@ -520,9 +528,9 @@ export function BrandsView() {
                                   className="font-mono uppercase"
                                 />
                               </div>
-                              <div 
-                                className="w-full h-6 rounded-md" 
-                                style={{ 
+                              <div
+                                className="w-full h-6 rounded-md"
+                                style={{
                                   background: `linear-gradient(to right, #fff, ${formData.color})`,
                                   border: '1px solid #e2e8f0'
                                 }}
@@ -544,7 +552,7 @@ export function BrandsView() {
                           rows={3}
                         />
                       </div>
-                      
+
                       {/* Sección de Categorías */}
                       <div className="grid grid-cols-4 items-start gap-4">
                         <Label className="text-right pt-2">
@@ -585,7 +593,7 @@ export function BrandsView() {
                                 )}
                               </div>
                             </div>
-                            
+
                             {/* Categorías disponibles */}
                             <div>
                               <div className="flex justify-between items-center mb-2">
@@ -649,20 +657,28 @@ export function BrandsView() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-                
+
                 <Sheet>
                   <SheetTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-gray-600 hover:bg-gray-200"
-                    >
-                      {isActive ? (
-                        <X className="h-4 w-4 text-red-500" />
-                      ) : (
-                        <Check className="h-4 w-4 text-green-500" />
-                      )}
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-gray-600 hover:bg-gray-200"
+                        >
+                          {isActive ? (
+                            <X className="h-4 w-4 text-red-500" />
+                          ) : (
+                            <Check className="h-4 w-4 text-green-500" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                        <p>Eliminar</p>
+                      </TooltipContent>
+                    </Tooltip>
+
                   </SheetTrigger>
                   <SheetContent>
                     <SheetHeader>
@@ -704,13 +720,13 @@ export function BrandsView() {
   // Función para obtener la marca a la que está asignada una categoría
   const getBrandForCategory = (categoryId) => {
     if (!brands || !categoryId) return null;
-    
+
     // Buscar en todas las marcas (excepto la actual) si tienen asignada esta categoría
-    const brandWithCategory = brands.find(brand => 
-      brand.id !== currentBrand?.id && 
+    const brandWithCategory = brands.find(brand =>
+      brand.id !== currentBrand?.id &&
       brand.brandCategories?.some(bc => Number(bc.categoryId) === Number(categoryId))
     );
-    
+
     return brandWithCategory || null;
   };
 
@@ -770,7 +786,7 @@ export function BrandsView() {
             <div className="flex flex-col gap-6 py-6 overflow-y-auto pr-2">
               <div className="space-y-5">
                 <h3 className="text-lg font-medium">Información básica</h3>
-                
+
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="name" className="font-medium">
@@ -784,7 +800,7 @@ export function BrandsView() {
                       onChange={handleInputChange}
                     />
                   </div>
-                  
+
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="url" className="font-medium">
                       URL del Logo *
@@ -798,10 +814,10 @@ export function BrandsView() {
                     />
                     {formData.url && (
                       <div className="mt-2 p-2 border rounded flex justify-center bg-gray-50">
-                        <img 
-                          src={formData.url} 
-                          alt="Vista previa" 
-                          className="max-h-20 object-contain" 
+                        <img
+                          src={formData.url}
+                          alt="Vista previa"
+                          className="max-h-20 object-contain"
                           onError={(e) => {
                             e.target.src = "/placeholder-logo.png";
                             e.target.onerror = null;
@@ -810,7 +826,7 @@ export function BrandsView() {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="color" className="font-medium">
                       Color de la marca
@@ -826,20 +842,20 @@ export function BrandsView() {
                             onChange={handleInputChange}
                             className="w-14 h-14 p-1 cursor-pointer overflow-hidden rounded-md opacity-0 absolute inset-0 z-10"
                           />
-                          <div 
+                          <div
                             className="w-14 h-14 rounded-md border border-gray-300 shadow-sm flex items-center justify-center overflow-hidden"
                             style={{ backgroundColor: formData.color }}
                           >
                             <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-black/10" />
                           </div>
                         </div>
-                        
+
                         <div className="flex-1 space-y-1.5">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">Color seleccionado:</span>
                             <span className="text-sm font-mono bg-gray-100 px-2 py-0.5 rounded">{formData.color}</span>
                           </div>
-                          
+
                           <div className="flex gap-2">
                             {['#01758D', '#1C398E', '#f7e25f', '#184cd5', '#c51f2c', '#a3c0d5', '#16ae42'].map(color => (
                               <button
@@ -847,7 +863,7 @@ export function BrandsView() {
                                 type="button"
                                 className={`w-6 h-6 rounded-full border transition-transform ${formData.color === color ? 'scale-125 shadow-md border-white' : 'hover:scale-110'}`}
                                 style={{ backgroundColor: color }}
-                                onClick={() => setFormData({...formData, color})}
+                                onClick={() => setFormData({ ...formData, color })}
                               />
                             ))}
                           </div>
@@ -855,7 +871,7 @@ export function BrandsView() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="description" className="font-medium">
                       Descripción
@@ -877,13 +893,13 @@ export function BrandsView() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium">Categorías para esta marca</h3>
                 </div>
-                
+
                 {/* El componente CategoryManager ahora maneja la creación y gestión de categorías */}
-                
+
                 {/* Componente CategoryManager para gestionar categorías */}
-                <CategoryManager 
-                  categories={categories} 
-                  selectedCategories={formData.categories} 
+                <CategoryManager
+                  categories={categories}
+                  selectedCategories={formData.categories}
                   onCategoriesChange={(newSelectedCategories) => {
                     setFormData(f => ({
                       ...f,
@@ -903,8 +919,8 @@ export function BrandsView() {
                 </Button>
               </DialogClose>
               <DialogClose asChild>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   onClick={(e) => handleSaveBrand(() => { })}
                   className="gap-1 bg-blue-600 hover:bg-blue-700 cursor-pointer"
                 >
@@ -968,13 +984,13 @@ export function BrandsView() {
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setIsCreatingCategory(false)}
                 >
                   Cancelar
                 </Button>
-                <Button 
+                <Button
                   onClick={handleCreateCategory}
                   disabled={!newCategoryForm.name.trim()}
                 >

@@ -3,7 +3,6 @@ import toast, { Toaster } from "react-hot-toast";
 import {
   FileVideo2,
   Trash2,
-  Edit,
   Loader2,
   SquareMousePointer,
   Image as ImageIcon,
@@ -35,6 +34,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 
 // Importar los hooks personalizados de Tanstack Query
@@ -1043,13 +1043,21 @@ export function ContentView() {
                             <AlertDialog>
                               {/* El trigger: normalmente será tu botón de papelera */}
                               <AlertDialogTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm cursor-pointer transition-colors duration-300"
-                                >
-                                  <Trash2 className="h-5 w-5" />
-                                </Button>
+
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm cursor-pointer transition-colors duration-300"
+                                    >
+                                      <Trash2 className="h-5 w-5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                                    <p>Eliminar</p>
+                                  </TooltipContent>
+                                </Tooltip>
                               </AlertDialogTrigger>
 
                               {/* Contenido del diálogo */}
@@ -1080,11 +1088,16 @@ export function ContentView() {
                           </CardHeader>
                           <Dialog>
                             <DialogTrigger asChild>
-                              <div className="w-8 h-8 cursor-pointer flex justify-center items-center hover:bg-indigo-100 shadow-sm rounded-md transition-colors duration-300">
-                                <SquareMousePointer size={20} />
-
-
-                              </div>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="w-8 h-8 cursor-pointer flex justify-center items-center hover:bg-indigo-100 shadow-sm rounded-md transition-colors duration-300">
+                                    <SquareMousePointer size={20} />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                                  <p>Editar</p>
+                                </TooltipContent>
+                              </Tooltip>
                             </DialogTrigger>
 
                             <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto p-3 md:p-6 md:max-w-[800px] mx-auto">
@@ -1407,13 +1420,21 @@ export function ContentView() {
                             <AlertDialog>
                               {/* El trigger: normalmente será tu botón de papelera */}
                               <AlertDialogTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm cursor-pointer transition-colors duration-300"
-                                >
-                                  <Trash2 className="h-5 w-5" />
-                                </Button>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm cursor-pointer transition-colors duration-300"
+                                    >
+                                      <Trash2 className="h-5 w-5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                                    <p>Eliminar</p>
+                                  </TooltipContent>
+                                </Tooltip>
+
                               </AlertDialogTrigger>
 
                               {/* Contenido del diálogo */}
@@ -1448,12 +1469,17 @@ export function ContentView() {
                           />
                           <Dialog>
                             <DialogTrigger asChild>
-                              <div className="">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="w-8 h-8 flex mt-2 cursor-pointer justify-center items-center hover:bg-indigo-100 shadow-sm rounded-md transition-colors duration-300">
+                                    <SquareMousePointer size={20} />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                                  <p>Editar</p>
+                                </TooltipContent>
+                              </Tooltip>
 
-                                <div className="w-8 h-8 flex mt-2 cursor-pointer justify-center items-center hover:bg-indigo-100 shadow-sm rounded-md transition-colors duration-300">
-                                  <SquareMousePointer size={20} />
-                                </div>
-                              </div>
                             </DialogTrigger>
 
                             <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto p-3 md:p-6 md:max-w-[800px] mx-auto">
@@ -1809,13 +1835,21 @@ export function ContentView() {
                             <AlertDialog>
                               {/* El trigger: normalmente será tu botón de papelera */}
                               <AlertDialogTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm cursor-pointer transition-colors duration-300"
-                                >
-                                  <Trash2 className="h-5 w-5" />
-                                </Button>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 shadow-sm cursor-pointer transition-colors duration-300"
+                                    >
+                                      <Trash2 className="h-5 w-5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                                    <p>Eliminar</p>
+                                  </TooltipContent>
+                                </Tooltip>
+
                               </AlertDialogTrigger>
 
                               {/* Contenido del diálogo */}
@@ -1849,12 +1883,17 @@ export function ContentView() {
                           </div>
                           <Dialog>
                             <DialogTrigger asChild>
-                              <div className="">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="w-8 h-8 cursor-pointer flex mt-2 justify-center items-center hover:bg-indigo-100 shadow-sm rounded-md transition-colors duration-300">
+                                    <SquareMousePointer size={20} />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                                  <p>Editar</p>
+                                </TooltipContent>
+                              </Tooltip>
 
-                                <div className="w-8 h-8 cursor-pointer flex mt-2 justify-center items-center hover:bg-indigo-100 shadow-sm rounded-md transition-colors duration-300">
-                                  <SquareMousePointer size={20} />
-                                </div>
-                              </div>
                             </DialogTrigger>
 
                             <DialogContent className="w-full max-w-[80vw] md:max-w-[900px] mx-auto">
