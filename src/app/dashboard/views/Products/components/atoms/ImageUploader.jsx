@@ -59,6 +59,7 @@ const ImageUploader = ({
     
     // Notificar al componente padre sobre el cambio
     if (onImagesChange) {
+      // Enviamos los archivos reales, no las URLs temporales
       onImagesChange(newFiles);
     }
     
@@ -196,14 +197,14 @@ const ImageUploader = ({
           ))}
 
           {/* Nuevas imágenes seleccionadas */}
-          {previewUrls.map((url, index) => (
+          {selectedFiles.map((file, index) => (
             <div key={index} className="relative group">
               <div 
                 className="aspect-square overflow-hidden rounded-md border cursor-zoom-in transition-transform hover:scale-105"
-                onClick={() => handlePreview(url)}
+                onClick={() => handlePreview(previewUrls[index])}
               >
                 <img
-                  src={url}
+                  src={previewUrls[index]}
                   alt={`Vista previa ${index + 1}`}
                   className="w-full h-full object-cover"
                 />

@@ -22,18 +22,20 @@ const productWorkflow = {
   createProduct: async (productData, files = []) => {
     try {
       // 1. Subir imágenes si hay archivos
-      let media = [];
+      let uploadedMedia = [];
       if (files && files.length > 0) {
         const uploadResponse = await mediaService.uploadImages(files);
-        if (uploadResponse && uploadResponse.data) {
-          media = Array.isArray(uploadResponse.data) ? uploadResponse.data : [uploadResponse.data];
+        // La respuesta del servicio es directamente el array de imágenes
+        if (uploadResponse && Array.isArray(uploadResponse)) {
+          uploadedMedia = uploadResponse;
         }
       }
 
       // 2. Crear el producto con las referencias a las imágenes
       const productWithMedia = {
         ...productData,
-        media: media.map((img, index) => ({
+        // Usar las imágenes recién subidas, ignorando las URLs temporales del formulario
+        media: uploadedMedia.map((img, index) => ({
           id: img.id || 0,
           url: img.url,
           fileType: 'IMAGE',

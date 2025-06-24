@@ -128,12 +128,10 @@ const ProductsView = () => {
     name: "technicalData",
   });
 
-  // Handler para el submit del formulario (sin tipos)
-  const handleCreateSubmit = async (data) => {
-    const success = await createProduct(data);
-    if (success) {
-      reset(); // Limpia el formulario si la creación fue exitosa
-    }
+  // Handler para el submit del formulario (acepta data y files)
+  const handleCreateSubmit = async (data, files) => {
+    await createProduct(data, files);
+    reset(); // Limpia el formulario después de crear
   };
 
   // Efecto para manejar la búsqueda con debounce

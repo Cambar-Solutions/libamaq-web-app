@@ -209,6 +209,14 @@ export default function CreateProductFormDialog({
     };
 
     const onSubmit = (data) => {
+        // Extraer archivos reales de media
+        const files = (data.media || [])
+            .filter(m => m.file instanceof File)
+            .map(m => m.file);
+
+        // Limpiar el campo media para solo dejar los metadatos (sin el campo file)
+        const cleanMedia = (data.media || []).map(({ file, ...rest }) => rest);
+
         const formattedData = {
             ...data,
             brandId: String(data.brandId),
@@ -221,9 +229,9 @@ export default function CreateProductFormDialog({
             functionalities: data.functionalities.filter(f => f && f.trim() !== ''),
             technicalData: data.technicalData.filter(td => td.key && td.value),
             downloads: data.downloads.filter(d => d.key && d.value),
-            // media will be handled separately in the parent component
+            media: cleanMedia
         };
-        handleCreateSubmit(formattedData);
+        handleCreateSubmit(formattedData, files);
     };
 
     return (
