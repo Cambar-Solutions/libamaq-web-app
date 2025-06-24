@@ -6,7 +6,7 @@ import Nav2 from "@/components/Nav2";
 import { simulatedProductsByBrand } from "@data/simulatedProducts";
 import "@/styles/carousel-vanilla.css";
 import { Link } from "react-router-dom";
-import { getTopSellingProductss, getActiveProductPreviews } from "@/services/public/productService";
+import { getTopSellingProductss, getActiveProductPreviews, getProductsByCategoryAndBrand, getProductsByBrand } from "@/services/public/productService";
 import { getAllBrandsWithCategories } from "@/services/public/brandService";
 import ProductImageWithFallback from "./ProductImageWithFallback";
 
@@ -39,17 +39,18 @@ export default function CategoryPage() {
   const [activeItems, setActiveItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const { brand, category } = useParams();
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [allCategories, setAllCategories] = useState([]);
+  const [allBrands, setAllBrands] = useState([]);
+
   const sectionRef = useRef(null);
   const carouselRef = useRef(null);
   const carouselTrackRef = useRef(null);
-  const { brand, category } = useParams();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(category || "");
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [topSellingProducts] = useState(getTopSellingProducts());
-  const [allCategories, setAllCategories] = useState([]);
-  const [allBrands, setAllBrands] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
   const [showCarouselControls, setShowCarouselControls] = useState(false);
   const [scrollPosition, setScrollPosition] = useState(0);
@@ -292,132 +293,205 @@ export default function CategoryPage() {
     }
   }, [carouselImagesLoaded, productsImagesLoaded]);
 
-  // Cargar marcas con categorías
+
+  // --- Efectos de Carga de Datos ---
+
+  // UNIFICADO: Cargar marcas al montar el componente
   useEffect(() => {
-    const loadBrandsWithCategories = async () => {
+    const fetchAndFormatBrands = async () => {
       try {
         const response = await getAllBrandsWithCategories();
-        if (response && response.type === "SUCCESS" && Array.isArray(response.result)) {
-          // Filtrar solo marcas activas
-          const activeBrands = response.result.filter(brand => brand.status === "ACTIVE");
-          setAllBrands(activeBrands);
+        if (response && response.data && Array.isArray(response.data)) {
+          const formattedBrands = response.data.map((b) => ({
+            ...b,
+            categories: b.brandCategories?.map((bc) => bc.category) || [],
+          }));
+          console.log("Marcas formateadas y cargadas:", formattedBrands);
+          setAllBrands(formattedBrands);
 
-          // Extraer todas las categorías únicas de todas las marcas
+          // Extraer todas las categorías únicas de todas las marcas activas
           const allCatsSet = new Set();
-          activeBrands.forEach(brand => {
-            brand.categories.forEach(category => {
-              if (category.status === "ACTIVE") {
-                allCatsSet.add(category.name);
-              }
-            });
+          formattedBrands.forEach(b => {
+            if (b.status === "ACTIVE" && b.categories) {
+              b.categories.forEach(cat => {
+                if (cat.status === "ACTIVE") {
+                  allCatsSet.add(cat.name);
+                }
+              });
+            }
           });
           setAllCategories(Array.from(allCatsSet));
+
+        } else {
+          console.warn("Respuesta inesperada al cargar marcas:", response);
+          setAllBrands([]);
+          setAllCategories([]);
         }
       } catch (error) {
-        console.error("Error al cargar marcas con categorías:", error);
+        console.error("Error al cargar marcas:", error);
         toast.error("Error al cargar marcas");
+        setAllBrands([]);
+        setAllCategories([]);
       }
     };
 
-    loadBrandsWithCategories();
-  }, []);
+    fetchAndFormatBrands();
+  }, []); // Se ejecuta solo una vez al montar el componente
 
-  // Efecto para manejar cambios en la marca seleccionada
+  // Efecto para manejar cambios en la marca y categoría seleccionada de la URL
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
 
-    if (brand) {
-      // Buscar la marca seleccionada en allBrands
-      const selectedBrand = allBrands.find(b => b.name.toLowerCase() === brand.toLowerCase());
+    // Cuando 'brand' de la URL cambia o 'allBrands' se carga/actualiza
+    if (brand && allBrands.length > 0) {
+      const selectedBrand = allBrands.find(b =>
+        b.name?.toLowerCase() === brand.toLowerCase()
+      );
 
-      if (selectedBrand) {
+      if (selectedBrand?.categories?.length > 0) {
         // Obtener categorías activas de la marca seleccionada
         const brandCategories = selectedBrand.categories
           .filter(cat => cat.status === "ACTIVE")
           .map(cat => cat.name);
-
         setAllCategories(brandCategories);
+      } else {
+        setAllCategories([]);
       }
+    } else if (!brand) {
+      // Si no hay marca en la URL, mostrar todas las categorías disponibles globalmente
+      // Esto ya se hace en el primer useEffect que carga allBrands y todas las categorías únicas
     }
   }, [brand, allBrands]);
 
+  // Establecer la categoría seleccionada si viene de la URL
   useEffect(() => {
-    if (category) setSelectedCategory(category);
+    if (category) {
+      setSelectedCategory(decodeURIComponent(category));
+    } else {
+      setSelectedCategory(null); // Limpiar si no hay categoría en la URL
+    }
   }, [category]);
 
-  // Manejadores de navegación y filtros
-  const handleBack = () => navigate("/tienda");
-  const handleCategoryChange = (newCategory) => {
-    setSelectedCategory(newCategory);
-    if (brand) {
-      navigate(`/productos/${brand}/${encodeURIComponent(newCategory)}`);
-    } else {
-      navigate(`/productos/categoria/${encodeURIComponent(newCategory)}`);
-    }
-  };
-
-  // Cargar productos según los filtros seleccionados
+  // Cargar productos según los filtros seleccionados (marca y/o categoría)
   useEffect(() => {
     const loadFilteredProducts = async () => {
-      if (!brand && !selectedCategory) {
-        // Si no hay filtros, ya tenemos los productos destacados
-        return;
+      // Si no hay filtros iniciales de brand ni category, podrías decidir mostrar destacados
+      // O esperar a que se seleccione algo. Para este caso, solo cargamos los destacados si no hay filtros.
+      if (!brand && !selectedCategory && !searchTerm) {
+        setIsLoading(true);
+        try {
+          const featured = await getActiveProductPreviews();
+          setActiveItems(featured.data || []);
+        } catch (error) {
+          console.error('Error al cargar productos destacados iniciales:', error);
+          setActiveItems([]);
+        } finally {
+          setIsLoading(false);
+        }
+        return; // Salir de la función si no hay filtros aplicados
       }
 
       setIsLoading(true);
       try {
-        // Obtener el objeto de la marca seleccionada
-        const selectedBrand = allBrands.find(b => b.name.toLowerCase() === brand?.toLowerCase());
-        const brandId = selectedBrand?.id;
+        console.log('Buscando marca:', brand);
+        console.log('Todas las marcas disponibles (para búsqueda):', allBrands);
 
-        if (!brandId) {
-          console.log('No se encontró la marca seleccionada');
-          setIsLoading(false);
-          return;
-        }
+        let productsResponse = { data: [], status: 200, message: 'success' }; // Default response
 
-        let response;
-
-        // Buscar la categoría seleccionada si existe
-        if (selectedCategory) {
-          const categoryObj = selectedBrand.categories.find(
-            cat => cat.name.toLowerCase() === selectedCategory.toLowerCase()
+        // Solo intentar buscar por marca/categoría si allBrands ya está cargado
+        if (allBrands.length > 0) {
+          const selectedBrand = allBrands.find(b =>
+            b.name?.toLowerCase() === brand?.toLowerCase()
           );
-          const categoryId = categoryObj?.id;
 
-          if (categoryId) {
-            // Obtener productos por marca y categoría usando el endpoint específico
-            console.log(`Buscando productos por marca ${brandId} y categoría ${categoryId}`);
-            response = await getProductsByCategoryAndBrand(categoryId, brandId);
-          } else {
-            console.log(`Categoría ${selectedCategory} no encontrada para la marca ${selectedBrand.name}`);
-            // Si la categoría no existe, mostrar productos de la marca
-            response = await getProductsByBrand(brandId);
+          console.log('Marca seleccionada (found):', selectedBrand);
+          const brandId = selectedBrand?.id;
+
+          if (!brandId && brand) {
+            console.log('No se encontró la marca seleccionada en los datos cargados. Mostrando destacados.');
+            // Si la marca de la URL no se encuentra en allBrands, mostramos destacados
+            productsResponse = await getActiveProductPreviews();
+          } else if (brandId && selectedCategory) {
+            // Buscando productos por marca y categoría
+            console.log(`Buscando productos para marca ${brandId} y categoría ${selectedCategory}`);
+
+            const categoryObj = selectedBrand?.categories?.find(
+              cat => cat.name.toLowerCase() === selectedCategory.toLowerCase()
+            );
+
+            if (categoryObj?.id) {
+              productsResponse = await getProductsByCategoryAndBrand(categoryObj.id, brandId);
+            } else {
+              console.log('Categoría no encontrada en la marca, buscando solo por marca');
+              productsResponse = await getProductsByBrand(brandId);
+            }
+          } else if (brandId) {
+            // Buscando productos solo por marca
+            console.log(`Buscando productos para marca ${brandId}`);
+            productsResponse = await getProductsByBrand(brandId);
+          } else if (selectedCategory) {
+            // Si hay categoría pero no marca, puedes buscar por categoría solamente
+            // Necesitarías un servicio getProductsByCategory si no lo tienes
+            console.log(`Buscando productos para categoría ${selectedCategory} (sin marca específica)`);
+            // productsResponse = await getProductsByCategory(selectedCategory); // Descomenta si tienes este servicio
+            productsResponse = await getActiveProductPreviews(); // Fallback si no hay servicio getProductsByCategory
           }
         } else {
-          // Obtener productos solo por marca usando el endpoint específico
-          console.log(`Buscando productos por marca ${brandId}`);
-          response = await getProductsByBrand(brandId);
+          console.log("Marcas no cargadas aún, esperando o mostrando destacados por defecto.");
+          productsResponse = await getActiveProductPreviews();
         }
 
-        if (response && response.type === "SUCCESS" && Array.isArray(response.result)) {
-          console.log(`Productos encontrados: ${response.result.length}`);
-          setFeaturedProducts(response.result);
+        // --- Manejo de la respuesta de productos ---
+        if (productsResponse && productsResponse.status === 200 && Array.isArray(productsResponse.data) && productsResponse.data.length > 0) {
+          setActiveItems(productsResponse.data);
+          console.log('Productos encontrados y mostrados:', productsResponse.data.length);
         } else {
-          console.log('No se encontraron productos o respuesta inválida');
-          setFeaturedProducts([]);
+          console.log('No se encontraron productos para los filtros aplicados, mostrando productos destacados.');
+          const featured = await getActiveProductPreviews();
+          setActiveItems(featured.data || []);
         }
+
       } catch (error) {
-        console.error("Error al cargar productos filtrados:", error);
-        toast.error("Error al cargar productos");
-        setFeaturedProducts([]);
+        console.error('Error al cargar productos filtrados:', error);
+        // En caso de error, siempre mostrar productos destacados
+        const featured = await getActiveProductPreviews();
+        setActiveItems(featured.data || []);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadFilteredProducts();
-  }, [brand, selectedCategory, allBrands]);
+  }, [brand, selectedCategory, allBrands, getProductsByCategoryAndBrand, getProductsByBrand, getActiveProductPreviews]); // Dependencias
+
+  // Cargar productos más vendidos (siempre se muestran independientemente de filtros)
+  useEffect(() => {
+    const loadTopSelling = async () => {
+      try {
+        const topSelling = await getTopSellingProductss(); // Asegúrate de que esta función exista en productService
+        setTopSellingItems(topSelling || []);
+      } catch (error) {
+        console.error("Error al cargar productos más vendidos:", error);
+        setTopSellingItems([]);
+      }
+    };
+    loadTopSelling();
+  }, []);
+
+  // Manejadores de navegación y filtros
+  const handleBack = () => navigate("/tienda");
+  const handleCategoryChange = (newCategoryName) => {
+    // Busca la categoría por nombre en todas las categorías disponibles para obtener su ID
+    let categoryToNavigate = newCategoryName; // Por defecto es el nombre
+
+    // Construye la URL de navegación
+    if (brand) {
+      navigate(`/productos/${brand}/${encodeURIComponent(categoryToNavigate)}`);
+    } else {
+      navigate(`/productos/categoria/${encodeURIComponent(categoryToNavigate)}`);
+    }
+  };
+
 
   // Filtrar productos por término de búsqueda
   const filteredProducts = searchTerm

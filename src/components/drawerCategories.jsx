@@ -93,7 +93,10 @@ const DrawerCategories = forwardRef((props, ref) => {
   const goToCategoryPage = (brand, category) => {
     setOpen(false);
     setTimeout(() => {
-      navigate(`/productos/${brand.name}/${category.name}`);
+      // Codificar los nombres para URLs amigables
+      const encodedBrand = encodeURIComponent(brand.name.toLowerCase());
+      const encodedCategory = encodeURIComponent(category.name.toLowerCase());
+      navigate(`/productos/${encodedBrand}/${encodedCategory}`);
     }, 100);
   };
 

@@ -89,3 +89,16 @@ export const getTopSellingProductss = async () => {
     throw error.response?.data || error.message;
   }
 };
+
+
+// Obtener productos por categoría y marca
+export const getProductsByCategoryAndBrand = async (categoryId, brandId) => {
+  try {
+    const response = await apiClient.get(`/l/products/category/${categoryId}/brand/${brandId}`);
+    console.log(`Productos para la categoría ${categoryId} y marca ${brandId}:`, response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al obtener productos para la categoría ${categoryId} y marca ${brandId}:`, error);
+    throw error.response?.data || error.message;
+  }
+};
