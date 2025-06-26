@@ -13,7 +13,7 @@ const Whatsapp = () => {
       setIsLoading(true);
       setError(null);
       const response = await getWhatsappQR();
-      
+
       // Verificamos si la respuesta es un string (JSON) o ya es un objeto
       let responseData;
       try {
@@ -24,17 +24,17 @@ const Whatsapp = () => {
         setStatus('qr_required');
         return;
       }
-      
+
       // Intentamos obtener los datos del QR de diferentes formas posibles
       const qrData = responseData?.data?.qrCode || responseData?.qrCode || responseData;
       const qrStatus = responseData?.data?.status || responseData?.status || 'qr_required';
-      
+
       console.log('Datos del QR:', { qrData, qrStatus });
-      
+
       if (!qrData) {
         throw new Error('No se pudo obtener el código QR');
       }
-      
+
       setQrData(qrData);
       setStatus(qrStatus);
     } catch (err) {
@@ -48,7 +48,7 @@ const Whatsapp = () => {
   useEffect(() => {
     // Cargar el código QR inmediatamente
     fetchQRCode();
-    
+
     // Configurar actualización automática cada 5 segundos
     const interval = setInterval(() => {
       console.log('Actualizando código QR...');
@@ -65,8 +65,31 @@ const Whatsapp = () => {
         <h1 className="text-2xl font-bold">Conexión de WhatsApp</h1>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        {isLoading ? (
+      <div class="bg-white rounded-lg shadow p-6 w-full h-auto">
+        {/* Rempleazo de QR */}
+        <div class="flex flex-col sm:flex-row justify-center items-center sm:items-start p-4 gap-0">
+          <div class="flex flex-col items-center w-full sm:w-1/2">
+            <img class="w-full max-w-[20em] h-auto flex justify-center items-center" src="/QR-LIBAMAQ.png" alt="QR Libamaq" />
+          </div>
+          <div class="flex flex-col items-center w-full sm:w-1/2 pt-0 sm:pt-20">
+            <p class="text-lg text-gray-500 mb-4 text-center max-w-md">
+              Para conectar WhatsApp Web:
+              <br />
+              1. Abre WhatsApp en tu teléfono
+              <br />
+              2. Toca los tres puntos (⋮) o Configuración
+              <br />
+              3. Selecciona "Dispositivos vinculados"
+              <br />
+              4. Toca "Vincular un dispositivo"
+              <br />
+              5. Escanea este código QR
+            </p>
+          </div>
+        </div>
+        {/* Fin del rempleazo */}
+        
+        {/* {isLoading ? (
           <div className="flex flex-col items-center justify-center p-8">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
             <p className="text-gray-600">Cargando código QR...</p>
@@ -84,7 +107,7 @@ const Whatsapp = () => {
                 <div className="p-4 border border-gray-200 rounded-lg mb-4 bg-white">
                   {qrData && (
                     <div className="p-4 bg-white">
-                      <QRCode 
+                      <QRCode
                         value={qrData}
                         size={256}
                         level="H"
@@ -118,7 +141,7 @@ const Whatsapp = () => {
               </div>
             )}
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );
