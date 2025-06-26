@@ -3,18 +3,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter
-} from '@/components/ui/dialog';
 import { Edit, Trash2, ShoppingCart, Box, DollarSign, Tag, Info } from 'lucide-react';
 import PropTypes from 'prop-types';
-import EditProductFormDialog from './EditProductFormDialog';
 
 // Función local para formatear moneda
 const formatCurrency = (amount) => {
@@ -56,16 +46,12 @@ const ProductCard = ({
   isCreating
 }) => {
   const mainImage = product.media?.find(m => m.fileType === 'IMAGE')?.url || '/placeholder-product.jpg';
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-
-
-  const handleProductUpdate = async (productId, updatedData) => {
-    console.log("Updating product:", productId, updatedData);
+  const handleProductUpdate = async (productId, updatedData, files = [], mediaToDelete = []) => {
+    console.log("Updating product:", productId, updatedData, files, mediaToDelete);
     if (onEdit) {
-      await onEdit(productId, updatedData); // Call the onEdit prop with ID and data
+      await onEdit(productId, updatedData, files, mediaToDelete);
     }
-    setIsEditDialogOpen(false); // Close dialog after successful update
   };
 
   return (
@@ -168,38 +154,24 @@ const ProductCard = ({
 
           {/* Edit Dialog Integration */}
           {onEdit && (
-            <Dialog>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      // onClick is removed from here as DialogTrigger handles it
-                      className="h-7 w-7"
-                    >
-                      <Edit className="h-3.5 w-3.5" />
-                    </Button>
-                  </DialogTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="bg-gray-600 text-white text-xs px-2 py-1 rounded-sm shadow-md">
-                  Editar
-                </TooltipContent>
-              </Tooltip>
-
-              <DialogContent className="sm:max-w-[425px]">
-                <EditProductFormDialog
-                  product={product}
-                  brands={brands}
-                  categories={categories}
-                  onSave={handleProductUpdate}
-                  onClose={() => setIsEditDialogOpen(false)} // Pass onClose to allow form to close dialog
-                  isCreating={isCreating}
-                 
-                />
-
-              </DialogContent>
-            </Dialog>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(product);
+                  }}
+                  className="h-7 w-7"
+                >
+                  <Edit className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-gray-600 text-white text-xs px-2 py-1 rounded-sm shadow-md">
+                Editar
+              </TooltipContent>
+            </Tooltip>
           )}
 
           {onDelete && (
@@ -247,7 +219,7 @@ ProductCard.propTypes = {
     brand: PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
-      color: PropTypes.string, // Assuming brand also has a color property
+      color: PropTypes.string,
     }),
     category: PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -257,8 +229,8 @@ ProductCard.propTypes = {
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
   onView: PropTypes.func,
-  brands: PropTypes.array.isRequired, // PropType for brands
-  categories: PropTypes.array.isRequired // PropType for categories
+  brands: PropTypes.array.isRequired,
+  categories: PropTypes.array.isRequired
 };
 
 export default ProductCard;

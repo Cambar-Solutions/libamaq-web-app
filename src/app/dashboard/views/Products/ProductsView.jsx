@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import CreateProductFormDialog from './components/atoms/CreateProductFormDialog';
+import EditProductFormDialog from './components/atoms/EditProductFormDialog';
 
 // Esquema de validación con Zod (funciona igual en JS)
 const productSchema = z.object({
@@ -197,7 +198,15 @@ const ProductsView = () => {
     setSelectedBrand(value);
     setFilters(prev => ({
       ...prev,
-      brandId: value === 'ALL' ? null : value
+      brandId: value === 'ALL' ? '' : value
+    }));
+  };
+
+  // Handle category filter change
+  const handleCategoryFilterChange = (value) => {
+    setFilters(prev => ({
+      ...prev,
+      categoryId: value === 'ALL' ? '' : value
     }));
   };
 
@@ -251,7 +260,6 @@ const ProductsView = () => {
             <Select
               value={selectedBrand}
               onValueChange={handleBrandFilterChange}
-              
             >
               <SelectTrigger className="w-full bg-white rounded-full">
                 <SelectValue placeholder="Filtrar por marca" />
@@ -261,6 +269,24 @@ const ProductsView = () => {
                 {brands.map((brand) => (
                   <SelectItem key={brand.id} value={String(brand.id)}>
                     {brand.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-full sm:w-64">
+            <Select
+              value={filters.categoryId || 'ALL'}
+              onValueChange={handleCategoryFilterChange}
+            >
+              <SelectTrigger className="w-full bg-white rounded-full">
+                <SelectValue placeholder="Filtrar por categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Todas las categorías</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={String(category.id)}>
+                    {category.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -296,15 +322,14 @@ const ProductsView = () => {
                 <ProductCard
                   key={product.id}
                   product={product}
-                  onEdit={updateProduct}
+                  onEdit={openEditDialog}
                   onDelete={openDeleteDialog}
                   onView={(product) => {
                     console.log('Ver producto:', product);
                   }}
+                  brands={brands}
+                  categories={categories}
                   isCreating={isCreating}
-
-                  setValue={setValue}
-                  getValues={getValues}
                 />
               ))}
             </div>
@@ -367,6 +392,16 @@ const ProductsView = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <EditProductFormDialog
+          open={isEditDialogOpen}
+          onOpenChange={closeEditDialog}
+          product={selectedProduct}
+          brands={brands}
+          categories={categories}
+          onSave={updateProduct}
+          onClose={closeEditDialog}
+        />
       </div>
     </ErrorBoundary>
   );

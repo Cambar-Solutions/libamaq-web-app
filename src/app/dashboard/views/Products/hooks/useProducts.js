@@ -21,8 +21,8 @@ export const useProducts = () => {
   const [productToDelete, setProductToDelete] = useState(null);
   const [filters, setFilters] = useState({
     status: 'ACTIVE',
-    brand: '',
-    category: ''
+    brandId: '',
+    categoryId: ''
   });
 
   // Consulta para obtener la lista de productos
@@ -121,8 +121,8 @@ export const useProducts = () => {
       product.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = !filters.status || product.status === filters.status;
-    const matchesBrand = !filters.brand || product.brandId === filters.brand;
-    const matchesCategory = !filters.category || product.categoryId === filters.category;
+    const matchesBrand = !filters.brandId || String(product.brandId) === String(filters.brandId);
+    const matchesCategory = !filters.categoryId || String(product.categoryId) === String(filters.categoryId);
 
     return matchesSearch && matchesStatus && matchesBrand && matchesCategory;
   });
