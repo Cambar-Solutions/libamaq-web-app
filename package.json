@@ -49,6 +49,7 @@
     "react-hook-form": "^7.57.0",
     "react-hot-toast": "^2.5.2",
     "react-icons": "^5.5.0",
+    "react-qr-code": "^2.0.16",
     "react-router-dom": "^7.2.0",
     "react-tiktok-embed": "^1.0.0",
     "recharts": "^2.15.2",

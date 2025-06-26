@@ -116,12 +116,38 @@ export default function Footer() {
         </div>
 
         {/* Copyright */}
-        <div className="mt-12 pt-8">
-          <p className="text-center text-gray-500 select-none">
-            {new Date().getFullYear()} LIBAMAQ. Todos los derechos reservados.
-          </p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            {/* Left side - Copyright */}
+            <div className="text-black text-sm">
+              {new Date().getFullYear()} LIBAMAQ. Todos los derechos reservados.
+            </div>
+            
+            {/* Right side - Made with love and Levsek branding */}
+            <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-6">
+              {/* Heart message */}
+              <div className="flex items-center space-x-2">
+                <span className="text-black/70 text-sm">Hecho con</span>
+                <span className="text-black text-lg">♥</span>
+                <span className="text-black/70 text-sm">para el constructor</span>
+              </div>
+              
+              {/* Levsek branding */}
+              <div className="flex items-center space-x-2 opacity-60 hover:opacity-100 transition-opacity duration-300">
+                <span className="text-black/50 text-xs">|</span>
+                <span className="text-black/50 text-xs">Desarrollado por</span>
+                <img 
+                  src="/logo_levsek.jpg" 
+                  alt="Levsek" 
+                  className="h-4 w-4 rounded-sm"
+                />
+                <span className="text-black/50 text-xs font-medium">Levsek {new Date().getFullYear()}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
     </footer>
   );
 }

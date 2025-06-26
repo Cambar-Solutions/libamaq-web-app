@@ -13,6 +13,7 @@ import { BrandsView } from "./views/BrandsView";
 import { CategoriesView } from "./views/CategoriesView";
 import SparePartsView from "./views/SpareParts/SparePartsView";
 import ProductsView from "./views/Products/ProductsView";
+import Whatsapp from "./views/Whastapp/Whatsapp";
 
 export default function Page() {
   const [currentView, setCurrentView] = useState("inicio"); 
@@ -48,6 +49,8 @@ export default function Page() {
           return <BrandsView />;
         case "categorias":
           return <CategoriesView />;
+        case "whatsapp":
+          return <Whatsapp />;
         default:
           return <OrdersView />; 
       }

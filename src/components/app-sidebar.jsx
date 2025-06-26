@@ -8,7 +8,8 @@ import {
   Film,          // Contenido (Película)
   Tag,           // Marcas (Etiqueta)
   Layers,        // Categorías (Capas)
-  Wrench         // Repuestos (Llave inglesa)
+  Wrench,        // Repuestos (Llave inglesa)
+  MessageCircle  // WhatsApp icon (using MessageCircle as a placeholder)
 } from "lucide-react"
 
 import { NavUser } from "@/components/nav-user"
@@ -45,7 +46,6 @@ const data = {
       id: "marcas",
       icon: Tag,
     },
-    // Se eliminó la opción de Categorías ya que ahora se gestionan desde Marcas
     {
       name: "Pedidos",
       id: "pedidos",
@@ -70,6 +70,11 @@ const data = {
       name: "Contenido",
       id: "contenido",
       icon: Film,
+    },
+    {
+      name: "Whatsapp",
+      id: "whatsapp",
+      icon: MessageCircle,
     },
   ],
 }
