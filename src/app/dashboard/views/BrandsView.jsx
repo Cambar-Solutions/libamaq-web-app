@@ -449,23 +449,26 @@ export function BrandsView() {
               </div>
               <div className="flex gap-1">
                 <Dialog>
-                  <DialogTrigger asChild>
+                  <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-gray-600 hover:bg-gray-200"
-                          onClick={() => handleEditBrand(brand)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-gray-600 hover:bg-gray-200"
+                            onClick={() => handleEditBrand(brand)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
                         <p>Editar</p>
                       </TooltipContent>
                     </Tooltip>
-                  </DialogTrigger>
+                  </TooltipProvider>
+
                   <DialogContent className="sm:max-w-[600px] md:max-w-[700px] max-h-[90vh] flex flex-col overflow-hidden">
                     <DialogHeader className="sticky top-0 z-10 pb-2 border-b">
                       <DialogTitle>Editar Marca</DialogTitle>
@@ -659,27 +662,28 @@ export function BrandsView() {
                 </Dialog>
 
                 <Sheet>
-                  <SheetTrigger asChild>
+                  <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-gray-600 hover:bg-gray-200"
-                        >
-                          {isActive ? (
-                            <X className="h-4 w-4 text-red-500" />
-                          ) : (
-                            <Check className="h-4 w-4 text-green-500" />
-                          )}
-                        </Button>
+                        <SheetTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-gray-600 hover:bg-gray-200"
+                          >
+                            {isActive ? (
+                              <X className="h-4 w-4 text-red-500" />
+                            ) : (
+                              <Check className="h-4 w-4 text-green-500" />
+                            )}
+                          </Button>
+                        </SheetTrigger>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
                         <p>Eliminar</p>
                       </TooltipContent>
                     </Tooltip>
-
-                  </SheetTrigger>
+                  </TooltipProvider>
                   <SheetContent>
                     <SheetHeader>
                       <SheetTitle>

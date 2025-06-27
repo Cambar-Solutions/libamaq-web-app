@@ -18,7 +18,7 @@ export default function Nosotros() {
     <Nav />
 
     <section className=' flex  w-full mt-18 pt-14 pb-4 m-auto  justify-center'>
-    <h1 className='text-4xl font-bold'>Nosotros </h1>
+    <h1 className='text-4xl font-bold'>Nosotros: </h1>
     </section>
     
 
