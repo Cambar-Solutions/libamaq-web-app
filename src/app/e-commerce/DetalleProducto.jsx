@@ -319,29 +319,82 @@ const DetalleProducto = () => {
 
 
         {/* Especificaciones técnicas - Estilo Mercado Libre */}
-        {(product?.technicalData || product?.functionalities) && (
-          <div className="mt-6 bg-white rounded-lg shadow-sm p-4">
-            <h2 className="text-2xl font-medium text-gray-900 mb-4">Especificaciones técnicas</h2>
-            <div className="overflow-hidden border border-gray-200 rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200">
-                <tbody>
-                  {product?.technicalData && Object.entries(product.technicalData).map(([key, value], index) => (
-                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-700 w-1/3 border-r border-gray-200">{key}</td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{value}</td>
-                    </tr>
-                  ))}
-                  {product?.functionalities && Object.entries(product.functionalities).map(([key, value], index) => (
-                    <tr key={`func-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-700 w-1/3 border-r border-gray-200">{key}</td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+        {/* Especificaciones técnicas - Estilo Mercado Libre */}
+{(product?.technicalData || product?.functionalities) && (
+  <div className="mt-6 bg-white rounded-lg shadow-sm p-4">
+    <h2 className="text-2xl font-medium text-gray-900 mb-4">Especificaciones técnicas</h2>
+    <div className="overflow-hidden border border-gray-200 rounded-lg">
+      <table className="min-w-full divide-y divide-gray-200">
+        <tbody>
+          {/* Renderizado de technicalData */}
+          {product?.technicalData && product.technicalData.map((item, index) => {
+            let renderedKey;
+            let renderedValue;
+
+            if (typeof item === 'object' && item !== null && 'key' in item && 'value' in item) {
+              // Si es un objeto con 'key' y 'value' (como Rotomartillo Bosch)
+              renderedKey = item.key;
+              renderedValue = item.value;
+            } else if (typeof item === 'string') {
+              // Si es una cadena (como Martillo demoledor)
+              // Podrías intentar parsear la cadena si tienen un formato consistente,
+              // o simplemente mostrarla como valor y dejar la clave vacía o 'Info':
+              const parts = item.split(': ');
+              if (parts.length > 1) {
+                renderedKey = parts[0];
+                renderedValue = parts.slice(1).join(': ');
+              } else {
+                renderedKey = 'Información'; // Clave genérica si no hay ':'
+                renderedValue = item;
+              }
+            } else {
+              // Caso de fallback para tipos inesperados
+              renderedKey = 'N/A';
+              renderedValue = 'Datos inválidos';
+            }
+
+            return (
+              <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <td className="px-4 py-3 text-sm font-medium text-gray-700 w-1/3 border-r border-gray-200">{renderedKey}</td>
+                <td className="px-4 py-3 text-sm text-gray-700">{renderedValue}</td>
+              </tr>
+            );
+          })}
+
+          {/* Renderizado de functionalities (asumiendo que podría tener el mismo problema) */}
+          {product?.functionalities && product.functionalities.map((item, index) => {
+            let renderedKey;
+            let renderedValue;
+
+            if (typeof item === 'object' && item !== null && 'key' in item && 'value' in item) {
+              renderedKey = item.key;
+              renderedValue = item.value;
+            } else if (typeof item === 'string') {
+              const parts = item.split(': ');
+              if (parts.length > 1) {
+                renderedKey = parts[0];
+                renderedValue = parts.slice(1).join(': ');
+              } else {
+                renderedKey = 'Información';
+                renderedValue = item;
+              }
+            } else {
+              renderedKey = 'N/A';
+              renderedValue = 'Datos inválidos';
+            }
+
+            return (
+              <tr key={`func-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <td className="px-4 py-3 text-sm font-medium text-gray-700 w-1/3 border-r border-gray-200">{renderedKey}</td>
+                <td className="px-4 py-3 text-sm text-gray-700">{renderedValue}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
 
         {/* Descargas - Estilo Mercado Libre */}
         {product?.downloads && Object.keys(product.downloads).length > 0 && (
