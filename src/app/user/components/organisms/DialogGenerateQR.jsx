@@ -116,7 +116,7 @@ export default function DialogGenerateQR() {
           </DialogHeader>
           <div className="flex justify-center py-4">
             <div className="flex flex-col space-y-4 items-center">
-              {loading && <p>Cargando código QR...</p>}
+              {/* {loading && <p>Cargando código QR...</p>}
 
               {error && <p className="text-red-500">{error}</p>}
 
@@ -146,7 +146,28 @@ export default function DialogGenerateQR() {
 
               {!loading && !error && !qrCode && status === null && (
                 <p className="text-gray-500">Iniciando conexión para generar el código QR.</p>
-              )}
+              )} */}
+
+              <div className="flex flex-col sm:flex-row justify-center items-center sm:items-start p-4 gap-0">
+                <div className="flex flex-col items-center w-full sm:w-1/2">
+                  <img className="w-full max-w-[20em] h-auto flex justify-center items-center" src="/QR-LIBAMAQ.png" alt="QR Libamaq" />
+                </div>
+                <div className="flex flex-col items-center w-full sm:w-1/2 pt-0 sm:pt-20">
+                  <p className="text-sm text-gray-500 mb-4 text-center max-w-md">
+                    Para conectar WhatsApp Web:
+                    <br />
+                    1. Abre WhatsApp en tu teléfono
+                    <br />
+                    2. Toca los tres puntos (⋮) o Configuración
+                    <br />
+                    3. Selecciona "Dispositivos vinculados"
+                    <br />
+                    4. Toca "Vincular un dispositivo"
+                    <br />
+                    5. Escanea este código QR
+                  </p>
+                </div>
+              </div>
 
             </div>
           </div>
