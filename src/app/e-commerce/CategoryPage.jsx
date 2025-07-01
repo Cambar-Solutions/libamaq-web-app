@@ -73,13 +73,18 @@ export default function CategoryPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoplayEnabled, setAutoplayEnabled] = useState(true);
   const [touchStart, setTouchStart] = useState(0);
-
-  // Estados para el carrusel de productos más vendidos
-  const [carouselPosition, setCarouselPosition] = useState(0);
-  const [carouselPositionTwo, setCarouselPositionTwo] = useState(0);
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(true);
   const [touchEnd, setTouchEnd] = useState(0);
+
+  // Para el carrusel de "Los más vendidos"
+  const [topSellingCarouselPosition, setTopSellingCarouselPosition] = useState(0);
+  const [showTopSellingLeftArrow, setShowTopSellingLeftArrow] = useState(false);
+  const [showTopSellingRightArrow, setShowTopSellingRightArrow] = useState(true);
+
+  // Para el carrusel de "Todos los productos" / "Productos activos"
+  const [activeProductsCarouselPosition, setActiveProductsCarouselPosition] = useState(0);
+  const [showActiveProductsLeftArrow, setShowActiveProductsLeftArrow] = useState(false);
+  const [showActiveProductsRightArrow, setShowActiveProductsRightArrow] = useState(true);
+
 
   // Imágenes de ejemplo para el carrusel (puedes reemplazarlas con tus propias imágenes)
   const carouselImages = [
@@ -196,8 +201,8 @@ export default function CategoryPage() {
 
     const handleResize = () => {
       // Resetear la posición del carrusel cuando cambia el tamaño de la ventana
-      setCarouselPosition(0);
-      setShowLeftArrow(false);
+      setTopSellingCarouselPosition(0);
+      setShowTopSellingLeftArrow(false);
 
       // Calcular si debe mostrar la flecha derecha
       let itemWidth = 20; // Por defecto 5 items (20%)
@@ -207,7 +212,7 @@ export default function CategoryPage() {
       else if (window.innerWidth < 640) itemWidth = 100; // 1 item
 
       const maxPosition = Math.max(0, (topSellingProducts.length * itemWidth) - 100);
-      setShowRightArrow(maxPosition > 0);
+      setShowTopSellingRightArrow(maxPosition > 0);
     };
 
     // Inicializar el estado del carrusel
@@ -718,7 +723,7 @@ export default function CategoryPage() {
                           <div className="carousel-container overflow-hidden px-0 sm:px-0 rounded-lg">
                             <div
                               className="carousel-track group p-0 flex transition-transform duration-300 ease-out justify-start"
-                              style={{ paddingBottom: 14, paddingTop: 9, transform: `translateX(-${carouselPosition}%)` }}
+                              style={{ paddingBottom: 14, paddingTop: 9, transform: `translateX(-${topSellingCarouselPosition}%)` }}
                             >
                               {topSellingItems.map((topSellingItem, index) => (
                                 <div
@@ -765,7 +770,7 @@ export default function CategoryPage() {
                           </div>
                           {/* Botones de navegación simplificados para topSellingItems */}
                           <>
-                            {showLeftArrow && (
+                            {showTopSellingLeftArrow && (
                               <button
                                 className="carousel-prev absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
                                 onClick={() => {
@@ -774,10 +779,10 @@ export default function CategoryPage() {
                                   else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333;
                                   else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50;
                                   else if (window.innerWidth < 640) itemWidth = 100;
-                                  const newPosition = Math.max(0, carouselPosition - itemWidth);
-                                  setCarouselPosition(newPosition);
-                                  setShowLeftArrow(newPosition > 0);
-                                  setShowRightArrow(true); // Siempre que te muevas a la izquierda, la flecha derecha debería aparecer
+                                  const newPosition = Math.max(0, topSellingCarouselPosition - itemWidth);
+                                  setTopSellingCarouselPosition(newPosition);
+                                  setShowTopSellingLeftArrow(newPosition > 0);
+                                  setShowTopSellingRightArrow(true); // Siempre que te muevas a la izquierda, la flecha derecha debería aparecer
                                 }}
                                 aria-label="Anterior"
                               >
@@ -785,7 +790,7 @@ export default function CategoryPage() {
                               </button>
                             )}
                             {/* Nota: Necesitas calcular maxPosition para showRightArrow correctamente */}
-                            {showRightArrow && (
+                            {showTopSellingRightArrow && (
                               <button
                                 className="carousel-next absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
                                 onClick={() => {
@@ -797,11 +802,11 @@ export default function CategoryPage() {
 
                                   // Asegúrate de que topSellingProducts sea el array de productos correcto
                                   const maxPosition = Math.max(0, (topSellingItems.length * itemWidth) - 100); // Usar topSellingItems aquí
-                                  const newPosition = Math.min(maxPosition, carouselPosition + itemWidth);
-                                  setCarouselPosition(newPosition);
+                                  const newPosition = Math.min(maxPosition, topSellingCarouselPosition + itemWidth);
+                                  setTopSellingCarouselPosition(newPosition);
 
-                                  setShowLeftArrow(true); // Siempre que te muevas a la derecha, la flecha izquierda debería aparecer
-                                  setShowRightArrow(newPosition < maxPosition);
+                                  setShowTopSellingLeftArrow(true); // Siempre que te muevas a la derecha, la flecha izquierda debería aparecer
+                                  setShowTopSellingRightArrow(newPosition < maxPosition);
                                 }}
                                 aria-label="Siguiente"
                               >
@@ -830,7 +835,7 @@ export default function CategoryPage() {
                                 className="carousel-track group p-0 flex transition-transform duration-300 ease-out justify-start"
                                 style={{
                                   paddingBottom: 14, paddingTop: 9,
-                                  transform: `translateX(-${carouselPositionTwo}%)`
+                                  transform: `translateX(-${activeProductsCarouselPosition}%)`
                                 }}
                               >
                                 {activeItems.map((activeItem, index) => (
@@ -878,7 +883,7 @@ export default function CategoryPage() {
                             </div>
                             {/* Botones de navegación simplificados para activeItems */}
                             <>
-                              {showLeftArrow && ( // Considera usar un estado separado para las flechas de este carrusel
+                              {showActiveProductsLeftArrow && ( // Considera usar un estado separado para las flechas de este carrusel
                                 <button
                                   className="carousel-prev absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
                                   onClick={() => {
@@ -887,17 +892,17 @@ export default function CategoryPage() {
                                     else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333;
                                     else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50;
                                     else if (window.innerWidth < 640) itemWidth = 100;
-                                    const newPosition = Math.max(0, carouselPositionTwo - itemWidth);
-                                    setCarouselPositionTwo(newPosition);
-                                    setShowLeftArrow(newPosition > 0);
-                                    setShowRightArrow(true);
+                                    const newPosition = Math.max(0, activeProductsCarouselPosition - itemWidth);
+                                    setActiveProductsCarouselPosition(newPosition);
+                                    setShowActiveProductsLeftArrow(newPosition > 0);
+                                    setShowActiveProductsRightArrow(true);
                                   }}
                                   aria-label="Anterior"
                                 >
                                   <ChevronLeft className="text-blue-600" size={20} />
                                 </button>
                               )}
-                              {showRightArrow && ( // Considera usar un estado separado para las flechas de este carrusel
+                              {showActiveProductsRightArrow && ( // Considera usar un estado separado para las flechas de este carrusel
                                 <button
                                   className="carousel-next absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
                                   onClick={() => {
@@ -909,11 +914,11 @@ export default function CategoryPage() {
 
                                     // Asegúrate de que activeItems sea el array de productos correcto
                                     const maxPosition = Math.max(0, (activeItems.length * itemWidth) - 100); // Usar activeItems aquí
-                                    const newPosition = Math.min(maxPosition, carouselPositionTwo + itemWidth);
-                                    setCarouselPositionTwo(newPosition);
+                                    const newPosition = Math.min(maxPosition, activeProductsCarouselPosition + itemWidth);
+                                    setActiveProductsCarouselPosition(newPosition);
 
-                                    setShowLeftArrow(true);
-                                    setShowRightArrow(newPosition < maxPosition);
+                                    setShowActiveProductsLeftArrow(true);
+                                    setShowActiveProductsRightArrow(newPosition < maxPosition);
                                   }}
                                   aria-label="Siguiente"
                                 >
