@@ -122,7 +122,7 @@ export default function BuyPanel() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
         >
-            <div className="w-full bg-stone-100 min-h-screen pb-10 pt-22">
+            <div className="w-full bg-stone-100 min-h-screen pb-10 pt-22 p-4">
                 <div className=" max-w-7xl mx-auto px-2 sm:px-4 sticky top-16 z-10 p-2 sm:p-3">
                     {/* Cabecera + filtro */}
                     <div className="flex flex-col sm:flex-row items-center justify-between mx-4 mb-6 border-b border-gray-400 pb-3 px-0">

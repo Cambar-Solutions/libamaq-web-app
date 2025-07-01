@@ -90,7 +90,7 @@ export default function RentalPanel() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
         >
-            <div className="w-full bg-stone-100 min-h-screen pb-10 pt-22">
+            <div className="w-full bg-stone-100 min-h-screen pb-10 pt-22 p-4">
                 <div className="max-w-7xl mx-auto px-2 sm:px-4 sticky top-16 z-10 mb-6 p-2 sm:p-3">
                     <div className="m-2 border-b border-gray-400 mb-5">
                         <h1 className="text-3xl font-semibold text-indigo-950">Mis Rentas</h1>

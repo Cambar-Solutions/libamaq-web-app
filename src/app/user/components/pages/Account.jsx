@@ -66,7 +66,7 @@ export default function Account() {
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
-                Cargando perfil…
+                {/* Cargando perfil… */}
             </div>
         );
     }
@@ -148,7 +148,7 @@ export default function Account() {
                     userInfo={userInfo}
                     />
                     <SidebarInset>
-                        <div className="flex flex-1 flex-col gap-4 p-4">
+                        <div className="flex flex-1 flex-col gap-4 p-0">
                             {renderPanel()}
                         </div>
                     </SidebarInset>

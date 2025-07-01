@@ -61,7 +61,7 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        Cargando perfil…
+        {/* Cargando perfil… */}
       </div>
     );
   }

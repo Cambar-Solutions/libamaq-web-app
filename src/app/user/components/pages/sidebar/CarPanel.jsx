@@ -105,7 +105,7 @@ export default function CarPanel() {
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="flex flex-col lg:flex-row min-h-full bg-stone-100 pb-10 pt-22">
+      <div className="flex flex-col lg:flex-row min-h-full bg-stone-100 pb-10 pt-22 p-4">
         {/* PRODUCTOS PANEL */}
         <div className="order-2 lg:order-1 w-full lg:w-[80%] flex flex-col px-6 bg-stone-100 rounded-lg p-3">
           {/* header */}
