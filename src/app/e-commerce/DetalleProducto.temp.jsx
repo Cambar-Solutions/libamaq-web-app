@@ -221,7 +221,7 @@ const DetalleProducto = () => {
               ))}
             </ul>
           ) : (
-            <p className="text-gray-500">No hay características disponibles</p>
+            <p className="text-gray-500">ísticas disponibles</p>
           )}
         </div>
         

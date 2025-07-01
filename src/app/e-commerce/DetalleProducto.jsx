@@ -23,9 +23,9 @@ const DetalleProducto = () => {
   const [mainImage, setMainImage] = useState("");
   const [favorite, setFavorite] = useState(false);
   const [highlightActive, setHighlightActive] = useState(false);
-  
+
   // Usar TanStack Query para obtener los detalles del producto
-  const { 
+  const {
     data: productData,
     isLoading: loading,
     error
@@ -33,7 +33,6 @@ const DetalleProducto = () => {
 
   // Extraer el producto de la respuesta de la API
   const product = productData && productData.status === 200 ? productData.data : null;
-
 
   // Función para regresar a la página de categorías
   const handleBack = () => {
@@ -277,13 +276,13 @@ const DetalleProducto = () => {
         {/* Contenedor combinado: Características destacadas + info */}
         <div className="mt-6 flex flex-col lg:flex-row gap-6">
           {/* Características destacadas al lado izquierdo */}
-          {product?.description?.destacados && (
+          {product?.description && (
             <div
               className="p-6 rounded-lg text-white w-full lg:w-1/2"
               style={{ backgroundColor: product?.color || '#2968c8' }}
             >
               <h3 className="text-lg lg:text-xl font-bold mb-3 text-white">Características destacadas</h3>
-              <p className="whitespace-pre-line text-sm lg:text-base leading-relaxed text-white">{product.description.destacados}</p>
+              <p className="whitespace-pre-line text-sm lg:text-base leading-relaxed text-white">{product.description} </p>
             </div>
           )}
 
@@ -291,24 +290,32 @@ const DetalleProducto = () => {
           <div className="w-full lg:w-1/2 flex flex-col gap-4">
             <div className="bg-white rounded-lg shadow-sm p-4">
               <h2 className="text-lg lg:text-2xl font-medium text-gray-900 mb-4">Características principales</h2>
-              {product?.description?.caracteristicas ? (
+              {product?.description ? (
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-6">
-                  {product.description.caracteristicas.split('\n').map((feature, index) => (
-                    <li key={index} className="flex items-start">
-                      <div className="min-w-2 h-2 w-2 bg-blue-500 rounded-full mt-2 mr-2"></div>
-                      <span className="text-gray-700 text-sm lg:text-base">{feature}</span>
-                    </li>
-                  ))}
+                  {product.description.split('\n').map((feature, index) => {
+                    const trimmedFeature = feature.trim();
+
+                    // Solo renderiza el <li> si el texto no está vacío después de trim()
+                    if (trimmedFeature) {
+                      return (
+                        <li key={index} className="flex items-start">
+                          <div className="min-w-2 h-2 w-2 bg-blue-500 rounded-full mt-2 mr-2"></div>
+                          <span className="text-gray-700 text-sm lg:text-base">{feature}</span>
+                        </li>
+                      );
+                    }
+                    return null; // No renderiza nada si es un espacio en blanco o cadena vacía
+                  })}
                 </ul>
               ) : (
                 <p className="text-gray-500 text-sm">No hay características disponibles</p>
               )}
             </div>
 
-            {product?.description?.aplicaciones && (
+            {product?.shortDescription && (
               <div className="bg-white rounded-lg shadow-sm p-4">
                 <h2 className="text-lg lg:text-2xl font-medium text-gray-900 mb-4">Usos recomendados</h2>
-                <p className="text-gray-700 whitespace-pre-line text-sm lg:text-base">{product.description.aplicaciones}</p>
+                <p className="text-gray-700 whitespace-pre-line text-sm lg:text-base">{product.shortDescription}</p>
               </div>
             )}
           </div>
@@ -319,82 +326,81 @@ const DetalleProducto = () => {
 
 
         {/* Especificaciones técnicas - Estilo Mercado Libre */}
-        {/* Especificaciones técnicas - Estilo Mercado Libre */}
-{(product?.technicalData || product?.functionalities) && (
-  <div className="mt-6 bg-white rounded-lg shadow-sm p-4">
-    <h2 className="text-2xl font-medium text-gray-900 mb-4">Especificaciones técnicas</h2>
-    <div className="overflow-hidden border border-gray-200 rounded-lg">
-      <table className="min-w-full divide-y divide-gray-200">
-        <tbody>
-          {/* Renderizado de technicalData */}
-          {product?.technicalData && product.technicalData.map((item, index) => {
-            let renderedKey;
-            let renderedValue;
+        {(product?.technicalData || product?.functionalities) && (
+          <div className="mt-6 bg-white rounded-lg shadow-sm p-4">
+            <h2 className="text-2xl font-medium text-gray-900 mb-4">Especificaciones técnicas</h2>
+            <div className="overflow-hidden border border-gray-200 rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <tbody>
+                  {/* Renderizado de technicalData */}
+                  {product?.technicalData && product.technicalData.map((item, index) => {
+                    let renderedKey;
+                    let renderedValue;
 
-            if (typeof item === 'object' && item !== null && 'key' in item && 'value' in item) {
-              // Si es un objeto con 'key' y 'value' (como Rotomartillo Bosch)
-              renderedKey = item.key;
-              renderedValue = item.value;
-            } else if (typeof item === 'string') {
-              // Si es una cadena (como Martillo demoledor)
-              // Podrías intentar parsear la cadena si tienen un formato consistente,
-              // o simplemente mostrarla como valor y dejar la clave vacía o 'Info':
-              const parts = item.split(': ');
-              if (parts.length > 1) {
-                renderedKey = parts[0];
-                renderedValue = parts.slice(1).join(': ');
-              } else {
-                renderedKey = 'Información'; // Clave genérica si no hay ':'
-                renderedValue = item;
-              }
-            } else {
-              // Caso de fallback para tipos inesperados
-              renderedKey = 'N/A';
-              renderedValue = 'Datos inválidos';
-            }
+                    if (typeof item === 'object' && item !== null && 'key' in item && 'value' in item) {
+                      // Si es un objeto con 'key' y 'value' (como Rotomartillo Bosch)
+                      renderedKey = item.key;
+                      renderedValue = item.value;
+                    } else if (typeof item === 'string') {
+                      // Si es una cadena (como Martillo demoledor)
+                      // Podrías intentar parsear la cadena si tienen un formato consistente,
+                      // o simplemente mostrarla como valor y dejar la clave vacía o 'Info':
+                      const parts = item.split(': ');
+                      if (parts.length > 1) {
+                        renderedKey = parts[0];
+                        renderedValue = parts.slice(1).join(': ');
+                      } else {
+                        renderedKey = 'Información'; // Clave genérica si no hay ':'
+                        renderedValue = item;
+                      }
+                    } else {
+                      // Caso de fallback para tipos inesperados
+                      renderedKey = 'N/A';
+                      renderedValue = 'Datos inválidos';
+                    }
 
-            return (
-              <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="px-4 py-3 text-sm font-medium text-gray-700 w-1/3 border-r border-gray-200">{renderedKey}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">{renderedValue}</td>
-              </tr>
-            );
-          })}
+                    return (
+                      <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-700 w-1/3 border-r border-gray-200">{renderedKey}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{renderedValue}</td>
+                      </tr>
+                    );
+                  })}
 
-          {/* Renderizado de functionalities (asumiendo que podría tener el mismo problema) */}
-          {product?.functionalities && product.functionalities.map((item, index) => {
-            let renderedKey;
-            let renderedValue;
+                  {/* Renderizado de functionalities (asumiendo que podría tener el mismo problema) */}
+                  {product?.functionalities && product.functionalities.map((item, index) => {
+                    let renderedKey;
+                    let renderedValue;
 
-            if (typeof item === 'object' && item !== null && 'key' in item && 'value' in item) {
-              renderedKey = item.key;
-              renderedValue = item.value;
-            } else if (typeof item === 'string') {
-              const parts = item.split(': ');
-              if (parts.length > 1) {
-                renderedKey = parts[0];
-                renderedValue = parts.slice(1).join(': ');
-              } else {
-                renderedKey = 'Información';
-                renderedValue = item;
-              }
-            } else {
-              renderedKey = 'N/A';
-              renderedValue = 'Datos inválidos';
-            }
+                    if (typeof item === 'object' && item !== null && 'key' in item && 'value' in item) {
+                      renderedKey = item.key;
+                      renderedValue = item.value;
+                    } else if (typeof item === 'string') {
+                      const parts = item.split(': ');
+                      if (parts.length > 1) {
+                        renderedKey = parts[0];
+                        renderedValue = parts.slice(1).join(': ');
+                      } else {
+                        renderedKey = 'Información';
+                        renderedValue = item;
+                      }
+                    } else {
+                      renderedKey = 'N/A';
+                      renderedValue = 'Datos inválidos';
+                    }
 
-            return (
-              <tr key={`func-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="px-4 py-3 text-sm font-medium text-gray-700 w-1/3 border-r border-gray-200">{renderedKey}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">{renderedValue}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  </div>
-)}
+                    return (
+                      <tr key={`func-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-700 w-1/3 border-r border-gray-200">{renderedKey}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{renderedValue}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Descargas - Estilo Mercado Libre */}
         {product?.downloads && Object.keys(product.downloads).length > 0 && (
