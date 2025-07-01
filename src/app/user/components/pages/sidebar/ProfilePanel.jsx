@@ -4,6 +4,7 @@ import { GrUserWorker } from "react-icons/gr";
 import { SquarePen } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
 import EditProfile from "../../forms/EditProfile";
+import EditPassword from "../../forms/EditPassword"; // ¡Importa EditPassword!
 import SheetTerms from "../../organisms/SheetTerms";
 import DialogAddresses from "../../organisms/DialogAddresses";
 import toast, { Toaster } from "react-hot-toast";
@@ -14,6 +15,7 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
     const [isDialogOpen, setIsDialogOpen] = useState(openLocationDialog);
     const navigate = useNavigate();
     const [editing, setEditing] = useState(false);
+    const [editingPassword, setEditingPassword] = useState(false);
 
     // Si el padre dice que abra el diálogo, lo abrimos:
     useEffect(() => {
@@ -36,6 +38,79 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
         );
     }
 
+    // Función para renderizar el contenido basado en el estado
+    const renderContent = () => {
+        if (!editing && !editingPassword) { // Vista inicial: cards
+            return (
+                <motion.div
+                    key="cards"
+                    variants={variants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={{ duration: 0.3 }}
+                    className="flex flex-col w-full h-60 rounded-lg bg-stone-50"
+                >
+                    {/* — Card de Direcciones — */}
+                    <DialogAddresses
+                        isDialogOpen={isDialogOpen}
+                        setIsDialogOpen={setIsDialogOpen}
+                        onCloseLocationDialog={onCloseLocationDialog}
+                        setEditing={setEditing}
+                    />
+
+                    {/* QR CODE */}
+                    <DialogGenerateQR />
+
+                    {/* — Hoja de Términos y condiciones — */}
+                    <SheetTerms />
+                </motion.div>
+            );
+        } else if (editing && !editingPassword) { // Vista de edición de perfil
+            return (
+                <motion.div
+                    key="edit-form"
+                    variants={variants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={{ duration: 0.3 }}
+                    className="h-full relative flex flex-col w-[90%] rounded-lg p-6 ml-12"
+                >
+                    {/* Editar Perfil */}
+                    <EditProfile
+                        userInfo={userInfo}
+                        setUserInfo={setUserInfo}
+                        setEditing={setEditing} // Para volver a la vista de cards
+                        setEditingPassword={setEditingPassword} // Para ir a la vista de edición de contraseña
+                        toast={toast}
+                    />
+                </motion.div>
+            );
+        } else if (editingPassword) { // Vista de edición de contraseña
+            return (
+                <motion.div
+                    key="edit-password-form"
+                    variants={variants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={{ duration: 0.3 }}
+                    className="h-full relative flex flex-col w-[90%] rounded-lg p-6 ml-12"
+                >
+                    {/* Editar Contraseña */}
+                    <EditPassword
+                        userInfo={userInfo}
+                        setUserInfo={setUserInfo}
+                        setEditingPassword={setEditingPassword} // Para volver de la edición de contraseña
+                        setEditing={setEditing} // Asegúrate de que `editing` también se maneje si es necesario
+                        toast={toast}
+                    />
+                </motion.div>
+            );
+        }
+    };
+
     return (
         <>
             <motion.div
@@ -52,7 +127,10 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <button
-                                        onClick={() => setEditing(true)}
+                                        onClick={() => {
+                                            setEditing(true); // Entra al modo edición de perfil
+                                            setEditingPassword(false); // Asegúrate de que no estamos editando contraseña
+                                        }}
                                         className="absolute top-2 right-2 p-1 hover:bg-gray-200 rounded-full cursor-pointer transition-colors duration-300"
                                         aria-label="Editar"
                                     >
@@ -69,52 +147,9 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
                     </div>
 
                     {/* === Sección con animación === */}
-                    <div className="flex-1 overflow-y-auto max-w-5xl mx-auto mt-3 top-16 z-10"
-                    >
+                    <div className="flex-1 overflow-y-auto max-w-5xl mx-auto mt-3 top-16 z-10">
                         <AnimatePresence mode="wait" initial={false}>
-                            {!editing ? (
-                                <motion.div
-                                    key="cards"
-                                    variants={variants}
-                                    initial="initial"
-                                    animate="animate"
-                                    exit="exit"
-                                    transition={{ duration: 0.3 }}
-                                    className="flex flex-col w-full h-60 rounded-lg bg-stone-50"
-                                >
-                                    {/* — Card de Direcciones — */}
-                                    <DialogAddresses
-                                        isDialogOpen={isDialogOpen}
-                                        setIsDialogOpen={setIsDialogOpen}
-                                        onCloseLocationDialog={onCloseLocationDialog}
-                                        setEditing={setEditing}
-                                    />
-
-                                    {/* QR CODE */}
-                                    <DialogGenerateQR />
-
-                                    {/* — Hoja de Términos y condiciones — */}
-                                    <SheetTerms />
-                                </motion.div>
-                            ) : (
-                                <motion.div
-                                    key="edit-form"
-                                    variants={variants}
-                                    initial="initial"
-                                    animate="animate"
-                                    exit="exit"
-                                    transition={{ duration: 0.3 }}
-                                    className="h-full relative flex flex-col w-[90%] rounded-lg p-6 ml-12"
-                                >
-                                    {/* Editar Perfil */}
-                                    <EditProfile
-                                        userInfo={userInfo}
-                                        setUserInfo={setUserInfo}
-                                        setEditing={setEditing}
-                                        toast={toast}
-                                    />
-                                </motion.div>
-                            )}
+                            {renderContent()} {/* Llama a la función que retorna el JSX condicional */}
                         </AnimatePresence>
                     </div>
                 </div>
