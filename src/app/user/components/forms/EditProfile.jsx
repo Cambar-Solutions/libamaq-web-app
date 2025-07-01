@@ -75,7 +75,7 @@ export default function EditProfile({ userInfo, setUserInfo, setEditing, setEdit
                             setEditing(false); // Sale del modo edición de perfil actual
                             setEditingPassword(true); // Activa el modo edición de contraseña
                         }}
-                        className="cursor-pointer absolute top-3 right-3 p-1 hover:bg-stone-200 rounded-full"
+                        className="cursor-pointer absolute top-3 right-3 p-1 hover:bg-blue-100 rounded-full border-2 border-gray-500 transition-all duration-300"
                         aria-label="Cambiar Contraseña"
                     >
                         <ShieldUser size={25} className="text-gray-600" />
