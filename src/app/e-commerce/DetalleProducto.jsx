@@ -380,11 +380,11 @@ const DetalleProducto = () => {
             )}
 
             {/* Functionalities (numbered list in columns in a div) */}
-            <div className="w-full lg:w-1/4 flex flex-col gap-4">
+            <div className="w-full lg:w-1/2 flex flex-col gap-4">
               <div className="bg-white rounded-lg shadow-sm p-4">
                 <h2 className="text-lg lg:text-2xl font-medium text-gray-900">Funcionalidades</h2>
                 {functionalitiesArray.length > 0 ? (
-                  <ol className="list-decimal list-inside p-4 columns-1 gap-x-6">
+                  <ol className="list-decimal list-inside py-4 columns-1 gap-x-6">
                     {functionalitiesArray.map((feature, index) => (
                       <li key={index} className="text-gray-700 text-sm lg:text-base mb-3 break-inside-avoid">
                         {feature}
