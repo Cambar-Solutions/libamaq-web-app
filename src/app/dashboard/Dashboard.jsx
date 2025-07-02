@@ -15,7 +15,7 @@ import SparePartsView from "./views/SpareParts/SparePartsView";
 import ProductsView from "./views/Products/ProductsView";
 import Whatsapp from "./views/Whastapp/Whatsapp";
 
-export default function Page() {
+export default function Dashboard() {
   const [currentView, setCurrentView] = useState("inicio"); 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);

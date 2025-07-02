@@ -12,7 +12,7 @@ import AuthRoute from './components/AuthRoute';
 const App = lazy(() => import('./App.jsx'));
 
 // Importar los demás componentes usando lazy loading
-const Dashboard = lazy(() => import('./app/dashboard/page.jsx'));
+const Dashboard = lazy(() => import('./app/dashboard/Dashboard.jsx'));
 const Gerente = lazy(() => import('./app/dashboard/Gerente'));
 const Login = lazy(() => import('./app/normal/Login'));
 const DetalleHerramienta = lazy(() => import('./app/e-commerce/DetalleHerramienta'));

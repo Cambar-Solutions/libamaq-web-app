@@ -64,6 +64,10 @@ const productWorkflow = {
    */
   updateProduct: async (productData = {}, newFiles = [], mediaToDelete = []) => {
     try {
+      console.log('Starting product update with data:', JSON.parse(JSON.stringify(productData)));
+      console.log('New files to upload:', newFiles);
+      console.log('Media to delete:', mediaToDelete);
+
       // Validar datos básicos
       if (!productData || !productData.id) {
         throw new Error('Datos del producto no válidos');
@@ -73,22 +77,31 @@ const productWorkflow = {
       let newMedia = [];
       if (newFiles && newFiles.length > 0) {
         try {
+          console.log('Uploading new files...');
           const uploadResponse = await mediaService.uploadImages(newFiles);
+          console.log('Upload response:', uploadResponse);
+          
+          // Ajustar según la estructura de respuesta del servicio
           if (uploadResponse && uploadResponse.data) {
             newMedia = Array.isArray(uploadResponse.data) 
               ? uploadResponse.data 
               : [uploadResponse.data];
+          } else if (Array.isArray(uploadResponse)) {
+            newMedia = uploadResponse;
           }
+          console.log('Processed new media:', newMedia);
         } catch (error) {
           console.error('Error al subir nuevas imágenes:', error);
-          throw new Error('Error al subir las imágenes');
+          throw new Error(`Error al subir las imágenes: ${error.message}`);
         }
       }
 
       // 2. Eliminar imágenes marcadas para borrar
       if (mediaToDelete && mediaToDelete.length > 0) {
         try {
+          console.log('Deleting media:', mediaToDelete);
           await mediaService.deleteImages(mediaToDelete);
+          console.log('Media deleted successfully');
         } catch (error) {
           console.error('Error al eliminar imágenes antiguas:', error);
           // Continuar aunque falle la eliminación
@@ -96,70 +109,89 @@ const productWorkflow = {
       }
 
       // 3. Filtrar las imágenes existentes que no se hayan marcado para eliminar
-      const existingMedia = (productData.media || []).filter(
-        img => img && img.id && !mediaToDelete.includes(img.id)
-      );
+      const existingMedia = (productData.media || [])
+        .filter(img => img && img.id && !mediaToDelete.includes(img.id))
+        .map(img => ({
+          id: Number(img.id),
+          url: String(img.url || ''),
+          fileType: String(img.fileType || 'IMAGE'),
+          entityId: Number(productData.id),
+          entityType: 'PRODUCT',
+          displayOrder: Number(img.displayOrder) || 0
+        }));
+
+      console.log('Existing media after filtering:', existingMedia);
 
       // 4. Crear el objeto final con solo los campos necesarios
       const updatedProduct = {
         id: Number(productData.id),
-        updatedBy: "1", // Obtener del usuario autenticado
+        updatedBy: "1", // TODO: Obtener del usuario autenticado
         brandId: String(productData.brandId || ""),
         categoryId: String(productData.categoryId || ""),
         externalId: productData.externalId || `PROD-${Date.now()}`,
-        name: productData.name || '',
-        shortDescription: productData.shortDescription || '',
-        description: productData.description || '',
+        name: String(productData.name || ''),
+        shortDescription: String(productData.shortDescription || ''),
+        description: String(productData.description || ''),
         functionalities: Array.isArray(productData.functionalities) 
-          ? productData.functionalities.map(String) 
-          : [],
+          ? productData.functionalities.map(String).filter(Boolean)
+         : [],
         technicalData: Array.isArray(productData.technicalData)
-          ? productData.technicalData.map(item => ({
-              key: String(item.key || ''),
-              value: String(item.value || '')
-            }))
+          ? productData.technicalData
+              .filter(item => item && item.key && item.value)
+              .map(item => ({
+                key: String(item.key).trim(),
+                value: String(item.value).trim()
+              }))
           : [],
-        price: Number(productData.price || 0),
-        cost: Number(productData.cost || 0),
-        discount: Number(productData.discount || 0),
-        stock: Number(productData.stock || 0),
-        garanty: Number(productData.garanty || 0),
-        color: productData.color || '',
+        price: parseFloat(productData.price) || 0,
+        cost: productData.cost ? parseFloat(productData.cost) : 0,
+        discount: parseFloat(productData.discount) || 0,
+        stock: parseInt(productData.stock, 10) || 0,
+        garanty: parseInt(productData.garanty, 10) || 0,
+        color: String(productData.color || ''),
         downloads: Array.isArray(productData.downloads)
-          ? productData.downloads.map(item => ({
-              key: String(item.key || ''),
-              value: String(item.value || '')
-            }))
+          ? productData.downloads
+              .filter(item => item && item.key && item.value)
+              .map(item => ({
+                key: String(item.key).trim(),
+                value: String(item.value).trim()
+              }))
           : [],
         rentable: Boolean(productData.rentable),
-        status: productData.status || 'ACTIVE',
+        status: productData.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
         media: [
-          ...existingMedia.map(img => ({
-            id: Number(img.id) || 0,
-            url: String(img.url || ''),
-            fileType: img.fileType || 'IMAGE',
-            entityId: Number(productData.id) || 0,
-            entityType: 'PRODUCT',
-            displayOrder: Number(img.displayOrder) || 0
-          })),
+          ...existingMedia,
           ...newMedia.map((img, index) => ({
             id: 0, // 0 para nuevas imágenes, el backend asignará un ID
-            url: String(img.url || ''),
+            url: String(img.url || img.publicUrl || ''),
             fileType: 'IMAGE',
             entityId: Number(productData.id) || 0,
             entityType: 'PRODUCT',
             displayOrder: existingMedia.length + index
           }))
-        ]
+        ].filter(Boolean)
       };
+
+      console.log('Prepared update payload:', JSON.stringify(updatedProduct, null, 2));
 
       // 5. Actualizar el producto
       const response = await updateProductService(updatedProduct);
-      toast.success('Producto actualizado exitosamente');
+      console.log('Update API response:', response);
+      
+      if (response && response.data) {
+        toast.success('Producto actualizado exitosamente');
+      } else {
+        console.error('Unexpected response format:', response);
+        throw new Error('Formato de respuesta inesperado del servidor');
+      }
+      
       return response;
     } catch (error) {
       console.error('Error al actualizar el producto:', error);
-      toast.error(error.response?.data?.message || 'Error al actualizar el producto');
+      const errorMessage = error.response?.data?.message || 
+                         error.message || 
+                         'Error al actualizar el producto';
+      toast.error(errorMessage);
       throw error;
     }
   },

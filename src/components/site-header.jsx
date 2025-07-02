@@ -27,13 +27,14 @@ export function SiteHeader() {
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb className="hidden sm:block">
           <div className="grid flex-1 text-left text-sm leading-tight">
-            <Link to="/">
+            
               <img
                 src="/Tipografia_LIBAMAQ_legulab_color_hor.png"
                 alt="logo"
                 className="max-h-10 sm:max-h-12 w-auto"
               />
-            </Link>
+             
+            
           </div>
         </Breadcrumb>
       </div>
