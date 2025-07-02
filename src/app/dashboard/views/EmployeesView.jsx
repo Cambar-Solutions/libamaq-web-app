@@ -25,6 +25,15 @@ const EMPLOYEE_ROLES = [
   { value: 'MANAGER', label: 'Gerente' }
 ];
 
+// Array de códigos de país igual que en ClientsView
+const countryCodes = [
+  { label: 'México (+52)', value: '+52' },
+  { label: 'Estados Unidos (+1)', value: '+1' },
+  { label: 'Canadá (+1)', value: '+1' },
+  { label: 'España (+34)', value: '+34' },
+  // Añadir más países aquí si es necesario
+];
+
 export function EmployeesView() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,11 +43,12 @@ export function EmployeesView() {
     nombre: "",
     apellido: "",
     email: "",
-    telefono: "",
+    telefono: "+52",
     password: "",
     status: "ACTIVE",
     role: "MANAGER" // Rol predeterminado para empleados
   });
+  const [selectedCountryCode, setSelectedCountryCode] = useState('+52');
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false); // Nuevo estado para el modal de contraseña
   const [employeeToChangePassword, setEmployeeToChangePassword] = useState(null); // Estado para el empleado a cambiar contraseña
   const [newPassword, setNewPassword] = useState(""); // Estado para la nueva contraseña
@@ -142,6 +152,8 @@ export function EmployeesView() {
 
   const handleEdit = (employee) => {
     console.log('Editando empleado:', employee);
+    let matchedCode = countryCodes.find(code => employee.phoneNumber.startsWith(code.value));
+    setSelectedCountryCode(matchedCode ? matchedCode.value : '+52');
     setIsEditing(true);
     setNewEmployee({
       id: employee.id,
@@ -172,11 +184,12 @@ export function EmployeesView() {
       nombre: "",
       apellido: "",
       email: "",
-      telefono: "",
+      telefono: "+52",
       password: "",
       status: "ACTIVE",
       role: "MANAGER"
     });
+    setSelectedCountryCode('+52');
     setIsEditing(false);
     setEmployeeToChangePassword(null); // Resetear empleado para cambiar contraseña
     setNewPassword(""); // Resetear la nueva contraseña
@@ -207,11 +220,15 @@ export function EmployeesView() {
     e.preventDefault();
 
     // Datos base para crear o actualizar
+    const phoneToSave = newEmployee.telefono.startsWith(selectedCountryCode)
+      ? newEmployee.telefono
+      : selectedCountryCode + newEmployee.telefono.replace(/^\+?\d+/, '');
+
     const userData = {
       email: newEmployee.email,
       name: newEmployee.nombre,
       lastName: newEmployee.apellido,
-      phoneNumber: newEmployee.telefono,
+      phoneNumber: phoneToSave,
       role: newEmployee.role,
       status: newEmployee.status
     };
@@ -384,7 +401,10 @@ export function EmployeesView() {
         {/* Botón de registro */}
         <div className="flex-shrink-0 w-full sm:w-auto flex justify-end sm:justify-start">
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              resetForm();
+              setIsModalOpen(true);
+            }}
             className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition cursor-pointer w-full sm:w-auto"
           >
             + Registrar empleado
@@ -633,14 +653,32 @@ export function EmployeesView() {
                 <Label htmlFor="telefono" className="text-right">
                   Teléfono
                 </Label>
+                <Select
+                  value={selectedCountryCode}
+                  onValueChange={(value) => {
+                    setSelectedCountryCode(value);
+                    setNewEmployee(prev => ({ ...prev, telefono: value }));
+                  }}
+                >
+                  <SelectTrigger className="col-span-1">
+                    <SelectValue placeholder="Lada" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countryCodes.map((country) => (
+                      <SelectItem key={country.value + country.label} value={country.value}>
+                        {country.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Input
                   id="telefono"
                   name="telefono"
                   value={newEmployee.telefono}
                   onChange={handleInputChange}
-                  className="col-span-3"
+                  className="col-span-2"
                   required
-                  placeholder="+52..."
+                  placeholder="Número..."
                 />
               </div>
               {!isEditing && (

@@ -59,7 +59,8 @@ export function ClientsView() {
     // Añadir más países aquí si es necesario
   ];
 
-  const [selectedCountryCode, setSelectedCountryCode] = useState(countryCodes[0].value); // Estado para el código de país seleccionado, inicia con +52
+  // Estado para el código de país seleccionado, inicia con +52
+  const [selectedCountryCode, setSelectedCountryCode] = useState('+52');
 
   // Consulta para obtener los clientes
   const { 
@@ -227,7 +228,7 @@ export function ClientsView() {
 
   const resetForm = () => {
     // Encontrar el código de país por defecto (+52)
-    const defaultCountryCode = countryCodes.find(code => code.value === '+52')?.value || countryCodes[0].value;
+    const defaultCountryCode = '+52';
 
     setNewClient({
       id: null,
@@ -406,11 +407,14 @@ export function ClientsView() {
     }
     
     // Datos base para crear o actualizar
+    const phoneToSave = newClient.telefono.startsWith(selectedCountryCode)
+      ? newClient.telefono
+      : selectedCountryCode + newClient.telefono.replace(/^\+?\d+/, '');
     const userData = {
       email: newClient.email,
       name: newClient.nombre,
       lastName: newClient.apellido,
-      phoneNumber: newClient.telefono,
+      phoneNumber: phoneToSave,
       role: newClient.role,
       status: newClient.status
     };
@@ -498,7 +502,10 @@ export function ClientsView() {
         {/* Botón de registro */}
         <div className="flex-shrink-0 w-full sm:w-auto flex justify-end sm:justify-start">
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              resetForm();
+              setIsModalOpen(true);
+            }}
             className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition cursor-pointer w-full sm:w-auto"
           >
             + Registrar cliente
