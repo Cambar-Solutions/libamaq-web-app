@@ -43,12 +43,11 @@ export function EmployeesView() {
     nombre: "",
     apellido: "",
     email: "",
-    telefono: "+52",
+    telefono: "+52", // Iniciar con +52 por defecto
     password: "",
     status: "ACTIVE",
     role: "MANAGER" // Rol predeterminado para empleados
   });
-  const [selectedCountryCode, setSelectedCountryCode] = useState('+52');
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false); // Nuevo estado para el modal de contraseña
   const [employeeToChangePassword, setEmployeeToChangePassword] = useState(null); // Estado para el empleado a cambiar contraseña
   const [newPassword, setNewPassword] = useState(""); // Estado para la nueva contraseña
@@ -155,8 +154,6 @@ export function EmployeesView() {
 
   const handleEdit = (employee) => {
     console.log('Editando empleado:', employee);
-    let matchedCode = countryCodes.find(code => employee.phoneNumber.startsWith(code.value));
-    setSelectedCountryCode(matchedCode ? matchedCode.value : '+52');
     setIsEditing(true);
     setNewEmployee({
       id: employee.id,
@@ -192,7 +189,6 @@ export function EmployeesView() {
       status: "ACTIVE",
       role: "MANAGER"
     });
-    setSelectedCountryCode('+52');
     setIsEditing(false);
     setEmployeeToChangePassword(null); // Resetear empleado para cambiar contraseña
     setNewPassword(""); // Resetear la nueva contraseña
@@ -229,15 +225,11 @@ export function EmployeesView() {
     }
 
     // Datos base para crear o actualizar
-    const phoneToSave = newEmployee.telefono.startsWith(selectedCountryCode)
-      ? newEmployee.telefono
-      : selectedCountryCode + newEmployee.telefono.replace(/^\+?\d+/, '');
-
     const userData = {
       email: newEmployee.email,
       name: newEmployee.nombre,
       lastName: newEmployee.apellido,
-      phoneNumber: phoneToSave,
+      phoneNumber: newEmployee.telefono,
       role: newEmployee.role,
       status: newEmployee.status
     };
@@ -662,35 +654,35 @@ export function EmployeesView() {
                 <Label htmlFor="telefono" className="text-right">
                   Teléfono
                 </Label>
-                <Select
-                  value={selectedCountryCode}
-                  onValueChange={(value) => {
-                    setSelectedCountryCode(value);
-                    setNewEmployee(prev => ({ ...prev, telefono: value }));
-                  }}
-                >
-                  <SelectTrigger className="col-span-1">
-                    <SelectValue placeholder="Lada" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {countryCodes.map((country) => (
-                      <SelectItem key={country.value + country.label} value={country.value}>
-                        {country.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  id="telefono"
-                  name="telefono"
-                  value={newEmployee.telefono}
-                  onChange={handleInputChange}
-                  className="col-span-2"
-                  required
-                  placeholder="Número..."
-                  maxLength={13}
-                  pattern="\+\d{12}"
-                />
+                <div className="col-span-3">
+                  <div className="flex rounded-md shadow-sm">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                      +52
+                    </span>
+                    <Input
+                      id="telefono"
+                      name="telefono"
+                      value={newEmployee.telefono.startsWith('+52') ? newEmployee.telefono.substring(3) : newEmployee.telefono}
+                      onChange={(e) => {
+                        // Solo permitir números y asegurar que siempre tenga +52 al inicio
+                        const value = e.target.value.replace(/\D/g, '');
+                        setNewEmployee(prev => ({
+                          ...prev,
+                          telefono: '+52' + value
+                        }));
+                      }}
+                      className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border-l-0"
+                      placeholder="Ej: 5512345678"
+                      maxLength={10}
+                      type="tel"
+                      pattern="[0-9]{10}"
+                      title="Ingresa un número de 10 dígitos"
+                    />
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Formato: +52 55 1234 5678
+                  </p>
+                </div>
               </div>
               {!isEditing && (
                 <div className="grid grid-cols-4 items-center gap-4">
@@ -715,8 +707,9 @@ export function EmployeesView() {
                 <Select
                   value={newEmployee.role}
                   onValueChange={(value) => setNewEmployee(prev => ({ ...prev, role: value }))}
+                  className="col-span-3"
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="col-span-3 cursor-pointer">
                     <SelectValue placeholder="Seleccionar rol" />
                   </SelectTrigger>
                   <SelectContent>

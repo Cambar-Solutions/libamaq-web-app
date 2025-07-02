@@ -131,27 +131,7 @@ const ProductCard = ({
 
       <CardFooter className="flex justify-end gap-1.5 p-2 border-t mt-auto">
         <TooltipProvider>
-          {onView && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onView(product);
-                  }}
-                  className="h-7 w-7"
-                >
-                  <Info className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="bg-gray-600 text-white text-xs px-2 py-1 rounded-sm shadow-md">
-                Ver detalles
-              </TooltipContent>
-            </Tooltip>
-          )}
-
+        
           {/* Edit Dialog Integration */}
           {onEdit && (
             <Tooltip>

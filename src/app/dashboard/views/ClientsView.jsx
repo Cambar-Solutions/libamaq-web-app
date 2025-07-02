@@ -50,18 +50,6 @@ export function ClientsView() {
   // Inicializar la mutación de eliminación
   const deleteClientMutation = useDeleteUser();
 
-  // Lista de códigos de país (ejemplo, se puede expandir)
-  const countryCodes = [
-    { label: 'México (+52)', value: '+52' },
-    { label: 'Estados Unidos (+1)', value: '+1' },
-    { label: 'Canadá (+1)', value: '+1' },
-    { label: 'España (+34)', value: '+34' },
-    // Añadir más países aquí si es necesario
-  ];
-
-  // Estado para el código de país seleccionado, inicia con +52
-  const [selectedCountryCode, setSelectedCountryCode] = useState('+52');
-
   // Consulta para obtener los clientes
   const { 
     data: clients = [], 
@@ -165,13 +153,6 @@ export function ClientsView() {
     }
   };
 
-  const handleCountryCodeChange = (value) => {
-    setSelectedCountryCode(value);
-    // Establecer el campo de teléfono a la nueva lada seleccionada
-    setNewClient(prev => ({ ...prev, telefono: value }));
-    setPhoneError(false); // Limpiar error de teléfono al cambiar la lada
-  };
-
   const handleStatusChange = (value) => {
     setNewClient(prev => ({
       ...prev,
@@ -198,12 +179,6 @@ export function ClientsView() {
 
   const handleEdit = (client) => {
     setIsEditing(true);
-    // Intentar encontrar el código de país en el número de teléfono existente
-    let matchedCode = countryCodes.find(code => client.phoneNumber.startsWith(code.value));
-    
-    // Establecer el código de país seleccionado si se encontró una coincidencia, de lo contrario usar el por defecto
-    setSelectedCountryCode(matchedCode ? matchedCode.value : countryCodes.find(code => code.value === '+52')?.value || countryCodes[0].value);
-
     setNewClient({
       id: client.id,
       nombre: client.name,
@@ -231,15 +206,12 @@ export function ClientsView() {
   };
 
   const resetForm = () => {
-    // Encontrar el código de país por defecto (+52)
-    const defaultCountryCode = '+52';
-
     setNewClient({
       id: null,
       nombre: "",
       apellido: "",
       email: "",
-      telefono: defaultCountryCode, // Resetear a la lada por defecto
+      telefono: "",
       password: "",
       status: "ACTIVE",
       role: "GENERAL_CUSTOMER"
@@ -250,7 +222,6 @@ export function ClientsView() {
     setPhoneError(false);
     setNombreError(false);
     setApellidoError(false);
-    setSelectedCountryCode(defaultCountryCode);
     setClientToChangePassword(null);
     setNewPasswordError("");
     setConfirmPasswordError("");
@@ -390,14 +361,14 @@ export function ClientsView() {
     }
 
     // Validar que el teléfono comience con la lada seleccionada
-    if (!newClient.telefono.startsWith(selectedCountryCode)) {
-      toast.error(`El número de teléfono debe comenzar con ${selectedCountryCode}`);
+    if (!newClient.telefono.startsWith('+52')) {
+      toast.error("El número de teléfono debe comenzar con +52");
       setPhoneError(true); // Asegurarse de que el error visual esté activo
       return; // Detener el envío del formulario
     }
 
     // Validar que el teléfono tenga algo más que solo la lada (si aplica)
-    if (newClient.telefono === selectedCountryCode) {
+    if (newClient.telefono === '+52') {
         toast.error("Por favor, ingresa el resto del número de teléfono.");
         setPhoneError(true);
         return;
@@ -418,14 +389,11 @@ export function ClientsView() {
     }
     
     // Datos base para crear o actualizar
-    const phoneToSave = newClient.telefono.startsWith(selectedCountryCode)
-      ? newClient.telefono
-      : selectedCountryCode + newClient.telefono.replace(/^\+?\d+/, '');
     const userData = {
       email: newClient.email,
       name: newClient.nombre,
       lastName: newClient.apellido,
-      phoneNumber: phoneToSave,
+      phoneNumber: newClient.telefono,
       role: newClient.role,
       status: newClient.status
     };
@@ -742,32 +710,45 @@ export function ClientsView() {
                 <Label htmlFor="telefono" className="text-right">
                   Teléfono
                 </Label>
-                <Select
-                  value={selectedCountryCode}
-                  onValueChange={handleCountryCodeChange}
-                >
-                  <SelectTrigger className="col-span-1">
-                    <SelectValue placeholder="Lada" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {countryCodes.map((country) => (
-                      <SelectItem key={country.value + country.label} value={country.value}>
-                        {country.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  id="telefono"
-                  name="telefono"
-                  value={newClient.telefono}
-                  onChange={handleInputChange}
-                  className={`col-span-2 ${phoneError ? 'border-red-500' : ''}`}
-                  required
-                  placeholder="Número..."
-                  maxLength={13}
-                  pattern="\+\d{12}"
-                />
+                <div className="col-span-3">
+                  <div className="flex rounded-md shadow-sm">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                      +52
+                    </span>
+                    <Input
+                      id="telefono"
+                      name="telefono"
+                      value={newClient.telefono.startsWith('+52') ? newClient.telefono.substring(3) : newClient.telefono}
+                      onChange={(e) => {
+                        // Solo permitir números y asegurar que siempre tenga +52 al inicio
+                        const value = e.target.value.replace(/\D/g, '');
+                        setNewClient(prev => ({
+                          ...prev,
+                          telefono: '+52' + value
+                        }));
+                        // Limpiar error de teléfono cuando el usuario empieza a escribir
+                        if (phoneError) {
+                          setPhoneError(false);
+                        }
+                      }}
+                      className={`flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border-l-0 ${phoneError ? 'border-red-500' : ''}`}
+                      placeholder="Ej: 5512345678"
+                      maxLength={10}
+                      type="tel"
+                      pattern="[0-9]{10}"
+                      title="Ingresa un número de 10 dígitos"
+                      required
+                    />
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Formato: +52 55 1234 5678
+                  </p>
+                  {phoneError && (
+                    <p className="mt-1 text-sm text-red-600">
+                      El número de teléfono debe tener 10 dígitos
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="role" className="text-right">

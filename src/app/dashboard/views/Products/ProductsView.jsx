@@ -370,7 +370,7 @@ const ProductsView = () => {
                 Esta acción no se puede deshacer. El producto será eliminado permanentemente de tu catálogo.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+            <AlertDialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-4">
               <AlertDialogCancel
                 disabled={isDeleting}
                 className="w-full sm:w-auto mt-0"
@@ -380,7 +380,7 @@ const ProductsView = () => {
               <AlertDialogAction
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                className="w-full sm:w-auto bg-destructive text-white hover:bg-destructive/90"
               >
                 {isDeleting ? (
                   <>
