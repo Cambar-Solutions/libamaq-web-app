@@ -127,6 +127,9 @@ export function EmployeesView() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'telefono' && value.length > 13) {
+      return;
+    }
     setNewEmployee(prev => ({
       ...prev,
       [name]: value
@@ -218,6 +221,12 @@ export function EmployeesView() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validar que el teléfono tenga exactamente 13 caracteres
+    if (newEmployee.telefono.length !== 13) {
+      toast.error("El teléfono debe tener exactamente 13 caracteres (ejemplo: +527772686839)");
+      return;
+    }
 
     // Datos base para crear o actualizar
     const phoneToSave = newEmployee.telefono.startsWith(selectedCountryCode)
@@ -679,6 +688,8 @@ export function EmployeesView() {
                   className="col-span-2"
                   required
                   placeholder="Número..."
+                  maxLength={13}
+                  pattern="\+\d{12}"
                 />
               </div>
               {!isEditing && (

@@ -121,6 +121,10 @@ export function ClientsView() {
       if (name === 'nombre') setNombreError(!isValid);
       if (name === 'apellido') setApellidoError(!isValid);
     } else if (name === 'telefono') {
+      // Limitar a 13 caracteres
+      if (value.length > 13) {
+        return;
+      }
       // Permitir solo dígitos y + (la validación de lada se hace al guardar/cambiar lada)
       isValid = /^[0-9+]*$/.test(value);
       setPhoneError(!isValid);
@@ -397,6 +401,13 @@ export function ClientsView() {
         toast.error("Por favor, ingresa el resto del número de teléfono.");
         setPhoneError(true);
         return;
+    }
+
+    // Validar que el teléfono tenga exactamente 13 caracteres
+    if (newClient.telefono.length !== 13) {
+      toast.error("El teléfono debe tener exactamente 13 caracteres (ejemplo: +527772686839)");
+      setPhoneError(true);
+      return;
     }
 
     // Validar que los campos de nombre y apellido no estén vacíos (required ya debería manejar esto, pero doble check)
@@ -754,6 +765,8 @@ export function ClientsView() {
                   className={`col-span-2 ${phoneError ? 'border-red-500' : ''}`}
                   required
                   placeholder="Número..."
+                  maxLength={13}
+                  pattern="\+\d{12}"
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
