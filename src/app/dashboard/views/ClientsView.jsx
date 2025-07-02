@@ -12,6 +12,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDeleteUser } from '../../../hooks/useUsers';
 import ActionButtons from '@/components/ui/ActionButtons';
 import { SearchBar } from '@/components/ui/SearchBar';
+import { Loader2 } from "lucide-react";
 
 
 export function ClientsView() {
@@ -37,6 +38,7 @@ export function ClientsView() {
   const [newPasswordError, setNewPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Estado para la búsqueda
   const [searchQuery, setSearchQuery] = useState("");
@@ -353,76 +355,114 @@ export function ClientsView() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    const toastId = toast.loading('Guardando cliente...');
+    try {
+      // Validar campos antes de enviar
+      if (nombreError || apellidoError || phoneError) {
+         toast.error("Corrige los errores en el formulario antes de guardar.", { id: toastId });
+         return;
+      }
 
-    // Validar campos antes de enviar
-    if (nombreError || apellidoError || phoneError) {
-       toast.error("Corrige los errores en el formulario antes de guardar.");
-       return;
-    }
+      // Validar que el teléfono comience con la lada seleccionada
+      if (!newClient.telefono.startsWith('+52')) {
+        toast.error("El número de teléfono debe comenzar con +52", { id: toastId });
+        setPhoneError(true); // Asegurarse de que el error visual esté activo
+        return; // Detener el envío del formulario
+      }
 
-    // Validar que el teléfono comience con la lada seleccionada
-    if (!newClient.telefono.startsWith('+52')) {
-      toast.error("El número de teléfono debe comenzar con +52");
-      setPhoneError(true); // Asegurarse de que el error visual esté activo
-      return; // Detener el envío del formulario
-    }
+      // Validar que el teléfono tenga algo más que solo la lada (si aplica)
+      if (newClient.telefono === '+52') {
+          toast.error("Por favor, ingresa el resto del número de teléfono.", { id: toastId });
+          setPhoneError(true);
+          return;
+      }
 
-    // Validar que el teléfono tenga algo más que solo la lada (si aplica)
-    if (newClient.telefono === '+52') {
-        toast.error("Por favor, ingresa el resto del número de teléfono.");
+      // Validar que el teléfono tenga exactamente 13 caracteres
+      if (newClient.telefono.length !== 13) {
+        toast.error("El teléfono debe tener exactamente 13 caracteres (ejemplo: +527772686839)", { id: toastId });
         setPhoneError(true);
         return;
-    }
+      }
 
-    // Validar que el teléfono tenga exactamente 13 caracteres
-    if (newClient.telefono.length !== 13) {
-      toast.error("El teléfono debe tener exactamente 13 caracteres (ejemplo: +527772686839)");
-      setPhoneError(true);
-      return;
-    }
-
-    // Validar que los campos de nombre y apellido no estén vacíos (required ya debería manejar esto, pero doble check)
-    if (!newClient.nombre.trim() || !newClient.apellido.trim()) {
-       toast.error("Nombre y Apellido son campos obligatorios.");
-       // No establecemos errores visuales aquí, ya que el atributo 'required' lo manejará
-       return;
-    }
-    
-    // Datos base para crear o actualizar
-    const userData = {
-      email: newClient.email,
-      name: newClient.nombre,
-      lastName: newClient.apellido,
-      phoneNumber: newClient.telefono,
-      role: newClient.role,
-      status: newClient.status
-    };
-    
-    console.log('Datos del cliente a guardar:', userData);
-
-    // Agregar console.log antes de llamar a la mutación
-    console.log('Llamando a createClientMutation.mutate con datos:', userData);
-
-    if (isEditing) {
-      // Para actualización, incluir el ID como número
-      const updateData = {
-        ...userData,
-        id: Number(newClient.id),
+      // Validar que los campos de nombre y apellido no estén vacíos (required ya debería manejar esto, pero doble check)
+      if (!newClient.nombre.trim() || !newClient.apellido.trim()) {
+         toast.error("Nombre y Apellido son campos obligatorios.", { id: toastId });
+         // No establecemos errores visuales aquí, ya que el atributo 'required' lo manejará
+         return;
+      }
+      
+      // Datos base para crear o actualizar
+      const userData = {
+        email: newClient.email,
+        name: newClient.nombre,
+        lastName: newClient.apellido,
+        phoneNumber: newClient.telefono,
+        role: newClient.role,
+        status: newClient.status
       };
       
-      console.log('Datos del usuario a actualizar:', updateData);
-      updateClientMutation.mutate(updateData);
-    } else {
-      // Para creación, incluir campos adicionales
-      const createData = {
-        ...userData,
-        createdBy: "1",
-        createdAt: new Date().toISOString(),
-        password: newClient.password
-      };
-      
-      console.log('Datos del usuario a crear:', createData);
-      createClientMutation.mutate(createData);
+      console.log('Datos del cliente a guardar:', userData);
+
+      // Agregar console.log antes de llamar a la mutación
+      console.log('Llamando a createClientMutation.mutate con datos:', userData);
+
+      if (isEditing) {
+        // Para actualización, incluir el ID como número
+        const updateData = {
+          ...userData,
+          id: Number(newClient.id),
+        };
+        
+        console.log('Datos del usuario a actualizar:', updateData);
+        updateClientMutation.mutate(updateData, {
+          onSuccess: () => {
+            toast.success("Cliente actualizado exitosamente", { id: toastId });
+            setIsModalOpen(false);
+            resetForm();
+            queryClient.invalidateQueries({ queryKey: ['clients'] });
+          },
+          onError: (error) => {
+            toast.error("Error al actualizar cliente", { id: toastId });
+            console.error(error);
+          },
+          onSettled: () => {
+            setIsSubmitting(false);
+            toast.dismiss(toastId);
+          }
+        });
+      } else {
+        // Para creación, incluir campos adicionales
+        const createData = {
+          ...userData,
+          createdBy: "1",
+          createdAt: new Date().toISOString(),
+          password: newClient.password
+        };
+        
+        console.log('Datos del usuario a crear:', createData);
+        createClientMutation.mutate(createData, {
+          onSuccess: () => {
+            toast.success("Cliente registrado exitosamente", { id: toastId });
+            setIsModalOpen(false);
+            resetForm();
+            queryClient.invalidateQueries({ queryKey: ['clients'] });
+          },
+          onError: (error) => {
+            toast.error("Error al registrar cliente", { id: toastId });
+            console.error(error);
+          },
+          onSettled: () => {
+            setIsSubmitting(false);
+            toast.dismiss(toastId);
+          }
+        });
+      }
+    } catch (error) {
+      setIsSubmitting(false);
+      toast.error("Error inesperado", { id: toastId });
+      toast.dismiss(toastId);
     }
   };
 
@@ -814,10 +854,17 @@ export function ClientsView() {
               </Button>
               <Button 
                 type="submit" 
-                disabled={createClientMutation.isPending || updateClientMutation.isPending}
+                disabled={isSubmitting || createClientMutation.isPending || updateClientMutation.isPending}
                 className="cursor-pointer"
               >
-                {isEditing ? "Actualizar" : "Registrar"}
+                {isSubmitting || createClientMutation.isPending || updateClientMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  isEditing ? "Actualizar" : "Registrar"
+                )}
               </Button>
             </DialogFooter>
           </form>

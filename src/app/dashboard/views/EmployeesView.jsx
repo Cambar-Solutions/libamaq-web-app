@@ -12,7 +12,7 @@ import {
   useDeleteUser,
   useResetUserPassword,
 } from '@/hooks/useUsers';
-import { Pencil } from "lucide-react";
+import { Pencil, Loader2 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -215,74 +215,96 @@ export function EmployeesView() {
   // Mutación para eliminar un empleado
   const deleteEmployeeMutation = useDeleteUser();
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    const toastId = toast.loading('Guardando empleado...');
+    try {
+      // Validar que el teléfono tenga exactamente 13 caracteres
+      if (newEmployee.telefono.length !== 13) {
+        toast.error("El teléfono debe tener exactamente 13 caracteres (ejemplo: +527772686839)", { id: toastId });
+        setIsSubmitting(false);
+        toast.dismiss(toastId);
+        return;
+      }
 
-    // Validar que el teléfono tenga exactamente 13 caracteres
-    if (newEmployee.telefono.length !== 13) {
-      toast.error("El teléfono debe tener exactamente 13 caracteres (ejemplo: +527772686839)");
-      return;
-    }
-
-    // Datos base para crear o actualizar
-    const userData = {
-      email: newEmployee.email,
-      name: newEmployee.nombre,
-      lastName: newEmployee.apellido,
-      phoneNumber: newEmployee.telefono,
-      role: newEmployee.role,
-      status: newEmployee.status
-    };
-
-    // Verificar que el rol sea uno de los permitidos para empleados
-    if (!EMPLOYEE_ROLES.some(role => role.value === userData.role)) {
-      toast.error(`Rol no válido: ${userData.role}. Roles permitidos: ${EMPLOYEE_ROLES.map(role => role.label).join(', ')}`);
-      return;
-    }
-
-    if (isEditing) {
-      // Para actualización, incluir el ID como número
-      const updateData = {
-        ...userData,
-        id: Number(newEmployee.id), // Convertir a número
-        // No incluir password si está vacío
-        ...(newEmployee.password ? { password: newEmployee.password } : {})
+      // Datos base para crear o actualizar
+      const userData = {
+        email: newEmployee.email,
+        name: newEmployee.nombre,
+        lastName: newEmployee.apellido,
+        phoneNumber: newEmployee.telefono,
+        role: newEmployee.role,
+        status: newEmployee.status
       };
 
-      console.log('Datos del empleado a actualizar:', updateData);
-      updateEmployeeMutation.mutate(updateData, {
-        onSuccess: () => {
-          toast.success("Empleado actualizado correctamente");
-          setIsModalOpen(false);
-          resetForm();
-        },
-        onError: (error) => {
-          toast.error("Error al registrar empleado");
-          console.error('Error al registrar empleado:', error);
-        }
-      });
-    } else {
-      // Para creación, incluir campos adicionales
-      const createData = {
-        ...userData,
-        createdBy: "1", // ID del usuario administrador
-        createdAt: new Date().toISOString(),
-        password: newEmployee.password // Password es obligatorio para crear
-      };
+      // Verificar que el rol sea uno de los permitidos para empleados
+      if (!EMPLOYEE_ROLES.some(role => role.value === userData.role)) {
+        toast.error(`Rol no válido: ${userData.role}. Roles permitidos: ${EMPLOYEE_ROLES.map(role => role.label).join(', ')}`, { id: toastId });
+        setIsSubmitting(false);
+        toast.dismiss(toastId);
+        return;
+      }
 
-      console.log('Datos del empleado a crear:', createData);
-      console.log('Role a enviar en creación:', createData.role);
-      createEmployeeMutation.mutate(createData, {
-        onSuccess: () => {
-          toast.success("Empleado registrado correctamente");
-          setIsModalOpen(false);
-          resetForm();
-        },
-        onError: (error) => {
-          toast.error("Error al registrar empleado");
-          console.error('Error al registrar empleado:', error);
-        }
-      });
+      if (isEditing) {
+        // Para actualización, incluir el ID como número
+        const updateData = {
+          ...userData,
+          id: Number(newEmployee.id), // Convertir a número
+          // No incluir password si está vacío
+          ...(newEmployee.password ? { password: newEmployee.password } : {})
+        };
+
+        console.log('Datos del empleado a actualizar:', updateData);
+        updateEmployeeMutation.mutate(updateData, {
+          onSuccess: () => {
+            toast.success("Empleado actualizado correctamente", { id: toastId });
+            setIsModalOpen(false);
+            resetForm();
+          },
+          onError: (error) => {
+            toast.error("Error al registrar empleado", { id: toastId });
+            console.error('Error al registrar empleado:', error);
+          },
+          onSettled: () => {
+            setIsSubmitting(false);
+            toast.dismiss(toastId);
+          }
+        });
+      } else {
+        // Para creación, incluir campos adicionales
+        const createData = {
+          ...userData,
+          createdBy: "1", // ID del usuario administrador
+          createdAt: new Date().toISOString(),
+          password: newEmployee.password // Password es obligatorio para crear
+        };
+
+        console.log('Datos del empleado a crear:', createData);
+        console.log('Role a enviar en creación:', createData.role);
+        createEmployeeMutation.mutate(createData, {
+          onSuccess: () => {
+            toast.success("Empleado registrado correctamente", { id: toastId });
+            setIsModalOpen(false);
+            resetForm();
+          },
+          onError: (error) => {
+            toast.error("Error al registrar empleado", { id: toastId });
+            console.error('Error al registrar empleado:', error);
+          },
+          onSettled: () => {
+            setIsSubmitting(false);
+            toast.dismiss(toastId);
+          }
+        });
+      }
+    } catch (error) {
+      setIsSubmitting(false);
+      toast.error("Error inesperado", { id: toastId });
+      toast.dismiss(toastId);
     }
   };
 
@@ -752,10 +774,17 @@ export function EmployeesView() {
               </Button>
               <Button
                 type="submit"
-                disabled={createEmployeeMutation.isPending || updateEmployeeMutation.isPending}
+                disabled={isSubmitting || createEmployeeMutation.isPending || updateEmployeeMutation.isPending}
                 className="cursor-pointer"
               >
-                {isEditing ? "Actualizar" : "Registrar"}
+                {isSubmitting || createEmployeeMutation.isPending || updateEmployeeMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  isEditing ? "Actualizar" : "Registrar"
+                )}
               </Button>
             </DialogFooter>
           </form>

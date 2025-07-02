@@ -19,6 +19,7 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ImageUploader from '../../../SpareParts/components/molecules/ImageUploader';
 import { generateDescriptionIA } from '@/services/admin/AIService';
+import toast from 'react-hot-toast';
 
 export default function CreateProductFormDialog({ 
     isCreateDialogOpen, 
@@ -31,6 +32,7 @@ export default function CreateProductFormDialog({
 }) {
     const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
     const [filteredCategories, setFilteredCategories] = useState([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { register, handleSubmit, control, watch, setValue, getValues, reset, formState: { errors } } = useForm({
         defaultValues: {
@@ -208,30 +210,41 @@ export default function CreateProductFormDialog({
         }
     };
 
-    const onSubmit = (data) => {
-        // Extraer archivos reales de media
-        const files = (data.media || [])
-            .filter(m => m.file instanceof File)
-            .map(m => m.file);
+    const onSubmit = async (data) => {
+        if (isSubmitting) return; // Evita doble submit
+        setIsSubmitting(true);
+        const toastId = toast.loading('Guardando producto...');
+        try {
+            // Extraer archivos reales de media
+            const files = (data.media || [])
+                .filter(m => m.file instanceof File)
+                .map(m => m.file);
 
-        // Limpiar el campo media para solo dejar los metadatos (sin el campo file)
-        const cleanMedia = (data.media || []).map(({ file, ...rest }) => rest);
+            // Limpiar el campo media para solo dejar los metadatos (sin el campo file)
+            const cleanMedia = (data.media || []).map(({ file, ...rest }) => rest);
 
-        const formattedData = {
-            ...data,
-            brandId: String(data.brandId),
-            categoryId: String(data.categoryId),
-            price: parseFloat(data.price),
-            cost: data.cost ? parseFloat(data.cost) : undefined,
-            discount: data.discount ? parseFloat(data.discount) : 0,
-            stock: parseInt(data.stock, 10),
-            garanty: parseInt(data.garanty, 10) || 0,
-            functionalities: data.functionalities.filter(f => f && f.trim() !== ''),
-            technicalData: data.technicalData.filter(td => td.key && td.value),
-            downloads: data.downloads.filter(d => d.key && d.value),
-            media: cleanMedia
-        };
-        handleCreateSubmit(formattedData, files);
+            const formattedData = {
+                ...data,
+                brandId: String(data.brandId),
+                categoryId: String(data.categoryId),
+                price: parseFloat(data.price),
+                cost: data.cost ? parseFloat(data.cost) : undefined,
+                discount: data.discount ? parseFloat(data.discount) : 0,
+                stock: parseInt(data.stock, 10),
+                garanty: parseInt(data.garanty, 10) || 0,
+                functionalities: data.functionalities.filter(f => f && f.trim() !== ''),
+                technicalData: data.technicalData.filter(td => td.key && td.value),
+                downloads: data.downloads.filter(d => d.key && d.value),
+                media: cleanMedia
+            };
+            await handleCreateSubmit(formattedData, files);
+            toast.success('Producto creado exitosamente', { id: toastId });
+        } catch (error) {
+            toast.error('Error al crear producto', { id: toastId });
+        } finally {
+            setIsSubmitting(false);
+            toast.dismiss(toastId);
+        }
     };
 
     return (
@@ -759,8 +772,8 @@ export default function CreateProductFormDialog({
                                 Cancelar
                             </Button>
                         </DialogClose>
-                        <Button type="submit" disabled={isCreating} className="bg-blue-600 hover:bg-blue-700">
-                            {isCreating ? (
+                        <Button type="submit" disabled={isSubmitting || isCreating} className="bg-blue-600 hover:bg-blue-700">
+                            {isSubmitting || isCreating ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     Guardando...
