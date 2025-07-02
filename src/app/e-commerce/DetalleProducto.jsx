@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, CreditCard, Clock, ArrowLeft, Share2, Shield, Home } from "lucide-react";
 import ShareProduct from "@/components/ShareProduct";
 import { toast } from "sonner";
 import { useProductById } from "@/hooks/useProductQueries";
-import Nav2 from "@/components/Nav2";
+import Nav2 from "@/components/Nav2"; // Navbar para usuarios no loggeados
+import { NavCustomer } from "@/app/user/components/molecules/NavCustomer"; // Navbar para usuarios loggeados
+import { jwtDecode } from "jwt-decode"; // Para decodificar el token y verificar si es válido
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,15 +16,15 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Link } from "react-router-dom";
-
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 const DetalleProducto = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [mainImage, setMainImage] = useState("");
-  const [favorite, setFavorite] = useState(false);
+  const [favorite, setFavorite] = useState(false); // Mantener si es necesario, no usado en este ejemplo
   const [highlightActive, setHighlightActive] = useState(false);
+  const [isUserLoggedIn, setIsUserLoggedIn] = useState(false); // Nuevo estado para la sesión del usuario
 
   // Usar TanStack Query para obtener los detalles del producto
   const {
@@ -34,15 +36,36 @@ const DetalleProducto = () => {
   // Extraer el producto de la respuesta de la API
   const product = productData && productData.status === 200 ? productData.data : null;
 
-  // Función para regresar a la página de categorías
+  // Función para verificar si el usuario está loggeado
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        // Puedes añadir una verificación de expiración del token aquí si lo necesitas
+        // Por ejemplo: const currentTime = Date.now() / 1000; if (decoded.exp < currentTime) { /* token expirado */ }
+        setIsUserLoggedIn(true);
+      } catch (e) {
+        console.error("Token JWT inválido:", e);
+        setIsUserLoggedIn(false);
+      }
+    } else {
+      setIsUserLoggedIn(false);
+    }
+  }, []); // Se ejecuta una sola vez al montar el componente
+
+  // Función para regresar a la página de inicio o a la tienda según el estado del usuario
   const handleBack = () => {
-    navigate("/tienda", { replace: true });
+    if (isUserLoggedIn) {
+      navigate("/user-home", { replace: true });
+    } else {
+      navigate("/tienda", { replace: true });
+    }
   };
 
   // Efecto para activar el resaltado del nombre del producto
   useEffect(() => {
     if (product) {
-      // Activar el resaltado después de cargar el producto
       setHighlightActive(true);
     }
   }, [product]);
@@ -59,15 +82,25 @@ const DetalleProducto = () => {
     if (error) {
       console.error("Error al cargar el producto:", error);
       toast.error("Error al cargar el producto");
-      navigate("/tienda");
+      // Redirigir según el estado de la sesión
+      if (isUserLoggedIn) {
+        navigate("/user-home");
+      } else {
+        navigate("/tienda");
+      }
     }
-  }, [error, navigate]);
+  }, [error, navigate, isUserLoggedIn]);
+
+  // Determinar qué Navbar usar
+  const NavbarComponent = isUserLoggedIn ? NavCustomer : Nav2;
 
   // Si está cargando, mostrar indicador de carga
   if (loading) {
     return (
       <div className="w-full bg-gray-100 min-h-screen pt-16">
-        <Nav2 />
+        <SidebarProvider>
+          <NavbarComponent />
+        </SidebarProvider>
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-center items-center py-20">
             <div className="animate-pulse flex flex-col items-center">
@@ -83,47 +116,95 @@ const DetalleProducto = () => {
 
   return (
     <div className="w-full bg-gray-100 min-h-screen pt-20 pb-8">
-      <Nav2 />
-
-      <div className="max-w-7xl mx-auto px-4">
-        {/* Migas de pan y navegación con el componente Breadcrumb */}
-        <div className="py-4 mt-4 text-sm lg:text-base">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/" className="flex items-center text-gray-700 hover:text-blue-700">
-                  <Home size={18} className="mr-1" />
-                  Inicio
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink
-                  href="/tienda"
-                  onClick={(e) => { e.preventDefault(); handleBack(); }}
-                  className="text-gray-700 hover:text-blue-700"
-                >
-                  Tienda
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage className={`truncate transition-colors duration-300 font-semibold ${highlightActive ? 'text-blue-700' : 'text-gray-600'}`}>
-                  {product?.name}
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
+      <SidebarProvider>
+        <NavbarComponent />
 
 
-        {/* Contenido principal */}
-        <div className="flex flex-col md:flex-row gap-4 bg-white rounded-lg shadow-sm mt-2">
-          {/* Galería de imágenes */}
-          <div className="w-full md:w-1/2 lg:w-3/5 p-4">
-            <div className="flex flex-row gap-4">
-              {/* Miniaturas verticales */}
-              <div className="hidden sm:flex flex-col space-y-2 overflow-y-auto max-h-96">
+        <div className="max-w-7xl mx-auto px-4">
+          {/* Migas de pan y navegación con el componente Breadcrumb */}
+          <div className="py-4 mt-4 text-sm lg:text-base">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  {/* Enlace de Inicio: /user/home si loggeado, / si no */}
+                  <BreadcrumbLink asChild>
+                    <Link to={isUserLoggedIn ? "/user-home" : "/"} className="flex items-center text-gray-700 hover:text-blue-700">
+                      <Home size={18} className="mr-1" />
+                      Inicio
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                {!isUserLoggedIn && (
+                  <>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild>
+                        <Link
+                          to="/tienda" // Si no está loggeado, siempre va a /tienda
+                          className="text-gray-700 hover:text-blue-700"
+                        >
+                          Tienda
+                        </Link>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                  </>
+                )}
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage className={`truncate transition-colors duration-300 font-semibold w-[10em] ${highlightActive ? 'text-blue-700' : 'text-gray-600'}`}>
+                    {product?.name}
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+
+          {/* Contenido principal */}
+          <div className="flex flex-col md:flex-row gap-4 bg-white rounded-lg shadow-sm mt-2">
+            {/* Galería de imágenes */}
+            <div className="w-full md:w-1/2 lg:w-3/5 p-4">
+              <div className="flex flex-row gap-4">
+                {/* Miniaturas verticales */}
+                <div className="hidden sm:flex flex-col space-y-2 overflow-y-auto max-h-96">
+                  {product?.media?.map((img, index) => (
+                    <img
+                      key={index}
+                      src={img.url}
+                      alt={`${product.name} - ${index}`}
+                      className={`w-16 h-16 object-contain border p-1 cursor-pointer rounded ${mainImage === img.url ? "border-blue-500" : "border-gray-200 hover:border-gray-400"
+                        }`}
+                      onClick={() => setMainImage(img.url)}
+                    />
+                  ))}
+                  {(!product?.media || product.media.length === 0) && (
+                    <img
+                      src="/placeholder-product.png"
+                      alt="Imagen no disponible"
+                      className="w-16 h-16 object-contain border p-1 border-blue-500 rounded"
+                    />
+                  )}
+                </div>
+
+                {/* Imagen principal */}
+                <div className="relative group flex-1">
+                  {/* Componente para compartir en redes sociales */}
+                  <div className="absolute top-2 right-2 z-10">
+                    <ShareProduct product={product} />
+                  </div>
+                  <div className="w-full h-80 sm:h-96 flex justify-center items-center bg-white rounded-lg">
+                    <img
+                      src={product?.media && product.media.length > 0
+                        ? mainImage || product.media[0].url
+                        : "/placeholder-product.png"}
+                      alt={product?.name}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Miniaturas horizontales (solo móvil) */}
+              <div className="flex sm:hidden mt-4 space-x-2 overflow-x-auto pb-2">
                 {product?.media?.map((img, index) => (
                   <img
                     key={index}
@@ -142,291 +223,247 @@ const DetalleProducto = () => {
                   />
                 )}
               </div>
-
-              {/* Imagen principal */}
-              <div className="relative group flex-1">
-                {/* Componente para compartir en redes sociales */}
-                <div className="absolute top-2 right-2 z-10">
-                  <ShareProduct product={product} />
-                </div>
-                <div className="w-full h-80 sm:h-96 flex justify-center items-center bg-white rounded-lg">
-                  <img
-                    src={product?.media && product.media.length > 0
-                      ? mainImage || product.media[0].url
-                      : "/placeholder-product.png"}
-                    alt={product?.name}
-                    className="max-h-full max-w-full object-contain"
-                  />
-                </div>
-              </div>
             </div>
 
-            {/* Miniaturas horizontales (solo móvil) */}
-            <div className="flex sm:hidden mt-4 space-x-2 overflow-x-auto pb-2">
-              {product?.media?.map((img, index) => (
-                <img
-                  key={index}
-                  src={img.url}
-                  alt={`${product.name} - ${index}`}
-                  className={`w-16 h-16 object-contain border p-1 cursor-pointer rounded ${mainImage === img.url ? "border-blue-500" : "border-gray-200 hover:border-gray-400"
-                    }`}
-                  onClick={() => setMainImage(img.url)}
-                />
-              ))}
-              {(!product?.media || product.media.length === 0) && (
-                <img
-                  src="/placeholder-product.png"
-                  alt="Imagen no disponible"
-                  className="w-16 h-16 object-contain border p-1 border-blue-500 rounded"
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Información del producto */}
-          <div className="w-full md:w-1/2 lg:w-2/5 p-4">
-            <div className="flex items-center mb-1">
-              <span className="text-sm text-gray-500">Nuevo | ID: {product?.externalId}</span>
-              {product?.stock > 0 && (
-                <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-md">En stock</span>
-              )}
-            </div>
-
-            <h1 className="text-xl sm:text-2xl font-medium text-gray-900 mb-3">{product?.name}</h1>
-
-            <div className="mb-4">
-              <div className="flex items-baseline">
-                <span className="text-3xl font-semibold text-gray-900">${product?.price?.toLocaleString()}</span>
-                {product?.discount > 0 && (
-                  <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded-md">{product.discount}% OFF</span>
+            {/* Información del producto */}
+            <div className="w-full md:w-1/2 lg:w-2/5 p-4">
+              <div className="flex items-center mb-1">
+                <span className="text-sm text-gray-500">Nuevo | ID: {product?.externalId}</span>
+                {product?.stock > 0 && (
+                  <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-md">En stock</span>
                 )}
               </div>
-            </div>
 
-            {product?.garanty && (
+              <h1 className="text-xl sm:text-2xl font-medium text-gray-900 mb-3">{product?.name}</h1>
+
               <div className="mb-4">
-                <div className="flex items-center text-sm text-gray-700">
-                  <Shield size={18} className="text-green-500 mr-2" />
-                  <div>
-                    <p className="font-medium">Garantía: {product.garanty} {product.garanty === 1 ? 'año' : 'años'}</p>
+                <div className="flex items-baseline">
+                  <span className="text-3xl font-semibold text-gray-900">${product?.price?.toLocaleString()}</span>
+                  {product?.discount > 0 && (
+                    <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded-md">{product.discount}% OFF</span>
+                  )}
+                </div>
+              </div>
+
+              {product?.garanty && (
+                <div className="mb-4">
+                  <div className="flex items-center text-sm text-gray-700">
+                    <Shield size={18} className="text-green-500 mr-2" />
+                    <div>
+                      <p className="font-medium">Garantía: {product.garanty} {product.garanty === 1 ? 'año' : 'años'}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Descripción del producto */}
-            {product?.shortDescription && (
-              <div className="mb-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Descripción</h3>
-                <p className="text-gray-700 text-sm whitespace-pre-line mb-2">{product.shortDescription}</p>
-                {product?.description?.details && (
-                  <p className="text-gray-700 text-sm whitespace-pre-line">{product.description.details}</p>
-                )}
-              </div>
-            )}
+              {/* Descripción del producto */}
+              {product?.shortDescription && (
+                <div className="mb-4">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Descripción</h3>
+                  <p className="text-gray-700 text-sm whitespace-pre-line mb-2">{product.shortDescription}</p>
+                  {product?.description?.details && (
+                    <p className="text-gray-700 text-sm whitespace-pre-line">{product.description.details}</p>
+                  )}
+                </div>
+              )}
 
-            {/* Botones de acción - Verticales en móvil, horizontales en desktop */}
-            <div className="mt-8">
-              {/* Botones verticales para móvil */}
-              <div className="flex flex-col space-y-3 md:hidden">
-                <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-2">
-                  <ShoppingCart className="h-5 w-5" />
-                  Agregar al carrito
-                </Button>
-                <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Comprar ahora
-                </Button>
-                <Button
-                  className="w-full bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 py-3 rounded-md flex items-center justify-center gap-2"
-                  onClick={() => navigate(`/e-commerce/rentar/${product?.id}`, { state: { product } })}
-                >
-                  <Clock className="h-5 w-5" />
-                  Rentar
-                </Button>
-              </div>
-
-              {/* Botones horizontales para tablet/desktop */}
-              <div className="hidden md:grid md:grid-cols-3 md:gap-2 lg:gap-3">
-                <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-1">
-                  <ShoppingCart className="h-4 w-4 lg:h-5 lg:w-5" />
-                  <span className="text-sm lg:text-base">Agregar</span>
-                </Button>
-
-                <Link to="/payment-method">
-                  <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1">
-                    <CreditCard className="h-4 w-4 lg:h-5 lg:w-5" />
-                    <span className="text-sm lg:text-base">Comprar</span>
+              {/* Botones de acción - Verticales en móvil, horizontales en desktop */}
+              <div className="mt-8">
+                {/* Botones verticales para móvil */}
+                <div className="flex flex-col space-y-3 md:hidden">
+                  <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-2">
+                    <ShoppingCart className="h-5 w-5" />
+                    Agregar al carrito
                   </Button>
-                </Link>
+                  <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Comprar ahora
+                  </Button>
+                  <Button
+                    className="w-full bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 py-3 rounded-md flex items-center justify-center gap-2"
+                    onClick={() => navigate(`/e-commerce/rentar/${product?.id}`, { state: { product } })}
+                  >
+                    <Clock className="h-5 w-5" />
+                    Rentar
+                  </Button>
+                </div>
 
+                {/* Botones horizontales para tablet/desktop */}
+                <div className="hidden md:grid md:grid-cols-3 md:gap-2 lg:gap-3">
+                  <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-1">
+                    <ShoppingCart className="h-4 w-4 lg:h-5 lg:w-5" />
+                    <span className="text-sm lg:text-base">Agregar</span>
+                  </Button>
 
-                <Button
-                  className="w-full bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 py-3 rounded-md flex items-center justify-center gap-1"
-                  onClick={() => navigate(`/e-commerce/rentar/${product?.id}`, { state: { product } })}
-                >
-                  <Clock className="h-4 w-4 lg:h-5 lg:w-5" />
-                  <span className="text-sm lg:text-base">Rentar</span>
-                </Button>
+                  <Link to="/payment-method">
+                    <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1">
+                      <CreditCard className="h-4 w-4 lg:h-5 lg:w-5" />
+                      <span className="text-sm lg:text-base">Comprar</span>
+                    </Button>
+                  </Link>
+
+                  <Button
+                    className="w-full bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 py-3 rounded-md flex items-center justify-center gap-1"
+                    onClick={() => navigate(`/e-commerce/rentar/${product?.id}`, { state: { product } })}
+                  >
+                    <Clock className="h-4 w-4 lg:h-5 lg:w-5" />
+                    <span className="text-sm lg:text-base">Rentar</span>
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Contenedor combinado: Características destacadas + info */}
-        <div className="mt-6 flex flex-col lg:flex-row gap-6">
-          {/* Características destacadas al lado izquierdo */}
-          {product?.description && (
-            <div
-              className="p-6 rounded-lg text-white w-full lg:w-1/2"
-              style={{ backgroundColor: product?.color || '#2968c8' }}
-            >
-              <h3 className="text-lg lg:text-xl font-bold mb-3 text-white">Características destacadas</h3>
-              <p className="whitespace-pre-line text-sm lg:text-base leading-relaxed text-white">{product.description} </p>
+          {/* Contenedor combinado: Características destacadas + info */}
+          <div className="mt-6 flex flex-col lg:flex-row gap-6">
+            {/* Características destacadas al lado izquierdo */}
+            {product?.description && (
+              <div
+                className="p-6 rounded-lg text-white w-full lg:w-1/2"
+                style={{ backgroundColor: product?.color || '#2968c8' }}
+              >
+                <h3 className="text-lg lg:text-xl font-bold mb-3 text-white">Características destacadas</h3>
+                <p className="whitespace-pre-line text-sm lg:text-base leading-relaxed text-white">{product.description} </p>
+              </div>
+            )}
+
+            {/* Características principales + Usos recomendados */}
+            {/* <div className="w-full lg:w-1/2 flex flex-col gap-4">
+              <div className="bg-white rounded-lg shadow-sm p-4">
+                <h2 className="text-lg lg:text-2xl font-medium text-gray-900 mb-4">Características principales</h2>
+                {product?.description ? (
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-6">
+                    {product.description.split('\n').map((feature, index) => {
+                      const trimmedFeature = feature.trim();
+
+                      // Solo renderiza el <li> si el texto no está vacío después de trim()
+                      if (trimmedFeature) {
+                        return (
+                          <li key={index} className="flex items-start">
+                            <div className="min-w-2 h-2 w-2 bg-blue-500 rounded-full mt-2 mr-2"></div>
+                            <span className="text-gray-700 text-sm lg:text-base">{feature}</span>
+                          </li>
+                        );
+                      }
+                      return null; // No renderiza nada si es un espacio en blanco o cadena vacía
+                    })}
+                  </ul>
+                ) : (
+                  <p className="text-gray-500 text-sm">No hay características disponibles</p>
+                )}
+              </div>
+
+              {product?.shortDescription && (
+                <div className="bg-white rounded-lg shadow-sm p-4">
+                  <h2 className="text-lg lg:text-2xl font-medium text-gray-900 mb-4">Usos recomendados</h2>
+                  <p className="text-gray-700 whitespace-pre-line text-sm lg:text-base">{product.shortDescription}</p>
+                </div>
+              )}
+            </div> */}
+          </div>
+
+          {/* Especificaciones técnicas - Estilo Mercado Libre */}
+          {(product?.technicalData || product?.functionalities) && (
+            <div className="mt-6 bg-white rounded-lg shadow-sm p-4">
+              <h2 className="text-2xl font-medium text-gray-900 mb-4">Especificaciones técnicas</h2>
+              <div className="overflow-hidden border border-gray-200 rounded-lg">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <tbody>
+                    {/* Renderizado de technicalData */}
+                    {product?.technicalData && product.technicalData.map((item, index) => {
+                      let renderedKey;
+                      let renderedValue;
+
+                      if (typeof item === 'object' && item !== null && 'key' in item && 'value' in item) {
+                        // Si es un objeto con 'key' y 'value' (como Rotomartillo Bosch)
+                        renderedKey = item.key;
+                        renderedValue = item.value;
+                      } else if (typeof item === 'string') {
+                        // Si es una cadena (como Martillo demoledor)
+                        const parts = item.split(': ');
+                        if (parts.length > 1) {
+                          renderedKey = parts[0];
+                          renderedValue = parts.slice(1).join(': ');
+                        } else {
+                          renderedKey = 'Información'; // Clave genérica si no hay ':'
+                          renderedValue = item;
+                        }
+                      } else {
+                        // Caso de fallback para tipos inesperados
+                        renderedKey = 'N/A';
+                        renderedValue = 'Datos inválidos';
+                      }
+
+                      return (
+                        <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-700 w-1/3 border-r border-gray-200">{renderedKey}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{renderedValue}</td>
+                        </tr>
+                      );
+                    })}
+
+                    {/* Renderizado de functionalities (asumiendo que podría tener el mismo problema) */}
+                    {product?.functionalities && product.functionalities.map((item, index) => {
+                      let renderedKey;
+                      let renderedValue;
+
+                      if (typeof item === 'object' && item !== null && 'key' in item && 'value' in item) {
+                        renderedKey = item.key;
+                        renderedValue = item.value;
+                      } else if (typeof item === 'string') {
+                        const parts = item.split(': ');
+                        if (parts.length > 1) {
+                          renderedKey = parts[0];
+                          renderedValue = parts.slice(1).join(': ');
+                        } else {
+                          renderedKey = 'Información';
+                          renderedValue = item;
+                        }
+                      } else {
+                        renderedKey = 'N/A';
+                        renderedValue = 'Datos inválidos';
+                      }
+
+                      return (
+                        <tr key={`func-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-700 w-1/3 border-r border-gray-200">{renderedKey}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{renderedValue}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
-          {/* Características principales + Usos recomendados */}
-          <div className="w-full lg:w-1/2 flex flex-col gap-4">
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <h2 className="text-lg lg:text-2xl font-medium text-gray-900 mb-4">Características principales</h2>
-              {product?.description ? (
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-6">
-                  {product.description.split('\n').map((feature, index) => {
-                    const trimmedFeature = feature.trim();
-
-                    // Solo renderiza el <li> si el texto no está vacío después de trim()
-                    if (trimmedFeature) {
-                      return (
-                        <li key={index} className="flex items-start">
-                          <div className="min-w-2 h-2 w-2 bg-blue-500 rounded-full mt-2 mr-2"></div>
-                          <span className="text-gray-700 text-sm lg:text-base">{feature}</span>
-                        </li>
-                      );
-                    }
-                    return null; // No renderiza nada si es un espacio en blanco o cadena vacía
-                  })}
-                </ul>
-              ) : (
-                <p className="text-gray-500 text-sm">No hay características disponibles</p>
-              )}
+          {/* Descargas - Estilo Mercado Libre */}
+          {product?.downloads && Object.keys(product.downloads).length > 0 && (
+            <div className="mt-6 bg-white rounded-lg shadow-sm p-4 mb-8">
+              <h2 className="text-2xl font-medium text-gray-900 mb-4">Documentación y descargas</h2>
+              <ul className="space-y-2">
+                {Object.entries(product.downloads).map(([key, url], index) => (
+                  <li key={index} className="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                    </svg>
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:text-blue-700 hover:underline"
+                    >
+                      {key.replace(/_/g, ' ')}
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </div>
-
-            {product?.shortDescription && (
-              <div className="bg-white rounded-lg shadow-sm p-4">
-                <h2 className="text-lg lg:text-2xl font-medium text-gray-900 mb-4">Usos recomendados</h2>
-                <p className="text-gray-700 whitespace-pre-line text-sm lg:text-base">{product.shortDescription}</p>
-              </div>
-            )}
-          </div>
+          )}
         </div>
-
-
-
-
-
-        {/* Especificaciones técnicas - Estilo Mercado Libre */}
-        {(product?.technicalData || product?.functionalities) && (
-          <div className="mt-6 bg-white rounded-lg shadow-sm p-4">
-            <h2 className="text-2xl font-medium text-gray-900 mb-4">Especificaciones técnicas</h2>
-            <div className="overflow-hidden border border-gray-200 rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200">
-                <tbody>
-                  {/* Renderizado de technicalData */}
-                  {product?.technicalData && product.technicalData.map((item, index) => {
-                    let renderedKey;
-                    let renderedValue;
-
-                    if (typeof item === 'object' && item !== null && 'key' in item && 'value' in item) {
-                      // Si es un objeto con 'key' y 'value' (como Rotomartillo Bosch)
-                      renderedKey = item.key;
-                      renderedValue = item.value;
-                    } else if (typeof item === 'string') {
-                      // Si es una cadena (como Martillo demoledor)
-                      // Podrías intentar parsear la cadena si tienen un formato consistente,
-                      // o simplemente mostrarla como valor y dejar la clave vacía o 'Info':
-                      const parts = item.split(': ');
-                      if (parts.length > 1) {
-                        renderedKey = parts[0];
-                        renderedValue = parts.slice(1).join(': ');
-                      } else {
-                        renderedKey = 'Información'; // Clave genérica si no hay ':'
-                        renderedValue = item;
-                      }
-                    } else {
-                      // Caso de fallback para tipos inesperados
-                      renderedKey = 'N/A';
-                      renderedValue = 'Datos inválidos';
-                    }
-
-                    return (
-                      <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-700 w-1/3 border-r border-gray-200">{renderedKey}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{renderedValue}</td>
-                      </tr>
-                    );
-                  })}
-
-                  {/* Renderizado de functionalities (asumiendo que podría tener el mismo problema) */}
-                  {product?.functionalities && product.functionalities.map((item, index) => {
-                    let renderedKey;
-                    let renderedValue;
-
-                    if (typeof item === 'object' && item !== null && 'key' in item && 'value' in item) {
-                      renderedKey = item.key;
-                      renderedValue = item.value;
-                    } else if (typeof item === 'string') {
-                      const parts = item.split(': ');
-                      if (parts.length > 1) {
-                        renderedKey = parts[0];
-                        renderedValue = parts.slice(1).join(': ');
-                      } else {
-                        renderedKey = 'Información';
-                        renderedValue = item;
-                      }
-                    } else {
-                      renderedKey = 'N/A';
-                      renderedValue = 'Datos inválidos';
-                    }
-
-                    return (
-                      <tr key={`func-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-700 w-1/3 border-r border-gray-200">{renderedKey}</td>
-                        <td className="px-4 py-3 text-sm text-gray-700">{renderedValue}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Descargas - Estilo Mercado Libre */}
-        {product?.downloads && Object.keys(product.downloads).length > 0 && (
-          <div className="mt-6 bg-white rounded-lg shadow-sm p-4 mb-8">
-            <h2 className="text-2xl font-medium text-gray-900 mb-4">Documentación y descargas</h2>
-            <ul className="space-y-2">
-              {Object.entries(product.downloads).map(([key, url], index) => (
-                <li key={index} className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                  </svg>
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 hover:text-blue-700 hover:underline"
-                  >
-                    {key.replace(/_/g, ' ')}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
+      </SidebarProvider>
     </div>
+
   );
 };
 

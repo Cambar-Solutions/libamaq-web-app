@@ -48,7 +48,7 @@ export default function CardProducts({ sectionRef, brand, selectedCategory, isLo
                       </CardHeader>
                       <CardContent className="flex flex-col flex-grow justify-between p-3 mt-2">
                         <CardTitle className="text-lg font-semibold text-gray-900 line-clamp-2" title={item.name}> {item.name} </CardTitle>
-                        <CardDescription className="truncate text-gray-600 mt-1" title={item.description}>{item.description}</CardDescription>
+                        <CardDescription className="text-gray-600 mt-1 line-clamp-3" title={item.description}>{item.description}</CardDescription>
                         <p className="mt-auto pt-2 font-bold text-2xl text-blue-700">${item.price}</p>
                       </CardContent>
                     </Card>
