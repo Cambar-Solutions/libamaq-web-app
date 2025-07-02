@@ -68,7 +68,7 @@ export function NavUser({ user }) {
     // Siempre sincroniza userInfo con el backend primero
     const fetchUserData = async () => {
       try {
-        const token = localStorage.getItem("auth_token");
+        const token = localStorage.getItem("token") || localStorage.getItem("auth_token");
         if (!token) return;
         const decoded = jwtDecode(token);
         const userId = decoded.sub;
@@ -202,7 +202,7 @@ export function NavUser({ user }) {
                 e.preventDefault();
                 setEditLoading(true);
                 try {
-                  const token = localStorage.getItem("auth_token");
+                  const token = localStorage.getItem("token") || localStorage.getItem("auth_token");
                   if (!token) throw new Error("No autenticado");
                   const { sub: userId } = jwtDecode(token);
                   // Separar nombre y apellido

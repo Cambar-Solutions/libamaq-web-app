@@ -1,6 +1,13 @@
 // Constantes para las claves de almacenamiento
-const AUTH_TOKEN_KEY = 'auth_token';
+// Token
+const AUTH_TOKEN_KEY = 'token';
+const LEGACY_AUTH_TOKEN_KEY = 'auth_token';
+
+// Datos de usuario
 const USER_DATA_KEY = 'user_data';
+const LEGACY_USER_DATA_KEY = 'user';
+
+import { jwtDecode } from 'jwt-decode';
 
 /**
  * Guarda el token de autenticación en localStorage
@@ -8,6 +15,8 @@ const USER_DATA_KEY = 'user_data';
  */
 export const setAuthToken = (token) => {
   localStorage.setItem(AUTH_TOKEN_KEY, token);
+  // Limpiamos clave antigua si existía
+  localStorage.removeItem(LEGACY_AUTH_TOKEN_KEY);
 };
 
 /**
@@ -15,7 +24,8 @@ export const setAuthToken = (token) => {
  * @returns {string|null} Token de autenticación o null si no existe
  */
 export const getAuthToken = () => {
-  return localStorage.getItem(AUTH_TOKEN_KEY);
+  // Compatibilidad con clave antigua
+  return localStorage.getItem(AUTH_TOKEN_KEY) || localStorage.getItem(LEGACY_AUTH_TOKEN_KEY);
 };
 
 /**
@@ -24,6 +34,7 @@ export const getAuthToken = () => {
  */
 export const setUserData = (userData) => {
   localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
+  localStorage.removeItem(LEGACY_USER_DATA_KEY);
 };
 
 /**
@@ -31,8 +42,8 @@ export const setUserData = (userData) => {
  * @returns {Object|null} Datos del usuario o null si no existen
  */
 export const getUserData = () => {
-  const userData = localStorage.getItem(USER_DATA_KEY);
-  return userData ? JSON.parse(userData) : null;
+  const dataStr = localStorage.getItem(USER_DATA_KEY) || localStorage.getItem(LEGACY_USER_DATA_KEY);
+  return dataStr ? JSON.parse(dataStr) : null;
 };
 
 /**
@@ -40,7 +51,9 @@ export const getUserData = () => {
  */
 export const clearAuthData = () => {
   localStorage.removeItem(AUTH_TOKEN_KEY);
+  localStorage.removeItem(LEGACY_AUTH_TOKEN_KEY);
   localStorage.removeItem(USER_DATA_KEY);
+  localStorage.removeItem(LEGACY_USER_DATA_KEY);
 };
 
 /**
@@ -70,5 +83,15 @@ export const saveAuthResponse = (response) => {
  */
 export const getUserRole = () => {
   const userData = getUserData();
-  return userData?.role || null;
-}; 
+  if (userData?.role) return userData.role;
+
+  // Fallback: intentar decodificar el JWT para obtener el rol
+  const token = getAuthToken();
+  if (!token) return null;
+  try {
+    const decoded = jwtDecode(token);
+    return decoded.role || decoded.roles?.[0] || null;
+  } catch {
+    return null;
+  }
+};

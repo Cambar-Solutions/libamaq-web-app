@@ -17,7 +17,8 @@ export const login = async (email, password) => {
     // Si la autenticación es exitosa, guardar el token en localStorage
     if (data && data.access_token && data.user) {
       localStorage.setItem("token", data.access_token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("user_data", JSON.stringify(data.user));
+      localStorage.removeItem("user");
     }
     
     return data;
@@ -32,6 +33,7 @@ export const login = async (email, password) => {
  */
 export const logout = () => {
   localStorage.removeItem("token");
+  localStorage.removeItem("user_data");
   localStorage.removeItem("user");
 };
 
@@ -49,7 +51,7 @@ export const isAuthenticated = () => {
  * @returns {Object|null} - Datos del usuario o null si no hay usuario autenticado
  */
 export const getCurrentUser = () => {
-  const userStr = localStorage.getItem("user");
+  const userStr = localStorage.getItem("user_data");
   if (!userStr) return null;
   
   try {
