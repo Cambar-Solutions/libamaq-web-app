@@ -1,7 +1,12 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense, lazy } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getActiveProductPreviews } from "@/services/public/productService";
+import {
+  getActiveProductPreviews,
+  getProductsByCategoryAndBrand,
+  getProductsByBrand,
+} from "@/services/public/productService"; // Importar servicios de productos
+import { getAllBrandsWithCategories } from "@/services/public/brandService"; // Importar servicio de marcas
 import toast, { Toaster } from "react-hot-toast";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { NavCustomer } from "@/app/user/components/molecules/NavCustomer";
@@ -10,129 +15,261 @@ import CardProducts from "./components/organisms/CardProducts";
 import { jwtDecode } from "jwt-decode";
 import { getUserById } from "@/services/admin/userService";
 
+// Importamos el componente LoadingScreen de forma lazy
+const LoadingScreen = lazy(() => import('@/components/LoadingScreen'));
+
 export default function UserHome() {
-    const [userInfo, setUserInfo] = useState({ name: "null", email: "null@gmail.com" });
-    const [activeItems, setActiveItems] = useState([]);
+  const [userInfo, setUserInfo] = useState({ name: "null", email: "null@gmail.com" });
+  const [activeItems, setActiveItems] = useState([]); // Productos activos, para el estado inicial o fallback
+  const [filteredProducts, setFilteredProducts] = useState([]); // Productos que se mostrarán después de filtros/búsqueda
+  const [loadingFilteredProducts, setLoadingFilteredProducts] = useState(true); // Nuevo estado de carga para productos filtrados
 
-    const navigate = useNavigate();
-    const { brand, category } = useParams();
-    const [featuredProducts, setFeaturedProducts] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const sectionRef = useRef(null);
-    const [selectedCategory, setSelectedCategory] = useState(category || "");
-    const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState("");
+  const { brand, category } = useParams();
+  const [selectedCategory, setSelectedCategory] = useState(null); // Usamos null para indicar que no hay categoría seleccionada inicialmente
+  const [allCategories, setAllCategories] = useState([]); // Todas las categorías disponibles
+  const [allBrands, setAllBrands] = useState([]); // Todas las marcas disponibles
+  const [searchTerm, setSearchTerm] = useState("");
+  const sectionRef = useRef(null); // Referencia para el scroll
 
-    // Filtrado por búsqueda y categoría
-    const filteredProducts = activeItems.filter(item => {
-        const matchSearch = !searchTerm ||
-            item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.description?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchCat = !selectedCategory ||
-            item.category?.toLowerCase() === selectedCategory.toLowerCase();
-        return matchSearch && matchCat;
-    });
+  // Estados para controlar la carga de imágenes y mostrar contenido
+  const [carouselImagesLoaded, setCarouselImagesLoaded] = useState(false); // No usado directamente aquí, pero útil si se reintroduce el carrusel
+  const [productsImagesLoaded, setProductsImagesLoaded] = useState(false); // No usado directamente aquí, pero útil si se reintroduce el carrusel
+  const [showContent, setShowContent] = useState(false); // Controla si se muestra el contenido o el loading screen
+  const [totalImagesToLoad, setTotalImagesToLoad] = useState(0); // No usado directamente aquí
+  const [loadedImagesCount, setLoadedImagesCount] = useState(0); // No usado directamente aquí
 
-    // Obtiene el usuario
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const token = localStorage.getItem("auth_token");
-                if (!token) return;
+  const navigate = useNavigate();
 
-                const decoded = jwtDecode(token);
-                const userId = decoded.sub;
+  // Función para manejar la carga de imágenes individuales (si se usan)
+  const handleImageLoad = () => {
+    setLoadedImagesCount(prev => prev + 1);
+  };
 
-                const user = await getUserById(userId);
-                setUserInfo({ name: user.name, email: user.email });
-            } catch (error) {
-                console.error("Error al obtener el usuario:", error);
+  // Efecto para verificar cuando todas las imágenes están cargadas (si se usan)
+  useEffect(() => {
+    // Si no hay imágenes para cargar (ej. no hay carrusel o productos precargados visualmente), consideramos que están cargadas
+    if (totalImagesToLoad === 0 || loadedImagesCount >= totalImagesToLoad) {
+      setProductsImagesLoaded(true);
+    }
+  }, [loadedImagesCount, totalImagesToLoad]);
+
+  // Efecto para mostrar el contenido cuando todas las imágenes estén cargadas (si se usan)
+  useEffect(() => {
+    // Si no hay carrusel, consideramos carouselImagesLoaded como true
+    if (productsImagesLoaded) { // Antes era carouselImagesLoaded && productsImagesLoaded
+      const timer = setTimeout(() => {
+        setShowContent(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [productsImagesLoaded]); // Dependencia actualizada
+
+  // Obtiene el usuario
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem("auth_token");
+        if (!token) return;
+
+        const decoded = jwtDecode(token);
+        const userId = decoded.sub;
+
+        const user = await getUserById(userId);
+        setUserInfo({ name: user.name, email: user.email });
+      } catch (error) {
+        console.error("Error al obtener el usuario:", error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  // Cargar todas las marcas y sus categorías al montar el componente
+  useEffect(() => {
+    const fetchAndFormatBrands = async () => {
+      try {
+        const response = await getAllBrandsWithCategories();
+        if (response && response.data && Array.isArray(response.data)) {
+          const formattedBrands = response.data.map((b) => ({
+            ...b,
+            categories: b.brandCategories?.map((bc) => bc.category) || [],
+          }));
+          setAllBrands(formattedBrands);
+
+          const allCatsSet = new Set();
+          formattedBrands.forEach(b => {
+            if (b.status === "ACTIVE" && b.categories) {
+              b.categories.forEach(cat => {
+                if (cat.status === "ACTIVE") {
+                  allCatsSet.add(cat.name);
+                }
+              });
             }
-        };
+          });
+          setAllCategories(Array.from(allCatsSet));
+        } else {
+          console.warn("Respuesta inesperada al cargar marcas:", response);
+          setAllBrands([]);
+          setAllCategories([]);
+        }
+      } catch (error) {
+        console.error("Error al cargar marcas:", error);
+        toast.error("Error al cargar marcas");
+        setAllBrands([]);
+        setAllCategories([]);
+      }
+    };
 
-        fetchUserData();
-    }, []);
+    fetchAndFormatBrands();
+  }, []);
 
-    // Obtener todos los productos activos
-    useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const data = await getActiveProductPreviews();
-                const products = Array.isArray(data.data) ? data.data : [];
-                console.log("Productos activos recibidos:", data);
-                setActiveItems(products);
-                // setShowRightArrow(products.length > 1);
-            } catch (error) {
-                console.error("Error cargando productos activos:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+  // Establecer la categoría seleccionada desde la URL
+  useEffect(() => {
+    if (category) {
+      setSelectedCategory(decodeURIComponent(category));
+    } else {
+      setSelectedCategory(null);
+    }
+  }, [category]);
 
-        fetchProducts();
-    }, []);
+  // Cargar productos según los filtros seleccionados (marca, categoría y término de búsqueda)
+  useEffect(() => {
+    const loadFilteredProducts = async () => {
+      setLoadingFilteredProducts(true);
+      try {
+        let productsFromApi = [];
 
+        const selectedBrandObject = allBrands.find(b =>
+          b.name?.toLowerCase() === brand?.toLowerCase()
+        );
+        const brandId = selectedBrandObject?.id;
+
+        if (brandId && selectedCategory) {
+          const categoryObj = selectedBrandObject?.categories?.find(
+            cat => cat.name.toLowerCase() === selectedCategory.toLowerCase()
+          );
+          if (categoryObj?.id) {
+            const response = await getProductsByCategoryAndBrand(categoryObj.id, brandId);
+            productsFromApi = response.data || [];
+          } else {
+            console.warn('Categoría no encontrada para la marca, buscando solo por marca.');
+            const response = await getProductsByBrand(brandId);
+            productsFromApi = response.data || [];
+          }
+        } else if (brandId) {
+          const response = await getProductsByBrand(brandId);
+          productsFromApi = response.data || [];
+        } else if (selectedCategory) {
+          // Si solo hay categoría seleccionada (sin marca específica de la URL)
+          // Esto es más complejo ya que getProductsByCategory podría necesitar una revisión o un endpoint específico.
+          // Por ahora, si no hay marca, y solo categoría, cargamos todos los activos y filtramos por categoría.
+          const allActive = await getActiveProductPreviews();
+          productsFromApi = (allActive.data || []).filter(prod =>
+            prod.category?.name?.toLowerCase() === selectedCategory.toLowerCase()
+          );
+        } else {
+          const response = await getActiveProductPreviews();
+          productsFromApi = response.data || [];
+        }
+
+        // Aplicar filtro por término de búsqueda
+        let finalFilteredProducts = productsFromApi;
+        if (searchTerm) {
+          finalFilteredProducts = productsFromApi.filter(
+            item =>
+              item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              item.shortDescription?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              item.description?.toLowerCase().includes(searchTerm.toLowerCase())
+          );
+        }
+        setFilteredProducts(finalFilteredProducts);
+      } catch (error) {
+        console.error('Error al cargar productos filtrados:', error);
+        toast.error("Error al cargar productos. Mostrando todos los productos.");
+        const featured = await getActiveProductPreviews();
+        setFilteredProducts(featured.data || []);
+      } finally {
+        setLoadingFilteredProducts(false);
+      }
+    };
+
+    // Asegurarse de que `allBrands` esté cargado antes de intentar cargar productos filtrados
+    if (allBrands.length > 0 || (!brand && !category)) { // Cargar si ya hay marcas o si no hay filtros en la URL
+      loadFilteredProducts();
+    }
+    // Si allBrands aún no se carga y hay brand/category en la URL, se esperará al siguiente ciclo.
+  }, [brand, selectedCategory, searchTerm, allBrands]);
+
+  // Si no se ha mostrado el contenido (es decir, el LoadingScreen está activo)
+  if (!showContent) {
     return (
-        <>
-            <SidebarProvider>
-                <NavCustomer />
-
-                <div className="w-full bg-stone-100 min-h-screen pb-10 pt-1">
-                    <motion.div
-                        initial={{ opacity: 0, y: 50 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                    >
-                        <div className="max-w-full mx-auto px-4">
-                            {/* Buscador y filtros */}
-                            <SearchBar
-                                selectedCategory={selectedCategory}
-                                setSelectedCategory={setSelectedCategory}
-                                brand={brand}
-                                category={category}
-                                searchTerm={searchTerm}
-                                setSearchTerm={setSearchTerm}
-                            />
-
-                            {/* CARDS */}
-                            <CardProducts
-                                sectionRef={sectionRef}
-                                brand={brand}
-                                selectedCategory={selectedCategory}
-                                isLoading={isLoading}
-                                filteredProducts={filteredProducts}
-                                activeItems={activeItems}
-                            />
-                        </div>
-                    </motion.div>
-                </div>
-            </SidebarProvider>
-
-            <Toaster
-                position="top-center"
-                reverseOrder={false}
-                toastOptions={{
-                    duration: 3000,
-                    style: {
-                        background: '#363636',
-                        color: '#fff',
-                    },
-                    success: {
-                        duration: 3000,
-                        iconTheme: {
-                            primary: '#10B981',
-                            secondary: '#fff',
-                        },
-                    },
-                    error: {
-                        duration: 4000,
-                        iconTheme: {
-                            primary: '#EF4444',
-                            secondary: '#fff',
-                        },
-                    },
-                }}
-            />
-        </>
+      <Suspense fallback={<div>Cargando...</div>}>
+        <LoadingScreen />
+      </Suspense>
     );
+  }
+
+  return (
+    <>
+      <SidebarProvider>
+        <NavCustomer />
+
+        <div className="w-full bg-stone-100 min-h-screen pb-10 pt-1">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="max-w-full mx-auto px-4">
+              {/* Buscador y filtros */}
+              <SearchBar
+                selectedCategory={selectedCategory}
+                setSelectedCategory={setSelectedCategory}
+                brand={brand}
+                category={category}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                allCategories={allCategories} // Pasar todas las categorías
+              />
+
+              {/* CARDS */}
+              <CardProducts
+                sectionRef={sectionRef}
+                brand={brand}
+                selectedCategory={selectedCategory}
+                isLoading={loadingFilteredProducts} // Usar el nuevo estado de carga
+                filteredProducts={filteredProducts}
+              />
+            </div>
+          </motion.div>
+        </div>
+      </SidebarProvider>
+
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10B981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#EF4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+    </>
+  );
 }

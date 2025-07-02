@@ -130,7 +130,7 @@ export default function CategoryPage() {
         const products = Array.isArray(data.data) ? data.data : [];
         console.log("Productos activos recibidos:", data);
         setActiveItems(products);
-        setShowRightArrow(products.length > 1);
+        setShowActiveProductsRightArrow(products.length > 1);
       } catch (error) {
         console.error("Error cargando productos activos:", error);
       } finally {
