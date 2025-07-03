@@ -595,11 +595,10 @@ export default function CategoryPage() {
       <SidebarProvider>
         <NavbarComponent />
 
-
-        <div className="min-h-screen bg-gray-50 flex flex-col pt-20">
+        <div className="min-h-screen bg-gray-50 flex flex-col pt-20 w-full">
           <div className="max-w-7xl w-full mx-auto px-4">
             {/* Barra de búsqueda y filtros (tu código actual, se mantiene) */}
-            <div className="sticky top-20 z-10 bg-white shadow-xl rounded-lg mb-6 p-3">
+            <div className="sticky top-20 z-20 bg-white shadow-xl rounded-lg mb-6 p-3">
               <div className="flex flex-row items-center gap-2">
                 <div className="relative w-4/5">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -692,7 +691,7 @@ export default function CategoryPage() {
                               <ProductImageWithFallback
                                 src={product.media?.[0]?.url || "/placeholder-product.png"}
                                 alt={product.product_name || product.name || "Producto"}
-                                className="w-full h-48 object-contain p-4" // Ajusta la altura de la imagen si es necesario
+                                className="w-full h-48 object-contain" // Ajusta la altura de la imagen si es necesario
                               />
                               <div className="p-4 flex-grow flex flex-col justify-between">
                                 <div>

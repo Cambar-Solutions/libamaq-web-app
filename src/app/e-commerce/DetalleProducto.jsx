@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import toast, { Toaster } from "react-hot-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // --- Importa las funciones de API que creamos ---
 // Asegúrate de que la ruta sea correcta según la ubicación de tus archivos de API
@@ -37,12 +38,14 @@ const DetalleProducto = () => {
   const descriptionRef = useRef(null);
   const [hasOverflow, setHasOverflow] = useState(false);
 
-  // Nuevo estado para el ID del carrito actual del usuario
+  // Estado para el ID del carrito actual del usuario
   const [currentCartOrderId, setCurrentCartOrderId] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null); // Para almacenar el ID del usuario loggeado
 
-  // Nuevo estado para controlar la inicialización del carrito
+  // Estado para controlar la inicialización del carrito
   const [isCartInitializing, setIsCartInitializing] = useState(true);
+
+  const [isMobile, setIsMobile] = useState(false);
 
   // Usar TanStack Query para obtener los detalles del producto
   const {
@@ -74,6 +77,16 @@ const DetalleProducto = () => {
       setIsUserLoggedIn(false);
       setCurrentUserId(null);
     }
+  }, []);
+
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768); // Por ejemplo, 768px es un breakpoint común para móvil
+    };
+
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
 
   // Efecto para buscar o crear el carrito del usuario cuando se loggea
@@ -133,6 +146,11 @@ const DetalleProducto = () => {
     if (!isUserLoggedIn) {
       toast.error("Debes iniciar sesión para agregar productos al carrito.");
       return;
+    }
+
+    if (!isUserLoggedIn && isMobile) {
+      toast.error("Debes iniciar sesión para agregar al carrito.");
+      return; // Detener la ejecución si mostramos el toast
     }
 
     if (isCartInitializing) {
@@ -309,7 +327,7 @@ const DetalleProducto = () => {
                 )}
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbPage className={`truncate transition-colors duration-300 font-semibold w-[10em] ${highlightActive ? 'text-blue-700' : 'text-gray-600'}`}>
+                  <BreadcrumbPage className={`truncate transition-colors duration-300 font-semibold lg:w-full w-[13em] select-none ${highlightActive ? 'text-blue-700' : 'text-gray-600'}`}>
                     {product?.name}
                   </BreadcrumbPage>
                 </BreadcrumbItem>
@@ -426,9 +444,10 @@ const DetalleProducto = () => {
                 {/* Vertical buttons for mobile */}
                 <div className="flex flex-col space-y-3 md:hidden">
                   <Button
-                    className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-2"
-                    onClick={handleAddToCart} // Agregado el manejador de clic
-                    disabled={isCartInitializing || loading || !isUserLoggedIn || !product} // Deshabilita si está cargando o no loggeado
+                    className={`w-full bg-blue-500 text-white py-3 rounded-md flex items-center justify-center gap-2
+                      ${(isCartInitializing || loading || !isUserLoggedIn || !product) ? 'cursor-not-allowed opacity-50' : 'hover:bg-blue-600 cursor-pointer'}`}
+                    onClick={handleAddToCart}
+                    disabled={isCartInitializing || loading || !product}
                   >
                     <ShoppingCart className="h-5 w-5" />
                     {isCartInitializing ? "Cargando carrito..." : "Agregar al carrito"}
@@ -449,27 +468,61 @@ const DetalleProducto = () => {
 
                 {/* Horizontal buttons for tablet/desktop */}
                 <div className="hidden md:grid md:grid-cols-3 md:gap-2 lg:gap-3">
-                  <Button
-                    className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-1"
-                    onClick={handleAddToCart} // Agregado el manejador de clic
-                    disabled={isCartInitializing || loading || !isUserLoggedIn || !product} // Deshabilita si está cargando o no loggeado
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        {isCartInitializing || loading || !isUserLoggedIn || !product ? (
+                          <span className="inline-block w-full" tabIndex={0}> {/* tabIndex={0} para que sea enfocable por teclado */}
+                            <Button
+                              className="cursor-not-allowed w-full bg-blue-500 text-white py-3 rounded-md flex items-center justify-center gap-1 opacity-50" // Reduce opacidad y cambia cursor para indicar que está deshabilitado
+                              disabled={true}
+                              onClick={handleAddToCart}
+                            >
+                              <ShoppingCart className="h-5 w-5" />
+                              {isCartInitializing ? "Cargando carrito..." : "Agregar"}
+                            </Button>
+                          </span>
+                        ) : (
+                          <Button
+                            className="cursor-pointer w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-1"
+                            onClick={handleAddToCart}
+                            disabled={false}
+                          >
+                            <ShoppingCart className="h-5 w-5" />
+                            {"Agregar"}
+                          </Button>
+                        )}
+                      </TooltipTrigger>
+                      {/* Contenido del Tooltip */}
+                      {(isCartInitializing || loading || !isUserLoggedIn || !product) && ( // Muestra el tooltip solo si el botón está deshabilitado por alguna de estas razones
+                        <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500"> {/* Estilos del tooltip */}
+                          {isCartInitializing ? (
+                            <p>Inicializando carrito...</p>
+                          ) : loading ? (
+                            <p>Cargando información...</p>
+                          ) : !isUserLoggedIn ? (
+                            <p>Debes iniciar sesión para agregar al carrito</p>
+                          ) : !product ? (
+                            <p>Producto no disponible</p>
+                          ) : (
+                            <p>Acción deshabilitada</p>
+                          )}
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
 
-                  >
-                    <ShoppingCart className="h-4 w-4 lg:h-5 lg:w-5" />
-                    <span className="text-sm lg:text-base">
-                      {isCartInitializing ? "Cargando..." : "Agregar"}
-                    </span>
-                  </Button>
+
 
                   <Link to="/payment-method">
-                    <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1">
+                    <Button className="cursor-pointer w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1">
                       <CreditCard className="h-4 w-4 lg:h-5 lg:w-5" />
                       <span className="text-sm lg:text-base">Comprar</span>
                     </Button>
                   </Link>
 
                   <Button
-                    className="w-full bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 py-3 rounded-md flex items-center justify-center gap-1"
+                    className="cursor-pointer w-full bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 py-3 rounded-md flex items-center justify-center gap-1"
                     onClick={() => navigate(`/e-commerce/rentar/${product?.id}`, { state: { product } })}
                   >
                     <Clock className="h-4 w-4 lg:h-5 lg:w-5" />
@@ -617,7 +670,7 @@ const DetalleProducto = () => {
             },
           },
           error: {
-            duration: 4000,
+            duration: 5000,
             iconTheme: {
               primary: '#EF4444',
               secondary: '#fff',
