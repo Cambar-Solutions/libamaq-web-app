@@ -7,6 +7,8 @@ import {
   getAllProducts as getAllProductsService
 } from '../../../../../services/admin/productService';
 import productWorkflow from '../workflows/productWorkflow';
+import { getAllActiveBrands } from '../../../../../services/admin/brandService';
+import { getCategoriesByBrand } from '../../../../../services/admin/categoryService';
 
 /**
  * Hook personalizado para manejar la lógica de productos
@@ -24,6 +26,8 @@ export const useProducts = () => {
     brandId: '',
     categoryId: ''
   });
+  const [brandsForEdit, setBrandsForEdit] = useState([]);
+  const [categoriesForEdit, setCategoriesForEdit] = useState([]);
 
   // Consulta para obtener la lista de productos
   const { 
@@ -34,11 +38,20 @@ export const useProducts = () => {
   } = useQuery({
     queryKey: ['products', filters],
     queryFn: async () => {
-      const response = await getProductPreviews(filters);
-      // Asegurarse de manejar tanto el formato antiguo como el nuevo de la respuesta
-      return Array.isArray(response) ? response : (response?.data || []);
+      try {
+        const response = await getProductPreviews(filters);
+        // Asegurarse de manejar tanto el formato antiguo como el nuevo de la respuesta
+        return Array.isArray(response) ? response : (response?.data || []);
+      } catch (error) {
+        console.error('Error al obtener productos:', error);
+        // Retornar array vacío en lugar de lanzar error
+        return [];
+      }
     },
-    initialData: []
+    initialData: [],
+    retry: 1, // Solo reintentar una vez
+    retryDelay: 1000, // Esperar 1 segundo antes de reintentar
+    staleTime: 5 * 60 * 1000, // 5 minutos
   });
   
   // Forzar un refetch cuando los filtros cambien
@@ -50,10 +63,18 @@ export const useProducts = () => {
   const { data: allProducts = [] } = useQuery({
     queryKey: ['allProducts'],
     queryFn: async () => {
-      const response = await getAllProductsService();
-      return response.data || [];
+      try {
+        const response = await getAllProductsService();
+        return response.data || [];
+      } catch (error) {
+        console.error('Error al obtener todos los productos:', error);
+        return [];
+      }
     },
-    initialData: []
+    initialData: [],
+    retry: 1,
+    retryDelay: 1000,
+    staleTime: 5 * 60 * 1000,
   });
 
   // Mutación para crear un producto
@@ -76,13 +97,17 @@ export const useProducts = () => {
   // Mutación para actualizar un producto
   const updateProductMutation = useMutation({
     mutationFn: async ({ id, productData, newFiles = [], mediaToDelete = [] }) => {
-      return await productWorkflow.updateProduct(
+      console.log('🔄 updateProductMutation INICIADA:', { id, productData, newFiles, mediaToDelete });
+      const result = await productWorkflow.updateProduct(
         { ...productData, id },
         newFiles,
         mediaToDelete
       );
+      console.log('✅ updateProductMutation COMPLETADA:', result);
+      return result;
     },
     onSuccess: () => {
+      console.log('🎉 updateProductMutation SUCCESS');
       queryClient.invalidateQueries(['products']);
       queryClient.invalidateQueries(['allProducts']);
       setIsEditDialogOpen(false);
@@ -90,7 +115,7 @@ export const useProducts = () => {
       toast.success('Producto actualizado exitosamente');
     },
     onError: (error) => {
-      console.error('Error al actualizar el producto:', error);
+      console.error('❌ updateProductMutation ERROR:', error);
       toast.error(error.message || 'Error al actualizar el producto');
     }
   });
@@ -137,6 +162,7 @@ export const useProducts = () => {
   };
 
   const handleUpdate = async (id, productData, newFiles = [], mediaToDelete = []) => {
+    console.log('🔄 handleUpdate INICIADO:', { id, productData, newFiles, mediaToDelete });
     try {
       await updateProductMutation.mutateAsync({ 
         id, 
@@ -144,8 +170,9 @@ export const useProducts = () => {
         newFiles, 
         mediaToDelete 
       });
+      console.log('✅ handleUpdate COMPLETADO');
     } catch (error) {
-      console.error('Error en handleUpdate:', error);
+      console.error('❌ Error en handleUpdate:', error);
     }
   };
 
@@ -157,9 +184,30 @@ export const useProducts = () => {
     }
   };
 
-  const handleEditClick = (product) => {
+  const openEditDialog = async (productId) => {
+    try {
+      setIsEditDialogOpen(false);
+      setSelectedProduct(null);
+      setBrandsForEdit([]);
+      setCategoriesForEdit([]);
+      const response = await getProductByIdService(productId);
+      const product = response?.data || response;
     setSelectedProduct(product);
+      // Paso a) Obtener todas las marcas
+      const brandsResp = await getAllActiveBrands();
+      const brandsList = brandsResp?.data || [];
+      setBrandsForEdit(brandsList);
+      // Paso b) Obtener categorías filtradas por brandId del producto
+      let categoriesList = [];
+      if (product.brandId) {
+        const categoriesResp = await getCategoriesByBrand(product.brandId);
+        categoriesList = categoriesResp?.data || [];
+      }
+      setCategoriesForEdit(categoriesList);
     setIsEditDialogOpen(true);
+    } catch (error) {
+      toast.error('Error al cargar el producto para editar: ' + (error.message || error));
+    }
   };
 
   const handleDeleteClick = (product) => {
@@ -189,6 +237,8 @@ export const useProducts = () => {
     isEditDialogOpen,
     isDeleteDialogOpen,
     productToDelete,
+    brandsForEdit,
+    categoriesForEdit,
     
     // Acciones
     createProduct: handleCreate,
@@ -196,7 +246,7 @@ export const useProducts = () => {
     deleteProduct: handleDelete,
     openCreateDialog: () => setIsCreateDialogOpen(true),
     closeCreateDialog: () => setIsCreateDialogOpen(false),
-    openEditDialog: handleEditClick,
+    openEditDialog,
     closeEditDialog: () => {
       setIsEditDialogOpen(false);
       setSelectedProduct(null);

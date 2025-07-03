@@ -29,7 +29,7 @@ import { Drill, Plus, X, Loader2, FileText, Download, Settings, Edit } from 'luc
 
 // Services
 import { generateDescriptionIA } from '@/services/admin/AIService';
-import { getCategoriesByBrand } from '@/services/admin/categoryService';
+import { getCategoriesByBrand, getCategoryById } from '@/services/admin/categoryService';
 import { getProductById } from '@/services/admin/productService';
 
 // Components
@@ -45,23 +45,39 @@ const editProductSchema = z.object({
     brandId: z.string().min(1, 'La marca es obligatoria.'),
     categoryId: z.string().min(1, 'La categoría es obligatoria.'),
     price: z.preprocess(
-        (val) => parseFloat(val),
-        z.number().min(0.01, 'El precio debe ser mayor a 0.')
+        (val) => {
+            const parsed = parseFloat(val);
+            return isNaN(parsed) ? 0 : parsed;
+        },
+        z.number().min(0, 'El precio no puede ser negativo.')
     ),
     cost: z.preprocess(
-        (val) => (val === '' ? null : parseFloat(val)),
+        (val) => {
+            if (val === '' || val === null || val === undefined) return null;
+            const parsed = parseFloat(val);
+            return isNaN(parsed) ? null : parsed;
+        },
         z.number().min(0, 'El costo no puede ser negativo.').nullable().optional()
     ),
     discount: z.preprocess(
-        (val) => parseFloat(val || 0),
+        (val) => {
+            const parsed = parseFloat(val || 0);
+            return isNaN(parsed) ? 0 : parsed;
+        },
         z.number().min(0, 'El descuento no puede ser negativo.').optional()
     ),
     stock: z.preprocess(
-        (val) => parseInt(val, 10),
+        (val) => {
+            const parsed = parseInt(val, 10);
+            return isNaN(parsed) ? 0 : parsed;
+        },
         z.number().int().min(0, 'El stock no puede ser negativo.')
     ),
     garanty: z.preprocess(
-        (val) => parseInt(val || 0, 10),
+        (val) => {
+            const parsed = parseInt(val || 0, 10);
+            return isNaN(parsed) ? 0 : parsed;
+        },
         z.number().int().min(0, 'La garantía no puede ser negativa.').optional()
     ),
     color: z.string().optional(),
@@ -70,14 +86,14 @@ const editProductSchema = z.object({
     functionalities: z.array(z.string()).default([]),
     technicalData: z.array(
         z.object({
-            key: z.string().min(1, 'La clave es requerida'),
-            value: z.string().min(1, 'El valor es requerido')
+            key: z.string().optional(),
+            value: z.string().optional()
         })
     ).default([]),
     downloads: z.array(
         z.object({
-            key: z.string().min(1, 'El nombre es requerido'),
-            value: z.string().min(1, 'La URL es requerida').url('Debe ser una URL válida')
+            key: z.string().optional(),
+            value: z.string().optional()
         })
     ).default([]),
     media: z.array(z.any()).default([])
@@ -107,27 +123,27 @@ const getProductDefaultValues = (product) => {
     };
     return {
         // Metadatos y campos editables
-        id: product?.id || '',
+        id: product?.id ? Number(product.id) : undefined,
         createdBy: product?.createdBy || '',
         updatedBy: product?.updatedBy || '',
         createdAt: product?.createdAt || '',
         updatedAt: product?.updatedAt || '',
         deletedAt: product?.deletedAt || '',
-        brandId: String(product?.brandId || ''),
-        categoryId: String(product?.categoryId || ''),
+        brandId: product?.brandId ? String(product.brandId) : '',
+        categoryId: product?.categoryId ? String(product.categoryId) : '',
         externalId: product?.externalId || '',
         name: product?.name || '',
         shortDescription: product?.shortDescription || '',
         description: product?.description || '',
-        price: product?.price || 0,
-        cost: product?.cost || '',
-        discount: product?.discount || 0,
-        stock: product?.stock || 0,
-        garanty: product?.garanty || 0,
+        price: product?.price ? parseFloat(product.price) : 0,
+        cost: product?.cost ? parseFloat(product.cost) : null,
+        discount: product?.discount ? parseFloat(product.discount) : 0,
+        stock: product?.stock ? parseInt(product.stock, 10) : 0,
+        garanty: product?.garanty ? parseInt(product.garanty, 10) : 0,
         color: product?.color || '',
-        rentable: product?.rentable || false,
+        rentable: Boolean(product?.rentable),
         status: product?.status || 'ACTIVE',
-        functionalities: Array.isArray(product?.functionalities) ? product.functionalities : [],
+        functionalities: Array.isArray(product?.functionalities) ? product.functionalities.filter(Boolean) : [],
         technicalData: formatTechnicalData(product?.technicalData),
         downloads: Array.isArray(product?.downloads)
             ? product.downloads.map(dl => ({ key: dl.key || '', value: dl.value || '' }))
@@ -184,6 +200,17 @@ const EditProductFormDialog = ({
     const watchedColor = watch('color');
     const watchedProductName = watch('name');
 
+    // DEBUG: Log de valores del formulario
+    console.log('📊 FORM VALUES:', {
+        brandId: watchedBrandId,
+        categoryId: watch('categoryId'),
+        name: watchedProductName,
+        price: watchedPrice,
+        isDirty,
+        errors: Object.keys(errors),
+        errorDetails: errors
+    });
+
     // Field arrays for dynamic inputs
     const { fields: functionalityFields, append: appendFunctionality, remove: removeFunctionality } = useFieldArray({
         control,
@@ -208,25 +235,46 @@ const EditProductFormDialog = ({
                 .then((data) => {
                     const prod = data.data ? data.data : data;
                     setFullProduct(prod);
-                    reset(getProductDefaultValues(prod));
                 })
                 .catch((err) => {
                     alert('Error al cargar el producto: ' + (err?.message || err));
                 })
                 .finally(() => setLoadingProduct(false));
         }
-    }, [open, product, reset]);
+    }, [open, product]);
+
+    // Reset form only when fullProduct cambia y está listo
+    useEffect(() => {
+        if (fullProduct) {
+            reset(getProductDefaultValues(fullProduct));
+        }
+    }, [fullProduct, reset]);
 
     // --- Data Loading Effects ---
     useEffect(() => {
-        // Load categories based on brandId (initial load or product change)
         const loadInitialCategories = async () => {
-            if (product?.brandId) {
+            if (fullProduct?.brandId) {
                 try {
-                    const response = await getCategoriesByBrand(product.brandId);
-                    setFilteredCategories(response.data || []);
+                    const response = await getCategoriesByBrand(fullProduct.brandId);
+                    let categories = response.data || [];
+                    // Si la categoría original no está en la lista, hacer fetch y agregarla
+                    const currentCategoryId = fullProduct.categoryId;
+                    if (
+                        currentCategoryId &&
+                        !categories.some(cat => String(cat.id) === String(currentCategoryId))
+                    ) {
+                        try {
+                            const catResp = await getCategoryById(currentCategoryId);
+                            const originalCategory = catResp?.data || catResp;
+                            if (originalCategory && originalCategory.id) {
+                                categories = [originalCategory, ...categories];
+                            }
+                        } catch (catErr) {
+                            // Si falla, solo deja la lista filtrada
+                        }
+                    }
+                    setFilteredCategories(categories);
                 } catch (error) {
-                    console.error('Error al cargar categorías por marca:', error);
                     setFilteredCategories([]);
                 }
             } else {
@@ -234,52 +282,62 @@ const EditProductFormDialog = ({
             }
         };
         loadInitialCategories();
-    }, [product]);
-
-    // Effect to update form values when the product prop changes
-    useEffect(() => {
-        if (product) {
-            console.log('Product received:', product);
-            const defaults = getProductDefaultValues(product);
-            console.log('Form default values:', defaults);
-            reset(defaults);
-
-            // Recalculate price if cost exists on initial load/product change
-            if (product.cost && parseFloat(product.cost) > 0) {
-                const calculatedPrice = calculatePublicPrice(product.cost);
-                setValue('price', parseFloat(calculatedPrice.toFixed(2)));
-                const calculatedFrequentDiscount = ((calculatedPrice - calculateFrequentPrice(product.cost)) / calculatedPrice * 100).toFixed(2);
-                setValue('discount', parseFloat(calculatedFrequentDiscount));
-            } else {
-                setValue('price', 0);
-                setValue('discount', 0);
-            }
-        }
-    }, [product, reset, setValue]);
+    }, [fullProduct]);
 
     // Effect to react to brandId changes for category filtering
     useEffect(() => {
         const fetchCategories = async () => {
-            if (watchedBrandId) {
+            if (watch('brandId')) {
                 try {
-                    const response = await getCategoriesByBrand(parseInt(watchedBrandId, 10));
-                    setFilteredCategories(response.data || []);
-                    // Reset categoryId if the current one is not in the new list
-                    if (!response.data.some(cat => String(cat.id) === watch('categoryId'))) {
+                    const response = await getCategoriesByBrand(parseInt(watch('brandId'), 10));
+                    let categories = response.data || [];
+                    // Si la categoría seleccionada no está en la nueva lista
+                    const currentCategoryId = watch('categoryId');
+                    // fullProduct?.categoryId es la original
+                    const isOriginalCategory = fullProduct && String(currentCategoryId) === String(fullProduct.categoryId);
+                    // Si la categoría seleccionada no está en la lista filtrada
+                    const categoryInList = categories.some(cat => String(cat.id) === String(currentCategoryId));
+                    // Si la categoría seleccionada es la original y no está en la lista, la agregamos manualmente
+                    if (isOriginalCategory && !categoryInList && fullProduct?.categoryId) {
+                        try {
+                            const catResp = await getCategoryById(fullProduct.categoryId);
+                            const originalCategory = catResp?.data || catResp;
+                            if (originalCategory && originalCategory.id) {
+                                categories = [originalCategory, ...categories];
+                            }
+                        } catch (catErr) {
+                            // Si falla, solo deja la lista filtrada
+                        }
+                        setFilteredCategories(categories);
+                        // No borrar el categoryId
+                        return;
+                    }
+                    setFilteredCategories(categories);
+                    // Solo borrar el categoryId si NO es la original y no está en la lista
+                    if (!isOriginalCategory && !categoryInList) {
                         setValue('categoryId', '');
                     }
                 } catch (error) {
-                    console.error('Error al cargar categorías para la marca seleccionada:', error);
                     setFilteredCategories([]);
-                    setValue('categoryId', '');
+                    // Solo borrar si no es la original
+                    const currentCategoryId = watch('categoryId');
+                    const isOriginalCategory = fullProduct && String(currentCategoryId) === String(fullProduct.categoryId);
+                    if (!isOriginalCategory) {
+                        setValue('categoryId', '');
+                    }
                 }
             } else {
                 setFilteredCategories([]);
-                setValue('categoryId', '');
+                // Solo borrar si no es la original
+                const currentCategoryId = watch('categoryId');
+                const isOriginalCategory = fullProduct && String(currentCategoryId) === String(fullProduct.categoryId);
+                if (!isOriginalCategory) {
+                    setValue('categoryId', '');
+                }
             }
         };
         fetchCategories();
-    }, [watchedBrandId, setValue, watch]);
+    }, [watch('brandId'), setValue, watch, fullProduct]);
 
     // --- Price Calculation Logic ---
     const calculatePriceWithIVA = useCallback((price) => {
@@ -319,6 +377,7 @@ const EditProductFormDialog = ({
 
     // --- Form Submission ---
     const handleEditSubmit = async (data) => {
+        console.log('🚀 handleEditSubmit INICIADO', { data });
         setIsSubmitting(true);
         try {
             console.log('SUBMIT DATA', data);
@@ -368,13 +427,15 @@ const EditProductFormDialog = ({
                 media: cleanMedia
             };
 
-            // Llamar a onSave pasando los argumentos como un objeto
-            await onSave({
-                id: data.id,
-                productData: payload,
-                newFiles: files,
-                mediaToDelete: mediaToDelete
-            });
+            console.log('📞 LLAMANDO onSave con:', { id: data.id, payload, files, mediaToDelete });
+            // Llamar a onSave pasando los argumentos como parámetros separados
+            await onSave(
+                data.id,
+                payload,
+                files,
+                mediaToDelete
+            );
+            console.log('✅ onSave completado exitosamente');
             if (onClose) onClose();
             toast.success('Producto actualizado exitosamente');
         } catch (error) {
@@ -387,6 +448,7 @@ const EditProductFormDialog = ({
 
     // --- Accesibilidad: scroll y focus al primer error ---
     const onInvalid = (formErrors) => {
+        console.log('❌ VALIDACIÓN FALLIDA:', formErrors);
         const firstErrorKey = Object.keys(formErrors)[0];
         if (firstErrorKey) {
             const errorField = document.querySelector(`[name="${firstErrorKey}"]`);
@@ -440,6 +502,32 @@ const EditProductFormDialog = ({
         setValue('media', currentMedia);
     };
 
+    // Asegura que la marca del producto esté en la lista de marcas
+    let brandsWithCurrent = brands;
+    if (
+        fullProduct?.brandId &&
+        !brands.some(b => String(b.id) === String(fullProduct.brandId))
+    ) {
+        brandsWithCurrent = [
+            { id: fullProduct.brandId, name: fullProduct.brandName || `Marca ${fullProduct.brandId}` },
+            ...brands
+        ];
+    }
+
+
+
+    // Asegura que la categoría del producto esté en la lista de categorías
+    let categoriesWithCurrent = filteredCategories;
+    if (
+        fullProduct?.categoryId &&
+        !filteredCategories.some(c => String(c.id) === String(fullProduct.categoryId))
+    ) {
+        categoriesWithCurrent = [
+            { id: fullProduct.categoryId, name: fullProduct.categoryName || `Categoría ${fullProduct.categoryId}` },
+            ...filteredCategories
+        ];
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -465,15 +553,6 @@ const EditProductFormDialog = ({
                     </div>
                 ) : (
                     <>
-                        {/* Metadatos solo lectura fuera del form */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                            <div><Label>ID</Label><div className="bg-gray-100 rounded px-2 py-1">{fullProduct?.id || product?.id || ''}</div></div>
-                            <div><Label>Creado por</Label><div className="bg-gray-100 rounded px-2 py-1">{fullProduct?.createdBy || ''}</div></div>
-                            <div><Label>Actualizado por</Label><div className="bg-gray-100 rounded px-2 py-1">{fullProduct?.updatedBy || ''}</div></div>
-                            <div><Label>Fecha de creación</Label><div className="bg-gray-100 rounded px-2 py-1">{fullProduct?.createdAt ? new Date(fullProduct.createdAt).toLocaleString() : ''}</div></div>
-                            <div><Label>Fecha de actualización</Label><div className="bg-gray-100 rounded px-2 py-1">{fullProduct?.updatedAt ? new Date(fullProduct.updatedAt).toLocaleString() : ''}</div></div>
-                            <div><Label>Fecha de eliminación</Label><div className="bg-gray-100 rounded px-2 py-1">{fullProduct?.deletedAt ? new Date(fullProduct.deletedAt).toLocaleString() : ''}</div></div>
-                        </div>
                         <form onSubmit={handleSubmit(handleEditSubmit, onInvalid)} className="space-y-6 pt-0">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
@@ -512,11 +591,19 @@ const EditProductFormDialog = ({
                                                     <SelectValue placeholder="Selecciona una marca" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {brands.map(brand => (
-                                                        <SelectItem key={brand.id} value={String(brand.id)}>
-                                                            {brand.name}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {brandsWithCurrent && brandsWithCurrent.length > 0 ? (
+                                                        brandsWithCurrent
+                                                            .filter(brand => brand && brand.id != null)
+                                                            .map(brand => (
+                                                                <SelectItem key={String(brand.id)} value={String(brand.id)}>
+                                                                    {brand.name}
+                                                                </SelectItem>
+                                                            ))
+                                                    ) : (
+                                                        <div className="px-3 py-2 text-sm text-muted-foreground">
+                                                            No hay marcas disponibles
+                                                        </div>
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                         )}
@@ -556,15 +643,21 @@ const EditProductFormDialog = ({
                                                     />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {filteredCategories.length > 0 ? (
-                                                        filteredCategories.map(category => (
-                                                            <SelectItem key={category.id} value={String(category.id)}>
-                                                                {category.name}
-                                                            </SelectItem>
-                                                        ))
+                                                    {categoriesWithCurrent && categoriesWithCurrent.length > 0 ? (
+                                                        categoriesWithCurrent
+                                                            .filter(category => category && category.id != null)
+                                                            .map(category => (
+                                                                <SelectItem key={String(category.id)} value={String(category.id)}>
+                                                                    {category.name}
+                                                                </SelectItem>
+                                                            ))
                                                     ) : (
                                                         <div className="px-3 py-2 text-sm text-muted-foreground">
-                                                            No hay categorías disponibles para esta marca
+                                                            {
+                                                                !watchedBrandId
+                                                                    ? "Selecciona una marca primero"
+                                                                    : "No hay categorías disponibles para esta marca"
+                                                            }
                                                         </div>
                                                     )}
                                                 </SelectContent>
@@ -867,7 +960,7 @@ const EditProductFormDialog = ({
                                             />
                                             <Input
                                                 {...register(`technicalData.${index}.value`)}
-                                                placeholder="Valor (Ej: 550w)"
+                                                placeholder="Valor (Ej: 500W)"
                                                 className="flex-1"
                                                 disabled={isSubmitting}
                                             />
@@ -889,28 +982,28 @@ const EditProductFormDialog = ({
                                         disabled={isSubmitting}
                                     >
                                         <Plus className="h-4 w-4 mr-2" />
-                                        Añadir Dato Técnico
+                                        Añadir Datos Técnicos
                                     </Button>
                                 </div>
                             </div>
 
                             <div className="md:col-span-2">
                                 <h3 className="text-lg font-medium mb-4 flex items-center">
-                                    <Download className="h-5 w-5 mr-2 text-blue-600" />
-                                    Archivos para Descargar
+                                    <FileText className="h-5 w-5 mr-2 text-blue-600" />
+                                    Descargas
                                 </h3>
                                 <div className="space-y-4">
                                     {downloadFields.map((field, index) => (
                                         <div key={field.id} className="flex items-center gap-2">
                                             <Input
                                                 {...register(`downloads.${index}.key`)}
-                                                placeholder="Nombre del archivo (Ej: Manual de usuario)"
+                                                placeholder="Nombre"
                                                 className="flex-1"
                                                 disabled={isSubmitting}
                                             />
                                             <Input
                                                 {...register(`downloads.${index}.value`)}
-                                                placeholder="URL del archivo (Ej: https://...)"
+                                                placeholder="URL"
                                                 className="flex-1"
                                                 disabled={isSubmitting}
                                             />
@@ -932,32 +1025,36 @@ const EditProductFormDialog = ({
                                         disabled={isSubmitting}
                                     >
                                         <Plus className="h-4 w-4 mr-2" />
-                                        Añadir Archivo para Descargar
+                                        Añadir Descarga
                                     </Button>
                                 </div>
                             </div>
-                            <DialogFooter className="border-t pt-4">
-                                <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => onOpenChange ? onOpenChange(false) : onClose && onClose()}>
-                                    Cancelar
-                                </Button>
-                                <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
-                                    {isSubmitting ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Guardando...
-                                        </>
-                                    ) : (
-                                        'Guardar Cambios'
-                                    )}
-                                </Button>
-                            </DialogFooter>
                         </form>
+                        <DialogFooter className="border-t pt-4">
+                            <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => onOpenChange ? onOpenChange(false) : onClose && onClose()}>
+                                Cancelar
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="default"
+                                onClick={() => {
+                                    console.log('🔧 FORZANDO ENVÍO SIN VALIDACIÓN');
+                                    const formData = getValues();
+                                    console.log('📋 DATOS DEL FORMULARIO:', formData);
+                                    handleEditSubmit(formData);
+                                }}
+                                disabled={isSubmitting || isUpdating}
+                            >
+                                {(isSubmitting || isUpdating) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Actualizar Producto
+                            </Button>
+                        </DialogFooter>
                     </>
                 )}
             </DialogContent>
         </Dialog>
     );
-};
+}
 
 EditProductFormDialog.propTypes = {
     product: PropTypes.object,

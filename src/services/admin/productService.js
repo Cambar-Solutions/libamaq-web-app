@@ -87,13 +87,16 @@ export const getProductPreviews = async (filters = {}) => {
     
     // Aplicar filtros si están presentes
     if (filters.status) params.append('status', filters.status);
-    if (filters.brand) params.append('brandId', filters.brand);
-    if (filters.category) params.append('categoryId', filters.category);
+    if (filters.brandId) params.append('brandId', filters.brandId);
+    if (filters.categoryId) params.append('categoryId', filters.categoryId);
     
     const url = `/l/products/preview${params.toString() ? `?${params.toString()}` : ''}`;
     console.log("URL de la petición:", url);
     
-    const response = await apiClient.get(url);
+    // Agregar timeout para evitar esperas infinitas
+    const response = await apiClient.get(url, {
+      timeout: 10000 // 10 segundos de timeout
+    });
     console.log("→ Respuesta GET /l/products/preview:", response.data);
     
     // Verificar el formato de la respuesta
@@ -116,10 +119,44 @@ export const getProductPreviews = async (filters = {}) => {
   } catch (error) {
     console.error("Error fetching product previews:", {
       status: error.response?.status,
-      data:   error.response?.data
+      data: error.response?.data,
+      message: error.message,
+      code: error.code
     });
-    const msg = error.response?.data?.message || error.message || "Error desconocido";
-    throw new Error(msg);
+    
+    // Si el endpoint de preview falla, intentar con el endpoint principal
+    console.log("Intentando con endpoint principal como respaldo...");
+    try {
+      const fallbackResponse = await getAllProducts();
+      console.log("Respuesta de respaldo exitosa:", fallbackResponse);
+      return fallbackResponse;
+    } catch (fallbackError) {
+      console.error("Error en endpoint de respaldo:", fallbackError);
+      
+      // Manejar diferentes tipos de errores
+      if (error.code === 'ECONNABORTED') {
+        throw new Error('Timeout: El servidor no respondió en el tiempo esperado');
+      }
+      
+      if (error.response?.status === 404) {
+        throw new Error('Endpoint no encontrado: /l/products/preview');
+      }
+      
+      if (error.response?.status === 401) {
+        throw new Error('No autorizado: Verifica tu token de autenticación');
+      }
+      
+      if (error.response?.status === 500) {
+        throw new Error('Error interno del servidor');
+      }
+      
+      if (!error.response) {
+        throw new Error('Error de red: No se pudo conectar con el servidor');
+      }
+      
+      const msg = error.response?.data?.message || error.message || "Error desconocido";
+      throw new Error(msg);
+    }
   }
 };
 

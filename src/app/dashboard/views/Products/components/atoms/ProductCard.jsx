@@ -3,7 +3,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Edit, Trash2, ShoppingCart, Box, DollarSign, Tag, Info } from 'lucide-react';
+import { Edit, Trash2, ShoppingCart, Box, DollarSign, Tag, Info, Eye } from 'lucide-react';
 import PropTypes from 'prop-types';
 
 // Función local para formatear moneda
@@ -41,6 +41,7 @@ const ProductCard = ({
   onEdit,
   onDelete,
   onView,
+  onViewDetails,
   brands,
   categories,
   isCreating
@@ -132,6 +133,28 @@ const ProductCard = ({
       <CardFooter className="flex justify-end gap-1.5 p-2 border-t mt-auto">
         <TooltipProvider>
         
+          {/* Ver detalles */}
+          {onViewDetails && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewDetails(product.id);
+                  }}
+                  className="h-7 w-7"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-gray-600 text-white text-xs px-2 py-1 rounded-sm shadow-md">
+                Ver detalles
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           {/* Edit Dialog Integration */}
           {onEdit && (
             <Tooltip>
@@ -141,7 +164,7 @@ const ProductCard = ({
                   size="icon"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onEdit(product);
+                    onEdit(product.id);
                   }}
                   className="h-7 w-7"
                 >
@@ -209,6 +232,7 @@ ProductCard.propTypes = {
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
   onView: PropTypes.func,
+  onViewDetails: PropTypes.func,
   brands: PropTypes.array.isRequired,
   categories: PropTypes.array.isRequired
 };

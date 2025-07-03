@@ -12,7 +12,7 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import toast from 'react-hot-toast';
 import { useProducts } from './hooks/useProducts';
 import ProductCard from './components/atoms/ProductCard';
-import { getAllActiveBrands } from '../../../../../src/services/admin/brandService';
+import { getAllBrands } from '../../../../../src/services/admin/brandService';
 import { getActiveCategories } from '../../../../../src/services/admin/categoryService';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import {
@@ -27,6 +27,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import CreateProductFormDialog from './components/atoms/CreateProductFormDialog';
 import EditProductFormDialog from './components/atoms/EditProductFormDialog';
+import ViewProductDetailsDialog from './components/atoms/ViewProductDetailsDialog';
+import { getProductById } from '@/services/admin/productService';
 
 // Esquema de validación con Zod (funciona igual en JS)
 const productSchema = z.object({
@@ -160,6 +162,8 @@ const ProductsView = () => {
   const [selectedBrand, setSelectedBrand] = useState('ALL');
   const [categories, setCategories] = useState([]);
   const [dataLoading, setDataLoading] = useState(true); // Nuevo estado para la carga inicial de datos
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [productToView, setProductToView] = useState(null);
 
 
   // Fetch active brands and categories
@@ -167,8 +171,8 @@ const ProductsView = () => {
     const fetchData = async () => {
       try {
         const [brandsResponse, categoriesResponse] = await Promise.all([
-          getAllActiveBrands(),
-          getActiveCategories() // <-- ¡Asegúrate de tener esta función y servicio!
+          getAllBrands(),
+          getActiveCategories()
         ]);
 
         if (brandsResponse && Array.isArray(brandsResponse.data)) {
@@ -210,9 +214,51 @@ const ProductsView = () => {
     }));
   };
 
-  // Handle error state
+  // Función para ver detalles de producto
+  const handleViewProductDetails = async (productId) => {
+    try {
+      setIsViewModalOpen(false);
+      setProductToView(null);
+      const response = await getProductById(productId);
+      const product = response?.data || response;
+      setProductToView(product);
+      setIsViewModalOpen(true);
+    } catch (error) {
+      setProductToView(null);
+      setIsViewModalOpen(false);
+      toast.error('No se pudieron cargar los detalles del producto.');
+    }
+  };
+
+  // Handle error state - mostrar error pero no romper la aplicación
   if (error) {
-    throw new Error(error.message || 'Error al cargar los productos');
+    console.error('Error en ProductsView:', error);
+    // En lugar de lanzar error, mostrar un mensaje de error en la UI
+    return (
+      <ErrorBoundary>
+        <div className="container mx-auto px-2 sm:px-4 py-4 space-y-4 sm:space-y-6">
+          <div className="flex flex-col items-center justify-center py-12 sm:py-16 text-center bg-background/50 rounded-lg border border-dashed">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-red-100 flex items-center justify-center mb-4">
+              <Search className="h-8 w-8 sm:h-10 sm:w-10 text-red-600" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-medium text-foreground mb-2">
+              Error al cargar los productos
+            </h3>
+            <p className="text-sm sm:text-base text-muted-foreground max-w-md mb-6 px-4">
+              {error.message || 'Ha ocurrido un error al cargar los productos. Por favor, intenta de nuevo.'}
+            </p>
+            <Button
+              onClick={() => window.location.reload()}
+              variant="default"
+              size="sm"
+              className="px-6"
+            >
+              Recargar página
+            </Button>
+          </div>
+        </div>
+      </ErrorBoundary>
+    );
   }
 
   return (
@@ -324,9 +370,7 @@ const ProductsView = () => {
                   product={product}
                   onEdit={openEditDialog}
                   onDelete={openDeleteDialog}
-                  onView={(product) => {
-                    console.log('Ver producto:', product);
-                  }}
+                  onViewDetails={handleViewProductDetails}
                   brands={brands}
                   categories={categories}
                   isCreating={isCreating}
@@ -401,6 +445,13 @@ const ProductsView = () => {
           categories={categories}
           onSave={updateProduct}
           onClose={closeEditDialog}
+        />
+
+        {/* Modal de detalles de producto */}
+        <ViewProductDetailsDialog
+          open={isViewModalOpen}
+          onOpenChange={setIsViewModalOpen}
+          productData={productToView}
         />
       </div>
     </ErrorBoundary>
