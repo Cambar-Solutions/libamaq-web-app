@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, CreditCard, Clock, ArrowLeft, Share2, Shield, Home } from "lucide-react";
 import ShareProduct from "@/components/ShareProduct";
-import { toast } from "sonner";
 import { useProductById } from "@/hooks/useProductQueries";
 import Nav2 from "@/components/Nav2"; // Navbar para usuarios no loggeados
 import { NavCustomer } from "@/app/user/components/molecules/NavCustomer"; // Navbar para usuarios loggeados
@@ -17,6 +16,15 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import toast, { Toaster } from "react-hot-toast";
+
+// --- Importa las funciones de API que creamos ---
+// Asegúrate de que la ruta sea correcta según la ubicación de tus archivos de API
+import {
+  createOrder,
+  createOrderDetail,
+  getOrdersByUser, // Necesitarás esta función para buscar un carrito existente
+} from "@/services/public/orderService"; // Ajusta la ruta si es necesario
 
 const DetalleProducto = () => {
   const navigate = useNavigate();
@@ -29,6 +37,13 @@ const DetalleProducto = () => {
   const descriptionRef = useRef(null);
   const [hasOverflow, setHasOverflow] = useState(false);
 
+  // Nuevo estado para el ID del carrito actual del usuario
+  const [currentCartOrderId, setCurrentCartOrderId] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null); // Para almacenar el ID del usuario loggeado
+
+  // Nuevo estado para controlar la inicialización del carrito
+  const [isCartInitializing, setIsCartInitializing] = useState(true);
+
   // Usar TanStack Query para obtener los detalles del producto
   const {
     data: productData,
@@ -39,21 +54,133 @@ const DetalleProducto = () => {
   // Extraer el producto de la respuesta de la API
   const product = productData && productData.status === 200 ? productData.data : null;
 
-  // Función para verificar si el usuario está loggeado
+  // Función para verificar si el usuario está loggeado y obtener su ID
   useEffect(() => {
-    const token = localStorage.getItem("auth_token");
+    const token = localStorage.getItem("token");
     if (token) {
       try {
         const decoded = jwtDecode(token);
+        console.log("Token decodificado:", decoded);
         setIsUserLoggedIn(true);
+        setCurrentUserId(parseInt(decoded.sub, 10));
+        console.log("✅ Usuario loggeado. ID:", parseInt(decoded.sub, 10));
       } catch (e) {
-        console.error("Token JWT inválido:", e);
+        console.error("❌ Token JWT inválido:", e);
         setIsUserLoggedIn(false);
+        setCurrentUserId(null);
       }
     } else {
+      console.log("ℹ️ Usuario no loggeado.");
       setIsUserLoggedIn(false);
+      setCurrentUserId(null);
     }
   }, []);
+
+  // Efecto para buscar o crear el carrito del usuario cuando se loggea
+  useEffect(() => {
+    const fetchOrCreateCart = async () => {
+      setIsCartInitializing(true); // Se inicia la inicialización del carrito
+
+      if (!isUserLoggedIn || !currentUserId) {
+        console.log("ℹ️ Usuario no loggeado o ID de usuario no disponible, omitiendo inicialización del carrito.");
+        setIsCartInitializing(false);
+        return;
+      }
+
+      try {
+        console.log(`➡️ Intentando obtener carrito para el usuario ${currentUserId}...`);
+        const userOrdersResponse = await getOrdersByUser(currentUserId);
+        console.log("Respuesta de getOrdersByUser:", userOrdersResponse);
+
+        if (userOrdersResponse && userOrdersResponse.data) {
+          // Ajusta el estado 'PENDING' según cómo tu API identifica un carrito activo
+          const existingCart = userOrdersResponse.data.find(order => order.status === "ACTIVE");
+
+          if (existingCart) {
+            setCurrentCartOrderId(Number(existingCart.id));
+            console.log("✅ Carrito existente encontrado (ID):", existingCart.id);
+          } else {
+            console.log("ℹ️ No se encontró carrito activo, intentando crear uno nuevo...");
+            const newCartOrder = await createOrder({
+              userId: currentUserId,
+              status: "ACTIVE", // Estado inicial de un carrito
+              total: 0,
+              orderDate: new Date().toISOString(),
+              // Asegúrate de que estos campos coincidan con lo que tu API espera para crear una orden.
+              // Otros campos como 'addressId', 'paymentMethodId' pueden ser null o omitidos inicialmente.
+            });
+            setCurrentCartOrderId(Number(newCartOrder.id));
+            console.log("🎉 Nuevo carrito creado (ID):", newCartOrder.id);
+          }
+        } else {
+          console.warn("⚠️ getOrdersByUser no retornó datos válidos o data está vacío:", userOrdersResponse);
+          toast.error("No se pudieron cargar las órdenes del usuario.");
+        }
+      } catch (err) {
+        console.error("❌ Error CRÍTICO al buscar o crear el carrito:", err);
+        toast.error("Error al inicializar el carrito. Por favor, recarga la página.");
+      } finally {
+        setIsCartInitializing(false); // La inicialización del carrito ha finalizado
+      }
+    };
+
+    fetchOrCreateCart();
+  }, [isUserLoggedIn, currentUserId]); // Dependencias: re-ejecutar cuando el estado de login o userId cambie
+
+
+  // Función para agregar el producto al carrito
+  const handleAddToCart = async () => {
+    if (!isUserLoggedIn) {
+      toast.error("Debes iniciar sesión para agregar productos al carrito.");
+      return;
+    }
+
+    if (isCartInitializing) {
+      toast.error("El carrito se está inicializando, por favor espera un momento.");
+      return;
+    }
+
+    if (!product) {
+      toast.error("No se pudo obtener la información del producto.");
+      return;
+    }
+
+    if (!currentCartOrderId) {
+      // Este caso solo debería ocurrir si hubo un fallo después de isCartInitializing = false
+      toast.error("El carrito no está listo. Hubo un problema al inicializarlo.");
+      return;
+    }
+
+    try {
+      const quantityToAdd = 1; // O la cantidad que el usuario seleccione
+      const unitPrice = product.price; // El precio del producto
+
+      // Calcula el total para este detalle de orden
+      // Considera también el descuento si se aplica a nivel de item y tu backend lo calcula así.
+      // Por ahora, una simple multiplicación:
+      const totalForOrderDetail = quantityToAdd * unitPrice;
+
+      const orderDetailData = {
+        orderId: Number(currentCartOrderId),
+        productId: Number(product.id),
+        quantity: quantityToAdd,
+        unitPrice: unitPrice,
+        discount: product.discount || 0,
+        total: totalForOrderDetail,
+        // Otros campos que tu API requiera para un OrderDetail
+      };
+
+      console.log("Añadiendo nuevo detalle de orden:", orderDetailData); // Para verificar
+
+      await createOrderDetail(orderDetailData);
+      toast.success("El producto se ha agregado al carrito.");
+      console.log("Producto agregado al carrito:", product.name);
+    } catch (err) {
+      console.error("❌ Error al agregar producto al carrito:", err.response?.data || err.message); // Mejor log de error
+      toast.error("Error al agregar el producto al carrito.");
+    }
+  };
+
 
   // Función para regresar a la página de inicio o a la tienda según el estado del usuario
   const handleBack = () => {
@@ -96,14 +223,11 @@ const DetalleProducto = () => {
     if (descriptionRef.current) {
       const checkOverflow = () => {
         if (descriptionRef.current) {
-          // Compare scrollHeight with actual clientHeight, not just fixed max-height
           setHasOverflow(descriptionRef.current.scrollHeight > descriptionRef.current.clientHeight);
         }
       };
 
-      // We need a small delay or use a more robust way to check after content renders
-      // For now, let's trigger checkOverflow on mount and resize
-      const timeoutId = setTimeout(checkOverflow, 50); // Small delay to ensure content is rendered
+      const timeoutId = setTimeout(checkOverflow, 50);
 
       window.addEventListener('resize', checkOverflow);
 
@@ -112,7 +236,7 @@ const DetalleProducto = () => {
         window.removeEventListener('resize', checkOverflow);
       };
     }
-  }, [product?.description, showFullDescription]); // Re-run when description or showFullDescription changes
+  }, [product?.description, showFullDescription]);
 
   // Helper function to get functionalities as an array
   const getFunctionalitiesAsArray = () => {
@@ -301,9 +425,14 @@ const DetalleProducto = () => {
               <div className="mt-8">
                 {/* Vertical buttons for mobile */}
                 <div className="flex flex-col space-y-3 md:hidden">
-                  <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-2">
+                  <Button
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-2"
+                    onClick={handleAddToCart} // Agregado el manejador de clic
+                    disabled={isCartInitializing || loading || !isUserLoggedIn || !product} // Deshabilita si está cargando o no loggeado
+                  >
                     <ShoppingCart className="h-5 w-5" />
-                    Agregar al carrito
+                    {isCartInitializing ? "Cargando carrito..." : "Agregar al carrito"}
+
                   </Button>
                   <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-2">
                     <CreditCard className="h-5 w-5" />
@@ -320,9 +449,16 @@ const DetalleProducto = () => {
 
                 {/* Horizontal buttons for tablet/desktop */}
                 <div className="hidden md:grid md:grid-cols-3 md:gap-2 lg:gap-3">
-                  <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-1">
+                  <Button
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-1"
+                    onClick={handleAddToCart} // Agregado el manejador de clic
+                    disabled={isCartInitializing || loading || !isUserLoggedIn || !product} // Deshabilita si está cargando o no loggeado
+
+                  >
                     <ShoppingCart className="h-4 w-4 lg:h-5 lg:w-5" />
-                    <span className="text-sm lg:text-base">Agregar</span>
+                    <span className="text-sm lg:text-base">
+                      {isCartInitializing ? "Cargando..." : "Agregar"}
+                    </span>
                   </Button>
 
                   <Link to="/payment-method">
@@ -353,12 +489,11 @@ const DetalleProducto = () => {
                 style={{ backgroundColor: product?.color || '#2968c8' }}
               >
                 <h3 className="text-lg lg:text-xl font-bold mb-3 text-white">Características destacadas</h3>
-                {/* Apply max-height and overflow-hidden for collapsed state */}
                 <div
                   ref={descriptionRef}
-                  className={`relative transition-max-height duration-700 ease-in-out overflow-hidden`} // Added transition classes
+                  className={`relative transition-max-height duration-700 ease-in-out overflow-hidden`}
                   style={{
-                    maxHeight: showFullDescription ? `${descriptionRef.current?.scrollHeight}px` : '20em', // Dynamic max-height for smooth transition
+                    maxHeight: showFullDescription ? `${descriptionRef.current?.scrollHeight}px` : '20em',
                   }}
                 >
                   <p className="whitespace-pre-line text-sm lg:text-base leading-relaxed text-white text-justify">
@@ -464,6 +599,32 @@ const DetalleProducto = () => {
           )}
         </div>
       </SidebarProvider>
+
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10B981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#EF4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
     </div>
   );
 };

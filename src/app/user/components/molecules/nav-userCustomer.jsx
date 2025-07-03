@@ -26,7 +26,6 @@ export function NavUserCustomer({ userInfo, setUserInfo }) {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    localStorage.removeItem("auth_token");
     localStorage.removeItem("user_data");
     localStorage.removeItem("userId");
     navigate("/", { replace: true });

@@ -20,7 +20,7 @@ export default function EditPassword({
 
     const handleReset = async () => {
         try {
-            const token = localStorage.getItem("auth_token");
+            const token = localStorage.getItem("token");
             const decoded = jwtDecode(token);
             const userId = decoded.sub;
 

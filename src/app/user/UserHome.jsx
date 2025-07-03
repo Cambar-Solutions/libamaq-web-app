@@ -68,7 +68,7 @@ export default function UserHome() {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const token = localStorage.getItem("auth_token");
+                const token = localStorage.getItem("token");
                 if (!token) return;
 
                 const decoded = jwtDecode(token);

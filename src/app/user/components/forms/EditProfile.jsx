@@ -19,7 +19,7 @@ export default function EditProfile({ userInfo, setUserInfo, setEditing, setEdit
 
     const handleUpdate = async () => {
         try {
-            const token = localStorage.getItem("auth_token");
+            const token = localStorage.getItem("token");
             const decoded = jwtDecode(token);
             const userId = decoded.sub;
 

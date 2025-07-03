@@ -65,7 +65,6 @@ export function NavCustomer({ onViewChange }) {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                // *** CRITICAL FIX HERE: Use "token" instead of "auth_token" ***
                 const token = localStorage.getItem("token"); 
                 if (!token) {
                     console.log("No se encontró token de autenticación para el navbar.");
