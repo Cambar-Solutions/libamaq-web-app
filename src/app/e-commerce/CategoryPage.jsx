@@ -9,6 +9,8 @@ import { Link } from "react-router-dom";
 import { getTopSellingProductss, getActiveProductPreviews, getProductsByCategoryAndBrand, getProductsByBrand } from "@/services/public/productService";
 import { getAllBrandsWithCategories } from "@/services/public/brandService";
 import ProductImageWithFallback from "./ProductImageWithFallback";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { NavCustomer } from "../user/components/molecules/NavCustomer";
 
 const getTopSellingProducts = () => {
   const topSelling = [];
@@ -48,6 +50,8 @@ export default function CategoryPage() {
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loadingFilteredProducts, setLoadingFilteredProducts] = useState(true);
 
+  // --- NUEVO ESTADO PARA LA SESIÓN ---
+  const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
 
   const sectionRef = useRef(null);
   const carouselRef = useRef(null);
@@ -107,6 +111,12 @@ export default function CategoryPage() {
       // (prev) => (prev === 0 ? carouselImages.length - 1 : prev - 1)
     );
   }, [carouselImages.length]);
+
+  // --- EFECTO PARA VERIFICAR LA SESIÓN ---
+  useEffect(() => {
+    const token = localStorage.getItem("token"); // O el nombre de tu token
+    setIsUserLoggedIn(!!token); // Si hay token, está loggeado (true), si no, false
+  }, []);
 
   // Obtener todos los productos más vendidos
   useEffect(() => {
@@ -381,7 +391,7 @@ export default function CategoryPage() {
         }
       } catch (error) {
         console.error("Error al cargar marcas:", error);
-        toast.error("Error al cargar marcas");
+        // toast.error("Error al cargar marcas");
         setAllBrands([]);
         setAllCategories([]);
       }
@@ -578,270 +588,161 @@ export default function CategoryPage() {
     );
   }
 
+  const NavbarComponent = isUserLoggedIn ? NavCustomer : Nav2;
+
   return (
     <>
-      <Nav2 />
+      <SidebarProvider>
+        <NavbarComponent />
 
-      <div className="min-h-screen bg-gray-50 flex flex-col pt-20">
-        <div className="max-w-7xl w-full mx-auto px-4">
-          {/* Barra de búsqueda y filtros (tu código actual, se mantiene) */}
-          <div className="sticky top-20 z-10 bg-white shadow-xl rounded-lg mb-6 p-3">
-            <div className="flex flex-row items-center gap-2">
-              <div className="relative w-4/5">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type="text"
-                  placeholder="Buscar productos..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center justify-center w-1/5 gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-full transition-colors"
-              >
-                <Filter size={18} />
-                <span className="hidden sm:inline">Filtros</span>
-              </button>
-              {/* Asegúrate de que 'brand' aquí se refiera a tu 'selectedBrand' si es lo que usas para filtrar */}
-              {(brand || selectedCategory) && ( // Muestra el botón de regresar si hay alguna selección
+
+        <div className="min-h-screen bg-gray-50 flex flex-col pt-20">
+          <div className="max-w-7xl w-full mx-auto px-4">
+            {/* Barra de búsqueda y filtros (tu código actual, se mantiene) */}
+            <div className="sticky top-20 z-10 bg-white shadow-xl rounded-lg mb-6 p-3">
+              <div className="flex flex-row items-center gap-2">
+                <div className="relative w-4/5">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                  <input
+                    type="text"
+                    placeholder="Buscar productos..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
                 <button
-                  onClick={handleBack} // Esta función debería limpiar selectedBrand y selectedCategory
-                  className="flex items-center justify-center md:justify-start gap-2 text-blue-600 py-2 px-4 rounded-full hover:bg-blue-50 transition-colors"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center justify-center w-1/5 gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-full transition-colors"
                 >
-                  <ArrowLeft size={18} />
-                  <span>Regresar</span>
+                  <Filter size={18} />
+                  <span className="hidden sm:inline">Filtros</span>
                 </button>
+                {/* Asegúrate de que 'brand' aquí se refiera a tu 'selectedBrand' si es lo que usas para filtrar */}
+                {(brand || selectedCategory) && ( // Muestra el botón de regresar si hay alguna selección
+                  <button
+                    onClick={handleBack} // Esta función debería limpiar selectedBrand y selectedCategory
+                    className="flex items-center justify-center md:justify-start gap-2 text-blue-600 py-2 px-4 rounded-full hover:bg-blue-50 transition-colors"
+                  >
+                    <ArrowLeft size={18} />
+                    <span>Regresar</span>
+                  </button>
+                )}
+              </div>
+              {showFilters && (
+                <div className="mt-3 p-3 border-t border-gray-200">
+                  <h3 className="font-medium mb-2">Categorías</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {allCategories.map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => handleCategoryChange(cat)} // Esta función DEBE actualizar `selectedCategory`
+                        className={`px-3 py-1 rounded-full text-sm ${selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                      >
+                        {cat.replace(/-/g, ' ')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
-            {showFilters && (
-              <div className="mt-3 p-3 border-t border-gray-200">
-                <h3 className="font-medium mb-2">Categorías</h3>
-                <div className="flex flex-wrap gap-2">
-                  {allCategories.map(cat => (
-                    <button
-                      key={cat}
-                      onClick={() => handleCategoryChange(cat)} // Esta función DEBE actualizar `selectedCategory`
-                      className={`px-3 py-1 rounded-full text-sm ${selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                    >
-                      {cat.replace(/-/g, ' ')}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
 
-          {/* Título de la sección de productos */}
-          <div className="mb-6 mt-8 w-full">
-            <h1 className="text-xl md:text-2xl font-bold text-gray-800">
-              {/* Aquí la lógica de título debe reflejar los productos que se están mostrando */}
-              {/* Asumiendo que 'brand' y 'selectedCategory' son tus estados de filtro */}
-              {brand && selectedCategory
-                ? `${brand.charAt(0).toUpperCase() + brand.slice(1)} - ${selectedCategory.replace(/-/g, ' ')}`
-                : brand
-                  ? `Productos ${brand.charAt(0).toUpperCase() + brand.slice(1)}`
-                  : selectedCategory
-                    ? `Productos de la categoría ${selectedCategory.replace(/-/g, ' ')}`
-                    : searchTerm // Si hay un término de búsqueda, muestra ese título
-                      ? `Resultados para "${searchTerm}"`
-                      : ''} {/* Título por defecto si no hay filtros ni búsqueda */}
-            </h1>
-          </div>
+            {/* Título de la sección de productos */}
+            <div className="mb-6 mt-8 w-full">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-800">
+                {/* Aquí la lógica de título debe reflejar los productos que se están mostrando */}
+                {/* Asumiendo que 'brand' y 'selectedCategory' son tus estados de filtro */}
+                {brand && selectedCategory
+                  ? `${brand.charAt(0).toUpperCase() + brand.slice(1)} - ${selectedCategory.replace(/-/g, ' ')}`
+                  : brand
+                    ? `Productos ${brand.charAt(0).toUpperCase() + brand.slice(1)}`
+                    : selectedCategory
+                      ? `Productos de la categoría ${selectedCategory.replace(/-/g, ' ')}`
+                      : searchTerm // Si hay un término de búsqueda, muestra ese título
+                        ? `Resultados para "${searchTerm}"`
+                        : ''} {/* Título por defecto si no hay filtros ni búsqueda */}
+              </h1>
+            </div>
 
-          <div className="w-full">
-            {/* Lógica de Visualización:
+            <div className="w-full">
+              {/* Lógica de Visualización:
                 1. Si hay una marca o categoría seleccionada (selectedBrand / selectedCategory), 
                    o un término de búsqueda (searchTerm), muestra los productos filtrados.
                 2. De lo contrario, muestra las secciones de "Los más vendidos" y "Todos los productos".
             */}
-            {(brand || selectedCategory || searchTerm) ? (
-              // --- MUESTRA LOS PRODUCTOS FILTRADOS/BUSCADOS ---
-              <div className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full flex-grow h-[calc(100vh-15rem)]">
-                {loadingFilteredProducts ? (
-                  <div className="text-center py-10">
-                    <p className="text-gray-500">Cargando productos...</p>
-                    {/* Puedes agregar un spinner aquí */}
-                  </div>
-                ) : (
-                  filteredProducts.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                      {filteredProducts.map((product) => (
-                        <Link to={`/producto/${product.product_id || product.id}`} key={product.id} className="block"> {/* Asegúrate de usar la ID correcta */}
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.3 }}
-                            className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer h-full flex flex-col"
-                          >
-                            <ProductImageWithFallback
-                              src={product.media?.[0]?.url || "/placeholder-product.png"}
-                              alt={product.product_name || product.name || "Producto"}
-                              className="w-full h-48 object-contain p-4" // Ajusta la altura de la imagen si es necesario
-                            />
-                            <div className="p-4 flex-grow flex flex-col justify-between">
-                              <div>
-                                <h3 className="text-lg font-semibold text-gray-800 truncate" title={product.product_name || product.name}>{product.product_name || product.name}</h3>
-                                <p className="text-sm text-gray-500 line-clamp-2" title={product.product_description || product.description}>{product.product_description || product.description}</p>
-                              </div>
-                              {(product.product_price || product.price) && <p className="text-xl font-bold text-blue-700 mt-2">${product.product_price || product.price}</p>}
-                            </div>
-                          </motion.div>
-                        </Link>
-                      ))}
+              {(brand || selectedCategory || searchTerm) ? (
+                // --- MUESTRA LOS PRODUCTOS FILTRADOS/BUSCADOS ---
+                <div className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full flex-grow h-[calc(100vh-15rem)]">
+                  {loadingFilteredProducts ? (
+                    <div className="text-center py-10">
+                      <p className="text-gray-500">Cargando productos...</p>
+                      {/* Puedes agregar un spinner aquí */}
                     </div>
                   ) : (
-                    <div className="text-center py-10 bg-white rounded-lg shadow-sm">
-                      <p className="text-gray-500">No se encontraron productos que coincidan con tu selección.</p>
-                      {/* Puedes ofrecer opciones para limpiar filtros aquí */}
-                      <button onClick={() => { setBrand(null); setSelectedCategory(null); setSearchTerm(''); }} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Limpiar filtros</button>
-                    </div>
-                  )
-                )}
-              </div>
-            ) : (
-              // --- MUESTRA LAS SECCIONES PREDETERMINADAS (más vendidos y activos) ---
-              <>
-                {/* Sección "Los más vendidos" */}
-                <div className="w-full mb-6 overflow-hidden">
-                  <div className="rounded-t-[3rem] px-0 pt-0 w-full mx-auto flex-grow">
-                    <div className="mb-10">
-                      <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold text-gray-500">Los más vendidos</h2>
-                        <button
-                          className="text-blue-800 underline underline-offset-4 hover:text-indigo-800 hover:font-bold hover:transition-all hover:duration-200 hover:ease-in-out flex items-center cursor-pointer"
-                          onClick={() => {
-                            setSearchTerm("");
-                            scrollToSection();
-                          }}
-                        > Ver todos <ChevronRight size={16} />
-                        </button>
-                      </div>
-                      <div className="">
-                        <div className="relative group">
-                          <div className="carousel-container overflow-hidden px-0 sm:px-0 rounded-lg">
-                            <div
-                              className="carousel-track group p-0 flex transition-transform duration-300 ease-out justify-start"
-                              style={{ paddingBottom: 14, paddingTop: 9, transform: `translateX(-${topSellingCarouselPosition}%)` }}
+                    filteredProducts.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {filteredProducts.map((product) => (
+                          <Link to={`/producto/${product.product_id || product.id}`} key={product.id} className="block"> {/* Asegúrate de usar la ID correcta */}
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ duration: 0.3 }}
+                              className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer h-full flex flex-col"
                             >
-                              {topSellingItems.map((topSellingItem, index) => (
-                                <div
-                                  key={`top-${index}`}
-                                  className={`carousel-item p-0 flex-shrink-0 sm:px-0 md:px-0 ${index === 0 ? 'rounded-l-lg' : ''} ${index === topSellingItem.length - 1 ? 'rounded-r-lg' : ''} group-hover:bg-zinc-300`}
-                                  style={{
-                                    paddingInline: 0,
-                                    width: `${Math.max(
-                                      20,
-                                      window.innerWidth >= 1280 ? 20 :
-                                        window.innerWidth >= 1024 ? 25 :
-                                          window.innerWidth >= 768 ? 33.333 :
-                                            window.innerWidth >= 640 ? 50 :
-                                              100
-                                    )}%`
-                                  }}
-                                >
-                                  <Link to={`/producto/${topSellingItem.product_id}`} key={index} className="w-full p-0 m-0 space-x-0 ">
-                                    <motion.div
-                                      initial={{ opacity: 0 }}
-                                      animate={{ opacity: 1 }}
-                                      transition={{ duration: 0.3 }}
-                                      className="cardgroup-hover:blur-[0px] hover:!rounded-lg group-hover:!opacity-40 hover:!blur-none hover:!opacity-100 bg-white hover:shadow-md transition-all duration-500 overflow-hidden w-full cursor-pointer hover:scale-105 group-hover:rounded-none"
-                                    >
-                                      <div className="flex flex-row sm:flex-col w-full">
-                                        <ProductImageWithFallback
-                                          src={topSellingItem.media?.[0]?.url || "/placeholder-product.png"}
-                                          alt={topSellingItem.product_name || "Producto"}
-                                          className="max-h-full max-w-full object-contain relative z-10"
-                                        />
-                                        <div className="w-2/3 sm:w-full p-3 sm:p-4 flex-grow flex flex-col justify-between sm:h-[150px]">
-                                          <div>
-                                            <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={topSellingItem.product_name}>{topSellingItem.product_name}</h3>
-                                            <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={topSellingItem.product_description}>{topSellingItem.product_description}</p>
-                                          </div>
-                                          {topSellingItem.product_price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${topSellingItem.product_price}</p>}
-                                        </div>
-                                      </div>
-                                    </motion.div>
-                                  </Link>
+                              <ProductImageWithFallback
+                                src={product.media?.[0]?.url || "/placeholder-product.png"}
+                                alt={product.product_name || product.name || "Producto"}
+                                className="w-full h-48 object-contain p-4" // Ajusta la altura de la imagen si es necesario
+                              />
+                              <div className="p-4 flex-grow flex flex-col justify-between">
+                                <div>
+                                  <h3 className="text-lg font-semibold text-gray-800 truncate" title={product.product_name || product.name}>{product.product_name || product.name}</h3>
+                                  <p className="text-sm text-gray-500 line-clamp-2" title={product.product_description || product.description}>{product.product_description || product.description}</p>
                                 </div>
-                              ))}
-                            </div>
-                          </div>
-                          {/* Botones de navegación simplificados para topSellingItems */}
-                          <>
-                            {showTopSellingLeftArrow && (
-                              <button
-                                className="carousel-prev absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
-                                onClick={() => {
-                                  let itemWidth = 20;
-                                  if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25;
-                                  else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333;
-                                  else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50;
-                                  else if (window.innerWidth < 640) itemWidth = 100;
-                                  const newPosition = Math.max(0, topSellingCarouselPosition - itemWidth);
-                                  setTopSellingCarouselPosition(newPosition);
-                                  setShowTopSellingLeftArrow(newPosition > 0);
-                                  setShowTopSellingRightArrow(true); // Siempre que te muevas a la izquierda, la flecha derecha debería aparecer
-                                }}
-                                aria-label="Anterior"
-                              >
-                                <ChevronLeft className="text-blue-600" size={20} />
-                              </button>
-                            )}
-                            {/* Nota: Necesitas calcular maxPosition para showRightArrow correctamente */}
-                            {showTopSellingRightArrow && (
-                              <button
-                                className="carousel-next absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
-                                onClick={() => {
-                                  let itemWidth = 20;
-                                  if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25;
-                                  else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333;
-                                  else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50;
-                                  else if (window.innerWidth < 640) itemWidth = 100;
-
-                                  // Asegúrate de que topSellingProducts sea el array de productos correcto
-                                  const maxPosition = Math.max(0, (topSellingItems.length * itemWidth) - 100); // Usar topSellingItems aquí
-                                  const newPosition = Math.min(maxPosition, topSellingCarouselPosition + itemWidth);
-                                  setTopSellingCarouselPosition(newPosition);
-
-                                  setShowTopSellingLeftArrow(true); // Siempre que te muevas a la derecha, la flecha izquierda debería aparecer
-                                  setShowTopSellingRightArrow(newPosition < maxPosition);
-                                }}
-                                aria-label="Siguiente"
-                              >
-                                <ChevronRight className="text-blue-600" size={20} />
-                              </button>
-                            )}
-                          </>
-                        </div>
+                                {(product.product_price || product.price) && <p className="text-xl font-bold text-blue-700 mt-2">${product.product_price || product.price}</p>}
+                              </div>
+                            </motion.div>
+                          </Link>
+                        ))}
                       </div>
-                    </div>
-                  </div>
+                    ) : (
+                      <div className="text-center py-10 bg-white rounded-lg shadow-sm">
+                        <p className="text-gray-500">No se encontraron productos que coincidan con tu selección.</p>
+                        {/* Puedes ofrecer opciones para limpiar filtros aquí */}
+                        <button onClick={() => { setBrand(null); setSelectedCategory(null); setSearchTerm(''); }} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Limpiar filtros</button>
+                      </div>
+                    )
+                  )}
                 </div>
-
-                {/* Sección "Todos los productos" / Productos Activos */}
-                <div ref={sectionRef} className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full flex-grow">
-                  <div className="w-full">
-                    {activeItems.length > 0 ? (
+              ) : (
+                // --- MUESTRA LAS SECCIONES PREDETERMINADAS (más vendidos y activos) ---
+                <>
+                  {/* Sección "Los más vendidos" */}
+                  <div className="w-full mb-6 overflow-hidden">
+                    <div className="rounded-t-[3rem] px-0 pt-0 w-full mx-auto flex-grow">
                       <div className="mb-10">
                         <div className="flex items-center justify-between mb-4">
-                          <h2 className="text-xl font-bold text-gray-500">Todos los productos</h2>
+                          <h2 className="text-xl font-bold text-gray-500">Los más vendidos</h2>
+                          <button
+                            className="text-blue-800 underline underline-offset-4 hover:text-indigo-800 hover:font-bold hover:transition-all hover:duration-200 hover:ease-in-out flex items-center cursor-pointer"
+                            onClick={() => {
+                              setSearchTerm("");
+                              scrollToSection();
+                            }}
+                          > Ver todos <ChevronRight size={16} />
+                          </button>
                         </div>
-                        <div className="mb-10">
+                        <div className="">
                           <div className="relative group">
                             <div className="carousel-container overflow-hidden px-0 sm:px-0 rounded-lg">
                               <div
                                 className="carousel-track group p-0 flex transition-transform duration-300 ease-out justify-start"
-                                style={{
-                                  paddingBottom: 14, paddingTop: 9,
-                                  transform: `translateX(-${activeProductsCarouselPosition}%)`
-                                }}
+                                style={{ paddingBottom: 14, paddingTop: 9, transform: `translateX(-${topSellingCarouselPosition}%)` }}
                               >
-                                {activeItems.map((activeItem, index) => (
+                                {topSellingItems.map((topSellingItem, index) => (
                                   <div
-                                    key={`active-${index}`} // Cambiado de `top-${index}` a `active-${index}` para evitar duplicados de key
-                                    className={`carousel-item p-0 flex-shrink-0 sm:px-0 md:px-0 ${index === 0 ? 'rounded-l-lg' : ''} ${index === activeItem.length - 1 ? 'rounded-r-lg' : ''} group-hover:bg-zinc-300`}
+                                    key={`top-${index}`}
+                                    className={`carousel-item p-0 flex-shrink-0 sm:px-0 md:px-0 ${index === 0 ? 'rounded-l-lg' : ''} ${index === topSellingItem.length - 1 ? 'rounded-r-lg' : ''} group-hover:bg-zinc-300`}
                                     style={{
                                       paddingInline: 0,
                                       width: `${Math.max(
@@ -854,7 +755,7 @@ export default function CategoryPage() {
                                       )}%`
                                     }}
                                   >
-                                    <Link to={`/producto/${activeItem.id}`} key={activeItem.id} className="w-full p-0 m-0 space-x-0">
+                                    <Link to={`/producto/${topSellingItem.product_id}`} key={index} className="w-full p-0 m-0 space-x-0 ">
                                       <motion.div
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
@@ -863,16 +764,16 @@ export default function CategoryPage() {
                                       >
                                         <div className="flex flex-row sm:flex-col w-full">
                                           <ProductImageWithFallback
-                                            src={activeItem.media && activeItem.media.length > 0 ? activeItem.media[0].url : "/placeholder-product.png"}
-                                            alt={activeItem.name || "Producto"}
+                                            src={topSellingItem.media?.[0]?.url || "/placeholder-product.png"}
+                                            alt={topSellingItem.product_name || "Producto"}
                                             className="max-h-full max-w-full object-contain relative z-10"
                                           />
                                           <div className="w-2/3 sm:w-full p-3 sm:p-4 flex-grow flex flex-col justify-between sm:h-[150px]">
                                             <div>
-                                              <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={activeItem.name}>{activeItem.name}</h3>
-                                              <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={activeItem.description}>{activeItem.description}</p>
+                                              <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={topSellingItem.product_name}>{topSellingItem.product_name}</h3>
+                                              <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={topSellingItem.product_description}>{topSellingItem.product_description}</p>
                                             </div>
-                                            {activeItem.price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${activeItem.price}</p>}
+                                            {topSellingItem.product_price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${topSellingItem.product_price}</p>}
                                           </div>
                                         </div>
                                       </motion.div>
@@ -881,9 +782,9 @@ export default function CategoryPage() {
                                 ))}
                               </div>
                             </div>
-                            {/* Botones de navegación simplificados para activeItems */}
+                            {/* Botones de navegación simplificados para topSellingItems */}
                             <>
-                              {showActiveProductsLeftArrow && ( // Considera usar un estado separado para las flechas de este carrusel
+                              {showTopSellingLeftArrow && (
                                 <button
                                   className="carousel-prev absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
                                   onClick={() => {
@@ -892,17 +793,18 @@ export default function CategoryPage() {
                                     else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333;
                                     else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50;
                                     else if (window.innerWidth < 640) itemWidth = 100;
-                                    const newPosition = Math.max(0, activeProductsCarouselPosition - itemWidth);
-                                    setActiveProductsCarouselPosition(newPosition);
-                                    setShowActiveProductsLeftArrow(newPosition > 0);
-                                    setShowActiveProductsRightArrow(true);
+                                    const newPosition = Math.max(0, topSellingCarouselPosition - itemWidth);
+                                    setTopSellingCarouselPosition(newPosition);
+                                    setShowTopSellingLeftArrow(newPosition > 0);
+                                    setShowTopSellingRightArrow(true); // Siempre que te muevas a la izquierda, la flecha derecha debería aparecer
                                   }}
                                   aria-label="Anterior"
                                 >
                                   <ChevronLeft className="text-blue-600" size={20} />
                                 </button>
                               )}
-                              {showActiveProductsRightArrow && ( // Considera usar un estado separado para las flechas de este carrusel
+                              {/* Nota: Necesitas calcular maxPosition para showRightArrow correctamente */}
+                              {showTopSellingRightArrow && (
                                 <button
                                   className="carousel-next absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
                                   onClick={() => {
@@ -912,13 +814,13 @@ export default function CategoryPage() {
                                     else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50;
                                     else if (window.innerWidth < 640) itemWidth = 100;
 
-                                    // Asegúrate de que activeItems sea el array de productos correcto
-                                    const maxPosition = Math.max(0, (activeItems.length * itemWidth) - 100); // Usar activeItems aquí
-                                    const newPosition = Math.min(maxPosition, activeProductsCarouselPosition + itemWidth);
-                                    setActiveProductsCarouselPosition(newPosition);
+                                    // Asegúrate de que topSellingProducts sea el array de productos correcto
+                                    const maxPosition = Math.max(0, (topSellingItems.length * itemWidth) - 100); // Usar topSellingItems aquí
+                                    const newPosition = Math.min(maxPosition, topSellingCarouselPosition + itemWidth);
+                                    setTopSellingCarouselPosition(newPosition);
 
-                                    setShowActiveProductsLeftArrow(true);
-                                    setShowActiveProductsRightArrow(newPosition < maxPosition);
+                                    setShowTopSellingLeftArrow(true); // Siempre que te muevas a la derecha, la flecha izquierda debería aparecer
+                                    setShowTopSellingRightArrow(newPosition < maxPosition);
                                   }}
                                   aria-label="Siguiente"
                                 >
@@ -929,18 +831,131 @@ export default function CategoryPage() {
                           </div>
                         </div>
                       </div>
-                    ) : (
-                      <div className="text-center py-10 bg-white rounded-lg shadow-sm">
-                        <p className="text-gray-500">No se encontraron productos activos.</p>
-                      </div>
-                    )}
+                    </div>
                   </div>
-                </div>
-              </>
-            )}
+
+                  {/* Sección "Todos los productos" / Productos Activos */}
+                  <div ref={sectionRef} className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full flex-grow">
+                    <div className="w-full">
+                      {activeItems.length > 0 ? (
+                        <div className="mb-10">
+                          <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold text-gray-500">Todos los productos</h2>
+                          </div>
+                          <div className="mb-10">
+                            <div className="relative group">
+                              <div className="carousel-container overflow-hidden px-0 sm:px-0 rounded-lg">
+                                <div
+                                  className="carousel-track group p-0 flex transition-transform duration-300 ease-out justify-start"
+                                  style={{
+                                    paddingBottom: 14, paddingTop: 9,
+                                    transform: `translateX(-${activeProductsCarouselPosition}%)`
+                                  }}
+                                >
+                                  {activeItems.map((activeItem, index) => (
+                                    <div
+                                      key={`active-${index}`} // Cambiado de `top-${index}` a `active-${index}` para evitar duplicados de key
+                                      className={`carousel-item p-0 flex-shrink-0 sm:px-0 md:px-0 ${index === 0 ? 'rounded-l-lg' : ''} ${index === activeItem.length - 1 ? 'rounded-r-lg' : ''} group-hover:bg-zinc-300`}
+                                      style={{
+                                        paddingInline: 0,
+                                        width: `${Math.max(
+                                          20,
+                                          window.innerWidth >= 1280 ? 20 :
+                                            window.innerWidth >= 1024 ? 25 :
+                                              window.innerWidth >= 768 ? 33.333 :
+                                                window.innerWidth >= 640 ? 50 :
+                                                  100
+                                        )}%`
+                                      }}
+                                    >
+                                      <Link to={`/producto/${activeItem.id}`} key={activeItem.id} className="w-full p-0 m-0 space-x-0">
+                                        <motion.div
+                                          initial={{ opacity: 0 }}
+                                          animate={{ opacity: 1 }}
+                                          transition={{ duration: 0.3 }}
+                                          className="cardgroup-hover:blur-[0px] hover:!rounded-lg group-hover:!opacity-40 hover:!blur-none hover:!opacity-100 bg-white hover:shadow-md transition-all duration-500 overflow-hidden w-full cursor-pointer hover:scale-105 group-hover:rounded-none"
+                                        >
+                                          <div className="flex flex-row sm:flex-col w-full">
+                                            <ProductImageWithFallback
+                                              src={activeItem.media && activeItem.media.length > 0 ? activeItem.media[0].url : "/placeholder-product.png"}
+                                              alt={activeItem.name || "Producto"}
+                                              className="max-h-full max-w-full object-contain relative z-10"
+                                            />
+                                            <div className="w-2/3 sm:w-full p-3 sm:p-4 flex-grow flex flex-col justify-between sm:h-[150px]">
+                                              <div>
+                                                <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={activeItem.name}>{activeItem.name}</h3>
+                                                <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={activeItem.description}>{activeItem.description}</p>
+                                              </div>
+                                              {activeItem.price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${activeItem.price}</p>}
+                                            </div>
+                                          </div>
+                                        </motion.div>
+                                      </Link>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              {/* Botones de navegación simplificados para activeItems */}
+                              <>
+                                {showActiveProductsLeftArrow && ( // Considera usar un estado separado para las flechas de este carrusel
+                                  <button
+                                    className="carousel-prev absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
+                                    onClick={() => {
+                                      let itemWidth = 20;
+                                      if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25;
+                                      else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333;
+                                      else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50;
+                                      else if (window.innerWidth < 640) itemWidth = 100;
+                                      const newPosition = Math.max(0, activeProductsCarouselPosition - itemWidth);
+                                      setActiveProductsCarouselPosition(newPosition);
+                                      setShowActiveProductsLeftArrow(newPosition > 0);
+                                      setShowActiveProductsRightArrow(true);
+                                    }}
+                                    aria-label="Anterior"
+                                  >
+                                    <ChevronLeft className="text-blue-600" size={20} />
+                                  </button>
+                                )}
+                                {showActiveProductsRightArrow && ( // Considera usar un estado separado para las flechas de este carrusel
+                                  <button
+                                    className="carousel-next absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-100 rounded-full p-3 shadow-md cursor-pointer transition-opacity duration-300"
+                                    onClick={() => {
+                                      let itemWidth = 20;
+                                      if (window.innerWidth < 1280 && window.innerWidth >= 1024) itemWidth = 25;
+                                      else if (window.innerWidth < 1024 && window.innerWidth >= 768) itemWidth = 33.333;
+                                      else if (window.innerWidth < 768 && window.innerWidth >= 640) itemWidth = 50;
+                                      else if (window.innerWidth < 640) itemWidth = 100;
+
+                                      // Asegúrate de que activeItems sea el array de productos correcto
+                                      const maxPosition = Math.max(0, (activeItems.length * itemWidth) - 100); // Usar activeItems aquí
+                                      const newPosition = Math.min(maxPosition, activeProductsCarouselPosition + itemWidth);
+                                      setActiveProductsCarouselPosition(newPosition);
+
+                                      setShowActiveProductsLeftArrow(true);
+                                      setShowActiveProductsRightArrow(newPosition < maxPosition);
+                                    }}
+                                    aria-label="Siguiente"
+                                  >
+                                    <ChevronRight className="text-blue-600" size={20} />
+                                  </button>
+                                )}
+                              </>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-10 bg-white rounded-lg shadow-sm">
+                          <p className="text-gray-500">No se encontraron productos activos.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </SidebarProvider>
     </>
   );
 }
