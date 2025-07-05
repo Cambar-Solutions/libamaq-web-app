@@ -4,11 +4,11 @@ import { toast } from 'react-hot-toast';
 import { 
   getProductPreviews,
   getProductById as getProductByIdService,
-  getAllProducts as getAllProductsService
+  getAllProducts as getAllProductsService,
 } from '../../../../../services/admin/productService';
 import productWorkflow from '../workflows/productWorkflow';
 import { getAllActiveBrands } from '../../../../../services/admin/brandService';
-import { getCategoriesByBrand } from '../../../../../services/admin/categoryService';
+import { getCategoriesByBrand, getCategoryById } from '../../../../../services/admin/categoryService';
 
 /**
  * Hook personalizado para manejar la lógica de productos
@@ -192,7 +192,24 @@ export const useProducts = () => {
       setCategoriesForEdit([]);
       const response = await getProductByIdService(productId);
       const product = response?.data || response;
-    setSelectedProduct(product);
+      // Obtener la categoría por ID y asignarla al producto
+      let categoryObj = null;
+      if (product.categoryId) {
+        try {
+          const categoryResp = await getCategoryById(product.categoryId);
+          // Clonamos la categoría SIN la propiedad brands
+          const originalCategory = categoryResp?.data || categoryResp;
+          if (originalCategory && originalCategory.id) {
+            // Elimina la propiedad brands si existe
+            const { brands, ...categoryWithoutBrands } = originalCategory;
+            categoryObj = categoryWithoutBrands;
+          }
+        } catch (e) {
+          console.warn('No se pudo obtener la categoría por ID:', e);
+        }
+      }
+      const productWithCategory = { ...product, category: categoryObj };
+      setSelectedProduct(productWithCategory);
       // Paso a) Obtener todas las marcas
       const brandsResp = await getAllActiveBrands();
       const brandsList = brandsResp?.data || [];
@@ -204,7 +221,7 @@ export const useProducts = () => {
         categoriesList = categoriesResp?.data || [];
       }
       setCategoriesForEdit(categoriesList);
-    setIsEditDialogOpen(true);
+      setIsEditDialogOpen(true);
     } catch (error) {
       toast.error('Error al cargar el producto para editar: ' + (error.message || error));
     }

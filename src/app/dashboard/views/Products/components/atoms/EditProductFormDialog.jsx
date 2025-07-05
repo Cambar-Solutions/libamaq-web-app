@@ -162,16 +162,18 @@ const getProductDefaultValues = (product) => {
     };
 };
 
-const EditProductFormDialog = ({ 
-    product, 
-    brands = [], 
-    categories = [], 
-    onSave, 
+const EditProductFormDialog = ({
+    product,
+    brands = [],
+    onSave,
     onClose,
     open,
     onOpenChange,
-    isUpdating = false 
+    isUpdating = false
 }) => {
+
+    console.log("PRODUCT", product);
+
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [filteredCategories, setFilteredCategories] = useState([]);
@@ -230,16 +232,7 @@ const EditProductFormDialog = ({
     // Fetch product details when dialog opens
     useEffect(() => {
         if (open && product?.id) {
-            setLoadingProduct(true);
-            getProductById(product.id)
-                .then((data) => {
-                    const prod = data.data ? data.data : data;
-                    setFullProduct(prod);
-                })
-                .catch((err) => {
-                    alert('Error al cargar el producto: ' + (err?.message || err));
-                })
-                .finally(() => setLoadingProduct(false));
+            setFullProduct(product);
         }
     }, [open, product]);
 
@@ -490,7 +483,7 @@ const EditProductFormDialog = ({
             displayOrder: existingMedia.length + index,
             file // Keep the file reference for upload
         }));
-        
+
         // Combine existing media with new files
         const combinedMedia = [...existingMedia, ...newMedia];
         setValue('media', combinedMedia);

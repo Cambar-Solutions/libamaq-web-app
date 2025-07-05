@@ -442,9 +442,9 @@ const ProductsView = () => {
           onOpenChange={closeEditDialog}
           product={selectedProduct}
           brands={brands}
-          categories={categories}
           onSave={updateProduct}
           onClose={closeEditDialog}
+          isUpdating={isUpdating}
         />
 
         {/* Modal de detalles de producto */}
