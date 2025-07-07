@@ -93,9 +93,7 @@ export const CategoryBadge = ({
 
   const handleDelete = async (e) => {
     e.stopPropagation();
-    if (!window.confirm(`¿Estás seguro de eliminar la categoría "${category.name}"?`)) {
-      return;
-    }
+    
 
     setIsLoading(true);
     try {

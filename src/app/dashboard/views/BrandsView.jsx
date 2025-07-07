@@ -545,7 +545,7 @@ export function BrandsView() {
                                 <div className="flex items-start flex-col gap-1">
                                   <h4 className="text-sm font-medium">Categorías asignadas:</h4>
                                   <span className="text-xs text-gray-500">
-                                    Da clic en la categoría para quiatarla a la marca
+                                    Da clic en la categoría para quiatarla de {brand.name}
                                   </span>
                                 </div>
                               </div>
