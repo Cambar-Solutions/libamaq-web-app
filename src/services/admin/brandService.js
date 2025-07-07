@@ -196,3 +196,18 @@ export const updateBrandCategory = async (relationData) => {
     throw error.response?.data || error;
   }
 };
+
+/**
+ * Elimina una marca por su ID
+ * @param {number} id - ID de la marca a eliminar
+ * @returns {Promise<Object>} Objeto con la respuesta de la API
+ */
+export const deleteBrand = async (id) => {
+  try {
+    const response = await apiClient.delete(`/l/brands/delete/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al eliminar marca con ID ${id}:`, error);
+    throw error.response?.data || error.message;
+  }
+};

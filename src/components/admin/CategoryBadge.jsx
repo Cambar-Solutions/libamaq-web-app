@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import toast from 'react-hot-toast';
 import { updateCategory, deleteCategory } from '@/services/admin/categoryService';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Función auxiliar para determinar si un color es claro
 const isLightColor = (color) => {
@@ -41,10 +42,21 @@ export const CategoryBadge = ({
     status: category.status || 'ACTIVE'
   });
 
-  const bgColor = assignedBrand ? assignedBrand.color : (brandColor || '#f3f4f6');
+  // Determinar color de fondo
+  let bgColor;
+  if (isAssigned) {
+    // Si está asignada a la marca actual, usa el color de la marca actual
+    bgColor = brandColor || '#f3f4f6';
+  } else if (assignedBrand && assignedBrand.color) {
+    // Si está asignada a otra marca, usa el color de esa marca
+    bgColor = assignedBrand.color;
+  } else {
+    // Si no está asignada a ninguna marca, usa gris
+    bgColor = '#e5e7eb';
+  }
   const textColor = isLightColor(bgColor) ? '#000000' : bgColor;
-  const borderColor = assignedBrand ? `${bgColor}40` : (brandColor ? `${brandColor}40` : '#e5e7eb');
-  const opacity = assignedBrand ? 'opacity-70' : 'opacity-100';
+  const borderColor = isAssigned || assignedBrand ? `${bgColor}40` : '#e5e7eb';
+  const opacity = isAssigned ? 'opacity-100' : 'opacity-100';
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -63,13 +75,13 @@ export const CategoryBadge = ({
         ...formData,
         updatedBy: '1' // ID del usuario actual
       });
-      
+
       toast.success(`La categoría ${formData.name} ha sido actualizada correctamente.`);
-      
+
       if (onEdit) {
         onEdit({ ...category, ...formData });
       }
-      
+
       setIsEditing(false);
     } catch (error) {
       console.error('Error al actualizar la categoría:', error);
@@ -84,13 +96,13 @@ export const CategoryBadge = ({
     if (!window.confirm(`¿Estás seguro de eliminar la categoría "${category.name}"?`)) {
       return;
     }
-    
+
     setIsLoading(true);
     try {
       await deleteCategory(category.id);
-      
+
       toast.success(`La categoría ${category.name} ha sido eliminada correctamente.`);
-      
+
       if (onDelete) {
         onDelete(category.id);
       }
@@ -104,41 +116,53 @@ export const CategoryBadge = ({
   };
 
   return (
-    <div className="relative group inline-flex items-center">
-      <div 
-        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium cursor-pointer transition-all ${opacity} ${
-          isAssigned ? 'hover:opacity-100' : ''
-        }`}
-        style={{ 
-          backgroundColor: `${bgColor}20`,
-          color: textColor,
-          border: `1px solid ${borderColor}`,
-          paddingRight: showActions ? '2.5rem' : '0.5rem'
-        }}
-        onClick={onClick}
-      >
+    <div
+      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium cursor-pointer transition-all ${opacity} ${
+        isAssigned ? 'hover:opacity-100' : ''
+      }`}
+      style={{
+        backgroundColor: `${bgColor}20`,
+        color: textColor,
+        border: `1px solid ${borderColor}`,
+        maxWidth: 'none',
+        whiteSpace: 'normal',
+        overflow: 'visible',
+        textOverflow: 'unset',
+        wordBreak: 'break-word',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.25rem',
+      }}
+    >
+      <span style={{flex: 1, minWidth: 0}} onClick={onClick}>
         {category.name}
         {assignedBrand && (
           <span className="ml-1 text-xs">({assignedBrand.name})</span>
         )}
-      </div>
-      
+      </span>
       {showActions && (
-        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex space-x-1 z-10">
+        <div className="flex space-x-1 z-10">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 p-0.5 rounded-full bg-white shadow-sm hover:bg-gray-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsEditing(true);
+                  }}
+                >
+                  <Pencil className="h-3 w-3 text-gray-500" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                Editar
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <Dialog open={isEditing} onOpenChange={setIsEditing}>
-            <DialogTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-5 w-5 p-0.5 rounded-full bg-white shadow-sm hover:bg-gray-100"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsEditing(true);
-                }}
-              >
-                <Pencil className="h-3 w-3" />
-              </Button>
-            </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Editar Categoría</DialogTitle>
@@ -182,8 +206,8 @@ export const CategoryBadge = ({
                   />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={(e) => {
                       e.stopPropagation();
                       setIsEditing(false);
@@ -192,7 +216,7 @@ export const CategoryBadge = ({
                   >
                     Cancelar
                   </Button>
-                  <Button 
+                  <Button
                     onClick={handleSave}
                     disabled={isLoading || !formData.name.trim()}
                   >
@@ -202,21 +226,27 @@ export const CategoryBadge = ({
               </div>
             </DialogContent>
           </Dialog>
-          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 p-0.5 rounded-full bg-white shadow-sm hover:bg-gray-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsDeleting(true);
+                  }}
+                >
+                  <Trash2 className="h-3 w-3 text-red-500" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                Eliminar
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <Dialog open={isDeleting} onOpenChange={setIsDeleting}>
-            <DialogTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-5 w-5 p-0.5 rounded-full bg-white shadow-sm hover:bg-gray-100"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsDeleting(true);
-                }}
-              >
-                <Trash2 className="h-3 w-3 text-red-500" />
-              </Button>
-            </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Confirmar eliminación</DialogTitle>
@@ -226,8 +256,8 @@ export const CategoryBadge = ({
                 <p className="text-sm text-muted-foreground mt-2">Esta acción no se puede deshacer.</p>
               </div>
               <div className="flex justify-end gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsDeleting(false);
@@ -236,8 +266,8 @@ export const CategoryBadge = ({
                 >
                   Cancelar
                 </Button>
-                <Button 
-                  variant="destructive" 
+                <Button
+                  variant="destructive"
                   onClick={handleDelete}
                   disabled={isLoading}
                 >

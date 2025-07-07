@@ -9,7 +9,8 @@ import {
   useUpdateBrand,
   useChangeBrandStatus
 } from "@/hooks/useBrands";
-import { getActiveCategories } from "@/services/admin/categoryService";
+import { getAllCategories, createCategory } from "@/services/admin/categoryService";
+import { deleteBrand } from "@/services/admin/brandService";
 import CategoryManager from "@/components/admin/CategoryManager";
 import CategoryBadge from '@/components/admin/CategoryBadge';
 import {
@@ -47,6 +48,17 @@ import {
 import { motion } from "framer-motion";
 import { Edit, Trash2, Plus, Check, X, RefreshCcw, Pencil } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel
+} from "@/components/ui/alert-dialog";
 
 function isLightColor(hexColor) {
   const hex = hexColor?.replace("#", "") || "ffffff";
@@ -80,6 +92,8 @@ export function BrandsView() {
     url: '',
     status: 'ACTIVE'
   });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [brandToDelete, setBrandToDelete] = useState(null);
   // Las variables de estado para la gestión de categorías ahora están en el componente CategoryManager
 
   // Obtener marcas usando Tanstack Query
@@ -93,6 +107,26 @@ export function BrandsView() {
 
   // Cliente de consulta para invalidar consultas y forzar recargas
   const queryClient = useQueryClient();
+
+  // Obtener todas las categorías (no solo activas)
+  const fetchCategories = async () => {
+    try {
+      console.log('Obteniendo todas las categorías...');
+      const response = await getAllCategories();
+      console.log('Respuesta de categorías:', response);
+
+      // Extraer los datos de la respuesta según su estructura
+      const cats = Array.isArray(response)
+        ? response
+        : (response.data || response.result || []);
+
+      console.log('Categorías procesadas:', cats);
+      setCategories(cats);
+    } catch (error) {
+      console.error('Error al cargar categorías:', error);
+      toast.error("Error al cargar categorías");
+    }
+  };
 
   // Procesar datos de marcas cuando se cargan
   useEffect(() => {
@@ -115,64 +149,23 @@ export function BrandsView() {
       }));
 
       setBrands(processedBrands);
+      setFilteredBrands(processedBrands); // Mostrar todas las marcas por defecto
     }
   }, [allBrandsData]);
 
-  // Procesar datos de marcas activas cuando se cargan
-  useEffect(() => {
-    if (activeBrandsData) {
-      const brandsData = Array.isArray(activeBrandsData)
-        ? activeBrandsData
-        : (activeBrandsData.data || []);
-
-      const processedBrands = brandsData.map(brand => ({
-        id: brand.id,
-        name: brand.name,
-        description: brand.description || "",
-        url: brand.url || "",
-        color: brand.color || "#000000",
-        status: "ACTIVE", // Todas las marcas de este endpoint son activas
-        categories: brand.brandCategories
-          ? brand.brandCategories.map(bc => Number(bc.categoryId))
-          : [],
-        brandCategories: brand.brandCategories || []
-      }));
-
-      setFilteredBrands(processedBrands);
-    }
-  }, [activeBrandsData]);
-
   // Filtrar marcas cuando cambia el término de búsqueda
   useEffect(() => {
-    if (!activeBrandsData) return;
-
-    const brandsData = Array.isArray(activeBrandsData)
-      ? activeBrandsData
-      : (activeBrandsData.data || []);
-
-    const processedBrands = brandsData.map(brand => ({
-      id: brand.id,
-      name: brand.name,
-      description: brand.description || "",
-      url: brand.url || "",
-      color: brand.color || "#000000",
-      status: "ACTIVE",
-      categories: brand.brandCategories
-        ? brand.brandCategories.map(bc => Number(bc.categoryId))
-        : [],
-      brandCategories: brand.brandCategories || []
-    }));
-
+    if (!brands) return;
     if (searchTerm.trim() === "") {
-      setFilteredBrands(processedBrands);
+      setFilteredBrands(brands);
     } else {
-      const filtered = processedBrands.filter(brand =>
+      const filtered = brands.filter(brand =>
         brand.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         brand.description?.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredBrands(filtered);
     }
-  }, [activeBrandsData, searchTerm]);
+  }, [brands, searchTerm]);
 
   // Configurar el estado de carga
   useEffect(() => {
@@ -276,26 +269,6 @@ export function BrandsView() {
     }
   };
 
-  // Obtener todas las categorías activas
-  const fetchCategories = async () => {
-    try {
-      console.log('Obteniendo categorías activas...');
-      const response = await getActiveCategories();
-      console.log('Respuesta de categorías activas:', response);
-
-      // Extraer los datos de la respuesta según su estructura
-      const cats = Array.isArray(response)
-        ? response
-        : (response.data || response.result || []);
-
-      console.log('Categorías activas procesadas:', cats);
-      setCategories(cats);
-    } catch (error) {
-      console.error('Error al cargar categorías activas:', error);
-      toast.error("Error al cargar categorías activas");
-    }
-  };
-
   // Cambiar estado de una marca (activar/desactivar)
   const handleChangeBrandStatus = async (brandId, currentStatus) => {
     try {
@@ -341,25 +314,13 @@ export function BrandsView() {
   // Función para manejar la creación de una nueva categoría
   const handleCreateCategory = async () => {
     try {
-      const response = await fetch('/l/categories', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          ...newCategoryForm,
-          createdBy: '1' // ID del usuario actual
-        })
+      const newCategory = await createCategory({
+        ...newCategoryForm,
+        createdBy: '1'
       });
 
-      if (!response.ok) {
-        throw new Error('Error al crear la categoría');
-      }
-
-      const newCategory = await response.json();
-
       // Añadir la nueva categoría a la lista local
-      setCategories(prev => [...prev, newCategory]);
+      setCategories(prev => [...prev, newCategory.data]);
 
       // Limpiar el formulario
       setNewCategoryForm({
@@ -388,6 +349,21 @@ export function BrandsView() {
     }));
   };
 
+  // Eliminar una marca
+  const handleDeleteBrand = async () => {
+    if (!brandToDelete) return;
+    try {
+      await deleteBrand(brandToDelete);
+      toast.success("Marca eliminada correctamente");
+      queryClient.invalidateQueries({ queryKey: ['brands'] });
+    } catch (error) {
+      toast.error("Error al eliminar la marca: " + (error?.message || error));
+    } finally {
+      setDeleteDialogOpen(false);
+      setBrandToDelete(null);
+    }
+  };
+
   // Renderizar tarjeta de marca
   const renderBrandCard = (brand) => {
     const bg = brand.color || "#f3f4f6";
@@ -407,7 +383,7 @@ export function BrandsView() {
               <h3 className="text-lg font-semibold">{brand.name}</h3>
               <div className="flex items-center gap-1">
                 <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isActive ? 'bg-green-100 text-green-800' : 'bg-gray-300 text-gray-900'}`}
                 >
                   {isActive ? 'Activa' : 'Inactiva'}
                 </span>
@@ -565,7 +541,14 @@ export function BrandsView() {
                           <div className="space-y-4">
                             {/* Categorías asignadas */}
                             <div>
-                              <h4 className="text-sm font-medium mb-2">Categorías asignadas:</h4>
+                              <div className="flex justify-between items-center mb-3">
+                                <div className="flex items-start flex-col gap-1">
+                                  <h4 className="text-sm font-medium">Categorías asignadas:</h4>
+                                  <span className="text-xs text-gray-500">
+                                    Da clic en la categoría para quiatarla a la marca
+                                  </span>
+                                </div>
+                              </div>
                               <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-md min-h-10">
                                 {formData.categories?.length > 0 ? (
                                   categories
@@ -599,18 +582,27 @@ export function BrandsView() {
 
                             {/* Categorías disponibles */}
                             <div>
-                              <div className="flex justify-between items-center mb-2">
-                                <h4 className="text-sm font-medium">Categorías disponibles:</h4>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 px-2 text-xs flex items-center gap-1"
-                                  onClick={() => setIsCreatingCategory(true)}
-                                >
-                                  <Plus className="h-3 w-3" />
-                                  Nueva categoría
-                                </Button>
+                              <div className="flex justify-between items-center mb-3">
+                                <div className="flex items-start flex-col gap-1">
+                                  <h4 className="text-sm font-medium">Categorías disponibles:</h4>
+                                  <span className="text-xs text-gray-500">
+                                    Da clic en la categoría para asignarla a la marca
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="cursor-pointer h-8 px-2 text-xs flex items-center gap-1 bg-gray-100 hover:bg-gray-200"
+                                    onClick={() => setIsCreatingCategory(true)}
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                    Nueva categoría
+                                  </Button>
+                                </div>
+
                               </div>
+
                               <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-md max-h-40 overflow-y-auto">
                                 {categories
                                   .filter(cat => !formData.categories?.some(id => Number(id) === Number(cat.id)))
@@ -661,58 +653,92 @@ export function BrandsView() {
                   </DialogContent>
                 </Dialog>
 
-                <Sheet>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <SheetTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-gray-600 hover:bg-gray-200"
-                          >
-                            {isActive ? (
+                {isActive ? (
+                  <Sheet>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <SheetTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-gray-600 hover:bg-gray-200"
+                            >
                               <X className="h-4 w-4 text-red-500" />
-                            ) : (
-                              <Check className="h-4 w-4 text-green-500" />
-                            )}
-                          </Button>
-                        </SheetTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
-                        <p>Eliminar</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <SheetContent>
-                    <SheetHeader>
-                      <SheetTitle>
-                        {isActive ? "¿Desactivar marca?" : "¿Activar marca?"}
-                      </SheetTitle>
-                      <SheetDescription>
-                        {isActive
-                          ? "Esta acción desactivará la marca. Los productos asociados seguirán existiendo pero la marca no aparecerá en listados públicos."
-                          : "Esta acción activará la marca y estará visible en listados públicos."}
-                      </SheetDescription>
-                    </SheetHeader>
-                    <div className="mt-8">
-                      <SheetFooter>
-                        <SheetClose asChild>
-                          <Button variant="outline">Cancelar</Button>
-                        </SheetClose>
-                        <SheetClose asChild>
+                            </Button>
+                          </SheetTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                          <p>Desactivar</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <SheetContent>
+                      <SheetHeader>
+                        <SheetTitle>
+                          ¿Desactivar marca?
+                        </SheetTitle>
+                        <SheetDescription>
+                          Esta acción desactivará la marca. Los productos asociados seguirán existiendo pero la marca no aparecerá en listados públicos.
+                        </SheetDescription>
+                      </SheetHeader>
+                      <div className="mt-8">
+                        <SheetFooter>
+                          <SheetClose asChild>
+                            <Button variant="outline">Cancelar</Button>
+                          </SheetClose>
+                          <SheetClose asChild>
+                            <Button
+                              onClick={() => {
+                                handleChangeBrandStatus(brand.id, brand.status);
+                              }}
+                            >
+                              Desactivar
+                            </Button>
+                          </SheetClose>
+                        </SheetFooter>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                ) : (
+                  <div className="flex gap-1">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
                           <Button
-                            onClick={() => {
-                              handleChangeBrandStatus(brand.id, brand.status);
-                            }}
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 text-green-600 hover:bg-gray-200 bg-transparent border-none"
+                            onClick={() => handleChangeBrandStatus(brand.id, brand.status)}
                           >
-                            {isActive ? "Desactivar" : "Activar"}
+                            <Check className="h-4 w-4 text-green-600" />
                           </Button>
-                        </SheetClose>
-                      </SheetFooter>
-                    </div>
-                  </SheetContent>
-                </Sheet>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                          Activar
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="ml-2 h-8 w-8 flex items-center gap-1 text-white bg-red-600 hover:bg-red-800 px-3 py-1"
+                            onClick={() => { setBrandToDelete(brand.id); setDeleteDialogOpen(true); }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                          Eliminar definitivamente
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1027,6 +1053,21 @@ export function BrandsView() {
           {filteredBrands.map(renderBrandCard)}
         </div>
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar marca?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará la marca de forma permanente. ¿Estás seguro de que deseas continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setBrandToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteBrand} className="bg-red-600 hover:bg-red-700 text-white">Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
