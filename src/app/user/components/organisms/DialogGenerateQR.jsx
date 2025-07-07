@@ -95,7 +95,7 @@ export default function DialogGenerateQR() {
               <QrCode className="w-8 h-8 ml-5 text-blue-500" />
               <div>
                 <h3 className="font-medium text-gray-800 text-lg text-start">Código QR</h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 text-start">
                   Genera un código QR para conectarte a WhatsApp
                 </p>
               </div>

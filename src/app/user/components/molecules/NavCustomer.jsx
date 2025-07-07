@@ -16,14 +16,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import {jwtDecode} from "jwt-decode";
-import { getUserById } from "@/services/admin/userService"; 
-import useLocationStore from "@/stores/useLocationStore"; 
+import { jwtDecode } from "jwt-decode";
+import { getUserById } from "@/services/admin/userService";
+import useLocationStore from "@/stores/useLocationStore";
 
 export function NavCustomer({ onViewChange }) {
     const navigate = useNavigate();
     // Initialize userInfo with sensible defaults, or null if you want to explicitly check for loaded data
-    const [userInfo, setUserInfo] = useState({ name: "Invitado", email: "" }); 
+    const [userInfo, setUserInfo] = useState({ name: "Invitado", email: "" });
     const [editing, setEditing] = useState(false);
     const { toggleSidebar } = useSidebar();
     const drawerRef = useRef(null);
@@ -33,16 +33,16 @@ export function NavCustomer({ onViewChange }) {
     const [loading, setLoading] = useState(true); // This loading state is for brands data
     const [userLoading, setUserLoading] = useState(true); // New loading state for user info
     const [menuOpen, setMenuOpen] = useState(false);
-    
+
     // Location states from Zustand store
-    const { 
-        currentLocation, 
-        locationLoading, 
-        locationError, 
+    const {
+        currentLocation,
+        locationLoading,
+        locationError,
         getCurrentLocation,
-        loadSavedLocation 
+        loadSavedLocation
     } = useLocationStore();
-    
+
     const toggleMenu = () => setMenuOpen(o => !o);
 
     // Load saved location when component mounts
@@ -81,7 +81,7 @@ export function NavCustomer({ onViewChange }) {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const token = localStorage.getItem("token"); 
+                const token = localStorage.getItem("token");
                 if (!token) {
                     console.log("No se encontró token de autenticación para el navbar.");
                     // No redirection needed here, just show "Hola Invitado"
@@ -166,20 +166,17 @@ export function NavCustomer({ onViewChange }) {
                             </Select>
                         </div>
 
-                        <div className="flex flex-col">
-                            <button 
-                                onClick={getCurrentLocation}
-                                disabled={locationLoading}
-                                className="flex items-center gap-2 text-gray-800 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <MapPin size={20} />
-                                {locationLoading ? "Obteniendo ubicación..." : "Actualizar ubicación"}
-                            </button>
-                            {locationError && (
-                                <p className="text-xs text-red-500 mt-1 ml-6">{locationError}</p>
-                            )}
-                            <p className="text-xs text-gray-600 mt-1 ml-6">Actual: {currentLocation}</p>
-                        </div>
+
+
+                        <button onClick={() =>
+                            navigate('/user-profile', {
+                                state: { view: 'perfil', openLocation: true }
+                            })}
+                            className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
+                        >
+                            <MapPin size={20} />
+                            Actualizar ubicación
+                        </button>
 
                         <Link to="/user-profile"
                             onClick={() => { onViewChange("perfil"); setMenuOpen(false); }}
@@ -211,22 +208,18 @@ export function NavCustomer({ onViewChange }) {
                         />
                     </Link>
 
-                    <button
-                        onClick={getCurrentLocation}
-                        disabled={locationLoading}
-                        className="cursor-pointer flex items-center gap-1 text-white hover:text-yellow-500 transition-colors duration-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <MapPin size={28} />
-                        <div className="text-left">
-                            <p className="text-sm">{currentLocation}</p>
-                            <p className="text-base">
-                                {locationLoading ? "Obteniendo ubicación..." : "Actualizar ubicación"}
-                            </p>
-                            {locationError && (
-                                <p className="text-xs text-red-400">{locationError}</p>
-                            )}
-                        </div>
-                    </button>
+                    <div className="flex flex-col">
+                        <button
+                            className="cursor-pointer flex items-center gap-1 text-white hover:text-yellow-500 transition-colors duration-600"
+                            onClick={() => navigate('/user-profile', { state: { view: 'perfil', openLocation: true } })}
+                        >
+                            <MapPin size={28} />
+                            <div className="text-left">
+                                <p className="text-sm">{currentLocation}</p>
+                                <p className="text-base">Actualizar ubicación</p>
+                            </div>
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex items-center space-x-4 md:flex">

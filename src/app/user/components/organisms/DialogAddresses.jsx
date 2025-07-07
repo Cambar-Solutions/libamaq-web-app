@@ -6,8 +6,32 @@ import { MapPin, ChevronRight } from 'lucide-react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import BtnSave from "../atoms/BtnSave";
+import useLocationStore from "@/stores/useLocationStore";
 
 export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onCloseLocationDialog }) {
+    const { currentLocation, setLocation } = useLocationStore();
+    const [newLocation, setNewLocation] = useState("");
+    const [iframeKey, setIframeKey] = useState(0); // Para forzar recarga del iframe
+
+    // Cuando se abre el diálogo, limpia el input
+    useEffect(() => {
+        if (isDialogOpen) setNewLocation("");
+    }, [isDialogOpen]);
+
+    // Función para guardar la nueva dirección
+    const handleSave = () => {
+        if (newLocation.trim()) {
+            setLocation(newLocation);
+            setIframeKey(prev => prev + 1); // Forzar recarga del iframe
+        }
+        setIsDialogOpen(false);
+        if (onCloseLocationDialog) onCloseLocationDialog();
+    };
+
+    // Construir la URL del iframe (sin API key)
+    const mapQuery = encodeURIComponent(newLocation.trim() ? newLocation : currentLocation);
+    const mapSrc = `https://maps.google.com/maps?q=${mapQuery}&output=embed`;
+
     return (
         <>
             <Dialog
@@ -47,19 +71,20 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
                                 <Label htmlFor="location" className="text-right font-medium">
                                     Dirección Actual
                                 </Label>
-                                <Input id="location" placeholder="San Antón" className="col-span-3" />
+                                <Input id="location" value={currentLocation} disabled className="col-span-3" />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <Label htmlFor="newLocation" className="text-right font-medium">
                                     Nueva Dirección
                                 </Label>
-                                <Input id="newLocation" placeholder="Escribe tu nueva dirección" className="col-span-3" />
+                                <Input id="newLocation" value={newLocation} onChange={e => setNewLocation(e.target.value)} placeholder="Escribe tu nueva dirección" className="col-span-3" />
                             </div>
                         </div>
 
                         <div className="w-full h-[300px] rounded-xl overflow-hidden shadow-xl">
                             <iframe
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3774.4661262655997!2d-99.17959492373906!3d18.91969495427647!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85ce7481d3aed4c3%3A0x9f4e9f76e3752738!2sBlvd.%20Paseo%20Cuauhn%C3%A1huac%201742%2C%20Puente%20Blanco%2C%2062577%20Jiutepec%2C%20Mor.!5e0!3m2!1ses!2smx!4v1715572500000!5m2!1ses!2smx"
+                                key={iframeKey}
+                                src={mapSrc}
                                 width="100%"
                                 height="100%"
                                 style={{ border: 0 }}
@@ -70,7 +95,7 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
                         </div>
                     </div>
                     <DialogFooter>
-                        <BtnSave />
+                        <BtnSave onClick={handleSave} />
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

@@ -75,7 +75,7 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
                     animate="animate"
                     exit="exit"
                     transition={{ duration: 0.3 }}
-                    className="h-full relative flex flex-col w-[90%] rounded-lg p-6 ml-12"
+                    className="h-full relative flex flex-col w-[90%] rounded-lg p-6 lg:ml-12 md:ml-12 ml-5"
                 >
                     {/* Editar Perfil */}
                     <EditProfile
@@ -96,7 +96,7 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
                     animate="animate"
                     exit="exit"
                     transition={{ duration: 0.3 }}
-                    className="h-full relative flex flex-col w-[90%] rounded-lg p-6 ml-12"
+                    className="h-full relative flex flex-col w-[90%] rounded-lg p-6 lg:ml-12 md:ml-12 ml-5"
                 >
                     {/* Editar Contraseña */}
                     <EditPassword
@@ -147,7 +147,7 @@ export default function ProfilePanel({ openLocationDialog = false, onCloseLocati
                     </div>
 
                     {/* === Sección con animación === */}
-                    <div className="flex-1 overflow-y-auto max-w-5xl mx-auto mt-3 top-16 z-10">
+                    <div className="flex-1 max-w-5xl mx-auto mt-3 top-16 z-10">
                         <AnimatePresence mode="wait" initial={false}>
                             {renderContent()} {/* Llama a la función que retorna el JSX condicional */}
                         </AnimatePresence>

@@ -29,16 +29,16 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
   const [selectedBrandId, setSelectedBrandId] = useState("");
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
-  
+
   // States for location
-  const { 
-    currentLocation, 
-    locationLoading, 
-    locationError, 
+  const {
+    currentLocation,
+    locationLoading,
+    locationError,
     getCurrentLocation,
-    loadSavedLocation 
+    loadSavedLocation
   } = useLocationStore();
-  
+
   const toggleMenu = () => setMenuOpen(o => !o);
 
   useEffect(() => {
@@ -141,21 +141,20 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
             </div>
 
             <div className="flex flex-col">
+
+
               <button
-                onClick={getCurrentLocation}
-                disabled={locationLoading}
-                className="flex items-center gap-2 text-gray-800 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() =>
+                  navigate('/user-profile', {
+                    state: { view: 'perfil', openLocation: true }
+                  })}
+                className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
+
               >
                 <MapPin size={20} />
-                {locationLoading ? "Obteniendo ubicación..." : "Actualizar ubicación"}
+                Actualizar ubicación
               </button>
-              {locationError && (
-                <p className="text-xs text-red-500 mt-1 ml-6">{locationError}</p>
-              )}
-              <p className="text-xs text-gray-600 mt-1 ml-6">Actual: {currentLocation}</p>
             </div>
-
-
 
             <button
               onClick={() => { onViewChange("perfil"); setMenuOpen(false); }}
@@ -196,19 +195,13 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
           </Link>
 
           <button
-            onClick={getCurrentLocation}
-            disabled={locationLoading}
-            className="cursor-pointer flex items-center gap-1 text-white hover:text-yellow-500 transition-colors duration-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="cursor-pointer flex items-center gap-1 text-white hover:text-yellow-500 transition-colors duration-600"
+            onClick={() => navigate('/user-profile', { state: { view: 'perfil', openLocation: true } })}
           >
             <MapPin size={28} />
             <div className="text-left">
-              <p className="text-sm">{currentLocation}</p>
-              <p className="text-base">
-                {locationLoading ? "Obteniendo ubicación..." : "Actualizar ubicación"}
-              </p>
-              {locationError && (
-                <p className="text-xs text-red-400">{locationError}</p>
-              )}
+              <p className="text-sm line-clamp-1 max-w-[26em]">{currentLocation}</p>
+              <p className="text-base">Actualizar ubicación</p>
             </div>
           </button>
         </div>
