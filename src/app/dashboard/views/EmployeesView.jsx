@@ -1,5 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import ActionButtons from '@/components/ui/ActionButtons';
 import { SearchBar } from '@/components/ui/SearchBar';
+import { PhoneInput } from "@/components/ui/PhoneInput";
 
 // Array estático de roles de empleados disponibles
 const EMPLOYEE_ROLES = [
@@ -223,9 +224,10 @@ export function EmployeesView() {
     setIsSubmitting(true);
     const toastId = toast.loading('Guardando empleado...');
     try {
-      // Validar que el teléfono tenga exactamente 13 caracteres
-      if (newEmployee.telefono.length !== 13) {
-        toast.error("El teléfono debe tener exactamente 13 caracteres (ejemplo: +527772686839)", { id: toastId });
+      // Validar que el teléfono tenga exactamente 10 dígitos (sin contar la lada)
+      const phoneDigits = newEmployee.telefono.replace(/^\+\d{1,3}/, '');
+      if (phoneDigits.length !== 10) {
+        toast.error("El número de teléfono debe tener exactamente 10 dígitos", { id: toastId });
         setIsSubmitting(false);
         toast.dismiss(toastId);
         return;
@@ -624,6 +626,9 @@ export function EmployeesView() {
             <DialogTitle>
               {isEditing ? "Editar Empleado" : "Registrar Nuevo Empleado"}
             </DialogTitle>
+            <DialogDescription>
+              Completa la información del empleado. Los campos marcados con * son obligatorios.
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             {(createEmployeeMutation.isPending || updateEmployeeMutation.isPending) && (
@@ -677,33 +682,17 @@ export function EmployeesView() {
                   Teléfono
                 </Label>
                 <div className="col-span-3">
-                  <div className="flex rounded-md shadow-sm">
-                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                      +52
-                    </span>
-                    <Input
-                      id="telefono"
-                      name="telefono"
-                      value={newEmployee.telefono.startsWith('+52') ? newEmployee.telefono.substring(3) : newEmployee.telefono}
-                      onChange={(e) => {
-                        // Solo permitir números y asegurar que siempre tenga +52 al inicio
-                        const value = e.target.value.replace(/\D/g, '');
-                        setNewEmployee(prev => ({
-                          ...prev,
-                          telefono: '+52' + value
-                        }));
-                      }}
-                      className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border-l-0"
-                      placeholder="Ej: 5512345678"
-                      maxLength={10}
-                      type="tel"
-                      pattern="[0-9]{10}"
-                      title="Ingresa un número de 10 dígitos"
-                    />
-                  </div>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Formato: +52 55 1234 5678
-                  </p>
+                  <PhoneInput
+                    id="telefono"
+                    name="telefono"
+                    value={newEmployee.telefono}
+                    onChange={val => setNewEmployee(prev => ({ ...prev, telefono: val }))}
+                    required
+                    maxDigits={10}
+                    placeholder="10 dígitos"
+                    errorText="El número de teléfono debe tener 10 dígitos"
+                    showPrefix={false}
+                  />
                 </div>
               </div>
               {!isEditing && (
@@ -796,6 +785,9 @@ export function EmployeesView() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Cambiar Contraseña de {employeeToChangePassword?.name} {employeeToChangePassword?.lastName}</DialogTitle>
+            <DialogDescription>
+              Ingresa y confirma la nueva contraseña para el empleado seleccionado.
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handlePasswordSubmit}>
             {resetPasswordMutation.isPending && (

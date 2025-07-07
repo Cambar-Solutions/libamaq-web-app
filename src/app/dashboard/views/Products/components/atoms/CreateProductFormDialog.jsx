@@ -286,7 +286,7 @@ export default function CreateProductFormDialog({
                                     <Input 
                                         id="name" 
                                         {...register('name', { required: 'El nombre es requerido' })} 
-                                        placeholder="Ej: Smartphone Galaxy S21" 
+                                        placeholder="Ej: Revolvedora CIPSA MAXI" 
                                         disabled={isCreating} 
                                     />
                                     {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}

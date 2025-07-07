@@ -1,6 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import toast, { Toaster } from "react-hot-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { useDeleteUser } from '../../../hooks/useUsers';
 import ActionButtons from '@/components/ui/ActionButtons';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Loader2 } from "lucide-react";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 
 
 export function ClientsView() {
@@ -365,23 +366,10 @@ export function ClientsView() {
          return;
       }
 
-      // Validar que el teléfono comience con la lada seleccionada
-      if (!newClient.telefono.startsWith('+52')) {
-        toast.error("El número de teléfono debe comenzar con +52", { id: toastId });
-        setPhoneError(true); // Asegurarse de que el error visual esté activo
-        return; // Detener el envío del formulario
-      }
-
-      // Validar que el teléfono tenga algo más que solo la lada (si aplica)
-      if (newClient.telefono === '+52') {
-          toast.error("Por favor, ingresa el resto del número de teléfono.", { id: toastId });
-          setPhoneError(true);
-          return;
-      }
-
-      // Validar que el teléfono tenga exactamente 13 caracteres
-      if (newClient.telefono.length !== 13) {
-        toast.error("El teléfono debe tener exactamente 13 caracteres (ejemplo: +527772686839)", { id: toastId });
+      // Validar que el teléfono tenga exactamente 10 dígitos (sin contar la lada)
+      const phoneDigits = newClient.telefono.replace(/^\+\d{1,3}/, '');
+      if (phoneDigits.length !== 10) {
+        toast.error("El número de teléfono debe tener exactamente 10 dígitos", { id: toastId });
         setPhoneError(true);
         return;
       }
@@ -702,6 +690,9 @@ export function ClientsView() {
             <DialogTitle>
               {isEditing ? "Editar Cliente" : "Registrar Nuevo Cliente"}
             </DialogTitle>
+            <DialogDescription>
+              Completa la información del cliente. Los campos marcados con * son obligatorios.
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
@@ -751,43 +742,21 @@ export function ClientsView() {
                   Teléfono
                 </Label>
                 <div className="col-span-3">
-                  <div className="flex rounded-md shadow-sm">
-                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                      +52
-                    </span>
-                    <Input
-                      id="telefono"
-                      name="telefono"
-                      value={newClient.telefono.startsWith('+52') ? newClient.telefono.substring(3) : newClient.telefono}
-                      onChange={(e) => {
-                        // Solo permitir números y asegurar que siempre tenga +52 al inicio
-                        const value = e.target.value.replace(/\D/g, '');
-                        setNewClient(prev => ({
-                          ...prev,
-                          telefono: '+52' + value
-                        }));
-                        // Limpiar error de teléfono cuando el usuario empieza a escribir
-                        if (phoneError) {
-                          setPhoneError(false);
-                        }
-                      }}
-                      className={`flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border-l-0 ${phoneError ? 'border-red-500' : ''}`}
-                      placeholder="Ej: 5512345678"
-                      maxLength={10}
-                      type="tel"
-                      pattern="[0-9]{10}"
-                      title="Ingresa un número de 10 dígitos"
-                      required
-                    />
-                  </div>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Formato: +52 55 1234 5678
-                  </p>
-                  {phoneError && (
-                    <p className="mt-1 text-sm text-red-600">
-                      El número de teléfono debe tener 10 dígitos
-                    </p>
-                  )}
+                  <PhoneInput
+                    id="telefono"
+                    name="telefono"
+                    value={newClient.telefono}
+                    onChange={val => {
+                      setNewClient(prev => ({ ...prev, telefono: val }));
+                      if (phoneError) setPhoneError(false);
+                    }}
+                    error={phoneError}
+                    required
+                    maxDigits={10}
+                    placeholder="10 dígitos"
+                    errorText="El número de teléfono debe tener 10 dígitos"
+                    showPrefix={false}
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
@@ -876,6 +845,9 @@ export function ClientsView() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Cambiar Contraseña de {clientToChangePassword?.name} {clientToChangePassword?.lastName}</DialogTitle>
+            <DialogDescription>
+              Ingresa y confirma la nueva contraseña para el cliente seleccionado.
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handlePasswordSubmit}>
             {resetPasswordMutation.isPending && (
