@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { SparePartsList } from './components/molecules/SparePartsList';
@@ -9,18 +9,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import useSpareParts from './hooks/useSpareParts';
 
 export default function SparePartsView() {
-  // Usar el hook personalizado para la lógica de negocio
   const {
-    spareParts,
-    filteredSpareParts,
-    isLoading,
-    searchTerm,
-    setSearchTerm,
-    products,
     createNewSparePart,
     updateExistingSparePart,
     deleteSparePart,
-    refreshSpareParts,
     SparePartStatus
   } = useSpareParts();
 
@@ -31,11 +23,6 @@ export default function SparePartsView() {
   const [isSaving, setIsSaving] = useState(false);
   const [sparePartToDelete, setSparePartToDelete] = useState(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
-  // Manejador para la búsqueda
-  const handleSearch = (searchValue) => {
-    setSearchTerm(searchValue);
-  };
 
   // Abrir diálogo para crear un nuevo repuesto
   const handleAddNew = () => {
@@ -65,7 +52,6 @@ export default function SparePartsView() {
     setIsCreateDialogOpen(false);
     setIsEditDialogOpen(false);
     setCurrentSparePart(null);
-    refreshSpareParts();
   };
 
   // Manejar el guardado de un repuesto (creación o actualización)
@@ -123,7 +109,6 @@ export default function SparePartsView() {
       setIsSaving(true);
       const mediaIds = sparePartToDelete.media?.map(m => m.id) || [];
       await deleteSparePart(sparePartToDelete.id, mediaIds);
-      toast.success('Repuesto eliminado correctamente');
       setIsDeleteDialogOpen(false);
       setSparePartToDelete(null);
     } catch (error) {
@@ -136,14 +121,8 @@ export default function SparePartsView() {
 
   return (
     <div className="space-y-6">
-      {/* Título */}
-
       {/* Lista de repuestos */}
       <SparePartsList
-        spareParts={filteredSpareParts}
-        isLoading={isLoading}
-        searchTerm={searchTerm}
-        onSearchChange={handleSearch}
         onAddNew={handleAddNew}
         onEdit={handleEdit}
         onDelete={handleDeleteClick}
@@ -156,10 +135,9 @@ export default function SparePartsView() {
         title="Nuevo Repuesto"
       >
         <CreateSparePartForm
-          onSubmit={handleSaveSparePart}
+          onSave={handleSaveSparePart}
           onCancel={handleCloseCreateDialog}
           isSaving={isSaving}
-          products={products}
         />
       </SparePartDialog>
 

@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Image as ImageIcon } from 'lucide-react';
+import useSparePartsStore from '../../hooks/useSparePartsStore';
 
 /**
  * Componente para mostrar la lista de repuestos en tarjetas (vista móvil)
@@ -16,6 +17,8 @@ export const SparePartsCardView = ({
   onEdit,
   onDelete
 }) => {
+  const { removeSparePart } = useSparePartsStore();
+
   // Función para formatear moneda
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('es-MX', {
@@ -36,6 +39,21 @@ export const SparePartsCardView = ({
         return 'destructive';
       default:
         return 'outline';
+    }
+  };
+
+  // Manejar eliminación de repuesto
+  const handleDelete = async (sparePart) => {
+    try {
+      // Actualizar el store localmente
+      removeSparePart(sparePart.id);
+      
+      // Llamar a la función onDelete si existe (para operaciones adicionales)
+      if (onDelete) {
+        await onDelete(sparePart);
+      }
+    } catch (error) {
+      console.error('Error al eliminar el repuesto:', error);
     }
   };
 
@@ -116,7 +134,7 @@ export const SparePartsCardView = ({
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  onClick={() => onDelete(sparePart)}
+                  onClick={() => handleDelete(sparePart)}
                   className="h-8 w-8 text-destructive hover:text-destructive"
                   aria-label="Eliminar repuesto"
                 >

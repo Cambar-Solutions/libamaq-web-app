@@ -10,6 +10,7 @@ import { ImagePlus, Trash2, FileText, Wand2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import ImageUploader from '../molecules/ImageUploader';
 import { generateDescriptionIA } from '@/services/admin/AIService';
+import mediaService from '@/services/admin/mediaService';
 
 /**
  * Componente para crear un nuevo repuesto
@@ -113,16 +114,30 @@ export const CreateSparePartForm = ({
   };
 
   // Manejar envío del formulario
-  const handleFormSubmit = (data) => {
-    const formData = {
-      ...data,
-      price: parseFloat(data.price) || 0,
-      stock: parseInt(data.stock, 10) || 0,
-      rentable: Boolean(data.rentable),
-      files: selectedFiles
-    };
-    
-    onSave(formData);
+  const handleFormSubmit = async (data) => {
+    setIsSaving(true);
+    try {
+      // 1. Subir imágenes primero
+      let media = [];
+      if (selectedFiles.length > 0) {
+        media = await mediaService.uploadImages(selectedFiles);
+      }
+
+      // 2. Crear el repuesto con la media subida
+      const formData = {
+        ...data,
+        price: parseFloat(data.price) || 0,
+        stock: parseInt(data.stock, 10) || 0,
+        rentable: Boolean(data.rentable),
+        media // array de objetos { id, url, fileType }
+      };
+
+      await onSave(formData);
+    } catch (err) {
+      toast.error('Error al crear el repuesto: ' + (err.message || ''));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Manejar cambios en las imágenes seleccionadas

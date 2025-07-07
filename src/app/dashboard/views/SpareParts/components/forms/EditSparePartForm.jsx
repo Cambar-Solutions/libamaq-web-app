@@ -12,6 +12,8 @@ import {
   PackageCheck, PackageSearch, PackagePlus, FileText, Image as ImageIcon
 } from 'lucide-react';
 import ImageUploader from '../molecules/ImageUploader';
+import mediaService from '@/services/admin/mediaService';
+import { toast } from 'react-hot-toast';
 
 const statusStyles = {
   ACTIVE: 'text-green-600',
@@ -95,12 +97,15 @@ export const EditSparePartForm = ({ sparePart, onSave, onCancel, isSaving }) => 
 
   const onSubmit = (data) => {
     if (!sparePart?.id) return;
+    const filteredMedia = (sparePart.media || []).filter(
+      img => !mediaToDelete.includes(img.id)
+    );
     const formData = {
       ...data,
       price: parseFloat(data.price) || 0,
       stock: parseInt(data.stock, 10) || 0,
       rentable: Boolean(data.rentable),
-      media: (sparePart.media || []).map(media => ({
+      media: filteredMedia.map(media => ({
         id: Number(media.id),
         url: media.url,
         fileType: media.fileType || 'IMAGE',
@@ -252,7 +257,18 @@ export const EditSparePartForm = ({ sparePart, onSave, onCancel, isSaving }) => 
             <ImageUploader
               existingImages={existingImages}
               onImagesChange={setSelectedFiles}
-              onImageDelete={(id) => setMediaToDelete(prev => [...prev, id])}
+              onImageDelete={async (index) => {
+                const img = existingImages[index];
+                if (img && img.id) {
+                  try {
+                    await mediaService.deleteImages([img.id]);
+                    setMediaToDelete(prev => [...prev, img.id]);
+                    toast.success('Imagen eliminada correctamente');
+                  } catch (error) {
+                    toast.error('Error al eliminar la imagen');
+                  }
+                }
+              }}
               maxFiles={5}
               disabled={isSaving}
             />

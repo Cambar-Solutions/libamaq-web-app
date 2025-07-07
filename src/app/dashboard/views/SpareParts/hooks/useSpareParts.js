@@ -1,59 +1,30 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { getActiveSpareParts } from '../../../../../services/admin/sparePartService';
+import useSparePartsStore from './useSparePartsStore';
 import sparePartWorkflow from '../workflows/sparePartWorkflow';
 
 /**
  * Hook personalizado para manejar la lógica de repuestos
+ * Ahora usa el store Zustand internamente
  * @returns {Object} Estado y funciones para manejar repuestos
  */
 const useSpareParts = () => {
-  // Estados
-  const [spareParts, setSpareParts] = useState([]);
-  const [filteredSpareParts, setFilteredSpareParts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [products, setProducts] = useState([]);
-
-  // Cargar repuestos
-  const loadSpareParts = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const response = await getActiveSpareParts();
-      if (response && response.data) {
-        setSpareParts(response.data);
-        setFilteredSpareParts(response.data);
-      }
-    } catch (error) {
-      console.error('Error al cargar repuestos:', error);
-      toast.error('Error al cargar la lista de repuestos');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Filtrar repuestos según el término de búsqueda
-  useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredSpareParts(spareParts);
-      return;
-    }
-
-    const term = searchTerm.toLowerCase();
-    const filtered = spareParts.filter(
-      (sparePart) =>
-        sparePart.name.toLowerCase().includes(term) ||
-        sparePart.code.toLowerCase().includes(term) ||
-        sparePart.externalId?.toLowerCase().includes(term) ||
-        sparePart.description?.toLowerCase().includes(term)
-    );
-    setFilteredSpareParts(filtered);
-  }, [searchTerm, spareParts]);
+  const {
+    spareParts,
+    filteredSpareParts,
+    isLoading,
+    searchTerm,
+    setSearchTerm,
+    fetchSpareParts,
+    addSparePart,
+    updateSparePart,
+    removeSparePart
+  } = useSparePartsStore();
 
   // Cargar datos iniciales
   useEffect(() => {
-    loadSpareParts();
-  }, [loadSpareParts]);
+    fetchSpareParts();
+  }, [fetchSpareParts]);
 
   /**
    * Crea un nuevo repuesto
@@ -64,7 +35,7 @@ const useSpareParts = () => {
   const createNewSparePart = async (sparePartData, files = []) => {
     try {
       const newSparePart = await sparePartWorkflow.createSparePart(sparePartData, files);
-      await loadSpareParts();
+      addSparePart(newSparePart.data || newSparePart);
       return newSparePart;
     } catch (error) {
       console.error('Error al crear repuesto:', error);
@@ -87,7 +58,7 @@ const useSpareParts = () => {
         newFiles,
         mediaToDelete
       );
-      await loadSpareParts();
+      updateSparePart(updatedSparePart.data || updatedSparePart);
       return updatedSparePart;
     } catch (error) {
       console.error('Error al actualizar repuesto:', error);
@@ -105,7 +76,7 @@ const useSpareParts = () => {
   const deleteSparePart = async (sparePartId, mediaIds = []) => {
     try {
       await sparePartWorkflow.deleteSparePart(sparePartId, mediaIds);
-      await loadSpareParts();
+      removeSparePart(sparePartId);
       toast.success('Repuesto eliminado correctamente');
     } catch (error) {
       console.error('Error al eliminar repuesto:', error);
@@ -116,7 +87,7 @@ const useSpareParts = () => {
 
   // Refrescar la lista de repuestos
   const refreshSpareParts = () => {
-    return loadSpareParts();
+    return fetchSpareParts();
   };
 
   return {
@@ -125,7 +96,7 @@ const useSpareParts = () => {
     isLoading,
     searchTerm,
     setSearchTerm,
-    products,
+    products: [], // Mantener compatibilidad
     createNewSparePart,
     updateExistingSparePart,
     deleteSparePart,

@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Edit, Trash2, Box, DollarSign, Hash, Info, ExternalLink } from 'lucide-react';
 import PropTypes from 'prop-types';
-import { getSparePartById } from '@/services/admin/sparePartService';
+import useSparePartsStore from '../../hooks/useSparePartsStore';
 
 /**
  * Componente de tarjeta para mostrar información de un repuesto
@@ -17,30 +17,9 @@ import { getSparePartById } from '@/services/admin/sparePartService';
  * @param {Function} [props.onClick] - Función para manejar el clic en la tarjeta
  */
 const SparePartCard = ({ sparePart, onEdit, onDelete, onClick }) => {
-  const [detailedSparePart, setDetailedSparePart] = useState(null);
-  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const { removeSparePart } = useSparePartsStore();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  // Obtener detalles completos del repuesto al montar el componente
-  useEffect(() => {
-    const fetchDetails = async () => {
-      if (!sparePart?.id) return;
-      try {
-        setIsLoadingDetails(true);
-        const response = await getSparePartById(sparePart.id);
-        if (response?.result) {
-          setDetailedSparePart(response.result);
-        }
-      } catch (err) {
-        console.error(`Error al obtener detalles del repuesto ${sparePart.id}:`, err);
-      } finally {
-        setIsLoadingDetails(false);
-      }
-    };
-
-    fetchDetails();
-  }, [sparePart.id]);
 
   // Formatear el precio como moneda
   const formatPrice = (price) => {
@@ -77,11 +56,18 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onClick }) => {
   };
 
   const confirmDelete = async () => {
-    if (!onDelete) return;
+    if (!sparePart?.id) return;
     
     try {
       setIsDeleting(true);
-      await onDelete(sparePart);
+      // Actualizar el store localmente
+      removeSparePart(sparePart.id);
+      
+      // Llamar a la función onDelete si existe (para operaciones adicionales)
+      if (onDelete) {
+        await onDelete(sparePart);
+      }
+      
       setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error('Error al eliminar el repuesto:', error);
@@ -89,8 +75,6 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onClick }) => {
       setIsDeleting(false);
     }
   };
-
-  const displayData = detailedSparePart || sparePart;
 
   return (
     <>
@@ -102,18 +86,18 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onClick }) => {
           <div className="flex justify-between items-start">
             <div>
               <CardTitle className="text-lg font-semibold line-clamp-1">
-                {displayData.name}
+                {sparePart.name}
               </CardTitle>
               <CardDescription className="text-sm flex items-center gap-1 mt-1">
                 <Hash className="h-3 w-3 text-muted-foreground" />
-                <span className="font-mono">{displayData.code}</span>
-                {displayData.externalId && (
+                <span className="font-mono">{sparePart.code}</span>
+                {sparePart.externalId && (
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span className="inline-flex items-center text-xs text-muted-foreground ml-2">
                           <ExternalLink className="h-3 w-3 mr-1" />
-                          {displayData.externalId}
+                          {sparePart.externalId}
                         </span>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -125,18 +109,18 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onClick }) => {
               </CardDescription>
             </div>
             <Badge 
-              variant={displayData.status === 'ACTIVE' ? 'default' : 'secondary'}
+              variant={sparePart.status === 'ACTIVE' ? 'default' : 'secondary'}
               className="ml-2"
             >
-              {getStatusText(displayData.status)}
+              {getStatusText(sparePart.status)}
             </Badge>
           </div>
         </CardHeader>
 
         <CardContent className="flex-1">
-          {displayData.description && (
+          {sparePart.description && (
             <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
-              {displayData.description}
+              {sparePart.description}
             </p>
           )}
 
@@ -146,7 +130,7 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onClick }) => {
                 <DollarSign className="h-4 w-4 mr-1" />
                 <span>Precio</span>
               </div>
-              <p className="font-medium">{formatPrice(displayData.price || 0)}</p>
+              <p className="font-medium">{formatPrice(sparePart.price || 0)}</p>
             </div>
 
             <div className="space-y-1">
@@ -155,20 +139,20 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onClick }) => {
                 <span>Stock</span>
               </div>
               <Badge 
-                variant={getStockBadgeVariant(displayData.stock || 0)}
+                variant={getStockBadgeVariant(sparePart.stock || 0)}
                 className="font-medium"
               >
-                {displayData.stock || 0} unidades
+                {sparePart.stock || 0} unidades
               </Badge>
             </div>
 
-            {displayData.material && (
+            {sparePart.material && (
               <div className="space-y-1 col-span-2">
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Info className="h-4 w-4 mr-1" />
                   <span>Material</span>
                 </div>
-                <p className="text-sm">{displayData.material}</p>
+                <p className="text-sm">{sparePart.material}</p>
               </div>
             )}
           </div>
@@ -182,7 +166,7 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onClick }) => {
                 size="sm" 
                 onClick={(e) => {
                   e.stopPropagation();
-                  onEdit(displayData);
+                  onEdit(sparePart);
                 }}
                 className="h-8"
               >
@@ -206,12 +190,13 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onClick }) => {
         )}
       </Card>
 
+      {/* Diálogo de confirmación para eliminar */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>¿Estás seguro?</DialogTitle>
+            <DialogTitle>¿Eliminar repuesto?</DialogTitle>
             <DialogDescription>
-              Esta acción eliminará el repuesto "{displayData.name}". Esta acción no se puede deshacer.
+              ¿Estás seguro de que quieres eliminar "{sparePart.name}"? Esta acción no se puede deshacer.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -241,17 +226,18 @@ SparePartCard.propTypes = {
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     name: PropTypes.string.isRequired,
     code: PropTypes.string.isRequired,
+    externalId: PropTypes.string,
+    description: PropTypes.string,
     price: PropTypes.number,
     stock: PropTypes.number,
-    status: PropTypes.oneOf(['ACTIVE', 'INACTIVE', 'OUT_OF_STOCK']),
-    description: PropTypes.string,
     material: PropTypes.string,
-    externalId: PropTypes.string,
-    media: PropTypes.array,
+    status: PropTypes.string,
+    rentable: PropTypes.bool,
+    media: PropTypes.array
   }).isRequired,
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
-  onClick: PropTypes.func,
+  onClick: PropTypes.func
 };
 
 export default SparePartCard;
