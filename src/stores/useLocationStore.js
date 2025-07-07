@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 const useLocationStore = create((set, get) => ({
   // State for location
-  currentLocation: "San Antón",
+  currentLocation: "Cuernavaca",
   latitude: null,
   longitude: null,
   locationLoading: false,

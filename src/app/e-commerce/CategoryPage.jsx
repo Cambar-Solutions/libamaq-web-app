@@ -664,14 +664,9 @@ export default function CategoryPage() {
             </div>
 
             <div className="w-full">
-              {/* Lógica de Visualización:
-                1. Si hay una marca o categoría seleccionada (selectedBrand / selectedCategory), 
-                   o un término de búsqueda (searchTerm), muestra los productos filtrados.
-                2. De lo contrario, muestra las secciones de "Los más vendidos" y "Todos los productos".
-            */}
               {(brand || selectedCategory || searchTerm) ? (
                 // --- MUESTRA LOS PRODUCTOS FILTRADOS/BUSCADOS ---
-                <div className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full flex-grow h-[calc(100vh-15rem)]">
+                <div className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full flex-grow">
                   {loadingFilteredProducts ? (
                     <div className="text-center py-10">
                       <p className="text-gray-500">Cargando productos...</p>
