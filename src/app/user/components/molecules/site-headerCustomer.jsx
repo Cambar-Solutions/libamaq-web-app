@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import useLocationStore from "@/stores/useLocationStore";
 
 export function SiteHeaderCustomer({ onViewChange, userInfo }) {
   const navigate = useNavigate();
@@ -28,6 +29,16 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
   const [selectedBrandId, setSelectedBrandId] = useState("");
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  
+  // States for location
+  const { 
+    currentLocation, 
+    locationLoading, 
+    locationError, 
+    getCurrentLocation,
+    loadSavedLocation 
+  } = useLocationStore();
+  
   const toggleMenu = () => setMenuOpen(o => !o);
 
   useEffect(() => {
@@ -43,14 +54,19 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
     })();
   }, []);
 
+  // Load saved location when component mounts
+  useEffect(() => {
+    loadSavedLocation();
+  }, [loadSavedLocation]);
+
   const handleBrandChange = (brandId) => {
     setSelectedBrandId(brandId);
     if (brandId && drawerRef.current) {
       const selectedBrand = brands.find(b => b.id.toString() === brandId);
       if (selectedBrand) {
-        // Cerrar el menú móvil antes de abrir el drawer
+        // Close mobile menu before opening drawer
         setMenuOpen(false);
-        // Esperar a que se cierre el menú antes de abrir el drawer
+        // Wait for menu to close before opening drawer
         setTimeout(() => {
           drawerRef.current.handleBrandClick(selectedBrand);
         }, 300);
@@ -61,7 +77,7 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        {/* Cargando perfil… */}
+        {/* Loading profile… */}
       </div>
     );
   }
@@ -124,17 +140,20 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
               </Select>
             </div>
 
-            <button
-              onClick={() =>
-                navigate('/user-profile', {
-                  state: { view: 'perfil', openLocation: true }
-                })}
-              className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
-
-            >
-              <MapPin size={20} />
-              Actualizar ubicación
-            </button>
+            <div className="flex flex-col">
+              <button
+                onClick={getCurrentLocation}
+                disabled={locationLoading}
+                className="flex items-center gap-2 text-gray-800 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <MapPin size={20} />
+                {locationLoading ? "Obteniendo ubicación..." : "Actualizar ubicación"}
+              </button>
+              {locationError && (
+                <p className="text-xs text-red-500 mt-1 ml-6">{locationError}</p>
+              )}
+              <p className="text-xs text-gray-600 mt-1 ml-6">Actual: {currentLocation}</p>
+            </div>
 
 
 
@@ -177,16 +196,19 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
           </Link>
 
           <button
-            onClick={() =>
-              navigate('/user-profile', {
-                state: { view: 'perfil', openLocation: true }
-              })}
-            className="cursor-pointer flex items-center gap-1 text-white hover:text-yellow-500 transition-colors duration-600"
+            onClick={getCurrentLocation}
+            disabled={locationLoading}
+            className="cursor-pointer flex items-center gap-1 text-white hover:text-yellow-500 transition-colors duration-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <MapPin size={28} />
             <div className="text-left">
-              <p className="text-sm">San Antón</p>
-              <p className="text-base">Actualizar ubicación</p>
+              <p className="text-sm">{currentLocation}</p>
+              <p className="text-base">
+                {locationLoading ? "Obteniendo ubicación..." : "Actualizar ubicación"}
+              </p>
+              {locationError && (
+                <p className="text-xs text-red-400">{locationError}</p>
+              )}
             </div>
           </button>
         </div>

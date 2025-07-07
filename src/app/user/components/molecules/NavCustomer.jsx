@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import {jwtDecode} from "jwt-decode";
 import { getUserById } from "@/services/admin/userService"; 
+import useLocationStore from "@/stores/useLocationStore"; 
 
 export function NavCustomer({ onViewChange }) {
     const navigate = useNavigate();
@@ -32,9 +33,24 @@ export function NavCustomer({ onViewChange }) {
     const [loading, setLoading] = useState(true); // This loading state is for brands data
     const [userLoading, setUserLoading] = useState(true); // New loading state for user info
     const [menuOpen, setMenuOpen] = useState(false);
+    
+    // Location states from Zustand store
+    const { 
+        currentLocation, 
+        locationLoading, 
+        locationError, 
+        getCurrentLocation,
+        loadSavedLocation 
+    } = useLocationStore();
+    
     const toggleMenu = () => setMenuOpen(o => !o);
 
-    // Effect for fetching brands data
+    // Load saved location when component mounts
+    useEffect(() => {
+        loadSavedLocation();
+    }, [loadSavedLocation]);
+
+    // Effect for fetching brands data (this is the same as in SiteHeaderCustomer)
     useEffect(() => {
         (async () => {
             try {
@@ -150,15 +166,20 @@ export function NavCustomer({ onViewChange }) {
                             </Select>
                         </div>
 
-                        <button onClick={() =>
-                            navigate('/user-profile', {
-                                state: { view: 'perfil', openLocation: true }
-                            })}
-                            className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
-                        >
-                            <MapPin size={20} />
-                            Actualizar ubicación
-                        </button>
+                        <div className="flex flex-col">
+                            <button 
+                                onClick={getCurrentLocation}
+                                disabled={locationLoading}
+                                className="flex items-center gap-2 text-gray-800 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <MapPin size={20} />
+                                {locationLoading ? "Obteniendo ubicación..." : "Actualizar ubicación"}
+                            </button>
+                            {locationError && (
+                                <p className="text-xs text-red-500 mt-1 ml-6">{locationError}</p>
+                            )}
+                            <p className="text-xs text-gray-600 mt-1 ml-6">Actual: {currentLocation}</p>
+                        </div>
 
                         <Link to="/user-profile"
                             onClick={() => { onViewChange("perfil"); setMenuOpen(false); }}
@@ -191,17 +212,19 @@ export function NavCustomer({ onViewChange }) {
                     </Link>
 
                     <button
-                        onClick={() =>
-                            navigate('/user-profile', {
-                                state: { view: 'perfil', openLocation: true }
-                            })
-                        }
-                        className="cursor-pointer flex items-center gap-1 text-white hover:text-yellow-500 transition-colors duration-600"
+                        onClick={getCurrentLocation}
+                        disabled={locationLoading}
+                        className="cursor-pointer flex items-center gap-1 text-white hover:text-yellow-500 transition-colors duration-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <MapPin size={28} />
                         <div className="text-left">
-                            <p className="text-sm">San Antón</p>
-                            <p className="text-base">Actualizar ubicación</p>
+                            <p className="text-sm">{currentLocation}</p>
+                            <p className="text-base">
+                                {locationLoading ? "Obteniendo ubicación..." : "Actualizar ubicación"}
+                            </p>
+                            {locationError && (
+                                <p className="text-xs text-red-400">{locationError}</p>
+                            )}
                         </div>
                     </button>
                 </div>
