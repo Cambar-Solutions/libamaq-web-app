@@ -460,13 +460,13 @@ const MasonryGallery = () => {
   // Filtros para la galería
   const [filter, setFilter] = useState('all');
   
-  // Filtrar elementos según el tipo seleccionado
+  // Filtrar elementos según el tipo seleccionado y que no sean blobs
   const filteredItems = React.useMemo(() => {
     if (!Array.isArray(mediaItems)) return [];
-    
-    return filter === 'all' 
-      ? mediaItems.filter(item => item && item.id) // Solo items válidos
-      : mediaItems.filter(item => item && item.id && item.type === filter);
+    const noBlobs = mediaItems.filter(item => item && item.id && !(item.src && item.src.startsWith('blob:')));
+    return filter === 'all'
+      ? noBlobs // Solo items válidos y no blobs
+      : noBlobs.filter(item => item.type === filter);
   }, [mediaItems, filter]);
   
   // Variantes para animaciones con Framer Motion
