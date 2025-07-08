@@ -154,14 +154,18 @@ export function EmployeesView() {
   };
 
   const handleEdit = (employee) => {
-    console.log('Editando empleado:', employee);
     setIsEditing(true);
+    // Limpiar el número para que solo sean 10 dígitos después de la lada
+    let telefono = employee.phoneNumber || '';
+    const ladaMatch = telefono.match(/^(\+\d{1,3})/);
+    let lada = ladaMatch ? ladaMatch[1] : '';
+    let numero = telefono.replace(lada, '').replace(/\D/g, '').slice(0, 10);
     setNewEmployee({
       id: employee.id,
       nombre: employee.name,
       apellido: employee.lastName,
       email: employee.email,
-      telefono: employee.phoneNumber,
+      telefono: lada + numero,
       password: "",
       status: employee.status,
       role: employee.role // Usar el rol actual del empleado
@@ -224,9 +228,16 @@ export function EmployeesView() {
     setIsSubmitting(true);
     const toastId = toast.loading('Guardando empleado...');
     try {
-      // Validar que el teléfono tenga exactamente 10 dígitos (sin contar la lada)
-      const phoneDigits = newEmployee.telefono.replace(/^\+\d{1,3}/, '');
-      if (phoneDigits.length !== 10) {
+      // Limpiar y validar el teléfono antes de enviar (refuerzo final)
+      let telefono = newEmployee.telefono || '';
+      // Buscar lada válida de la lista
+      const ladaObj = [
+        { code: "+52" }, { code: "+1" }, { code: "+54" }, { code: "+57" }, { code: "+56" }
+      ].find(opt => telefono.startsWith(opt.code));
+      const lada = ladaObj ? ladaObj.code : "+52";
+      const numero = telefono.slice(lada.length).replace(/\D/g, '').slice(0, 10);
+      const telefonoLimpio = lada + numero;
+      if (numero.length !== 10) {
         toast.error("El número de teléfono debe tener exactamente 10 dígitos", { id: toastId });
         setIsSubmitting(false);
         toast.dismiss(toastId);
@@ -238,7 +249,7 @@ export function EmployeesView() {
         email: newEmployee.email,
         name: newEmployee.nombre,
         lastName: newEmployee.apellido,
-        phoneNumber: newEmployee.telefono,
+        phoneNumber: telefonoLimpio,
         role: newEmployee.role,
         status: newEmployee.status
       };
@@ -686,7 +697,14 @@ export function EmployeesView() {
                     id="telefono"
                     name="telefono"
                     value={newEmployee.telefono}
-                    onChange={val => setNewEmployee(prev => ({ ...prev, telefono: val }))}
+                    onChange={val => {
+                      // Siempre lada + 10 dígitos
+                      const ladaMatch = val.match(/^(\+\d{1,3})/);
+                      const lada = ladaMatch ? ladaMatch[1] : '';
+                      const numero = val.replace(lada, '').replace(/\D/g, '').slice(0, 10);
+                      const limpio = lada + numero;
+                      setNewEmployee(prev => ({ ...prev, telefono: limpio }));
+                    }}
                     required
                     maxDigits={10}
                     placeholder="10 dígitos"

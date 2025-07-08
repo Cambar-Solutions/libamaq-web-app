@@ -182,12 +182,17 @@ export function ClientsView() {
 
   const handleEdit = (client) => {
     setIsEditing(true);
+    // Limpiar el número para que solo sean 10 dígitos después de la lada
+    let telefono = client.phoneNumber || '';
+    const ladaMatch = telefono.match(/^(\+\d{1,3})/);
+    let lada = ladaMatch ? ladaMatch[1] : '';
+    let numero = telefono.replace(lada, '').replace(/\D/g, '').slice(0, 10);
     setNewClient({
       id: client.id,
       nombre: client.name,
       apellido: client.lastName,
       email: client.email,
-      telefono: client.phoneNumber, // Cargar el número tal cual, sin añadir +52 automáticamente
+      telefono: lada + numero,
       password: "", // Limpiar la contraseña al abrir el modal de edición
       status: client.status,
       role: client.role
@@ -214,7 +219,7 @@ export function ClientsView() {
       nombre: "",
       apellido: "",
       email: "",
-      telefono: "",
+      telefono: "+52", // Valor por defecto con lada MX
       password: "",
       status: "ACTIVE",
       role: "GENERAL_CUSTOMER"
@@ -229,11 +234,7 @@ export function ClientsView() {
     setNewPasswordError("");
     setConfirmPasswordError("");
     setConfirmPassword("");
-
-    console.log("Estado de newClient después de resetForm:", {
-      email: "", // Esperamos que sea vacío
-      password: "" // Esperamos que sea vacío
-    });
+    setIsSubmitting(false); // Asegura que el botón se reactive
   };
 
   const handleCloseModal = () => {
@@ -366,11 +367,20 @@ export function ClientsView() {
          return;
       }
 
-      // Validar que el teléfono tenga exactamente 10 dígitos (sin contar la lada)
-      const phoneDigits = newClient.telefono.replace(/^\+\d{1,3}/, '');
-      if (phoneDigits.length !== 10) {
+      // Limpiar y validar el teléfono antes de enviar (refuerzo final)
+      let telefono = newClient.telefono || '';
+      // Buscar lada válida de la lista
+      const ladaObj = [
+        { code: "+52" }, { code: "+1" }, { code: "+54" }, { code: "+57" }, { code: "+56" }
+      ].find(opt => telefono.startsWith(opt.code));
+      const lada = ladaObj ? ladaObj.code : "+52";
+      const numero = telefono.slice(lada.length).replace(/\D/g, '').slice(0, 10);
+      const telefonoLimpio = lada + numero;
+      if (numero.length !== 10) {
         toast.error("El número de teléfono debe tener exactamente 10 dígitos", { id: toastId });
         setPhoneError(true);
+        setIsSubmitting(false);
+        toast.dismiss(toastId);
         return;
       }
 
@@ -386,7 +396,7 @@ export function ClientsView() {
         email: newClient.email,
         name: newClient.nombre,
         lastName: newClient.apellido,
-        phoneNumber: newClient.telefono,
+        phoneNumber: telefonoLimpio,
         role: newClient.role,
         status: newClient.status
       };
@@ -747,7 +757,12 @@ export function ClientsView() {
                     name="telefono"
                     value={newClient.telefono}
                     onChange={val => {
-                      setNewClient(prev => ({ ...prev, telefono: val }));
+                      // Siempre lada + 10 dígitos
+                      const ladaMatch = val.match(/^(\+\d{1,3})/);
+                      const lada = ladaMatch ? ladaMatch[1] : '';
+                      const numero = val.replace(lada, '').replace(/\D/g, '').slice(0, 10);
+                      const limpio = lada + numero;
+                      setNewClient(prev => ({ ...prev, telefono: limpio }));
                       if (phoneError) setPhoneError(false);
                     }}
                     error={phoneError}
