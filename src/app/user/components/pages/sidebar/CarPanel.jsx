@@ -7,7 +7,7 @@ import NumberStepper from "@/components/ui/NumberStepper";
 import { CreditCard, ShoppingCart } from "lucide-react"; // Importa ShoppingCart para el estado vacío
 import { FaRegEye } from "react-icons/fa6";
 import { motion } from "framer-motion";
-import toast from "react-hot-toast"; // Para notificaciones al usuario
+import toast, { Toaster } from "react-hot-toast";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -128,13 +128,14 @@ export default function CarPanel() {
             {selectedProductDetails.map((item) => (
               <div
                 key={item.id}
-                className="flex justify-between mb-2 text-gray-700"
+                className="flex justify-between gap-8 mb-2 text-gray-700"
               >
-                <span>
-                  {item.product?.name || item.name} x {quantities[item.id] || item.quantity}
+                <span className="flex items-center gap-0">
+                  <span className="w-[9em] line-clamp-1">{item.product?.name || item.name}</span>
+                  x <span className="">{quantities[item.id] || item.quantity}</span>
                 </span>
-                <span>
-                  ${(item.product?.price || item.price || 0) * (quantities[item.id] || item.quantity)}
+                <span className="text-start w-full">
+                  ${((item.product?.price || item.price || 0) * (quantities[item.id] || item.quantity)).toLocaleString("es-MX")}
                 </span>
               </div>
             ))}
@@ -145,10 +146,10 @@ export default function CarPanel() {
               $
               {selectedProductDetails
                 .reduce((sum, item) => sum + (item.product?.price || item.price || 0) * (quantities[item.id] || item.quantity), 0)
-                .toLocaleString()}
+                .toLocaleString("es-MX")}
             </span>
           </div>
-          <div className="absolute bottom-4 left-0 px-3 w-full">
+          <div className="absolute bottom-4 left-0 lg:px-5 md:px-5 px-10 w-full">
             <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1">
               <CreditCard className="h-4 w-4 lg:h-5 lg:w-5" />
               <span className="text-sm lg:text-base">Comprar</span>
@@ -191,6 +192,8 @@ export default function CarPanel() {
           {/* Encabezado */}
           <div className="border-b border-gray-400 mb-6">
             <h1 className="text-3xl font-semibold text-indigo-950">Mi Carrito</h1>
+            <p className="text-base text-gray-400 font-semibold mb-3">En este panel podrás ver los productos que tienes en tu carrito
+            </p>
             {cartProducts.length > 0 && (
               <label className="inline-flex items-center text-blue-600 hover:underline cursor-pointer text-sm mb-5">
                 <Input
@@ -281,7 +284,7 @@ export default function CarPanel() {
         </div>
 
         {/* PANEL DE RESUMEN (solo en escritorio) */}
-        <div className="hidden lg:block order-1 lg:order-2 w-[25%] ml-3 px-4 mt-13 h-[26em] top-16 z-10 bg-white shadow-md rounded-lg p-3 relative">
+        <div className="hidden lg:block order-1 lg:order-2 w-[25%] ml-3 px-4 mt-13 h-[26em] lg:sticky lg:top-24 z-10 bg-white shadow-md rounded-lg p-3">
           {Summary}
         </div>
       </div>
@@ -299,6 +302,32 @@ export default function CarPanel() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10B981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#EF4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
     </motion.div>
   );
 }
