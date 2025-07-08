@@ -8,135 +8,112 @@ import { CreditCard, ShoppingCart } from "lucide-react"; // Importa ShoppingCart
 import { FaRegEye } from "react-icons/fa6";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast"; // Para notificaciones al usuario
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 // Importa tus servicios de API
 // ASEGÚRATE DE QUE LA RUTA SEA CORRECTA PARA TU PROYECTO
-import {
-  getOrderById, // Asume que esta función trae la orden con sus orderDetails anidados
-  deleteOrderDetail, // Asume que esta función elimina un orderDetail específico
-} from "@/services/public/orderService"; // Ajusta esta ruta a la de tu archivo de servicios
+import { getCartByUser, removeProductFromCart, updateCartItem } from "@/services/customer/shoppingCar";
+import { jwtDecode } from "jwt-decode";
 
 // El componente CarPanel ahora aceptará currentCartOrderId y currentUserId como props.
 // Esto asume que un componente padre le pasa el ID del carrito activo del usuario.
-export default function CarPanel({ currentCartOrderId, currentUserId }) {
+export default function CarPanel() {
   const navigate = useNavigate();
 
-  // Estado para los productos del carrito (que serán los 'orderDetails' de la orden)
+  // Estado para los productos del carrito
   const [cartProducts, setCartProducts] = useState([]);
-  // 'quantities' ahora mapea 'orderDetail.id' a la cantidad.
-  // Es útil si permites cambiar la cantidad desde el carrito sin actualizar el backend inmediatamente.
   const [quantities, setQuantities] = useState({});
-  // 'selected' ahora mapea 'orderDetail.id' al estado de selección (true/false).
   const [selected, setSelected] = useState({});
   const [isLoadingCart, setIsLoadingCart] = useState(true);
+  const [error, setError] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   // --- Función para cargar los detalles del carrito ---
   const fetchCartDetails = async () => {
-    // Si no hay un ID de carrito, no podemos buscar nada.
-    // Establecemos isLoadingCart a false y limpiamos los estados.
-    if (!currentCartOrderId) {
-      console.log("No hay ID de carrito disponible. No se pueden cargar los detalles del carrito.");
-      setIsLoadingCart(false);
+    setIsLoadingCart(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No autenticado");
+      const decoded = jwtDecode(token);
+      const userId = decoded.sub ? parseInt(decoded.sub, 10) : null;
+      if (!userId) throw new Error("No se pudo obtener el ID de usuario");
+      const cartData = await getCartByUser(userId);
+      const items = Array.isArray(cartData?.data) ? cartData.data : [];
+      setCartProducts(items);
+      // Inicializa cantidades y selección
+      const initialQuantities = items.reduce((acc, item) => ({ ...acc, [item.id]: item.quantity }), {});
+      setQuantities(initialQuantities);
+      const initialSelection = items.reduce((acc, item) => ({ ...acc, [item.id]: true }), {});
+      setSelected(initialSelection);
+    } catch (err) {
       setCartProducts([]);
       setQuantities({});
       setSelected({});
-      return;
-    }
-
-    setIsLoadingCart(true); // Indicamos que la carga ha comenzado
-    try {
-      // Llamamos a la API para obtener la orden por su ID.
-      // Se espera que la respuesta incluya los 'orderDetails' y, dentro de ellos,
-      // la información del 'product' (nombre, descripción, imagen, etc.).
-      const response = await getOrderById(currentCartOrderId);
-      console.log("Respuesta de getOrderById en CarPanel:", response.data); // <--- AGREGAR ESTO
-
-      if (response && response.data && response.data.orderDetails) {
-        const fetchedOrderDetails = response.data.orderDetails;
-        setCartProducts(fetchedOrderDetails);
-
-        // Inicializamos las cantidades a partir de lo que viene del backend
-        const initialQuantities = fetchedOrderDetails.reduce((acc, detail) => {
-          return { ...acc, [detail.id]: detail.quantity };
-        }, {});
-        setQuantities(initialQuantities);
-
-        // Inicializamos todos los ítems como seleccionados por defecto para el cálculo del resumen
-        const initialSelection = fetchedOrderDetails.reduce((acc, detail) => {
-          return { ...acc, [detail.id]: true };
-        }, {});
-        setSelected(initialSelection);
-
-        console.log("🛒 Detalles del carrito cargados:", fetchedOrderDetails);
-      } else {
-        // Si no se encuentran orderDetails, asumimos que el carrito está vacío
-        console.log("ℹ️ No se encontraron detalles de orden para el carrito.");
-        setCartProducts([]);
-        setQuantities({});
-        setSelected({});
-      }
-    } catch (error) {
-      console.error("❌ Error al cargar los productos del carrito:", error);
-      toast.error("Error al cargar los productos del carrito."); // Muestra un mensaje de error
-      setCartProducts([]); // Limpiamos los productos en caso de error
-      setQuantities({});
-      setSelected({});
+      setError(err.message || "Error al cargar el carrito");
     } finally {
-      setIsLoadingCart(false); // La carga ha terminado, exitosa o con error
+      setIsLoadingCart(false);
     }
   };
 
-  // --- useEffect para cargar los datos cuando el componente se monta o el ID del carrito cambia ---
   useEffect(() => {
     fetchCartDetails();
-  }, [currentCartOrderId]); // Se vuelve a ejecutar si el ID del carrito cambia
+  }, []);
 
   // --- Manejador de cambio de cantidad ---
-  function handleQtyChange(orderDetailId, value) {
-    setQuantities((prevQuantities) => ({ ...prevQuantities, [orderDetailId]: value }));
-
-    // OPCIONAL: Llama a tu API para actualizar la cantidad en el backend
-    // Si el usuario cambia la cantidad, deberías reflejarlo en la base de datos.
-    // Esto podría hacerse con un debounce (esperar un poco antes de llamar a la API)
-    // o al finalizar la compra. Por simplicidad, aquí puedes agregar la llamada directa:
-    // updateOrderDetailQuantity(orderDetailId, value)
-    //   .then(() => toast.success("Cantidad actualizada."))
-    //   .catch(error => toast.error("Error al actualizar la cantidad."));
+  async function handleQtyChange(cartItemId, value) {
+    setQuantities((prevQuantities) => ({ ...prevQuantities, [cartItemId]: value }));
+    // Actualiza en backend
+    try {
+      const item = cartProducts.find(i => i.id === cartItemId);
+      if (!item) return;
+      await updateCartItem({ ...item, quantity: value });
+      toast.success("Cantidad actualizada.");
+      fetchCartDetails();
+    } catch (error) {
+      toast.error("Error al actualizar la cantidad.");
+    }
   }
 
   // --- Lógica de selección de productos ---
-  // Ahora filtramos sobre 'cartProducts' (los orderDetails)
-  const selectedProductDetails = cartProducts.filter((detail) => selected[detail.id]);
+  const selectedProductDetails = cartProducts.filter((item) => selected[item.id]);
   const anySelected = selectedProductDetails.length > 0;
-  // 'allSelected' ahora verifica si todos los 'orderDetails' están seleccionados
-  const allSelected =
-    cartProducts.length > 0 && cartProducts.every((detail) => selected[detail.id]);
+  const allSelected = cartProducts.length > 0 && cartProducts.every((item) => selected[item.id]);
 
   function toggleSelectAll() {
     if (allSelected) {
-      setSelected({}); // Deselecciona todo
+      setSelected({});
     } else {
       const sel = {};
-      cartProducts.forEach((detail) => (sel[detail.id] = true)); // Selecciona todo
+      cartProducts.forEach((item) => (sel[item.id] = true));
       setSelected(sel);
     }
   }
 
-  function toggleOne(orderDetailId) {
-    setSelected((prevSelected) => ({ ...prevSelected, [orderDetailId]: !prevSelected[orderDetailId] }));
+  function toggleOne(cartItemId) {
+    setSelected((prevSelected) => ({ ...prevSelected, [cartItemId]: !prevSelected[cartItemId] }));
   }
 
   // --- Función para eliminar un producto del carrito ---
-  const handleRemoveItem = async (orderDetailId) => {
-    if (!window.confirm("¿Estás seguro de que quieres eliminar este producto del carrito?")) {
-      return; // El usuario canceló la eliminación
-    }
+  const handleRemoveItem = async () => {
+    if (!itemToDelete) return;
     try {
-      await deleteOrderDetail(orderDetailId); // Llama a la función de tu API para eliminar el detalle de la orden
+      await removeProductFromCart(itemToDelete);
       toast.success("Producto eliminado del carrito.");
-      fetchCartDetails(); // Vuelve a cargar el carrito para actualizar la UI
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
+      fetchCartDetails();
     } catch (error) {
-      console.error("❌ Error al eliminar el producto del carrito:", error);
       toast.error("Error al eliminar el producto del carrito.");
     }
   };
@@ -148,16 +125,16 @@ export default function CarPanel({ currentCartOrderId, currentUserId }) {
       {anySelected ? (
         <>
           <div className="border-b border-gray-400 pb-6 space-y-2">
-            {selectedProductDetails.map((detail) => (
+            {selectedProductDetails.map((item) => (
               <div
-                key={detail.id} // Usamos el ID del orderDetail como key
+                key={item.id}
                 className="flex justify-between mb-2 text-gray-700"
               >
                 <span>
-                  {detail.product?.name} x {quantities[detail.id] || detail.quantity}
+                  {item.product?.name || item.name} x {quantities[item.id] || item.quantity}
                 </span>
                 <span>
-                  ${(detail.unitPrice * (quantities[detail.id] || detail.quantity)).toLocaleString()}
+                  ${(item.product?.price || item.price || 0) * (quantities[item.id] || item.quantity)}
                 </span>
               </div>
             ))}
@@ -167,7 +144,7 @@ export default function CarPanel({ currentCartOrderId, currentUserId }) {
             <span>
               $
               {selectedProductDetails
-                .reduce((sum, detail) => sum + detail.unitPrice * (quantities[detail.id] || detail.quantity), 0)
+                .reduce((sum, item) => sum + (item.product?.price || item.price || 0) * (quantities[item.id] || item.quantity), 0)
                 .toLocaleString()}
             </span>
           </div>
@@ -186,11 +163,18 @@ export default function CarPanel({ currentCartOrderId, currentUserId }) {
     </>
   );
 
-  // --- Manejo del estado de carga ---
   if (isLoadingCart) {
     return (
       <div className="flex justify-center items-center h-64">
         <p className="text-gray-500">Cargando productos del carrito...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <p className="text-red-500">{error}</p>
       </div>
     );
   }
@@ -207,7 +191,6 @@ export default function CarPanel({ currentCartOrderId, currentUserId }) {
           {/* Encabezado */}
           <div className="border-b border-gray-400 mb-6">
             <h1 className="text-3xl font-semibold text-indigo-950">Mi Carrito</h1>
-            {/* Solo muestra "Seleccionar todos" si hay productos en el carrito */}
             {cartProducts.length > 0 && (
               <label className="inline-flex items-center text-blue-600 hover:underline cursor-pointer text-sm mb-5">
                 <Input
@@ -236,49 +219,44 @@ export default function CarPanel({ currentCartOrderId, currentUserId }) {
               </Link>
             </div>
           ) : (
-            /* Tarjetas de productos (Iteramos sobre cartProducts/orderDetails) */
-            cartProducts.map((detail) => {
-              const product = detail.product; // Accedemos al objeto 'product' anidado en 'orderDetail'
-              const qty = quantities[detail.id] || detail.quantity; // Usamos la cantidad del estado local o del detalle
-              const totalPrice = detail.unitPrice * qty; // Usamos el 'unitPrice' del 'orderDetail'
+            cartProducts.map((item) => {
+              const product = item.product || item;
+              const qty = quantities[item.id] || item.quantity;
+              const totalPrice = (product.price || item.price || 0) * qty;
 
               return (
                 <div
-                  key={detail.id} // La clave debe ser el ID único del orderDetail
+                  key={item.id}
                   className="w-full flex flex-col sm:flex-row items-start p-5 bg-white rounded-2xl mb-3 shadow-sm hover:shadow-md duration-500 overflow-hidden"
                 >
                   <div className="mr-0 sm:mr-4 pt-2">
                     <Input
                       type="checkbox"
-                      checked={!!selected[detail.id]} // Usa el ID del orderDetail para la selección
-                      onChange={() => toggleOne(detail.id)}
+                      checked={!!selected[item.id]}
+                      onChange={() => toggleOne(item.id)}
                       className="w-4 h-4 cursor-pointer"
                     />
                   </div>
                   <img
-                    // Accede a la URL de la imagen desde el objeto 'product'
-                    // Asume que 'product.media' es un array y el primer elemento tiene una 'url'
                     src={product?.media?.[0]?.url || "/placeholder-product.png"}
                     alt={product?.name}
                     className="w-full sm:w-40 h-40 object-contain rounded-lg mt-4 sm:mt-0"
                   />
                   <div className="flex-1 flex flex-col justify-between px-0 sm:px-5 mt-4 sm:mt-0">
                     <div>
-                      <h2 className="text-2xl font-semibold">{product?.name}</h2> {/* Nombre del producto */}
+                      <h2 className="text-2xl font-semibold">{product?.name}</h2>
                       <p className="text-gray-700 mt-2 line-clamp-2">
-                        {/* Descripción del producto. Ajusta si tienes shortDescription o solo description */}
-                        {product?.description?.shortDescription || product?.description || "No description available."}
+                        {product?.shortDescription || "..."}
                       </p>
                       <div className="flex gap-4 mt-3">
                         <button
-                          className="flex items-center text-red-600 hover:underline" // Cambiado a rojo para "Eliminar"
-                          onClick={() => handleRemoveItem(detail.id)} // Llama a la función de eliminación
+                          className="flex items-center text-red-600 hover:underline"
+                          onClick={() => { setItemToDelete(item.id); setDeleteDialogOpen(true); }}
                         >
                           <FiTrash2 size={18} className="mr-1" />
                           Eliminar
                         </button>
-                        {/* Redirección a los detalles del producto usando el ID del producto */}
-                        <Link to={`/e-commerce/detalle-producto/${product?.id}`}>
+                        <Link to={`/producto/${product?.id}`}>
                           <button className="flex items-center text-blue-600 hover:underline">
                             <FaRegEye size={18} className="mr-1" />
                             Ver producto
@@ -289,9 +267,9 @@ export default function CarPanel({ currentCartOrderId, currentUserId }) {
                     <div className="flex items-center justify-between mt-4">
                       <NumberStepper
                         min={1}
-                        max={product?.stock || 10} // Usa el stock del producto si está disponible, sino un máximo de 10
+                        max={product?.stock || 10}
                         value={qty}
-                        onChange={(v) => handleQtyChange(detail.id, v)} // Pasa el ID del orderDetail
+                        onChange={(v) => handleQtyChange(item.id, v)}
                       />
                       <p className="text-2xl">${totalPrice.toLocaleString()}</p>
                     </div>
@@ -307,6 +285,20 @@ export default function CarPanel({ currentCartOrderId, currentUserId }) {
           {Summary}
         </div>
       </div>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará el producto del carrito. ¿Estás seguro de que deseas continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setItemToDelete(null)} className="cursor-pointer">Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRemoveItem} className="bg-red-600 hover:bg-red-700 text-white cursor-pointer">Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }

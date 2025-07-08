@@ -21,11 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 // --- Importa las funciones de API que creamos ---
 // Asegúrate de que la ruta sea correcta según la ubicación de tus archivos de API
-import {
-  createOrder,
-  createOrderDetail,
-  getOrdersByUser, // Necesitarás esta función para buscar un carrito existente
-} from "@/services/public/orderService"; // Ajusta la ruta si es necesario
+import { addProductToCart } from "@/services/customer/shoppingCar";
 
 const DetalleProducto = () => {
   const navigate = useNavigate();
@@ -37,15 +33,10 @@ const DetalleProducto = () => {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const descriptionRef = useRef(null);
   const [hasOverflow, setHasOverflow] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Estado para el ID del carrito actual del usuario
-  const [currentCartOrderId, setCurrentCartOrderId] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null); // Para almacenar el ID del usuario loggeado
-
-  // Estado para controlar la inicialización del carrito
-  const [isCartInitializing, setIsCartInitializing] = useState(true);
-
-  const [isMobile, setIsMobile] = useState(false);
 
   // Usar TanStack Query para obtener los detalles del producto
   const {
@@ -89,112 +80,29 @@ const DetalleProducto = () => {
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
 
-  // Efecto para buscar o crear el carrito del usuario cuando se loggea
-  useEffect(() => {
-    const fetchOrCreateCart = async () => {
-      setIsCartInitializing(true); // Se inicia la inicialización del carrito
-
-      if (!isUserLoggedIn || !currentUserId) {
-        console.log("ℹ️ Usuario no loggeado o ID de usuario no disponible, omitiendo inicialización del carrito.");
-        setIsCartInitializing(false);
-        return;
-      }
-
-      try {
-        console.log(`➡️ Intentando obtener carrito para el usuario ${currentUserId}...`);
-        const userOrdersResponse = await getOrdersByUser(currentUserId);
-        console.log("Respuesta de getOrdersByUser:", userOrdersResponse);
-
-        if (userOrdersResponse && userOrdersResponse.data) {
-          // Ajusta el estado 'PENDING' según cómo tu API identifica un carrito activo
-          const existingCart = userOrdersResponse.data.find(order => order.status === "ACTIVE");
-
-          if (existingCart) {
-            setCurrentCartOrderId(Number(existingCart.id));
-            console.log("✅ Carrito existente encontrado (ID):", existingCart.id);
-          } else {
-            console.log("ℹ️ No se encontró carrito activo, intentando crear uno nuevo...");
-            const newCartOrder = await createOrder({
-              userId: currentUserId,
-              status: "ACTIVE", // Estado inicial de un carrito
-              total: 0,
-              orderDate: new Date().toISOString(),
-              // Asegúrate de que estos campos coincidan con lo que tu API espera para crear una orden.
-              // Otros campos como 'addressId', 'paymentMethodId' pueden ser null o omitidos inicialmente.
-            });
-            setCurrentCartOrderId(Number(newCartOrder.id));
-            console.log("🎉 Nuevo carrito creado (ID):", newCartOrder.id);
-          }
-        } else {
-          console.warn("⚠️ getOrdersByUser no retornó datos válidos o data está vacío:", userOrdersResponse);
-          toast.error("No se pudieron cargar las órdenes del usuario.");
-        }
-      } catch (err) {
-        console.error("❌ Error CRÍTICO al buscar o crear el carrito:", err);
-        toast.error("Error al inicializar el carrito. Por favor, recarga la página.");
-      } finally {
-        setIsCartInitializing(false); // La inicialización del carrito ha finalizado
-      }
-    };
-
-    fetchOrCreateCart();
-  }, [isUserLoggedIn, currentUserId]); // Dependencias: re-ejecutar cuando el estado de login o userId cambie
-
-
   // Función para agregar el producto al carrito
   const handleAddToCart = async () => {
     if (!isUserLoggedIn) {
       toast.error("Debes iniciar sesión para agregar productos al carrito.");
       return;
     }
-
-    if (!isUserLoggedIn && isMobile) {
-      toast.error("Debes iniciar sesión para agregar al carrito.");
-      return; // Detener la ejecución si mostramos el toast
-    }
-
-    if (isCartInitializing) {
-      toast.error("El carrito se está inicializando, por favor espera un momento.");
-      return;
-    }
-
     if (!product) {
       toast.error("No se pudo obtener la información del producto.");
       return;
     }
-
-    if (!currentCartOrderId) {
-      // Este caso solo debería ocurrir si hubo un fallo después de isCartInitializing = false
-      toast.error("El carrito no está listo. Hubo un problema al inicializarlo.");
-      return;
-    }
-
     try {
-      const quantityToAdd = 1; // O la cantidad que el usuario seleccione
-      const unitPrice = product.price; // El precio del producto
-
-      // Calcula el total para este detalle de orden
-      // Considera también el descuento si se aplica a nivel de item y tu backend lo calcula así.
-      // Por ahora, una simple multiplicación:
-      const totalForOrderDetail = quantityToAdd * unitPrice;
-
-      const orderDetailData = {
-        orderId: Number(currentCartOrderId),
+      const now = new Date();
+      const cartItemData = {
+        createdBy: "USER", // O puedes usar currentUserId si lo prefieres
+        createdAt: now.toISOString(),
+        userId: currentUserId,
         productId: Number(product.id),
-        quantity: quantityToAdd,
-        unitPrice: unitPrice,
-        discount: product.discount || 0,
-        total: totalForOrderDetail,
-        // Otros campos que tu API requiera para un OrderDetail
+        quantity: 1,
       };
-
-      console.log("Añadiendo nuevo detalle de orden:", orderDetailData); // Para verificar
-
-      await createOrderDetail(orderDetailData);
+      await addProductToCart(cartItemData);
       toast.success("El producto se ha agregado al carrito.");
-      console.log("Producto agregado al carrito:", product.name);
     } catch (err) {
-      console.error("❌ Error al agregar producto al carrito:", err.response?.data || err.message); // Mejor log de error
+      console.error("❌ Error al agregar producto al carrito:", err);
       toast.error("Error al agregar el producto al carrito.");
     }
   };
@@ -445,13 +353,12 @@ const DetalleProducto = () => {
                 <div className="flex flex-col space-y-3 md:hidden">
                   <Button
                     className={`w-full bg-blue-500 text-white py-3 rounded-md flex items-center justify-center gap-2
-                      ${(isCartInitializing || loading || !isUserLoggedIn || !product) ? 'cursor-not-allowed opacity-50' : 'hover:bg-blue-600 cursor-pointer'}`}
+                      ${(!isUserLoggedIn || !product) ? 'cursor-not-allowed opacity-50' : 'hover:bg-blue-600 cursor-pointer'}`}
                     onClick={handleAddToCart}
-                    disabled={isCartInitializing || loading || !product}
+                    disabled={!product}
                   >
                     <ShoppingCart className="h-5 w-5" />
-                    {isCartInitializing ? "Cargando carrito..." : "Agregar al carrito"}
-
+                    {"Agregar al carrito"}
                   </Button>
                   <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-2">
                     <CreditCard className="h-5 w-5" />
@@ -471,15 +378,15 @@ const DetalleProducto = () => {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        {isCartInitializing || loading || !isUserLoggedIn || !product ? (
-                          <span className="inline-block w-full" tabIndex={0}> {/* tabIndex={0} para que sea enfocable por teclado */}
+                        {!isUserLoggedIn || !product ? (
+                          <span className="inline-block w-full" tabIndex={0}>
                             <Button
-                              className="cursor-not-allowed w-full bg-blue-500 text-white py-3 rounded-md flex items-center justify-center gap-1 opacity-50" // Reduce opacidad y cambia cursor para indicar que está deshabilitado
+                              className="cursor-not-allowed w-full bg-blue-500 text-white py-3 rounded-md flex items-center justify-center gap-1 opacity-50"
                               disabled={true}
                               onClick={handleAddToCart}
                             >
                               <ShoppingCart className="h-5 w-5" />
-                              {isCartInitializing ? "Cargando carrito..." : "Agregar"}
+                              {"Agregar"}
                             </Button>
                           </span>
                         ) : (
@@ -494,13 +401,9 @@ const DetalleProducto = () => {
                         )}
                       </TooltipTrigger>
                       {/* Contenido del Tooltip */}
-                      {(isCartInitializing || loading || !isUserLoggedIn || !product) && ( // Muestra el tooltip solo si el botón está deshabilitado por alguna de estas razones
-                        <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500"> {/* Estilos del tooltip */}
-                          {isCartInitializing ? (
-                            <p>Inicializando carrito...</p>
-                          ) : loading ? (
-                            <p>Cargando información...</p>
-                          ) : !isUserLoggedIn ? (
+                      {(!isUserLoggedIn || !product) && (
+                        <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                          {!isUserLoggedIn ? (
                             <p>Debes iniciar sesión para agregar al carrito</p>
                           ) : !product ? (
                             <p>Producto no disponible</p>

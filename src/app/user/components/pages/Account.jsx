@@ -53,7 +53,7 @@ export default function Account() {
         setCurrentUserId(userId); // Establece el ID del usuario
 
         const user = await getUserById(userId);
-        setUserInfo({ name: user.name, lastName: user.lastName, email: user.email });
+        setUserInfo({ name: user.name, lastName: user.lastName, email: user.email, avatar: "/Monograma_LIBAMAQ.png" });
         setLoading(false);
       } catch (err) {
         console.error("Error al obtener el usuario:", err);
