@@ -50,6 +50,7 @@ export default function CarPanel() {
       if (!userId) throw new Error("No se pudo obtener el ID de usuario");
       const cartData = await getCartByUser(userId);
       const items = Array.isArray(cartData?.data) ? cartData.data : [];
+      console.log("CART ITEM EXAMPLE", items[0]);
       setCartProducts(items);
       // Inicializa cantidades y selección
       const initialQuantities = items.reduce((acc, item) => ({ ...acc, [item.id]: item.quantity }), {});
@@ -77,9 +78,18 @@ export default function CarPanel() {
     try {
       const item = cartProducts.find(i => i.id === cartItemId);
       if (!item) return;
-      await updateCartItem({ ...item, quantity: value });
-      toast.success("Cantidad actualizada.");
-      fetchCartDetails();
+      const payload = {
+        id: Number(item.id),
+        userId: Number(item.userId),
+        productId: Number(item.product.id),
+        quantity: Number(value)
+      };
+      console.log("PAYLOAD TO UPDATE", payload);
+      await updateCartItem(payload);
+      //toast.success("Cantidad actualizada.");
+      // Actualiza el estado local de cartProducts para reflejar el nuevo valor
+      setCartProducts((prev) => prev.map(i => i.id === cartItemId ? { ...i, quantity: Number(value) } : i));
+      // No recargues todo el carrito
     } catch (error) {
       toast.error("Error al actualizar la cantidad.");
     }
@@ -274,7 +284,7 @@ export default function CarPanel() {
                         value={qty}
                         onChange={(v) => handleQtyChange(item.id, v)}
                       />
-                      <p className="text-2xl">${totalPrice.toLocaleString()}</p>
+                      <p className="text-2xl font-semibold text-blue-700">${totalPrice.toLocaleString()}</p>
                     </div>
                   </div>
                 </div>
