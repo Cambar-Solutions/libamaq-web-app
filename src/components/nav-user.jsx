@@ -45,10 +45,15 @@ import { getUserById, updateUserProfile } from "@/services/admin/userService";
 import { useEffect, useRef } from "react";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { MdOutlineLogout } from "react-icons/md";
+import { LiaUserEditSolid } from "react-icons/lia";
+
+
 
 
 export function NavUser({ user }) {
-  const [userInfo, setUserInfo] = useState({ name: "null", lastName: "null", email: "null@gmail.com" });
+  const [userInfo, setUserInfo] = useState({ name: "null", lastName: "null", email: "null@gmail.com", avatar: "/Monograma_LIBAMAQ.png"
+  });
 
   const { isMobile } = useSidebar();
   const navigate = useNavigate();
@@ -73,12 +78,13 @@ export function NavUser({ user }) {
         const decoded = jwtDecode(token);
         const userId = decoded.sub;
         const userFetched = await getUserById(userId);
-        setUserInfo({ name: userFetched.name, lastName: userFetched.lastName, email: userFetched.email });
+        setUserInfo({ name: userFetched.name, lastName: userFetched.lastName || "", email: userFetched.email, avatar: userFetched.avatar || "/Monograma_LIBAMAQ.png" });
         // Actualiza localStorage con el valor real del backend
         localStorage.setItem("user_data", JSON.stringify({
           name: userFetched.name,
           lastName: userFetched.lastName || "",
-          email: userFetched.email
+          email: userFetched.email,
+          avatar: userFetched.avatar || "/Monograma_LIBAMAQ.png"
         }));
         setLoading(false);
         return;
@@ -92,7 +98,8 @@ export function NavUser({ user }) {
               setUserInfo({
                 name: parsed.name,
                 lastName: parsed.lastName || "",
-                email: parsed.email
+                email: parsed.email,
+                avatar: parsed.avatar || "/Monograma_LIBAMAQ.png"
               });
               setLoading(false);
               return;
@@ -102,7 +109,7 @@ export function NavUser({ user }) {
       }
       // Fallback: user prop
       if (user && user.name && user.email) {
-        setUserInfo({ name: user.name, lastName: user.lastName || "", email: user.email });
+        setUserInfo({ name: user.name, lastName: user.lastName || "", email: user.email, avatar: user.avatar || "/Monograma_LIBAMAQ.png" });
         setLoading(false);
       }
     };
@@ -173,16 +180,13 @@ export function NavUser({ user }) {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem onSelect={e => { e.preventDefault(); setEditDialogOpen(true); setDropdownOpen(false); }} className="cursor-pointer">
-                <BadgeCheck />
+              <LiaUserEditSolid className="" />
                 Editar perfil
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
-                <Bell />
-                Notificaciones
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+            <MdOutlineLogout />
               Cerrar sesión
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -191,7 +195,7 @@ export function NavUser({ user }) {
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Editar perfil</DialogTitle>
+              <DialogTitle className="text-xl">Editar perfil</DialogTitle>
               <DialogDescription>
                 Realiza cambios en tu perfil aquí. Da clic en guardar cuando termines.
               </DialogDescription>
@@ -210,9 +214,9 @@ export function NavUser({ user }) {
                   const profileData = { name, lastName, email: editEmail };
                   const updated = await updateUserProfile(userId, profileData);
                   // Actualizar estado y localStorage
-                  setUserInfo(prev => ({ ...prev, name, lastName, email: editEmail }));
+                  setUserInfo(prev => ({ ...prev, name, lastName, email: editEmail, avatar: prev.avatar || "/Monograma_LIBAMAQ.png" }));
                   const userData = JSON.parse(localStorage.getItem("user_data") || "{}");
-                  localStorage.setItem("user_data", JSON.stringify({ ...userData, name, lastName, email: editEmail }));
+                  localStorage.setItem("user_data", JSON.stringify({ ...userData, name, lastName, email: editEmail, avatar: prev.avatar || "/Monograma_LIBAMAQ.png" }));
                   toast.success("Perfil actualizado correctamente");
                   setEditDialogOpen(false);
                 } catch (err) {
@@ -223,9 +227,9 @@ export function NavUser({ user }) {
                 }
               }}
             >
-              <div className="grid gap-4 py-4">
+              <div className="grid gap-4 p-4 py-6 mb-6">
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-name" className="text-right">Nombre y Apellido</Label>
+                  <Label htmlFor="edit-name" className="text-right ml-auto">Nombre y Apellido</Label>
                   <Input
                     id="edit-name"
                     value={editName}
@@ -236,7 +240,7 @@ export function NavUser({ user }) {
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-email" className="text-right">Correo</Label>
+                  <Label htmlFor="edit-email" className="text-right ml-auto">Correo</Label>
                   <Input
                     id="edit-email"
                     type="email"
