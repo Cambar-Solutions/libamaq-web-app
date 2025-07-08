@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { toast } from "sonner";
+import toast, { Toaster } from "react-hot-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { SearchBar } from "@/components/ui/SearchBar";
 import {
@@ -59,6 +59,8 @@ import {
   AlertDialogAction,
   AlertDialogCancel
 } from "@/components/ui/alert-dialog";
+import { uploadLandingFile } from "@/services/admin/landingService";
+import { useRef } from "react";
 
 function isLightColor(hexColor) {
   const hex = hexColor?.replace("#", "") || "ffffff";
@@ -95,6 +97,41 @@ export function BrandsView() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [brandToDelete, setBrandToDelete] = useState(null);
   // Las variables de estado para la gestión de categorías ahora están en el componente CategoryManager
+
+  // Estado para imagen de marca
+  const [imageFile, setImageFile] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const imageFileInputRef = useRef(null);
+
+  // Handler para cambio de archivo
+  const handleBrandImageFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      // Previsualización temporal
+      const objectUrl = URL.createObjectURL(file);
+      setFormData(prev => ({ ...prev, url: objectUrl }));
+    }
+  };
+
+  // Handler para subir archivo
+  const handleBrandImageUpload = async () => {
+    if (!imageFile) return;
+    setUploadingImage(true);
+    toast.success('Imagen subida correctamente');
+    try {
+      const uploadResponse = await uploadLandingFile(imageFile);
+      const fileUrl = uploadResponse.url;
+      if (fileUrl) {
+        setFormData(prev => ({ ...prev, url: fileUrl }));
+        return fileUrl;
+      }
+    } catch (err) {
+      toast.error("Error al subir la imagen: " + (err.message || err));
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   // Obtener marcas usando Tanstack Query
   const { data: allBrandsData, isLoading: isLoadingAllBrands } = useAllBrands();
@@ -223,8 +260,8 @@ export function BrandsView() {
     }));
   };
 
-  // Guardar marca (crear o actualizar)
-  const handleSaveBrand = async (onSuccess) => {
+  // Guardar marca (crear o actualizar) - lógica central
+  const saveBrandCore = async (onSuccess) => {
     try {
       const payload = {
         ...formData,
@@ -267,6 +304,18 @@ export function BrandsView() {
       console.error('Error al guardar la marca:', error);
       toast.error(`Error al ${isEditing ? 'actualizar' : 'crear'} la marca: ${error.message}`);
     }
+  };
+
+  // Guardar marca (crear o actualizar) con flujo de imagen
+  const handleSaveBrand = async (onSuccess) => {
+    // Si hay archivo, subirlo primero
+    if (imageFile && formData.url && formData.url.startsWith("blob:")) {
+      const uploadedUrl = await handleBrandImageUpload();
+      if (!uploadedUrl) return;
+    }
+    await saveBrandCore(onSuccess);
+    setImageFile(null);
+    if (imageFileInputRef.current) imageFileInputRef.current.value = "";
   };
 
   // Cambiar estado de una marca (activar/desactivar)
@@ -466,16 +515,52 @@ export function BrandsView() {
                         />
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="url" className="text-right">
-                          URL del Logo
+                        <Label htmlFor="brand-image-file" className="text-right">
+                          Logo de la marca
                         </Label>
-                        <Input
-                          id="url"
-                          name="url"
-                          value={formData.url}
-                          onChange={handleInputChange}
-                          className="col-span-3"
-                        />
+                        <div className="col-span-3 space-y-2">
+                          <p className="text-xs text-gray-500 mt-1">Escoge una imagen desde tu dispositivo:</p>
+                          <Input
+                            id="brand-image-file"
+                            type="file"
+                            accept="image/*"
+                            ref={imageFileInputRef}
+                            onChange={handleBrandImageFileChange}
+                            className="cursor-pointer"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">O ingresa una URL directamente:</p>
+                          <Input
+                            id="brand-image-url"
+                            name="url"
+                            placeholder="https://ejemplo.com/logo.png"
+                            value={formData.url}
+                            onChange={handleInputChange}
+                            onFocus={e => e.currentTarget.select()}
+                          />
+                          {formData.url && (
+                            <div className="mt-2 p-2 border rounded flex justify-center bg-gray-50">
+                              <img
+                                src={formData.url}
+                                alt="Vista previa"
+                                className="max-h-20 object-contain"
+                                onError={e => {
+                                  e.target.src = "/placeholder-logo.png";
+                                  e.target.onerror = null;
+                                }}
+                              />
+                            </div>
+                          )}
+                          {imageFile && formData.url.startsWith("blob:") && (
+                            <Button
+                              type="button"
+                              onClick={handleBrandImageUpload}
+                              disabled={uploadingImage}
+                              className="mt-2"
+                            >
+                              {uploadingImage ? "Subiendo..." : "Subir imagen"}
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="color" className="text-right">
@@ -832,29 +917,51 @@ export function BrandsView() {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="url" className="font-medium">
-                      URL del Logo *
+                    <Label htmlFor="brand-image-file" className="font-medium">
+                      Logo de la marca
                     </Label>
-                    <Input
-                      id="url"
-                      name="url"
-                      placeholder="https://ejemplo.com/logo.png"
-                      value={formData.url}
-                      onChange={handleInputChange}
-                    />
-                    {formData.url && (
-                      <div className="mt-2 p-2 border rounded flex justify-center bg-gray-50">
-                        <img
-                          src={formData.url}
-                          alt="Vista previa"
-                          className="max-h-20 object-contain"
-                          onError={(e) => {
-                            e.target.src = "/placeholder-logo.png";
-                            e.target.onerror = null;
-                          }}
-                        />
-                      </div>
-                    )}
+                    <div className="col-span-3 space-y-2">
+                      <Input
+                        id="brand-image-file"
+                        type="file"
+                        accept="image/*"
+                        ref={imageFileInputRef}
+                        onChange={handleBrandImageFileChange}
+                        className="cursor-pointer"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">O ingresa una URL directamente:</p>
+                      <Input
+                        id="brand-image-url"
+                        name="url"
+                        placeholder="https://ejemplo.com/logo.png"
+                        value={formData.url}
+                        onChange={handleInputChange}
+                        onFocus={e => e.currentTarget.select()}
+                      />
+                      {formData.url && (
+                        <div className="mt-2 p-2 border rounded flex justify-center bg-gray-50">
+                          <img
+                            src={formData.url}
+                            alt="Vista previa"
+                            className="max-h-20 object-contain"
+                            onError={e => {
+                              e.target.src = "/placeholder-logo.png";
+                              e.target.onerror = null;
+                            }}
+                          />
+                        </div>
+                      )}
+                      {imageFile && formData.url.startsWith("blob:") && (
+                        <Button
+                          type="button"
+                          onClick={handleBrandImageUpload}
+                          disabled={uploadingImage}
+                          className="mt-2"
+                        >
+                          {uploadingImage ? "Subiendo..." : "Subir imagen"}
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex flex-col gap-1.5">
@@ -1068,6 +1175,34 @@ export function BrandsView() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          // Estilos por defecto para todos los toasts
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          // Estilos específicos para toasts de éxito
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10B981',
+              secondary: '#fff',
+            },
+          },
+          // Estilos específicos para toasts de error
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#EF4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
     </div>
   );
 }

@@ -61,11 +61,6 @@ export const uploadLandingFile = async (file) => {
 
     const { data } = await apiClient.post("/l/media/upload", formData, {
       "Accept": "application/json",
-
-      // headers: {
-      //   "Content-Type": "multipart/form-data",
-      //   "Accept": "application/json",
-      // },
     });
 
     console.log('Respuesta de subida de archivo:', data);

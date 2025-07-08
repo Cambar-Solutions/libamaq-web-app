@@ -4,10 +4,10 @@ const baseURL = "https://libamaq.com";
 
 const apiClient = axios.create({
   baseURL,
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${localStorage.getItem("token")}`
-  },
+  // headers: {
+  //   "Content-Type": "application/json",
+  //   Authorization: `Bearer ${localStorage.getItem("token")}`
+  // },
 });
 
 apiClient.interceptors.request.use((config) => {
