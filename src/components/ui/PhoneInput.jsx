@@ -37,21 +37,26 @@ export function PhoneInput({
   ...rest
 }) {
   // Extraer lada y número
-  let lada = COUNTRY_CODES[0].code;
-  let numero = value;
-  const ladaMatch = value.match(/^(\+\d{1,3})/);
+  let lada = '';
+  let numero = '';
+  // Si el valor empieza con una lada válida, úsala
+  const ladaMatch = COUNTRY_CODES.find(opt => value.startsWith(opt.code));
   if (ladaMatch) {
-    lada = ladaMatch[1];
-    numero = value.replace(lada, '');
+    lada = ladaMatch.code;
+    numero = value.slice(lada.length).replace(/\D/g, '').slice(0, 10);
+  } else {
+    // Si no hay lada válida, asume la primera opción
+    lada = COUNTRY_CODES[0].code;
+    numero = value.replace(/\D/g, '').slice(0, 10);
   }
-  // Limitar a 10 dígitos siempre
-  numero = numero.replace(/\D/g, '').slice(0, 10);
 
   // Cambiar lada
   const handleLadaChange = (e) => {
     const newLada = e.target.value;
+    // Siempre recorta a 10 dígitos
+    const cleanNumero = numero.replace(/\D/g, '').slice(0, 10);
     if (onChange) {
-      onChange(newLada + numero);
+      onChange(newLada + cleanNumero);
     }
   };
 
