@@ -19,6 +19,8 @@ import {
 import { jwtDecode } from "jwt-decode";
 import { getUserById } from "@/services/admin/userService";
 import useLocationStore from "@/stores/useLocationStore";
+import { getCartByUser } from "@/services/customer/shoppingCar";
+import { useCartStore } from "@/stores/useCartStore";
 
 export function NavCustomer({ onViewChange }) {
     const navigate = useNavigate();
@@ -33,6 +35,11 @@ export function NavCustomer({ onViewChange }) {
     const [loading, setLoading] = useState(true); // This loading state is for brands data
     const [userLoading, setUserLoading] = useState(true); // New loading state for user info
     const [menuOpen, setMenuOpen] = useState(false);
+    const cartCount = useCartStore((state) => state.cartCount);
+    const refreshCart = useCartStore((state) => state.refreshCart);
+    useEffect(() => {
+        refreshCart();
+    }, [refreshCart]);
 
     // Location states from Zustand store
     const {
@@ -248,9 +255,14 @@ export function NavCustomer({ onViewChange }) {
                     {/* Botón "Carrito" */}
                     <button
                         onClick={() => navigate('/user-profile', { state: { view: 'carrito' } })}
-                        className="cursor-pointer flex h-12 w-12 justify-center items-center rounded-2x text-white hover:text-yellow-500 transition-colors duration-600">
+                        className="cursor-pointer flex h-12 w-12 justify-center items-center rounded-2x text-white hover:text-yellow-500 transition-colors duration-600 relative group">
 
                         <RiShoppingCartFill size={24} className="justify-items-center" />
+                        {cartCount > 0 && (
+                            <span className="absolute -top-0.5 -right-1 bg-yellow-600 text-white text-[13px] font-semibold rounded-full w-5 h-5 flex items-center justify-center group-hover:bg-yellow-400 group-hover:text-black transition-colors duration-600">
+                                {cartCount}
+                            </span>
+                        )}
                     </button>
                 </div>
             </div>

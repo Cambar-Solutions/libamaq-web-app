@@ -18,6 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import useLocationStore from "@/stores/useLocationStore";
+import { useCartStore } from "@/stores/useCartStore";
+import { jwtDecode } from "jwt-decode";
 
 export function SiteHeaderCustomer({ onViewChange, userInfo }) {
   const navigate = useNavigate();
@@ -29,6 +31,8 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
   const [selectedBrandId, setSelectedBrandId] = useState("");
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const cartCount = useCartStore((state) => state.cartCount);
+  const refreshCart = useCartStore((state) => state.refreshCart);
 
   // States for location
   const {
@@ -58,6 +62,10 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
   useEffect(() => {
     loadSavedLocation();
   }, [loadSavedLocation]);
+
+  useEffect(() => {
+    refreshCart();
+  }, [refreshCart]);
 
   const handleBrandChange = (brandId) => {
     setSelectedBrandId(brandId);
@@ -232,9 +240,14 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
           {/* Botón "Carrito" */}
           <button
             onClick={() => onViewChange("carrito")}
-            className="cursor-pointer flex h-12 w-12 justify-center items-center rounded-2x text-white hover:text-yellow-500 transition-colors duration-600">
+            className="cursor-pointer flex h-12 w-12 justify-center items-center rounded-2x text-white hover:text-yellow-500 transition-colors duration-600 relative group">
 
             <RiShoppingCartFill size={24} className="justify-items-center" />
+            {cartCount > 0 && (
+              <span className="absolute -top-0.5 -right-1 bg-yellow-600 text-white text-[13px] font-semibold rounded-full w-5 h-5 flex items-center justify-center group-hover:bg-yellow-400 group-hover:text-black transition-colors duration-600">
+                {cartCount}
+              </span>
+            )}
           </button>
         </div>
       </div>

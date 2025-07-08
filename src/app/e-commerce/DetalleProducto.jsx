@@ -18,6 +18,7 @@ import {
 import { SidebarProvider } from "@/components/ui/sidebar";
 import toast, { Toaster } from "react-hot-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useCartStore } from "@/stores/useCartStore";
 
 // --- Importa las funciones de API que creamos ---
 // Asegúrate de que la ruta sea correcta según la ubicación de tus archivos de API
@@ -80,6 +81,8 @@ const DetalleProducto = () => {
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
 
+  const refreshCart = useCartStore((state) => state.refreshCart);
+
   // Función para agregar el producto al carrito
   const handleAddToCart = async () => {
     if (!isUserLoggedIn) {
@@ -101,6 +104,7 @@ const DetalleProducto = () => {
       };
       await addProductToCart(cartItemData);
       toast.success("El producto se ha agregado al carrito.");
+      refreshCart();
     } catch (err) {
       console.error("❌ Error al agregar producto al carrito:", err);
       toast.error("Error al agregar el producto al carrito.");

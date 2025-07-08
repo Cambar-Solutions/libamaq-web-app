@@ -18,6 +18,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import { useCartStore } from "@/stores/useCartStore";
 
 // Importa tus servicios de API
 // ASEGÚRATE DE QUE LA RUTA SEA CORRECTA PARA TU PROYECTO
@@ -28,6 +29,7 @@ import { jwtDecode } from "jwt-decode";
 // Esto asume que un componente padre le pasa el ID del carrito activo del usuario.
 export default function CarPanel() {
   const navigate = useNavigate();
+  const refreshCart = useCartStore((state) => state.refreshCart);
 
   // Estado para los productos del carrito
   const [cartProducts, setCartProducts] = useState([]);
@@ -87,9 +89,8 @@ export default function CarPanel() {
       console.log("PAYLOAD TO UPDATE", payload);
       await updateCartItem(payload);
       //toast.success("Cantidad actualizada.");
-      // Actualiza el estado local de cartProducts para reflejar el nuevo valor
       setCartProducts((prev) => prev.map(i => i.id === cartItemId ? { ...i, quantity: Number(value) } : i));
-      // No recargues todo el carrito
+      refreshCart();
     } catch (error) {
       toast.error("Error al actualizar la cantidad.");
     }
@@ -123,6 +124,7 @@ export default function CarPanel() {
       setDeleteDialogOpen(false);
       setItemToDelete(null);
       fetchCartDetails();
+      refreshCart();
     } catch (error) {
       toast.error("Error al eliminar el producto del carrito.");
     }
