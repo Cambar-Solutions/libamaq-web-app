@@ -77,11 +77,7 @@ const productWorkflow = {
       let newMedia = [];
       if (newFiles && newFiles.length > 0) {
         try {
-          console.log('Uploading new files...');
           const uploadResponse = await mediaService.uploadImages(newFiles);
-          console.log('Upload response:', uploadResponse);
-          
-          // Ajustar según la estructura de respuesta del servicio
           if (uploadResponse && uploadResponse.data) {
             newMedia = Array.isArray(uploadResponse.data) 
               ? uploadResponse.data 
@@ -89,9 +85,7 @@ const productWorkflow = {
           } else if (Array.isArray(uploadResponse)) {
             newMedia = uploadResponse;
           }
-          console.log('Processed new media:', newMedia);
         } catch (error) {
-          console.error('Error al subir nuevas imágenes:', error);
           throw new Error(`Error al subir las imágenes: ${error.message}`);
         }
       }
@@ -99,11 +93,8 @@ const productWorkflow = {
       // 2. Eliminar imágenes marcadas para borrar
       if (mediaToDelete && mediaToDelete.length > 0) {
         try {
-          console.log('Deleting media:', mediaToDelete);
           await mediaService.deleteImages(mediaToDelete);
-          console.log('Media deleted successfully');
         } catch (error) {
-          console.error('Error al eliminar imágenes antiguas:', error);
           // Continuar aunque falle la eliminación
         }
       }
@@ -120,74 +111,34 @@ const productWorkflow = {
           displayOrder: Number(img.displayOrder) || 0
         }));
 
-      console.log('Existing media after filtering:', existingMedia);
+      // 4. Unir imágenes existentes y nuevas subidas para el array final
+      const finalMedia = [
+        ...existingMedia,
+        ...newMedia.map((img, index) => ({
+          id: img.id || 0, // Si el backend devuelve id, úsalo
+          url: String(img.url || img.publicUrl || ''),
+          fileType: img.fileType || 'IMAGE',
+          entityId: Number(productData.id) || 0,
+          entityType: 'PRODUCT',
+          displayOrder: existingMedia.length + index
+        }))
+      ].filter(Boolean);
 
-      // 4. Crear el objeto final con solo los campos necesarios
+      // 5. Crear el objeto final con solo los campos necesarios
       const updatedProduct = {
-        id: Number(productData.id),
-        updatedBy: "1", // TODO: Obtener del usuario autenticado
-        brandId: String(productData.brandId || ""),
-        categoryId: String(productData.categoryId || ""),
-        externalId: productData.externalId || `PROD-${Date.now()}`,
-        name: String(productData.name || ''),
-        shortDescription: String(productData.shortDescription || ''),
-        description: String(productData.description || ''),
-        functionalities: Array.isArray(productData.functionalities) 
-          ? productData.functionalities.map(String).filter(Boolean)
-         : [],
-        technicalData: Array.isArray(productData.technicalData)
-          ? productData.technicalData
-              .filter(item => item && item.key && item.value)
-              .map(item => ({
-                key: String(item.key).trim(),
-                value: String(item.value).trim()
-              }))
-          : [],
-        price: parseFloat(productData.price) || 0,
-        cost: productData.cost ? parseFloat(productData.cost) : 0,
-        discount: parseFloat(productData.discount) || 0,
-        stock: parseInt(productData.stock, 10) || 0,
-        garanty: parseInt(productData.garanty, 10) || 0,
-        color: String(productData.color || ''),
-        downloads: Array.isArray(productData.downloads)
-          ? productData.downloads
-              .filter(item => item && item.key && item.value)
-              .map(item => ({
-                key: String(item.key).trim(),
-                value: String(item.value).trim()
-              }))
-          : [],
-        rentable: Boolean(productData.rentable),
-        status: productData.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
-        media: [
-          ...existingMedia,
-          ...newMedia.map((img, index) => ({
-            id: 0, // 0 para nuevas imágenes, el backend asignará un ID
-            url: String(img.url || img.publicUrl || ''),
-            fileType: 'IMAGE',
-            entityId: Number(productData.id) || 0,
-            entityType: 'PRODUCT',
-            displayOrder: existingMedia.length + index
-          }))
-        ].filter(Boolean)
+        ...productData,
+        media: finalMedia
       };
 
-      console.log('Prepared update payload:', JSON.stringify(updatedProduct, null, 2));
-
-      // 5. Actualizar el producto
+      // 6. Actualizar el producto
       const response = await updateProductService(updatedProduct);
-      console.log('Update API response:', response);
-      
       if (response && response.data) {
         toast.success('Producto actualizado exitosamente');
       } else {
-        console.error('Unexpected response format:', response);
         throw new Error('Formato de respuesta inesperado del servidor');
       }
-      
       return response;
     } catch (error) {
-      console.error('Error al actualizar el producto:', error);
       const errorMessage = error.response?.data?.message || 
                          error.message || 
                          'Error al actualizar el producto';

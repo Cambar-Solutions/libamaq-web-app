@@ -590,7 +590,7 @@ export default function CreateProductFormDialog({
                                     <Input 
                                         id="shortDescription" 
                                         {...register('shortDescription')} 
-                                        placeholder="Smartphone de última generación" 
+                                        placeholder="Herramienta profesional para construcción" 
                                         disabled={isCreating} 
                                     />
                                 </div>
@@ -616,7 +616,7 @@ export default function CreateProductFormDialog({
                                     <Textarea 
                                         id="description" 
                                         {...register('description')} 
-                                        placeholder="El Galaxy S21 cuenta con una pantalla de 6.2 pulgadas..." 
+                                        placeholder="Esta herramienta cuenta con motor de alta potencia y diseño ergonómico para uso profesional." 
                                         disabled={isCreating} 
                                         className="min-h-[100px]"
                                     />
@@ -650,7 +650,7 @@ export default function CreateProductFormDialog({
                                     <div key={field.id} className="flex items-center gap-2">
                                         <Input
                                             {...register(`functionalities.${index}`)}
-                                            placeholder="Ej: Reconocimiento facial"
+                                            placeholder="Ej: Alta potencia"
                                             className="flex-1"
                                             disabled={isCreating}
                                         />

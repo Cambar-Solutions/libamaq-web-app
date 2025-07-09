@@ -236,12 +236,14 @@ const EditProductFormDialog = ({
         }
     }, [open, product]);
 
-    // Reset form only when fullProduct cambia y está listo
+    // Log para depuración: mostrar el contenido de media cada vez que se abre el modal
     useEffect(() => {
-        if (fullProduct) {
-            reset(getProductDefaultValues(fullProduct));
+        if (open) {
+            const defaults = getProductDefaultValues(product);
+            console.log('🖼️ MEDIA AL ABRIR MODAL:', defaults.media);
+            reset(defaults);
         }
-    }, [fullProduct, reset]);
+    }, [open, product, reset]);
 
     // --- Data Loading Effects ---
     useEffect(() => {
@@ -370,12 +372,10 @@ const EditProductFormDialog = ({
 
     // --- Form Submission ---
     const handleEditSubmit = async (data) => {
-        console.log('🚀 handleEditSubmit INICIADO', { data });
         setIsSubmitting(true);
         try {
-            console.log('SUBMIT DATA', data);
             // Extraer archivos reales de media
-            const files = (data.media || [])
+            const newFiles = (data.media || [])
                 .filter(m => m.file instanceof File)
                 .map(m => m.file);
 
@@ -386,53 +386,31 @@ const EditProductFormDialog = ({
                 .map(m => m.id);
             const mediaToDelete = originalMediaIds.filter(id => !currentMediaIds.includes(id));
 
-            // Clean media field to only include metadata (without file field)
-            const cleanMedia = (data.media || []).map(({ file, ...rest }) => rest);
+            // Clean media field to solo incluir imágenes existentes (con id) y NO blobs ni archivos locales
+            const cleanMedia = (data.media || [])
+                .filter(m => m.id && !m.file)
+                .map(({ file, ...rest }) => rest);
 
             // Payload con TODOS los campos del producto
             const payload = {
                 ...data,
-                id: data.id,
-                createdBy: data.createdBy,
-                updatedBy: data.updatedBy,
-                createdAt: data.createdAt,
-                updatedAt: data.updatedAt,
-                deletedAt: data.deletedAt,
-                brandId: data.brandId,
-                categoryId: data.categoryId,
-                externalId: data.externalId,
-                name: data.name,
-                shortDescription: data.shortDescription,
-                description: data.description,
-                price: parseFloat(data.price),
-                cost: data.cost ? parseFloat(data.cost) : null,
-                discount: parseFloat(data.discount) || 0,
-                stock: parseInt(data.stock, 10),
-                garanty: parseInt(data.garanty, 10) || 0,
-                color: data.color || '',
-                rentable: data.rentable || false,
-                status: data.status || 'ACTIVE',
-                functionalities: data.functionalities.filter(f => f),
-                technicalData: data.technicalData
-                    .filter(item => item.key && item.value)
-                    .map(item => ({ key: item.key, value: item.value })),
-                downloads: data.downloads.filter(item => item.key && item.value),
                 media: cleanMedia
             };
 
-            console.log('📞 LLAMANDO onSave con:', { id: data.id, payload, files, mediaToDelete });
-            // Llamar a onSave pasando los argumentos como parámetros separados
             await onSave(
                 data.id,
                 payload,
-                files,
+                newFiles,
                 mediaToDelete
             );
-            console.log('✅ onSave completado exitosamente');
+            // Recargar producto tras guardar para obtener imágenes reales
+            if (product?.id) {
+                const updated = await getProductById(product.id);
+                setFullProduct(updated.data || updated);
+            }
+            toast.success('Producto actualizado correctamente');
             if (onClose) onClose();
-            toast.success('Producto actualizado exitosamente');
         } catch (error) {
-            console.error('Error al actualizar el producto:', error);
             toast.error(error.message || 'Error al actualizar el producto');
         } finally {
             setIsSubmitting(false);
@@ -475,17 +453,25 @@ const EditProductFormDialog = ({
     // --- Image Upload Handlers ---
     const handleImageUpload = (files) => {
         const existingMedia = getValues('media') || [];
-        const newMedia = files.map((file, index) => ({
-            id: `new-${Date.now()}-${index}`, // Temporary ID for new files
+        // Filtrar solo las imágenes existentes (id numérico y sin file)
+        const currentExisting = existingMedia.filter(img => typeof img.id === 'number' && !img.file);
+        // Filtrar solo las imágenes nuevas (con file)
+        const currentNew = existingMedia.filter(img => img.file);
+        // Calcular cuántas imágenes se pueden agregar
+        const maxToAdd = 5 - (currentExisting.length + currentNew.length);
+        if (maxToAdd <= 0) return; // No permitir más de 5
+        // Solo agregar hasta el máximo permitido
+        const filesToAdd = files.slice(0, maxToAdd);
+        const newMedia = filesToAdd.map((file, index) => ({
+            id: `new-${Date.now()}-${index}`,
             url: URL.createObjectURL(file),
             fileType: file.type.startsWith('image/') ? 'IMAGE' : 'OTHER',
             entityType: 'PRODUCT',
-            displayOrder: existingMedia.length + index,
-            file // Keep the file reference for upload
+            displayOrder: currentExisting.length + currentNew.length + index,
+            file
         }));
-
-        // Combine existing media with new files
-        const combinedMedia = [...existingMedia, ...newMedia];
+        // Combinar existentes y nuevas
+        const combinedMedia = [...currentExisting, ...currentNew, ...newMedia];
         setValue('media', combinedMedia);
     };
 
@@ -522,7 +508,13 @@ const EditProductFormDialog = ({
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={(val) => {
+            if (!val && !isSubmitting) {
+                // Solo limpiar el formulario y el estado de imágenes si el usuario cancela (no si guarda)
+                reset(getProductDefaultValues(product));
+            }
+            if (onOpenChange) onOpenChange(val);
+        }}>
             <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="border-b pb-4">
                     <div className="flex items-center space-x-3">
@@ -850,7 +842,7 @@ const EditProductFormDialog = ({
                                         <Input
                                             id="shortDescription"
                                             {...register('shortDescription')}
-                                            placeholder="Smartphone de última generación"
+                                            placeholder="Herramienta profesional para construcción"
                                             disabled={isSubmitting}
                                         />
                                     </div>
@@ -876,7 +868,7 @@ const EditProductFormDialog = ({
                                         <Textarea
                                             id="description"
                                             {...register('description')}
-                                            placeholder="El Galaxy S21 cuenta con una pantalla de 6.2 pulgadas..."
+                                            placeholder="Esta herramienta cuenta con motor de alta potencia y diseño ergonómico para uso profesional."
                                             disabled={isSubmitting || isGenerating}
                                             className="min-h-[100px]"
                                         />
@@ -910,7 +902,7 @@ const EditProductFormDialog = ({
                                         <div key={field.id} className="flex items-center gap-2">
                                             <Input
                                                 {...register(`functionalities.${index}`)}
-                                                placeholder="Ej: Reconocimiento facial"
+                                                placeholder="Ej: Alta potencia"
                                                 className="flex-1"
                                                 disabled={isSubmitting}
                                             />

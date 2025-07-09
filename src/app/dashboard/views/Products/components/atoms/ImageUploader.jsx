@@ -32,29 +32,37 @@ const ImageUploader = ({
   useEffect(() => {
     return () => {
       previewUrls.forEach(url => URL.revokeObjectURL(url));
+      setSelectedFiles([]);
+      setPreviewUrls([]);
     };
-  }, [previewUrls]);
+  }, []);
 
   // Obtener URLs de vista previa para los archivos seleccionados
   const createPreviewUrls = useCallback((files) => {
     return files.map(file => URL.createObjectURL(file));
   }, []);
 
+  // Eliminar el efecto que limpiaba el estado local cada vez que cambiaban existingImages
+
   // Manejar la selección de archivos
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     
+    // Evitar duplicados por nombre (puedes mejorar la lógica si usas otro identificador)
+    const existingFileNames = selectedFiles.map(f => f.name);
+    const uniqueFiles = files.filter(f => !existingFileNames.includes(f.name));
+
     // Verificar límite de archivos
-    if (selectedFiles.length + files.length > maxFiles) {
+    if (selectedFiles.length + uniqueFiles.length > maxFiles) {
       alert(`Solo puedes subir hasta ${maxFiles} imágenes en total`);
       return;
     }
 
-    const newFiles = [...selectedFiles, ...files];
+    const newFiles = [...selectedFiles, ...uniqueFiles];
     setSelectedFiles(newFiles);
     
     // Crear URLs de vista previa para los nuevos archivos
-    const newPreviewUrls = createPreviewUrls(files);
+    const newPreviewUrls = createPreviewUrls(uniqueFiles);
     setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
     
     // Notificar al componente padre sobre el cambio
@@ -167,34 +175,36 @@ const ImageUploader = ({
       {/* Vista previa de imágenes seleccionadas */}
       {(previewUrls.length > 0 || existingImages.length > 0) && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {/* Imágenes existentes */}
-          {existingImages.map((img, index) => (
-            <div key={`existing-${index}`} className="relative group">
-              <div 
-                className="aspect-square overflow-hidden rounded-md border cursor-zoom-in transition-transform hover:scale-105"
-                onClick={() => handlePreview(img.url)}
-              >
-                <img
-                  src={img.url}
-                  alt={`Vista previa ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
+          {/* Imágenes existentes (solo las que ya existen en backend, id numérico y sin file) */}
+          {existingImages
+            .filter(img => typeof img.id === 'number' && !img.file)
+            .map((img, index) => (
+              <div key={`existing-${img.id || index}`} className="relative group">
+                <div 
+                  className="aspect-square overflow-hidden rounded-md border cursor-zoom-in transition-transform hover:scale-105"
+                  onClick={() => handlePreview(img.url)}
+                >
+                  <img
+                    src={img.url}
+                    alt={`Vista previa ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-1 right-1 w-8 h-8 p-1.5 rounded-full bg-red-500/90 hover:bg-red-600 text-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteExisting(index);
+                  }}
+                  aria-label={`Eliminar imagen ${index + 1}`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute top-1 right-1 w-8 h-8 p-1.5 rounded-full bg-red-500/90 hover:bg-red-600 text-white"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteExisting(index);
-                }}
-                aria-label={`Eliminar imagen ${index + 1}`}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          ))}
+            ))}
 
           {/* Nuevas imágenes seleccionadas */}
           {selectedFiles.map((file, index) => (

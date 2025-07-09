@@ -694,8 +694,8 @@ export function EmployeesView() {
                 </Label>
                 <div className="col-span-3">
                   <PhoneInput
-                    id="telefono"
-                    name="telefono"
+                      id="telefono"
+                      name="telefono"
                     value={newEmployee.telefono}
                     onChange={val => {
                       // Siempre lada + 10 dígitos
@@ -704,7 +704,7 @@ export function EmployeesView() {
                       const numero = val.replace(lada, '').replace(/\D/g, '').slice(0, 10);
                       const limpio = lada + numero;
                       setNewEmployee(prev => ({ ...prev, telefono: limpio }));
-                    }}
+                      }}
                     required
                     maxDigits={10}
                     placeholder="10 dígitos"

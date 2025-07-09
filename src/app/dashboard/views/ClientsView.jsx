@@ -378,7 +378,7 @@ export function ClientsView() {
       const telefonoLimpio = lada + numero;
       if (numero.length !== 10) {
         toast.error("El número de teléfono debe tener exactamente 10 dígitos", { id: toastId });
-        setPhoneError(true);
+          setPhoneError(true);
         setIsSubmitting(false);
         toast.dismiss(toastId);
         return;
@@ -753,8 +753,8 @@ export function ClientsView() {
                 </Label>
                 <div className="col-span-3">
                   <PhoneInput
-                    id="telefono"
-                    name="telefono"
+                      id="telefono"
+                      name="telefono"
                     value={newClient.telefono}
                     onChange={val => {
                       // Siempre lada + 10 dígitos
@@ -766,7 +766,7 @@ export function ClientsView() {
                       if (phoneError) setPhoneError(false);
                     }}
                     error={phoneError}
-                    required
+                      required
                     maxDigits={10}
                     placeholder="10 dígitos"
                     errorText="El número de teléfono debe tener 10 dígitos"
