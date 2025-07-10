@@ -162,7 +162,8 @@ export default function CarPanel() {
             </span>
           </div>
           <div className="absolute bottom-4 left-0 lg:px-5 md:px-5 px-10 w-full">
-            <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1">
+            <Button onClick={() => navigate("/payment-method")}
+             className="cursor-pointer w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1">
               <CreditCard className="h-4 w-4 lg:h-5 lg:w-5" />
               <span className="text-sm lg:text-base">Comprar</span>
             </Button>
