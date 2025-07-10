@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ImageUploader from '../../../SpareParts/components/molecules/ImageUploader';
+import PdfUploader from './PdfUploader';
 import { generateDescriptionIA } from '@/services/admin/AIService';
 import toast from 'react-hot-toast';
 
@@ -174,6 +175,41 @@ export default function CreateProductFormDialog({
         setValue('media', currentMedia);
     };
 
+    // --- PDF Upload Handlers ---
+    const handlePdfUpload = (files) => {
+        const existingDownloads = getValues('downloads') || [];
+        // Filtrar solo las descargas existentes (sin file)
+        const currentExisting = existingDownloads.filter(dl => !dl.file);
+        // Filtrar solo las descargas nuevas (con file)
+        const currentNew = existingDownloads.filter(dl => dl.file);
+        // Calcular cuántos PDFs se pueden agregar
+        const maxToAdd = 10 - (currentExisting.length + currentNew.length);
+        if (maxToAdd <= 0) return; // No permitir más de 10
+        // Solo agregar hasta el máximo permitido
+        const filesToAdd = files.slice(0, maxToAdd);
+        const newPdfs = filesToAdd.map((file, index) => ({
+            key: file.name.replace('.pdf', ''),
+            value: URL.createObjectURL(file), // Crear URL temporal para vista previa inmediata
+            file: file
+        }));
+        // Combinar existentes y nuevos
+        const combinedDownloads = [...currentExisting, ...currentNew, ...newPdfs];
+        setValue('downloads', combinedDownloads);
+    };
+
+    const handlePdfDelete = (index) => {
+        const currentDownloads = [...getValues('downloads')];
+        const downloadToDelete = currentDownloads[index];
+        
+        // Limpiar URL temporal si existe
+        if (downloadToDelete.value && downloadToDelete.value.startsWith('blob:')) {
+            URL.revokeObjectURL(downloadToDelete.value);
+        }
+        
+        currentDownloads.splice(index, 1);
+        setValue('downloads', currentDownloads);
+    };
+
     const calcularPrecioConIVA = (precio) => {
         return precio * 1.16;
     };
@@ -220,8 +256,18 @@ export default function CreateProductFormDialog({
                 .filter(m => m.file instanceof File)
                 .map(m => m.file);
 
+            // Extraer archivos PDF reales de downloads
+            const newPdfFiles = (data.downloads || [])
+                .filter(dl => dl.file instanceof File)
+                .map(dl => dl.file);
+
             // Limpiar el campo media para solo dejar los metadatos (sin el campo file)
             const cleanMedia = (data.media || []).map(({ file, ...rest }) => rest);
+
+            // Clean downloads field to solo incluir descargas existentes (sin file) y NO blobs ni archivos locales
+            const cleanDownloads = (data.downloads || [])
+                .filter(dl => !dl.file)
+                .map(({ file, ...rest }) => rest);
 
             const formattedData = {
                 ...data,
@@ -234,10 +280,10 @@ export default function CreateProductFormDialog({
                 garanty: parseInt(data.garanty, 10) || 0,
                 functionalities: data.functionalities.filter(f => f && f.trim() !== ''),
                 technicalData: data.technicalData.filter(td => td.key && td.value),
-                downloads: data.downloads.filter(d => d.key && d.value),
+                downloads: cleanDownloads,
                 media: cleanMedia
             };
-            await handleCreateSubmit(formattedData, files);
+            await handleCreateSubmit(formattedData, files, newPdfFiles);
             toast.success('Producto creado exitosamente', { id: toastId });
         } catch (error) {
             toast.error('Error al crear producto', { id: toastId });
@@ -248,7 +294,18 @@ export default function CreateProductFormDialog({
     };
 
     return (
-        <Dialog open={isCreateDialogOpen} onOpenChange={(isOpen) => !isOpen && closeCreateDialog()}>
+        <Dialog open={isCreateDialogOpen} onOpenChange={(isOpen) => {
+            if (!isOpen) {
+                // Limpiar URLs temporales de PDFs antes de cerrar
+                const currentDownloads = getValues('downloads') || [];
+                currentDownloads.forEach(dl => {
+                    if (dl.value && dl.value.startsWith('blob:')) {
+                        URL.revokeObjectURL(dl.value);
+                    }
+                });
+                closeCreateDialog();
+            }
+        }}>
             <DialogTrigger asChild>
                 <Button onClick={openCreateDialog} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
@@ -721,24 +778,24 @@ export default function CreateProductFormDialog({
                             </div>
                         </div>
 
-                        {/* Sección de descargas */}
+                        {/* Sección de descargas por URL */}
                         <div className="md:col-span-2">
                             <h3 className="text-lg font-medium mb-4 flex items-center">
-                                <Download className="h-5 w-5 mr-2 text-blue-600" />
-                                Archivos para Descargar
+                                <FileText className="h-5 w-5 mr-2 text-blue-600" />
+                                Descargas por URL
                             </h3>
                             <div className="space-y-4">
                                 {downloadFields.map((field, index) => (
                                     <div key={field.id} className="flex items-center gap-2">
                                         <Input
                                             {...register(`downloads.${index}.key`)}
-                                            placeholder="Nombre del archivo (Ej: Manual de usuario)"
+                                            placeholder="Nombre del documento"
                                             className="flex-1"
                                             disabled={isCreating}
                                         />
                                         <Input
                                             {...register(`downloads.${index}.value`)}
-                                            placeholder="URL del archivo (Ej: https://...)"
+                                            placeholder="URL del documento"
                                             className="flex-1"
                                             disabled={isCreating}
                                         />
@@ -760,8 +817,24 @@ export default function CreateProductFormDialog({
                                     disabled={isCreating}
                                 >
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Añadir Archivo para Descargar
+                                    Añadir Descarga por URL
                                 </Button>
+                            </div>
+                        </div>
+
+                        {/* Sección de descargas PDF */}
+                        <div className="md:col-span-2">
+                            <h3 className="text-lg font-medium mb-4 flex items-center">
+                                <FileText className="h-5 w-5 mr-2 text-green-600" />
+                                Descargas PDF
+                            </h3>
+                            <div className="space-y-4">
+                                <PdfUploader
+                                    existingDownloads={watch('downloads') || []}
+                                    onPdfsChange={handlePdfUpload}
+                                    onPdfDelete={handlePdfDelete}
+                                    maxFiles={10}
+                                />
                             </div>
                         </div>
                     </div>

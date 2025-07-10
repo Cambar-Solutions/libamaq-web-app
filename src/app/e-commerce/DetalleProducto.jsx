@@ -535,28 +535,44 @@ const DetalleProducto = () => {
           )}
 
           {/* Downloads - Mercado Libre Style */}
-          {product?.downloads && Object.keys(product.downloads).length > 0 && (
-            <div className="mt-6 bg-white rounded-lg shadow-sm p-4 mb-8">
-              <h2 className="text-2xl font-medium text-gray-900 mb-4">Documentación y descargas</h2>
+          <div className="mt-6 bg-white rounded-lg shadow-sm p-4 mb-8">
+            <h2 className="text-2xl font-medium text-gray-900 mb-4">Documentación y descargas</h2>
+            {product?.downloads && Array.isArray(product.downloads) && product.downloads.length > 0 ? (
               <ul className="space-y-2">
-                {Object.entries(product.downloads).map(([key, url], index) => (
-                  <li key={index} className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                    </svg>
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:text-blue-700 hover:underline"
-                    >
-                      {key.replace(/_/g, ' ')}
-                    </a>
-                  </li>
-                ))}
+                {product.downloads
+                  .filter(download => download.value && download.value.trim() !== '') // Solo mostrar descargas con URL válida
+                  .map((download, index) => {
+                    const isPdf = download.value && download.value.toLowerCase().includes('.pdf');
+                    const isTemporaryUrl = download.value && download.value.startsWith('blob:');
+                    return (
+                      <li key={index} className="flex items-center">
+                        {isPdf ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                          </svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-6 4h6m-6-8h3" />
+                          </svg>
+                        )}
+                        <a
+                          href={download.value}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`hover:underline ${isTemporaryUrl ? 'text-red-600 hover:text-red-700' : 'text-blue-500 hover:text-blue-700'}`}
+                        >
+                          {download.key}
+                          {isTemporaryUrl && <span className="text-xs text-gray-500 ml-1">(temporal)</span>}
+                        </a>
+                      </li>
+                    );
+                  })}
               </ul>
-            </div>
-          )}
+            ) : (
+              <p className="text-gray-500 text-sm">No hay descargas disponibles para este producto.</p>
+            )}
+          </div>
         </div>
       </SidebarProvider>
 

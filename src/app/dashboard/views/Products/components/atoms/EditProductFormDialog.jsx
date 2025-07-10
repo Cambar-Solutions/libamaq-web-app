@@ -34,6 +34,7 @@ import { getProductById } from '@/services/admin/productService';
 
 // Components
 import ImageUploader from './ImageUploader';
+import PdfUploader from './PdfUploader';
 
 // --- Form Schema for Validation
 const editProductSchema = z.object({
@@ -96,6 +97,7 @@ const editProductSchema = z.object({
             value: z.string().optional()
         })
     ).default([]),
+
     media: z.array(z.any()).default([])
 });
 
@@ -148,6 +150,7 @@ const getProductDefaultValues = (product) => {
         downloads: Array.isArray(product?.downloads)
             ? product.downloads.map(dl => ({ key: dl.key || '', value: dl.value || '' }))
             : [{ key: '', value: '' }],
+
         media: Array.isArray(product?.media)
             ? product.media.map(img => ({
                 ...img,
@@ -228,6 +231,8 @@ const EditProductFormDialog = ({
         control,
         name: 'downloads'
     });
+
+
 
     // Fetch product details when dialog opens
     useEffect(() => {
@@ -379,6 +384,11 @@ const EditProductFormDialog = ({
                 .filter(m => m.file instanceof File)
                 .map(m => m.file);
 
+            // Extraer archivos PDF reales de downloads
+            const newPdfFiles = (data.downloads || [])
+                .filter(dl => dl.file instanceof File)
+                .map(dl => dl.file);
+
             // Track media to delete (images that were removed)
             const originalMediaIds = (fullProduct?.media || []).map(m => m.id).filter(Boolean);
             const currentMediaIds = (data.media || [])
@@ -391,17 +401,24 @@ const EditProductFormDialog = ({
                 .filter(m => m.id && !m.file)
                 .map(({ file, ...rest }) => rest);
 
+            // Clean downloads field to solo incluir descargas existentes (sin file) y NO blobs ni archivos locales
+            const cleanDownloads = (data.downloads || [])
+                .filter(dl => !dl.file)
+                .map(({ file, ...rest }) => rest);
+
             // Payload con TODOS los campos del producto
             const payload = {
                 ...data,
-                media: cleanMedia
+                media: cleanMedia,
+                downloads: cleanDownloads
             };
 
             await onSave(
                 data.id,
                 payload,
                 newFiles,
-                mediaToDelete
+                mediaToDelete,
+                newPdfFiles
             );
             // Recargar producto tras guardar para obtener imágenes reales
             if (product?.id) {
@@ -481,6 +498,44 @@ const EditProductFormDialog = ({
         setValue('media', currentMedia);
     };
 
+    // --- PDF Upload Handlers ---
+    // Los PDFs subidos se agregan al campo 'downloads' con URLs temporales (blob URLs)
+    // Esto permite que se muestren inmediatamente en el detalle del producto
+    // Cuando se guarda el producto, el backend sube los archivos y reemplaza las URLs temporales
+    const handlePdfUpload = (files) => {
+        const existingDownloads = getValues('downloads') || [];
+        // Filtrar solo las descargas existentes (sin file)
+        const currentExisting = existingDownloads.filter(dl => !dl.file);
+        // Filtrar solo las descargas nuevas (con file)
+        const currentNew = existingDownloads.filter(dl => dl.file);
+        // Calcular cuántos PDFs se pueden agregar
+        const maxToAdd = 10 - (currentExisting.length + currentNew.length);
+        if (maxToAdd <= 0) return; // No permitir más de 10
+        // Solo agregar hasta el máximo permitido
+        const filesToAdd = files.slice(0, maxToAdd);
+        const newPdfs = filesToAdd.map((file, index) => ({
+            key: file.name.replace('.pdf', ''),
+            value: URL.createObjectURL(file), // Crear URL temporal para vista previa inmediata
+            file: file
+        }));
+        // Combinar existentes y nuevos
+        const combinedDownloads = [...currentExisting, ...currentNew, ...newPdfs];
+        setValue('downloads', combinedDownloads);
+    };
+
+    const handlePdfDelete = (index) => {
+        const currentDownloads = [...getValues('downloads')];
+        const downloadToDelete = currentDownloads[index];
+
+        // Limpiar URL temporal si existe
+        if (downloadToDelete.value && downloadToDelete.value.startsWith('blob:')) {
+            URL.revokeObjectURL(downloadToDelete.value);
+        }
+
+        currentDownloads.splice(index, 1);
+        setValue('downloads', currentDownloads);
+    };
+
     // Asegura que la marca del producto esté en la lista de marcas
     let brandsWithCurrent = brands;
     if (
@@ -510,6 +565,13 @@ const EditProductFormDialog = ({
     return (
         <Dialog open={open} onOpenChange={(val) => {
             if (!val && !isSubmitting) {
+                // Limpiar URLs temporales de PDFs antes de cerrar
+                const currentDownloads = getValues('downloads') || [];
+                currentDownloads.forEach(dl => {
+                    if (dl.value && dl.value.startsWith('blob:')) {
+                        URL.revokeObjectURL(dl.value);
+                    }
+                });
                 // Solo limpiar el formulario y el estado de imágenes si el usuario cancela (no si guarda)
                 reset(getProductDefaultValues(product));
             }
@@ -922,6 +984,7 @@ const EditProductFormDialog = ({
                                         variant="outline"
                                         onClick={() => appendFunctionality('')}
                                         disabled={isSubmitting}
+                                        className="cursor-pointer"
                                     >
                                         <Plus className="h-4 w-4 mr-2" />
                                         Añadir Funcionalidad
@@ -965,6 +1028,7 @@ const EditProductFormDialog = ({
                                         variant="outline"
                                         onClick={() => appendTechnicalData({ key: '', value: '' })}
                                         disabled={isSubmitting}
+                                        className="cursor-pointer"
                                     >
                                         <Plus className="h-4 w-4 mr-2" />
                                         Añadir Datos Técnicos
@@ -975,20 +1039,20 @@ const EditProductFormDialog = ({
                             <div className="md:col-span-2">
                                 <h3 className="text-lg font-medium mb-4 flex items-center">
                                     <FileText className="h-5 w-5 mr-2 text-blue-600" />
-                                    Descargas
+                                    Descargas por URL
                                 </h3>
                                 <div className="space-y-4">
                                     {downloadFields.map((field, index) => (
                                         <div key={field.id} className="flex items-center gap-2">
                                             <Input
                                                 {...register(`downloads.${index}.key`)}
-                                                placeholder="Nombre"
+                                                placeholder="Nombre del documento"
                                                 className="flex-1"
                                                 disabled={isSubmitting}
                                             />
                                             <Input
                                                 {...register(`downloads.${index}.value`)}
-                                                placeholder="URL"
+                                                placeholder="URL del documento"
                                                 className="flex-1"
                                                 disabled={isSubmitting}
                                             />
@@ -1008,10 +1072,27 @@ const EditProductFormDialog = ({
                                         variant="outline"
                                         onClick={() => appendDownload({ key: '', value: '' })}
                                         disabled={isSubmitting}
+                                        className="cursor-pointer"
                                     >
                                         <Plus className="h-4 w-4 mr-2" />
-                                        Añadir Descarga
+                                        Añadir
                                     </Button>
+                                </div>
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <h3 className="text-lg font-medium mb-4 flex items-center">
+                                    <FileText className="h-5 w-5 mr-2 text-green-600" />
+                                    Descargas PDF
+                                </h3>
+                                <div className="space-y-4">
+                                    <PdfUploader
+                                        existingDownloads={watch('downloads') || []}
+                                        onPdfsChange={handlePdfUpload}
+                                        onPdfDelete={handlePdfDelete}
+                                        maxFiles={10}
+                                    />
+                                    {errors.downloads && <p className="text-sm text-red-600">{errors.downloads.message}</p>}
                                 </div>
                             </div>
                         </form>
