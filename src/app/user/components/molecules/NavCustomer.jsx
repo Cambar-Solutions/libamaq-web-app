@@ -128,6 +128,37 @@ export function NavCustomer({ onViewChange }) {
     //   );
     // }
 
+    // Función para determinar si la tienda está abierta
+    function getStoreStatus() {
+        const now = new Date();
+        const day = now.getDay(); // 0=domingo, 1=lunes, ...
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+
+        // Horarios según la imagen
+        // 0: domingo, 1: lunes, ..., 6: sábado
+        if (day === 0) return "Cerrado"; // Domingo
+        if (day === 6) {
+            // Sábado: 8:30 a 13:30
+            if (
+                (hour > 8 || (hour === 8 && minute >= 30)) &&
+                (hour < 13 || (hour === 13 && minute <= 30))
+            ) {
+                return "Abierto";
+            } else {
+                return "Cerrado";
+            }
+        }
+        // Lunes a viernes: 8:00 a 18:00
+        if (hour >= 8 && hour < 18) {
+            return "Abierto";
+        }
+        if (hour === 18 && minute === 0) {
+            return "Abierto"; // justo a las 18:00
+        }
+        return "Cerrado";
+    }
+
     return (
         <header className="fixed top-0 inset-x-0 z-50 bg-blue-950 border-b shadow-lg">
             {/* Mobile header */}
@@ -195,7 +226,7 @@ export function NavCustomer({ onViewChange }) {
                             className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
                         >
                             <MapPin size={20} />
-                            Actualizar ubicación
+                            {getStoreStatus()}
                         </button>
 
                         <Link to="/user-profile"
@@ -241,7 +272,7 @@ export function NavCustomer({ onViewChange }) {
                             <MapPin size={28} />
                             <div className="text-left">
                                 <p className="text-sm">{currentLocation}</p>
-                                <p className="text-base">Actualizar ubicación</p>
+                                <p className="text-base">{getStoreStatus()}</p>
                             </div>
                         </button>
                     </div>

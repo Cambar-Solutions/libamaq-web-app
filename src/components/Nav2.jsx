@@ -30,6 +30,37 @@ const Nav2 = () => {
   // Función para abrir/cerrar el menú
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
+  // Función para determinar si la tienda está abierta
+  function getStoreStatus() {
+    const now = new Date();
+    const day = now.getDay(); // 0=domingo, 1=lunes, ...
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+
+    // Horarios según la imagen
+    // 0: domingo, 1: lunes, ..., 6: sábado
+    if (day === 0) return "Cerrado"; // Domingo
+    if (day === 6) {
+      // Sábado: 8:30 a 13:30
+      if (
+        (hour > 8 || (hour === 8 && minute >= 30)) &&
+        (hour < 13 || (hour === 13 && minute <= 30))
+      ) {
+        return "Abierto";
+      } else {
+        return "Cerrado";
+      }
+    }
+    // Lunes a viernes: 8:00 a 18:00
+    if (hour >= 8 && hour < 18) {
+      return "Abierto";
+    }
+    if (hour === 18 && minute === 0) {
+      return "Abierto"; // justo a las 18:00
+    }
+    return "Cerrado";
+  }
+
   // Cargar las marcas desde la API
   useEffect(() => {
     const loadBrands = async () => {
@@ -86,6 +117,7 @@ const Nav2 = () => {
             className="max-h-12 cursor-pointer"
           />
         </div>
+        <span className={`ml-4 px-3 py-1 rounded-full text-xs font-bold ${getStoreStatus() === 'Abierto' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>{getStoreStatus()}</span>
       </div>
 
       {/* Menú hamburguesa (pantallas pequeñas) */}
@@ -93,6 +125,7 @@ const Nav2 = () => {
         <button onClick={toggleMenu} className="text-white">
           <FaBars size={24} />
         </button>
+        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${getStoreStatus() === 'Abierto' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>{getStoreStatus()}</span>
       </div>
 
       {/* Sidebar móvil */}

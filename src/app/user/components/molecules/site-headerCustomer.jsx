@@ -48,8 +48,11 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
   useEffect(() => {
     (async () => {
       try {
-        const { result = [] } = await getAllBrandsWithCategories();
-        setBrands(result.filter(b => b.status === "ACTIVE"));
+        const response = await getAllBrandsWithCategories();
+        console.log("Respuesta de marcas SiteHeader:", response);
+        // Soporta array directo o { data: [...] }
+        const brandsData = Array.isArray(response) ? response : (response?.data || []);
+        setBrands(brandsData.filter(b => b.status === "ACTIVE"));
       } catch (err) {
         console.error(err);
       } finally {
@@ -90,6 +93,37 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
     );
   }
 
+  // Función para determinar si la tienda está abierta
+  function getStoreStatus() {
+    const now = new Date();
+    const day = now.getDay(); // 0=domingo, 1=lunes, ...
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+
+    // Horarios según la imagen
+    // 0: domingo, 1: lunes, ..., 6: sábado
+    if (day === 0) return "Cerrado"; // Domingo
+    if (day === 6) {
+      // Sábado: 8:30 a 13:30
+      if (
+        (hour > 8 || (hour === 8 && minute >= 30)) &&
+        (hour < 13 || (hour === 13 && minute <= 30))
+      ) {
+        return "Abierto";
+      } else {
+        return "Cerrado";
+      }
+    }
+    // Lunes a viernes: 8:00 a 18:00
+    if (hour >= 8 && hour < 18) {
+      return "Abierto";
+    }
+    if (hour === 18 && minute === 0) {
+      return "Abierto"; // justo a las 18:00
+    }
+    return "Cerrado";
+  }
+
   return (
     <header className="fixed top-0 inset-x-0 z-50 bg-blue-950 border-b shadow-lg">
       {/* Mobile header */}
@@ -128,6 +162,13 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
             <FaTimes size={20} />
           </button>
           <nav className="mt-12 flex flex-col space-y-8">
+            {/* Info de usuario */}
+            <div className="w-full mb-5 p-2 border-b-2 border-yellow-600">
+              <p className="text-base font-semibold text-gray-800">{userInfo.name} {userInfo.lastName}</p>
+              {userInfo.email && (
+                <p className="text-sm text-gray-600">{userInfo.email}</p>
+              )}
+            </div>
             <div className="w-full">
               <label className="block text-sm font-medium text-gray-700 mb-1">Explorar por marca</label>
               <Select
@@ -138,9 +179,12 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecciona una marca" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-blue-100">
                   {brands.map((brand) => (
-                    <SelectItem key={brand.id} value={brand.id.toString()} className="cursor-pointer">
+                    <SelectItem
+                      key={brand.id}
+                      value={brand.id.toString()}
+                      className="cursor-pointer">
                       {brand.name}
                     </SelectItem>
                   ))}
@@ -160,7 +204,7 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
 
               >
                 <MapPin size={20} />
-                Actualizar ubicación
+                {getStoreStatus()}
               </button>
             </div>
 
@@ -174,10 +218,15 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
 
             <button
               onClick={() => { onViewChange("carrito"); setMenuOpen(false); }}
-              className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
+              className="flex items-center gap-2 text-gray-800 hover:text-blue-600 relative"
             >
               <RiShoppingCartFill size={20} />
               Mi Carrito
+              {cartCount > 0 && (
+                <span className="absolute -top-2 left-3 bg-yellow-600 text-white text-[10px] font-semibold rounded-full w-4 h-4 flex items-center justify-center group-hover:bg-yellow-400 group-hover:text-black transition-colors duration-600">
+                  {cartCount}
+                </span>
+              )}
             </button>
           </nav>
         </div>
@@ -209,7 +258,7 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
             <MapPin size={28} />
             <div className="text-left">
               <p className="text-sm line-clamp-1 max-w-[26em]">{currentLocation}</p>
-              <p className="text-base">Actualizar ubicación</p>
+              <p className="text-base">{getStoreStatus()}</p>
             </div>
           </button>
         </div>
