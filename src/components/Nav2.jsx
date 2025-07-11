@@ -36,8 +36,9 @@ const Nav2 = () => {
       try {
         setLoading(true);
         const response = await getAllBrandsWithCategories();
-        const brandsData = response?.result || [];
-        // Filtrar solo marcas activas
+        console.log("Respuesta de marcas Nav2:", response);
+        // Soporta array directo o { data: [...] }
+        const brandsData = Array.isArray(response) ? response : (response?.data || []);
         const activeBrands = brandsData.filter(brand => brand.status === 'ACTIVE');
         setBrands(activeBrands);
       } catch (error) {

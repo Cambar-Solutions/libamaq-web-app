@@ -25,7 +25,7 @@ import { useCartStore } from "@/stores/useCartStore";
 export function NavCustomer({ onViewChange }) {
     const navigate = useNavigate();
     // Initialize userInfo with sensible defaults, or null if you want to explicitly check for loaded data
-    const [userInfo, setUserInfo] = useState({ name: "Invitado", email: "" });
+    const [userInfo, setUserInfo] = useState({ name: "null", email: "null", lastName: "null" });
     const [editing, setEditing] = useState(false);
     const { toggleSidebar } = useSidebar();
     const drawerRef = useRef(null);
@@ -61,8 +61,11 @@ export function NavCustomer({ onViewChange }) {
     useEffect(() => {
         (async () => {
             try {
-                const { result = [] } = await getAllBrandsWithCategories();
-                setBrands(result.filter(b => b.status === "ACTIVE"));
+                const data = await getAllBrandsWithCategories();
+                console.log("Respuesta de marcas:", data);
+                // Soporta array directo o { data: [...] }
+                let brandsArray = Array.isArray(data) ? data : (data?.data || []);
+                setBrands(brandsArray.filter(b => b.status === "ACTIVE"));
             } catch (err) {
                 console.error(err);
             } finally {
@@ -92,7 +95,7 @@ export function NavCustomer({ onViewChange }) {
                 if (!token) {
                     console.log("No se encontró token de autenticación para el navbar.");
                     // No redirection needed here, just show "Hola Invitado"
-                    setUserInfo({ name: "Invitado", email: "" });
+                    setUserInfo({ name: "null", email: "null", lastName: "null" });
                     setUserLoading(false); // User loading is complete, no user found
                     return;
                 }
@@ -101,11 +104,11 @@ export function NavCustomer({ onViewChange }) {
                 const userId = decoded.sub;
 
                 const user = await getUserById(userId);
-                setUserInfo({ name: user.name, email: user.email });
+                setUserInfo({ name: user.name, email: user.email, lastName: user.lastName });
                 setUserLoading(false); // User data loaded
             } catch (error) {
                 console.error("Error al obtener el usuario para el navbar:", error);
-                setUserInfo({ name: "Invitado", email: "" }); // Fallback to "Invitado" on error
+                setUserInfo({ name: "null", email: "null", lastName: "null" }); // Fallback to "Invitado" on error
                 setUserLoading(false); // User loading is complete, but with an error
             }
         };
@@ -153,6 +156,13 @@ export function NavCustomer({ onViewChange }) {
                         <FaTimes size={20} />
                     </button>
                     <nav className="mt-12 flex flex-col space-y-8">
+                        {/* Info de usuario */}
+                        <div className="w-full mb-5 p-2 border-b-2 border-yellow-600">
+                            <p className="text-base font-semibold text-gray-800">{userLoading ? "Cargando..." : userInfo.name + " " + userInfo.lastName}</p>
+                            {userInfo.email && (
+                                <p className="text-sm text-gray-600">{userInfo.email}</p>
+                            )}
+                        </div>
                         <div className="w-full">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Explorar por marca</label>
                             <Select
@@ -163,9 +173,12 @@ export function NavCustomer({ onViewChange }) {
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="Selecciona una marca" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-blue-100">
                                     {brands.map((brand) => (
-                                        <SelectItem key={brand.id} value={brand.id.toString()} className="cursor-pointer">
+                                        <SelectItem
+                                            key={brand.id}
+                                            value={brand.id.toString()}
+                                            className="cursor-pointer">
                                             {brand.name}
                                         </SelectItem>
                                     ))}
@@ -195,10 +208,15 @@ export function NavCustomer({ onViewChange }) {
 
                         <button
                             onClick={() => navigate('/user-profile', { state: { view: 'carrito' } })}
-                            className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
+                            className="flex items-center gap-2 text-gray-800 hover:text-blue-600 relative"
                         >
                             <RiShoppingCartFill size={20} />
                             Mi Carrito
+                            {cartCount > 0 && (
+                                <span className="absolute -top-2 left-3 bg-yellow-600 text-white text-[10px] font-semibold rounded-full w-4 h-4 flex items-center justify-center group-hover:bg-yellow-400 group-hover:text-black transition-colors duration-600">
+                                    {cartCount}
+                                </span>
+                            )}
                         </button>
                     </nav>
                 </div>
