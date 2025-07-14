@@ -61,6 +61,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { uploadLandingFile } from "@/services/admin/landingService";
 import { useRef } from "react";
+import { useUploadToCloudflare } from '@/hooks/useCloudflare';
 
 function isLightColor(hexColor) {
   const hex = hexColor?.replace("#", "") || "ffffff";
@@ -141,6 +142,7 @@ export function BrandsView() {
   const createBrandMutation = useCreateBrand();
   const updateBrandMutation = useUpdateBrand();
   const changeBrandStatusMutation = useChangeBrandStatus();
+  const uploadToCloudflareMutation = useUploadToCloudflare();
 
   // Cliente de consulta para invalidar consultas y forzar recargas
   const queryClient = useQueryClient();
@@ -519,15 +521,6 @@ export function BrandsView() {
                           Logo de la marca
                         </Label>
                         <div className="col-span-3 space-y-2">
-                          <p className="text-xs text-gray-500 mt-1">Escoge una imagen desde tu dispositivo:</p>
-                          <Input
-                            id="brand-image-file"
-                            type="file"
-                            accept="image/*"
-                            ref={imageFileInputRef}
-                            onChange={handleBrandImageFileChange}
-                            className="cursor-pointer"
-                          />
                           <p className="text-xs text-gray-500 mt-1">O ingresa una URL directamente:</p>
                           <Input
                             id="brand-image-url"
@@ -536,6 +529,42 @@ export function BrandsView() {
                             value={formData.url}
                             onChange={handleInputChange}
                             onFocus={e => e.currentTarget.select()}
+                            className="inline-block w-[calc(100%-120px)] mr-2"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="inline-block align-middle"
+                            onClick={() => window._brandCloudflareInput && window._brandCloudflareInput.click()}
+                          >
+                            Subir archivo
+                          </Button>
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            style={{ display: 'none' }}
+                            ref={el => (window._brandCloudflareInput = el)}
+                            onChange={async (e) => {
+                              const file = e.target.files[0];
+                              if (!file) return;
+                              try {
+                                const res = await uploadToCloudflareMutation.mutateAsync(file);
+                                const url = res?.data?.[0]?.url;
+                                if (url) {
+                                  if (file.type.startsWith('image/')) {
+                                    setFormData(prev => ({ ...prev, url }));
+                                    toast.success('Imagen subida a Cloudflare');
+                                  } else if (file.type === 'application/pdf') {
+                                    toast.success('Archivo PDF subido a Cloudflare');
+                                  }
+                                } else {
+                                  toast.error('Error al subir el archivo');
+                                }
+                              } catch (err) {
+                                toast.error('Error al subir el archivo: ' + (err.message || err));
+                              }
+                            }}
                           />
                           {formData.url && (
                             <div className="mt-2 p-2 border rounded flex justify-center bg-gray-50">
@@ -921,22 +950,63 @@ export function BrandsView() {
                       Logo de la marca
                     </Label>
                     <div className="col-span-3 space-y-2">
-                      <Input
-                        id="brand-image-file"
+                      <p className="text-xs text-gray-500 mt-1">Ingresa la URL del logo de la marca:</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                        <Input
+                          id="brand-image-url"
+                          name="url"
+                          placeholder="https://ejemplo.com/logo.png"
+                          value={formData.url}
+                          onChange={handleInputChange}
+                          onFocus={e => e.currentTarget.select()}
+                          className="inline-block w-[calc(100%-120px)] mr-2"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="inline-block align-middle"
+                          onClick={() => window._brandCloudflareInputCreate && window._brandCloudflareInputCreate.click()}
+                        >
+                          Subir archivo
+                        </Button>
+                        {formData.url && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setFormData(prev => ({ ...prev, url: "" }))}
+                            title="Limpiar logo"
+                          >
+                            <span aria-label="Limpiar">✕</span>
+                          </Button>
+                        )}
+                      </div>
+                      <input
                         type="file"
-                        accept="image/*"
-                        ref={imageFileInputRef}
-                        onChange={handleBrandImageFileChange}
-                        className="cursor-pointer"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">O ingresa una URL directamente:</p>
-                      <Input
-                        id="brand-image-url"
-                        name="url"
-                        placeholder="https://ejemplo.com/logo.png"
-                        value={formData.url}
-                        onChange={handleInputChange}
-                        onFocus={e => e.currentTarget.select()}
+                        accept="image/*,application/pdf"
+                        style={{ display: 'none' }}
+                        ref={el => (window._brandCloudflareInputCreate = el)}
+                        onChange={async (e) => {
+                          const file = e.target.files[0];
+                          if (!file) return;
+                          try {
+                            const res = await uploadToCloudflareMutation.mutateAsync(file);
+                            const url = res?.data?.[0]?.url;
+                            if (url) {
+                              if (file.type.startsWith('image/')) {
+                                setFormData(prev => ({ ...prev, url }));
+                                toast.success('Imagen subida a Cloudflare');
+                              } else if (file.type === 'application/pdf') {
+                                toast.success('Archivo PDF subido a Cloudflare');
+                              }
+                            } else {
+                              toast.error('Error al subir el archivo');
+                            }
+                          } catch (err) {
+                            toast.error('Error al subir el archivo: ' + (err.message || err));
+                          }
+                        }}
                       />
                       {formData.url && (
                         <div className="mt-2 p-2 border rounded flex justify-center bg-gray-50">
