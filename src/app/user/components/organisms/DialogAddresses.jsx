@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter as AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { FiNavigation } from "react-icons/fi";
 
 // Elimina el mockUserId y usa el userId real del localStorage
 const userData = JSON.parse(localStorage.getItem("user_data"));
@@ -258,6 +259,73 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
         }
     };
 
+    // Función para autocompletar dirección usando la ubicación actual
+    const handleUseCurrentLocation = async () => {
+        if (!navigator.geolocation) {
+            toast.error('La geolocalización no está disponible en este navegador');
+            return;
+        }
+        toast.loading('Obteniendo ubicación actual...');
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                try {
+                    const { latitude, longitude } = position.coords;
+                    const response = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&accept-language=es`
+                    );
+                    if (!response.ok) throw new Error('Error al obtener la dirección');
+                    const data = await response.json();
+                    if (data.address) {
+                        const address = data.address;
+                        // Construir calle y número
+                        let street = '';
+                        if (address.road || address.house_number) {
+                            street = [address.road || '', address.house_number || ''].filter(Boolean).join(' ').trim();
+                        } else if (address.city) {
+                            street = address.city;
+                        }
+                        setForm(f => ({
+                            ...f,
+                            street: street,
+                            city: address.city || address.town || address.village || '',
+                            state: address.state || '',
+                            postalCode: address.postcode || '',
+                        }));
+                        toast.dismiss();
+                        toast.success('Ubicación autocompletada');
+                    } else {
+                        toast.dismiss();
+                        toast.error('No se pudo obtener la dirección completa');
+                    }
+                } catch (error) {
+                    toast.dismiss();
+                    toast.error('Error al obtener la dirección. Intenta llenar manualmente.');
+                }
+            },
+            (error) => {
+                toast.dismiss();
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        toast.error('Permiso denegado para acceder a la ubicación');
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        toast.error('Información de ubicación no disponible');
+                        break;
+                    case error.TIMEOUT:
+                        toast.error('Tiempo de espera agotado para obtener la ubicación');
+                        break;
+                    default:
+                        toast.error('Error al obtener la ubicación');
+                }
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 60000
+            }
+        );
+    };
+
     return (
         <>
             <Toaster />
@@ -322,14 +390,14 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
                                                                 <Check className="w-4 h-4 text-green-600" /> Seleccionada
                                                             </span>
                                                         )}</div>
-                                                    </div>
+                            </div>
                                                     <div className="flex items-center gap-2">
                                                         {!addr.isSelected && (
                                                             <TooltipProvider>
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
                                                                         <button
-                                                                            className="cursor-pointer px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-900 flex items-center gap-1 text-xs font-semibold transition"
+                                                                            className="absolute bottom-2 right-2 px-2 py-2 rounded-full bg-blue-500 text-white hover:bg-blue-900 flex items-center gap-1 text-xs font-semibold transition shadow-lg"
                                                                             onClick={() => handleSelectMain(addr)}
                                                                             aria-label="Seleccionar como principal"
                                                                         >
@@ -374,8 +442,8 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
                                                                 </TooltipContent>
                                                             </Tooltip>
                                                         </TooltipProvider>
-                                                    </div>
-                                                </div>
+                            </div>
+                        </div>
                                             ))}
                                         </div>
                                     )}
@@ -400,6 +468,11 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
                                     className="bg-white rounded-lg p-4 flex flex-col gap-4 h-[400px] overflow-y-auto"
                                 >
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="md:col-span-2 flex justify-end mb-2">
+                                            <button type="button" onClick={handleUseCurrentLocation} className="flex items-center text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                <FiNavigation className="w-4 h-4 mr-1" /> Usar ubicación actual
+                                            </button>
+                                        </div>
                                         <div>
                                             <Label htmlFor="receiver">Nombre del receptor</Label>
                                             <Input id="receiver" name="receiver" value={form.receiver} onChange={handleChange} required />
@@ -455,7 +528,7 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
                                                 <option value="INACTIVE">Inactiva</option>
                                             </select>
                                         </div>
-                                    </div>
+                        </div>
                                     <DialogFooter className="flex gap-2 mt-4">
                                         <BtnSave type="submit" />
                                         <button type="button" onClick={handleCancel} className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg cursor-pointer transition-all duration-600">Cancelar</button>

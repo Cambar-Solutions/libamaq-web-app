@@ -125,7 +125,7 @@ const Nav2 = () => {
         <button onClick={toggleMenu} className="text-white">
           <FaBars size={24} />
         </button>
-        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${getStoreStatus() === 'Abierto' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>{getStoreStatus()}</span>
+        
       </div>
 
       {/* Sidebar móvil */}
