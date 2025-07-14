@@ -52,12 +52,6 @@ const ImageUploader = ({
     const existingFileNames = selectedFiles.map(f => f.name);
     const uniqueFiles = files.filter(f => !existingFileNames.includes(f.name));
 
-    // Verificar límite de archivos
-    if (selectedFiles.length + uniqueFiles.length > maxFiles) {
-      alert(`Solo puedes subir hasta ${maxFiles} imágenes en total`);
-      return;
-    }
-
     const newFiles = [...selectedFiles, ...uniqueFiles];
     setSelectedFiles(newFiles);
     
@@ -143,22 +137,17 @@ const ImageUploader = ({
             multiple
             onChange={handleFileChange}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            disabled={selectedFiles.length >= maxFiles}
             aria-label="Seleccionar imágenes"
           />
           <Button
             type="button"
             variant="default"
             className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-            disabled={selectedFiles.length >= maxFiles}
           >
             <ImagePlus className="w-4 h-4" />
             Agregar imagen
           </Button>
         </div>
-        <span className="text-sm text-muted-foreground">
-          {selectedFiles.length} de {maxFiles} archivos seleccionados
-        </span>
       </div>
 
       {/* Barra de progreso */}
@@ -175,9 +164,9 @@ const ImageUploader = ({
       {/* Vista previa de imágenes seleccionadas */}
       {(previewUrls.length > 0 || existingImages.length > 0) && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {/* Imágenes existentes (solo las que ya existen en backend, id numérico y sin file) */}
+          {/* Imágenes existentes (solo las que ya existen en backend, con id válido y sin file) */}
           {existingImages
-            .filter(img => typeof img.id === 'number' && !img.file)
+            .filter(img => (img.id && (typeof img.id === 'number' || !isNaN(Number(img.id)))) && !img.file)
             .map((img, index) => (
               <div key={`existing-${img.id || index}`} className="relative group">
                 <div 

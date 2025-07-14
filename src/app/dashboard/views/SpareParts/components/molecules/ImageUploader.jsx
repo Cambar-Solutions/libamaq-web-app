@@ -43,12 +43,6 @@ const ImageUploader = ({
   // Manejar la selección de archivos
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
-    
-    // Verificar límite de archivos
-    if (selectedFiles.length + files.length > maxFiles) {
-      alert(`Solo puedes subir hasta ${maxFiles} imágenes en total`);
-      return;
-    }
 
     const newFiles = [...selectedFiles, ...files];
     setSelectedFiles(newFiles);
@@ -134,22 +128,17 @@ const ImageUploader = ({
             multiple
             onChange={handleFileChange}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            disabled={selectedFiles.length >= maxFiles}
             aria-label="Seleccionar imágenes"
           />
           <Button
             type="button"
             variant="default"
             className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-            disabled={selectedFiles.length >= maxFiles}
           >
             <ImagePlus className="w-4 h-4" />
             Agregar imagen
           </Button>
         </div>
-        <span className="text-sm text-muted-foreground">
-          {selectedFiles.length} de {maxFiles} archivos seleccionados
-        </span>
       </div>
 
       {/* Barra de progreso */}

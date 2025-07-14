@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import ImageUploader from '../../../SpareParts/components/molecules/ImageUploader';
 import PdfUploader from './PdfUploader';
 import { generateDescriptionIA } from '@/services/admin/AIService';
+import mediaService from '@/services/admin/mediaService';
 import toast from 'react-hot-toast';
 
 export default function CreateProductFormDialog({ 
@@ -34,6 +35,7 @@ export default function CreateProductFormDialog({
     const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
     const [filteredCategories, setFilteredCategories] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isUploadingPdfs, setIsUploadingPdfs] = useState(false);
 
     const { register, handleSubmit, control, watch, setValue, getValues, reset, formState: { errors } } = useForm({
         defaultValues: {
@@ -158,54 +160,73 @@ export default function CreateProductFormDialog({
     };
 
     const handleImageUpload = (files) => {
+        const existingMedia = getValues('media') || [];
+        // Filtrar solo las imágenes existentes (con id válido y sin file)
+        const currentExisting = existingMedia.filter(img => (img.id && (typeof img.id === 'number' || !isNaN(Number(img.id)))) && !img.file);
+        // Filtrar solo las imágenes nuevas (con file)
+        const currentNew = existingMedia.filter(img => img.file);
+        
         const newMedia = files.map((file, index) => ({
-            id: index,
+            id: `new-${Date.now()}-${index}`,
             url: URL.createObjectURL(file),
             fileType: file.type.startsWith('image/') ? 'IMAGE' : 'OTHER',
             entityType: 'PRODUCT',
-            displayOrder: index,
-            file // Keep the file reference for upload
+            displayOrder: currentExisting.length + currentNew.length + index,
+            file
         }));
-        setValue('media', newMedia);
+        // Combinar existentes y nuevas
+        const combinedMedia = [...currentExisting, ...currentNew, ...newMedia];
+        setValue('media', combinedMedia);
     };
 
     const handleImageDelete = (index) => {
         const currentMedia = [...getValues('media')];
+        // Si la imagen que se va a eliminar tiene una URL temporal (blob), la revocamos
+        const imageToDelete = currentMedia[index];
+        if (imageToDelete?.url && imageToDelete.url.startsWith('blob:')) {
+            URL.revokeObjectURL(imageToDelete.url);
+        }
         currentMedia.splice(index, 1);
         setValue('media', currentMedia);
     };
 
     // --- PDF Upload Handlers ---
-    const handlePdfUpload = (files) => {
-        const existingDownloads = getValues('downloads') || [];
-        // Filtrar solo las descargas existentes (sin file)
-        const currentExisting = existingDownloads.filter(dl => !dl.file);
-        // Filtrar solo las descargas nuevas (con file)
-        const currentNew = existingDownloads.filter(dl => dl.file);
-        // Calcular cuántos PDFs se pueden agregar
-        const maxToAdd = 10 - (currentExisting.length + currentNew.length);
-        if (maxToAdd <= 0) return; // No permitir más de 10
-        // Solo agregar hasta el máximo permitido
-        const filesToAdd = files.slice(0, maxToAdd);
-        const newPdfs = filesToAdd.map((file, index) => ({
-            key: file.name.replace('.pdf', ''),
-            value: URL.createObjectURL(file), // Crear URL temporal para vista previa inmediata
-            file: file
-        }));
-        // Combinar existentes y nuevos
-        const combinedDownloads = [...currentExisting, ...currentNew, ...newPdfs];
-        setValue('downloads', combinedDownloads);
+    // Los PDFs se suben inmediatamente al servidor y se añaden a la lista con las URLs reales
+    const handlePdfUpload = async (files) => {
+        if (!files || files.length === 0) return;
+        
+        setIsUploadingPdfs(true);
+        try {
+            // Subir los archivos PDF inmediatamente
+            const uploadedFiles = await mediaService.uploadImages(files);
+            
+            const existingDownloads = getValues('downloads') || [];
+            // Filtrar solo las descargas existentes (sin file)
+            const currentExisting = existingDownloads.filter(dl => !dl.file);
+            // Filtrar solo las descargas nuevas (con file)
+            const currentNew = existingDownloads.filter(dl => dl.file);
+            
+            // Crear nuevas entradas con las URLs reales del servidor
+            const newPdfs = uploadedFiles.map((uploadedFile, index) => ({
+                key: files[index].name.replace('.pdf', ''),
+                value: uploadedFile.url // URL real del servidor
+            }));
+            
+            // Combinar existentes y nuevos (sin files temporales)
+            const combinedDownloads = [...currentExisting, ...currentNew, ...newPdfs];
+            setValue('downloads', combinedDownloads);
+            
+            toast.success(`${files.length} PDF${files.length > 1 ? 's' : ''} subido${files.length > 1 ? 's' : ''} correctamente`);
+        } catch (error) {
+            console.error('Error al subir PDFs:', error);
+            toast.error('Error al subir los PDFs. Inténtalo de nuevo.');
+        } finally {
+            setIsUploadingPdfs(false);
+        }
     };
 
     const handlePdfDelete = (index) => {
         const currentDownloads = [...getValues('downloads')];
-        const downloadToDelete = currentDownloads[index];
-        
-        // Limpiar URL temporal si existe
-        if (downloadToDelete.value && downloadToDelete.value.startsWith('blob:')) {
-            URL.revokeObjectURL(downloadToDelete.value);
-        }
-        
         currentDownloads.splice(index, 1);
         setValue('downloads', currentDownloads);
     };
@@ -256,18 +277,11 @@ export default function CreateProductFormDialog({
                 .filter(m => m.file instanceof File)
                 .map(m => m.file);
 
-            // Extraer archivos PDF reales de downloads
-            const newPdfFiles = (data.downloads || [])
-                .filter(dl => dl.file instanceof File)
-                .map(dl => dl.file);
-
             // Limpiar el campo media para solo dejar los metadatos (sin el campo file)
             const cleanMedia = (data.media || []).map(({ file, ...rest }) => rest);
 
-            // Clean downloads field to solo incluir descargas existentes (sin file) y NO blobs ni archivos locales
-            const cleanDownloads = (data.downloads || [])
-                .filter(dl => !dl.file)
-                .map(({ file, ...rest }) => rest);
+            // Downloads field ya contiene URLs reales del servidor (no archivos temporales)
+            const cleanDownloads = (data.downloads || []);
 
             const formattedData = {
                 ...data,
@@ -283,7 +297,7 @@ export default function CreateProductFormDialog({
                 downloads: cleanDownloads,
                 media: cleanMedia
             };
-            await handleCreateSubmit(formattedData, files, newPdfFiles);
+            await handleCreateSubmit(formattedData, files);
             toast.success('Producto creado exitosamente', { id: toastId });
         } catch (error) {
             toast.error('Error al crear producto', { id: toastId });
@@ -296,13 +310,6 @@ export default function CreateProductFormDialog({
     return (
         <Dialog open={isCreateDialogOpen} onOpenChange={(isOpen) => {
             if (!isOpen) {
-                // Limpiar URLs temporales de PDFs antes de cerrar
-                const currentDownloads = getValues('downloads') || [];
-                currentDownloads.forEach(dl => {
-                    if (dl.value && dl.value.startsWith('blob:')) {
-                        URL.revokeObjectURL(dl.value);
-                    }
-                });
                 closeCreateDialog();
             }
         }}>
@@ -691,7 +698,6 @@ export default function CreateProductFormDialog({
                                 <ImageUploader
                                     onImagesChange={handleImageUpload}
                                     onImageDelete={handleImageDelete}
-                                    maxFiles={5}
                                 />
                             </div>
                         </div>
@@ -833,7 +839,7 @@ export default function CreateProductFormDialog({
                                     existingDownloads={watch('downloads') || []}
                                     onPdfsChange={handlePdfUpload}
                                     onPdfDelete={handlePdfDelete}
-                                    maxFiles={10}
+                                    isUploading={isUploadingPdfs}
                                 />
                             </div>
                         </div>

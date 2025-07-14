@@ -31,6 +31,7 @@ import { Drill, Plus, X, Loader2, FileText, Download, Settings, Edit } from 'luc
 import { generateDescriptionIA } from '@/services/admin/AIService';
 import { getCategoriesByBrand, getCategoryById } from '@/services/admin/categoryService';
 import { getProductById } from '@/services/admin/productService';
+import mediaService from '@/services/admin/mediaService';
 
 // Components
 import ImageUploader from './ImageUploader';
@@ -103,6 +104,9 @@ const editProductSchema = z.object({
 
 // Helper function to set default values
 const getProductDefaultValues = (product) => {
+    // Extraer datos del producto, manejando tanto la estructura directa como la estructura con wrapper "data"
+    const productData = product?.data || product;
+    
     // Helper to format technicalData from various input types to the desired { key: '', value: '' } structure
     const formatTechnicalData = (data) => {
         if (!data) return [{ key: '', value: '' }];
@@ -125,39 +129,39 @@ const getProductDefaultValues = (product) => {
     };
     return {
         // Metadatos y campos editables
-        id: product?.id ? Number(product.id) : undefined,
-        createdBy: product?.createdBy || '',
-        updatedBy: product?.updatedBy || '',
-        createdAt: product?.createdAt || '',
-        updatedAt: product?.updatedAt || '',
-        deletedAt: product?.deletedAt || '',
-        brandId: product?.brandId ? String(product.brandId) : '',
-        categoryId: product?.categoryId ? String(product.categoryId) : '',
-        externalId: product?.externalId || '',
-        name: product?.name || '',
-        shortDescription: product?.shortDescription || '',
-        description: product?.description || '',
-        price: product?.price ? parseFloat(product.price) : 0,
-        cost: product?.cost ? parseFloat(product.cost) : null,
-        discount: product?.discount ? parseFloat(product.discount) : 0,
-        stock: product?.stock ? parseInt(product.stock, 10) : 0,
-        garanty: product?.garanty ? parseInt(product.garanty, 10) : 0,
-        color: product?.color || '',
-        rentable: Boolean(product?.rentable),
-        status: product?.status || 'ACTIVE',
-        functionalities: Array.isArray(product?.functionalities) ? product.functionalities.filter(Boolean) : [],
-        technicalData: formatTechnicalData(product?.technicalData),
-        downloads: Array.isArray(product?.downloads)
-            ? product.downloads.map(dl => ({ key: dl.key || '', value: dl.value || '' }))
+        id: productData?.id ? Number(productData.id) : undefined,
+        createdBy: productData?.createdBy || '',
+        updatedBy: productData?.updatedBy || '',
+        createdAt: productData?.createdAt || '',
+        updatedAt: productData?.updatedAt || '',
+        deletedAt: productData?.deletedAt || '',
+        brandId: productData?.brandId ? String(productData.brandId) : '',
+        categoryId: productData?.categoryId ? String(productData.categoryId) : '',
+        externalId: productData?.externalId || '',
+        name: productData?.name || '',
+        shortDescription: productData?.shortDescription || '',
+        description: productData?.description || '',
+        price: productData?.price ? parseFloat(productData.price) : 0,
+        cost: productData?.cost ? parseFloat(productData.cost) : null,
+        discount: productData?.discount ? parseFloat(productData.discount) : 0,
+        stock: productData?.stock ? parseInt(productData.stock, 10) : 0,
+        garanty: productData?.garanty ? parseInt(productData.garanty, 10) : 0,
+        color: productData?.color || '',
+        rentable: Boolean(productData?.rentable),
+        status: productData?.status || 'ACTIVE',
+        functionalities: Array.isArray(productData?.functionalities) ? productData.functionalities.filter(Boolean) : [],
+        technicalData: formatTechnicalData(productData?.technicalData),
+        downloads: Array.isArray(productData?.downloads)
+            ? productData.downloads.map(dl => ({ key: dl.key || '', value: dl.value || '' }))
             : [{ key: '', value: '' }],
 
-        media: Array.isArray(product?.media)
-            ? product.media.map(img => ({
+        media: Array.isArray(productData?.media)
+            ? productData.media.map(img => ({
                 ...img,
                 id: img.id || Date.now(),
                 url: img.url || '',
                 fileType: img.fileType || 'IMAGE',
-                entityId: img.entityId || product?.id,
+                entityId: img.entityId || productData?.id,
                 entityType: 'PRODUCT',
                 displayOrder: img.displayOrder || 0
             }))
@@ -175,13 +179,14 @@ const EditProductFormDialog = ({
     isUpdating = false
 }) => {
 
-    console.log("PRODUCT", product);
+
 
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [filteredCategories, setFilteredCategories] = useState([]);
     const [loadingProduct, setLoadingProduct] = useState(false);
     const [fullProduct, setFullProduct] = useState(null);
+    const [isUploadingPdfs, setIsUploadingPdfs] = useState(false);
     const firstErrorRef = useRef(null);
 
     const {
@@ -205,16 +210,7 @@ const EditProductFormDialog = ({
     const watchedColor = watch('color');
     const watchedProductName = watch('name');
 
-    // DEBUG: Log de valores del formulario
-    console.log('📊 FORM VALUES:', {
-        brandId: watchedBrandId,
-        categoryId: watch('categoryId'),
-        name: watchedProductName,
-        price: watchedPrice,
-        isDirty,
-        errors: Object.keys(errors),
-        errorDetails: errors
-    });
+
 
     // Field arrays for dynamic inputs
     const { fields: functionalityFields, append: appendFunctionality, remove: removeFunctionality } = useFieldArray({
@@ -241,11 +237,10 @@ const EditProductFormDialog = ({
         }
     }, [open, product]);
 
-    // Log para depuración: mostrar el contenido de media cada vez que se abre el modal
+    // Reset form when dialog opens
     useEffect(() => {
         if (open) {
             const defaults = getProductDefaultValues(product);
-            console.log('🖼️ MEDIA AL ABRIR MODAL:', defaults.media);
             reset(defaults);
         }
     }, [open, product, reset]);
@@ -384,11 +379,6 @@ const EditProductFormDialog = ({
                 .filter(m => m.file instanceof File)
                 .map(m => m.file);
 
-            // Extraer archivos PDF reales de downloads
-            const newPdfFiles = (data.downloads || [])
-                .filter(dl => dl.file instanceof File)
-                .map(dl => dl.file);
-
             // Track media to delete (images that were removed)
             const originalMediaIds = (fullProduct?.media || []).map(m => m.id).filter(Boolean);
             const currentMediaIds = (data.media || [])
@@ -401,10 +391,8 @@ const EditProductFormDialog = ({
                 .filter(m => m.id && !m.file)
                 .map(({ file, ...rest }) => rest);
 
-            // Clean downloads field to solo incluir descargas existentes (sin file) y NO blobs ni archivos locales
-            const cleanDownloads = (data.downloads || [])
-                .filter(dl => !dl.file)
-                .map(({ file, ...rest }) => rest);
+            // Downloads field ya contiene URLs reales del servidor (no archivos temporales)
+            const cleanDownloads = (data.downloads || []);
 
             // Payload con TODOS los campos del producto
             const payload = {
@@ -417,8 +405,7 @@ const EditProductFormDialog = ({
                 data.id,
                 payload,
                 newFiles,
-                mediaToDelete,
-                newPdfFiles
+                mediaToDelete
             );
             // Recargar producto tras guardar para obtener imágenes reales
             if (product?.id) {
@@ -436,7 +423,6 @@ const EditProductFormDialog = ({
 
     // --- Accesibilidad: scroll y focus al primer error ---
     const onInvalid = (formErrors) => {
-        console.log('❌ VALIDACIÓN FALLIDA:', formErrors);
         const firstErrorKey = Object.keys(formErrors)[0];
         if (firstErrorKey) {
             const errorField = document.querySelector(`[name="${firstErrorKey}"]`);
@@ -470,16 +456,12 @@ const EditProductFormDialog = ({
     // --- Image Upload Handlers ---
     const handleImageUpload = (files) => {
         const existingMedia = getValues('media') || [];
-        // Filtrar solo las imágenes existentes (id numérico y sin file)
-        const currentExisting = existingMedia.filter(img => typeof img.id === 'number' && !img.file);
+        // Filtrar solo las imágenes existentes (con id válido y sin file)
+        const currentExisting = existingMedia.filter(img => (img.id && (typeof img.id === 'number' || !isNaN(Number(img.id)))) && !img.file);
         // Filtrar solo las imágenes nuevas (con file)
         const currentNew = existingMedia.filter(img => img.file);
-        // Calcular cuántas imágenes se pueden agregar
-        const maxToAdd = 5 - (currentExisting.length + currentNew.length);
-        if (maxToAdd <= 0) return; // No permitir más de 5
-        // Solo agregar hasta el máximo permitido
-        const filesToAdd = files.slice(0, maxToAdd);
-        const newMedia = filesToAdd.map((file, index) => ({
+        
+        const newMedia = files.map((file, index) => ({
             id: `new-${Date.now()}-${index}`,
             url: URL.createObjectURL(file),
             fileType: file.type.startsWith('image/') ? 'IMAGE' : 'OTHER',
@@ -494,44 +476,52 @@ const EditProductFormDialog = ({
 
     const handleImageDelete = (index) => {
         const currentMedia = [...getValues('media')];
+        // Si la imagen que se va a eliminar tiene una URL temporal (blob), la revocamos
+        const imageToDelete = currentMedia[index];
+        if (imageToDelete?.url && imageToDelete.url.startsWith('blob:')) {
+            URL.revokeObjectURL(imageToDelete.url);
+        }
         currentMedia.splice(index, 1);
         setValue('media', currentMedia);
     };
 
     // --- PDF Upload Handlers ---
-    // Los PDFs subidos se agregan al campo 'downloads' con URLs temporales (blob URLs)
-    // Esto permite que se muestren inmediatamente en el detalle del producto
-    // Cuando se guarda el producto, el backend sube los archivos y reemplaza las URLs temporales
-    const handlePdfUpload = (files) => {
-        const existingDownloads = getValues('downloads') || [];
-        // Filtrar solo las descargas existentes (sin file)
-        const currentExisting = existingDownloads.filter(dl => !dl.file);
-        // Filtrar solo las descargas nuevas (con file)
-        const currentNew = existingDownloads.filter(dl => dl.file);
-        // Calcular cuántos PDFs se pueden agregar
-        const maxToAdd = 10 - (currentExisting.length + currentNew.length);
-        if (maxToAdd <= 0) return; // No permitir más de 10
-        // Solo agregar hasta el máximo permitido
-        const filesToAdd = files.slice(0, maxToAdd);
-        const newPdfs = filesToAdd.map((file, index) => ({
-            key: file.name.replace('.pdf', ''),
-            value: URL.createObjectURL(file), // Crear URL temporal para vista previa inmediata
-            file: file
-        }));
-        // Combinar existentes y nuevos
-        const combinedDownloads = [...currentExisting, ...currentNew, ...newPdfs];
-        setValue('downloads', combinedDownloads);
+    // Los PDFs se suben inmediatamente al servidor y se añaden a la lista con las URLs reales
+    const handlePdfUpload = async (files) => {
+        if (!files || files.length === 0) return;
+        
+        setIsUploadingPdfs(true);
+        try {
+            // Subir los archivos PDF inmediatamente
+            const uploadedFiles = await mediaService.uploadImages(files);
+            
+            const existingDownloads = getValues('downloads') || [];
+            // Filtrar solo las descargas existentes (sin file)
+            const currentExisting = existingDownloads.filter(dl => !dl.file);
+            // Filtrar solo las descargas nuevas (con file)
+            const currentNew = existingDownloads.filter(dl => dl.file);
+            
+            // Crear nuevas entradas con las URLs reales del servidor
+            const newPdfs = uploadedFiles.map((uploadedFile, index) => ({
+                key: files[index].name.replace('.pdf', ''),
+                value: uploadedFile.url // URL real del servidor
+            }));
+            
+            // Combinar existentes y nuevos (sin files temporales)
+            const combinedDownloads = [...currentExisting, ...currentNew, ...newPdfs];
+            setValue('downloads', combinedDownloads);
+            
+            toast.success(`${files.length} PDF${files.length > 1 ? 's' : ''} subido${files.length > 1 ? 's' : ''} correctamente`);
+        } catch (error) {
+            console.error('Error al subir PDFs:', error);
+            toast.error('Error al subir los PDFs. Inténtalo de nuevo.');
+        } finally {
+            setIsUploadingPdfs(false);
+        }
     };
 
     const handlePdfDelete = (index) => {
         const currentDownloads = [...getValues('downloads')];
-        const downloadToDelete = currentDownloads[index];
-
-        // Limpiar URL temporal si existe
-        if (downloadToDelete.value && downloadToDelete.value.startsWith('blob:')) {
-            URL.revokeObjectURL(downloadToDelete.value);
-        }
-
         currentDownloads.splice(index, 1);
         setValue('downloads', currentDownloads);
     };
@@ -565,14 +555,7 @@ const EditProductFormDialog = ({
     return (
         <Dialog open={open} onOpenChange={(val) => {
             if (!val && !isSubmitting) {
-                // Limpiar URLs temporales de PDFs antes de cerrar
-                const currentDownloads = getValues('downloads') || [];
-                currentDownloads.forEach(dl => {
-                    if (dl.value && dl.value.startsWith('blob:')) {
-                        URL.revokeObjectURL(dl.value);
-                    }
-                });
-                // Solo limpiar el formulario y el estado de imágenes si el usuario cancela (no si guarda)
+                // Solo limpiar el formulario si el usuario cancela (no si guarda)
                 reset(getProductDefaultValues(product));
             }
             if (onOpenChange) onOpenChange(val);
@@ -948,7 +931,6 @@ const EditProductFormDialog = ({
                                         existingImages={watch('media') || []}
                                         onImagesChange={handleImageUpload}
                                         onImageDelete={handleImageDelete}
-                                        maxFiles={5}
                                     />
                                     {errors.media && <p className="text-sm text-red-600">{errors.media.message}</p>}
                                 </div>
@@ -1090,7 +1072,7 @@ const EditProductFormDialog = ({
                                         existingDownloads={watch('downloads') || []}
                                         onPdfsChange={handlePdfUpload}
                                         onPdfDelete={handlePdfDelete}
-                                        maxFiles={10}
+                                        isUploading={isUploadingPdfs}
                                     />
                                     {errors.downloads && <p className="text-sm text-red-600">{errors.downloads.message}</p>}
                                 </div>
@@ -1103,12 +1085,7 @@ const EditProductFormDialog = ({
                             <Button
                                 type="button"
                                 variant="default"
-                                onClick={() => {
-                                    console.log('🔧 FORZANDO ENVÍO SIN VALIDACIÓN');
-                                    const formData = getValues();
-                                    console.log('📋 DATOS DEL FORMULARIO:', formData);
-                                    handleEditSubmit(formData);
-                                }}
+                                onClick={handleSubmit(handleEditSubmit, onInvalid)}
                                 disabled={isSubmitting || isUpdating}
                             >
                                 {(isSubmitting || isUpdating) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
