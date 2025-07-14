@@ -117,7 +117,7 @@ const Nav2 = () => {
             className="max-h-12 cursor-pointer"
           />
         </div>
-        <span className={`ml-4 px-3 py-1 rounded-full text-xs font-bold ${getStoreStatus() === 'Abierto' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>{getStoreStatus()}</span>
+        
       </div>
 
       {/* Menú hamburguesa (pantallas pequeñas) */}

@@ -43,6 +43,11 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
     loadSavedLocation
   } = useLocationStore();
 
+  // Estado para el estado principal de la dirección
+  const [principalState, setPrincipalState] = useState("");
+  // Estado para la ciudad de la dirección principal
+  const [principalCity, setPrincipalCity] = useState("");
+
   const toggleMenu = () => setMenuOpen(o => !o);
 
   useEffect(() => {
@@ -69,6 +74,35 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
   useEffect(() => {
     refreshCart();
   }, [refreshCart]);
+
+  useEffect(() => {
+    const state = localStorage.getItem("principal_address_state");
+    if (state) setPrincipalState(state);
+  }, []);
+
+  useEffect(() => {
+    const updateCity = () => {
+      const addressStr = localStorage.getItem("principal_address");
+      if (addressStr) {
+        try {
+          const address = JSON.parse(addressStr);
+          setPrincipalCity(address.city || "");
+        } catch {
+          setPrincipalCity("");
+        }
+      } else {
+        setPrincipalCity("");
+      }
+    };
+    // Escucha el evento personalizado
+    window.addEventListener("principal_address_changed", updateCity);
+    // Llama una vez al montar
+    updateCity();
+    // Limpia el listener al desmontar
+    return () => {
+      window.removeEventListener("principal_address_changed", updateCity);
+    };
+  }, []);
 
   const handleBrandChange = (brandId) => {
     setSelectedBrandId(brandId);
@@ -194,17 +228,20 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
 
             <div className="flex flex-col">
 
-
               <button
                 onClick={() =>
                   navigate('/user-profile', {
                     state: { view: 'perfil', openLocation: true }
                   })}
                 className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
-
               >
                 <MapPin size={20} />
-                {getStoreStatus()}
+                <div className="text-left">
+                  <p className="text-sm line-clamp-1 max-w-[20em]">
+                    {principalCity ? principalCity : "Selecciona una dirección principal"}
+                  </p>
+                  <p className="text-base">{getStoreStatus()}</p>
+                </div>
               </button>
             </div>
 
@@ -257,7 +294,9 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
           >
             <MapPin size={28} />
             <div className="text-left">
-              <p className="text-sm line-clamp-1 max-w-[26em]">{currentLocation}</p>
+              <p className="text-sm line-clamp-1 max-w-[26em]">
+                {principalCity ? principalCity : "Selecciona una dirección principal"}
+              </p>
               <p className="text-base">{getStoreStatus()}</p>
             </div>
           </button>

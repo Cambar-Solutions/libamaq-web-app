@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
     Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
-import { MapPin, ChevronRight, Pencil, Plus, Trash } from 'lucide-react';
+import { MapPin, ChevronRight, Pencil, Plus, Trash, Check } from 'lucide-react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import BtnSave from "../atoms/BtnSave";
@@ -11,6 +11,7 @@ import { getAllShippingAddresses, createShippingAddress, updateShippingAddress, 
 import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter as AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Elimina el mockUserId y usa el userId real del localStorage
 const userData = JSON.parse(localStorage.getItem("user_data"));
@@ -100,6 +101,9 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
         }
     };
 
+    // Ordena las direcciones para que la principal esté primero
+    const sortedAddresses = [...addresses].sort((a, b) => (b.isSelected ? 1 : 0) - (a.isSelected ? 1 : 0));
+
     // Animación slide
     const slideVariants = {
         hidden: { x: 400, opacity: 0 },
@@ -160,9 +164,11 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
                 updatePayload.userId = String(updatePayload.userId);
                 console.log("Payload enviado al PUT:", updatePayload);
                 await updateShippingAddress(updatePayload);
+                toast.success("Dirección editada correctamente");
             } else {
                 // POST
                 await createShippingAddress(cleanAddressPayload({ ...form, createdBy: "ADMIN", createdAt: new Date().toISOString(), userId }));
+                toast.success("Dirección agregada correctamente");
             }
             await fetchAddresses();
             setShowForm(false);
@@ -197,20 +203,58 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
         setEditingAddress(null);
         setForm(initialFormState);
         setAnimKey(k => k + 1);
-    };
+    };  
 
     // Eliminar dirección
     const handleDelete = async () => {
         if (!addressToDelete) return;
         try {
             await deleteShippingAddress(addressToDelete.id);
-            toast.success("Dirección eliminada correctamente");
             setAddressToDelete(null);
             setDeleteDialogOpen(false);
             await fetchAddresses();
         } catch (err) {
             toast.error("Error al eliminar dirección");
             setDeleteDialogOpen(false);
+        }
+    };
+
+    // Construye el payload completo para el PUT según Swagger
+    const buildUpdatePayload = (addr, isSelected) => ({
+        id: Number(addr.id),
+        updatedBy: "ADMIN",
+        updatedAt: new Date().toISOString(),
+        userId: String(addr.userId),
+        receiver: addr.receiver,
+        street: addr.street,
+        exteriorNumber: addr.exteriorNumber,
+        interiorNumber: addr.interiorNumber,
+        neighborhood: addr.neighborhood,
+        city: addr.city,
+        state: addr.state,
+        postalCode: addr.postalCode,
+        phoneNumber: addr.phoneNumber,
+        referencesText: addr.referencesText,
+        isSelected,
+        status: addr.status,
+    });
+
+    // Seleccionar dirección principal
+    const handleSelectMain = async (selectedAddr) => {
+        try {
+            // Marca la seleccionada como principal
+            await updateShippingAddress(buildUpdatePayload(selectedAddr, true));
+            // Desmarca las demás
+            const others = addresses.filter(addr => addr.id !== selectedAddr.id && addr.isSelected);
+            await Promise.all(others.map(addr => updateShippingAddress(buildUpdatePayload(addr, false))));
+            // Guarda toda la dirección en localStorage
+            localStorage.setItem("principal_address", JSON.stringify(selectedAddr));
+            // Dispara un evento personalizado para actualización en tiempo real
+            window.dispatchEvent(new Event("principal_address_changed"));
+            toast.success("Dirección principal actualizada");
+            await fetchAddresses();
+        } catch (err) {
+            toast.error("Error al seleccionar dirección principal");
         }
     };
 
@@ -230,7 +274,7 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
                             <MapPin className="w-8 h-8 ml-5 text-blue-500" />
                             <div>
                                 <h3 className="font-medium text-gray-800 text-lg text-start">Direcciones</h3>
-                                <p className="text-sm text-gray-500">Agrega y administra tus direcciones de envío</p>
+                                <p className="text-sm text-gray-500">Agrega y administra tus direcciones de envío.</p>
                             </div>
                         </div>
                         <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -243,7 +287,7 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
                             Direcciones
                         </DialogTitle>
                         <DialogDescription>
-                            Administra tus direcciones de envío.
+                            Administra tus direcciones de envío, puedes seleccionar una como principal.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4 min-h-[350px]">
@@ -263,32 +307,73 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
                                         <div className="text-center text-gray-500 mb-4">No hay ubicaciones registradas.</div>
                                     ) : (
                                         <div className="flex flex-col gap-4 mb-4 h-[400px] overflow-y-auto">
-                                            {addresses.map(addr => (
+                                            {sortedAddresses.map(addr => (
                                                 <div key={addr.id} className="relative bg-blue-0 border border-blue-200 rounded-lg p-4 flex flex-col md:flex-row md:items-center gap-2 shadow">
                                                     <div className="flex-1">
-                                                        <div className="font-semibold text-blue-900 text-lg">{addr.receiver}</div>
+                                                        <div className="font-semibold text-blue-900 text-lg flex items-center gap-2">
+                                                            {addr.receiver}
+                                                        </div>
                                                         <div className="text-gray-800">{addr.street} #{addr.exteriorNumber}{addr.interiorNumber ? (", Int. " + addr.interiorNumber) : ""}, {addr.neighborhood}</div>
                                                         <div className="text-gray-700">{addr.city}, {addr.state}, CP {addr.postalCode}</div>
                                                         <div className="text-gray-700">Tel: {addr.phoneNumber}</div>
                                                         {addr.referencesText && <div className="text-blue-600 text-sm">Referencia: {addr.referencesText}</div>}
-                                                        <div className="text-xs text-gray-500 mt-1">{addr.status === "ACTIVE" ? "Activa" : "Inactiva"} {addr.isSelected && <span className="ml-2 px-2 py-0.5 bg-green-200 text-green-800 rounded">Seleccionada</span>}</div>
+                                                        <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">{addr.status === "ACTIVE" ? "Activa" : "Inactiva"} {addr.isSelected && (
+                                                            <span className="inline-flex items-center px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs font-semibold gap-1">
+                                                                <Check className="w-4 h-4 text-green-600" /> Seleccionada
+                                                            </span>
+                                                        )}</div>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <button
-                                                            className="absolute top-2 right-2 p-2 rounded-full hover:bg-blue-100 cursor-pointer transition-colors duration-600"
-                                                            onClick={() => handleEdit(addr)}
-                                                            aria-label="Editar dirección"
-                                                        >
-                                                            <Pencil className="w-5 h-5 text-blue-600" />
-                                                        </button>
-                                                        
-                                                        <button
-                                                            className="absolute top-2 right-10 p-2 rounded-full hover:bg-red-100 cursor-pointer transition-colors duration-600"
-                                                            onClick={() => { setAddressToDelete(addr); setDeleteDialogOpen(true); }}
-                                                            aria-label="Eliminar dirección"
-                                                        >
-                                                            <Trash className="w-5 h-5 text-red-600" />
-                                                        </button>
+                                                        {!addr.isSelected && (
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <button
+                                                                            className="cursor-pointer px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-900 flex items-center gap-1 text-xs font-semibold transition"
+                                                                            onClick={() => handleSelectMain(addr)}
+                                                                            aria-label="Seleccionar como principal"
+                                                                        >
+                                                                            <Check className="w-4 h-4"  />
+                                                                        </button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        Seleccionar como principal
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        )}
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <button
+                                                                        className="absolute top-2 right-2 p-2 rounded-full hover:bg-blue-100 cursor-pointer transition-colors duration-600"
+                                                                        onClick={() => handleEdit(addr)}
+                                                                        aria-label="Editar dirección"
+                                                                    >
+                                                                        <Pencil className="w-5 h-5 text-blue-600" />
+                                                                    </button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    Editar
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <button
+                                                                        className="absolute top-2 right-10 p-2 rounded-full hover:bg-red-100 cursor-pointer transition-colors duration-600"
+                                                                        onClick={() => { setAddressToDelete(addr); setDeleteDialogOpen(true); }}
+                                                                        aria-label="Eliminar dirección"
+                                                                    >
+                                                                        <Trash className="w-5 h-5 text-red-600" />
+                                                                    </button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    Eliminar
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
                                                     </div>
                                                 </div>
                                             ))}
@@ -321,7 +406,7 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
                                         </div>
                                         <div>
                                             <Label htmlFor="phoneNumber">Teléfono</Label>
-                                            <Input id="phoneNumber" name="phoneNumber" value={form.phoneNumber} onChange={handleChange} required inputMode="numeric" pattern="\d*" maxLength={10} />
+                                            <Input id="phoneNumber" type="number" name="phoneNumber" value={form.phoneNumber} onChange={handleChange} required inputMode="numeric" pattern="\d*" maxLength={10} />
                                             {formErrors.phoneNumber && <span className="text-red-500 text-xs">{formErrors.phoneNumber}</span>}
                                         </div>
                                         <div>
@@ -330,12 +415,12 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
                                         </div>
                                         <div>
                                             <Label htmlFor="exteriorNumber">Número exterior</Label>
-                                            <Input id="exteriorNumber" name="exteriorNumber" value={form.exteriorNumber} onChange={handleChange} required inputMode="numeric" pattern="\d*" />
+                                            <Input id="exteriorNumber" type="number" name="exteriorNumber" value={form.exteriorNumber} onChange={handleChange} required inputMode="numeric" pattern="\d*" />
                                             {formErrors.exteriorNumber && <span className="text-red-500 text-xs">{formErrors.exteriorNumber}</span>}
                                         </div>
                                         <div>
                                             <Label htmlFor="interiorNumber">Número interior</Label>
-                                            <Input id="interiorNumber" name="interiorNumber" value={form.interiorNumber} onChange={handleChange} inputMode="numeric" pattern="\d*" />
+                                            <Input id="interiorNumber" type="number" name="interiorNumber" value={form.interiorNumber} onChange={handleChange} inputMode="numeric" pattern="\d*" />
                                             {formErrors.interiorNumber && <span className="text-red-500 text-xs">{formErrors.interiorNumber}</span>}
                                         </div>
                                         <div>
@@ -352,7 +437,7 @@ export default function DialogAddresses({ isDialogOpen, setIsDialogOpen, onClose
                                         </div>
                                         <div>
                                             <Label htmlFor="postalCode">Código Postal</Label>
-                                            <Input id="postalCode" name="postalCode" value={form.postalCode} onChange={handleChange} required inputMode="numeric" pattern="\d*" maxLength={5} />
+                                            <Input id="postalCode" type="number" name="postalCode" value={form.postalCode} onChange={handleChange} required inputMode="numeric" pattern="\d*" maxLength={5} />
                                             {formErrors.postalCode && <span className="text-red-500 text-xs">{formErrors.postalCode}</span>}
                                         </div>
                                         <div className="md:col-span-2">

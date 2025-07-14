@@ -50,6 +50,30 @@ export function NavCustomer({ onViewChange }) {
         loadSavedLocation
     } = useLocationStore();
 
+    // Estado para la ciudad de la dirección principal
+    const [principalCity, setPrincipalCity] = useState("");
+
+    useEffect(() => {
+        const updateCity = () => {
+            const addressStr = localStorage.getItem("principal_address");
+            if (addressStr) {
+                try {
+                    const address = JSON.parse(addressStr);
+                    setPrincipalCity(address.city || "");
+                } catch {
+                    setPrincipalCity("");
+                }
+            } else {
+                setPrincipalCity("");
+            }
+        };
+        window.addEventListener("principal_address_changed", updateCity);
+        updateCity();
+        return () => {
+            window.removeEventListener("principal_address_changed", updateCity);
+        };
+    }, []);
+
     const toggleMenu = () => setMenuOpen(o => !o);
 
     // Load saved location when component mounts
@@ -226,7 +250,12 @@ export function NavCustomer({ onViewChange }) {
                             className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
                         >
                             <MapPin size={20} />
-                            {getStoreStatus()}
+                            <div className="text-left">
+                                <p className="text-sm line-clamp-1 max-w-[20em]">
+                                    {principalCity ? principalCity : "Selecciona una dirección principal"}
+                                </p>
+                                <p className="text-base">{getStoreStatus()}</p>
+                            </div>
                         </button>
 
                         <Link to="/user-profile"
@@ -271,7 +300,9 @@ export function NavCustomer({ onViewChange }) {
                         >
                             <MapPin size={28} />
                             <div className="text-left">
-                                <p className="text-sm">{currentLocation}</p>
+                                <p className="text-sm line-clamp-1 max-w-[26em]">
+                                    {principalCity ? principalCity : "Selecciona una dirección principal"}
+                                </p>
                                 <p className="text-base">{getStoreStatus()}</p>
                             </div>
                         </button>
