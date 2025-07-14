@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 
-export default function ProductCard({ product }) {
+export default function AllProductCardSection({ product }) {
   return (
     <Link to={`/producto/${product.id}`} className="w-full">
       <Card className="h-[25em] flex flex-col bg-white rounded-lg shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300 overflow-hidden mx-auto w-full cursor-pointer group">
