@@ -85,38 +85,82 @@ function renderValue(key, value, openImageModal) {
     return <span className="font-medium">{value}</span>;
   }
 
-  // Manejo de 'media' para mostrar la imagen y hacerla clicable
+  // Mostrar toda la media: imágenes y archivos (PDF, etc.)
   if (key === 'media' && Array.isArray(value)) {
-    console.log('Media value:', value); // Depuración: ver estructura del array
-    let mainImageObj = value.find(m => m.fileType === 'IMAGE' && m.url);
-    if (!mainImageObj && value.length > 0) {
-      mainImageObj = value.find(m => m.url) || value[0];
-    }
-    const mainImage = mainImageObj?.url;
-    if (mainImage) {
-      return (
-        <div
-          className="relative w-24 h-24 sm:w-32 sm:h-32 cursor-pointer group overflow-hidden border rounded-md"
-          onClick={() => openImageModal(mainImage)}
-        >
-          <img
-            src={mainImage}
-            alt="Producto"
-            className="w-full h-full object-contain"
-            style={{ display: 'block' }}
-            onError={(e) => {
-              console.error('Error loading image:', mainImage, e);
-              // e.target.src = 'URL_IMAGEN_PLACEHOLDER_ERROR'; // Deja esta línea comentada o con una URL real si lo necesitas
-            }}
-          />
-          {/* Overlay visual para indicar que es clicable */}
-          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center transition-all duration-200">
-            <span className="text-white opacity-0 group-hover:opacity-100 text-sm">Ver grande</span>
+    if (value.length === 0) return <span style={{ color: '#888' }}>[Vacío]</span>;
+    // Renderiza solo la fila de imágenes, fuera de la tabla de detalles
+    const files = value.filter(item => item.fileType !== 'IMAGE' && item.url);
+    return (
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 4 }}>Imágenes</div>
+        <div style={{ maxWidth: '100%', overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: 6 }}>
+          <div style={{ display: 'flex', gap: 12 }}>
+            {value.map((item, idx) => {
+              if (item.fileType === 'IMAGE' && item.url) {
+                return (
+                  <div
+                    key={item.url || idx}
+                    onClick={() => openImageModal(item.url)}
+                    style={{ flex: '0 0 auto', width: 90, height: 90, cursor: 'pointer', borderRadius: 8, border: '1px solid #eee', background: '#fff' }}
+                  >
+                    <img
+                      src={item.url}
+                      alt={`Producto ${idx + 1}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', borderRadius: 8 }}
+                      onError={e => {
+                        if (!e.target.src.endsWith('placeholder.png')) {
+                          e.target.src = '/placeholder.png';
+                        }
+                      }}
+                    />
+                  </div>
+                );
+              }
+              return null;
+            })}
           </div>
         </div>
-      );
-    }
-    return <span style={{ color: '#888' }}>No hay imágenes</span>;
+        {/* Archivos (PDFs y otros) */}
+        {files.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 4 }}>Archivos</div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              {files.map((item, idx) => (
+                <a
+                  key={item.url || idx}
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', border: '1px solid #eee', borderRadius: 8, background: '#fafafa', fontSize: 13, textDecoration: 'none', color: '#333' }}
+                >
+                  {item.fileType === 'PDF' ? <span role="img" aria-label="PDF">📄</span> : <span role="img" aria-label="Archivo">📎</span>}
+                  <span>{item.name || item.url.split('/').pop()}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Mostrar downloads como lista de enlaces
+  if (key === 'downloads' && Array.isArray(value)) {
+    if (value.length === 0) return <span style={{ color: '#888' }}>[Vacío]</span>;
+    return (
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 4 }}>Archivos descargables</div>
+        <ul className="list-disc pl-4 text-xs">
+          {value.map((item, idx) => (
+            <li key={idx}>
+              <a href={item.value} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                {item.key || 'Descargar archivo'}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
   }
 
   // Formatear fechas
@@ -229,82 +273,129 @@ const ViewProductDetailsDialog = ({ open, onOpenChange, productData }) => {
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" style={{ overflowX: 'unset' }}>
           <DialogHeader>
             <DialogTitle>Detalles del producto</DialogTitle>
             <DialogDescription>
               Visualiza la información registrada para este producto.
             </DialogDescription>
           </DialogHeader>
-          <div className="overflow-y-auto max-h-[60vh] px-1">
+          <div className="overflow-y-auto max-h-[60vh] px-1" style={{ overflowX: 'unset' }}>
             {productData ? (
-              <table className="w-full text-sm border-collapse">
-                <tbody>
-                  {DISPLAY_FIELDS.map(key => {
-                    // Manejo especial para marca y categoría
-                    if (key === 'brandName') {
-                      const brandId = productData.brandId;
-                      let brandName = 'No asignada';
-                      
-                      if (productData.brandName) {
-                        brandName = productData.brandName;
-                      } else if (productData.brand?.name) {
-                        brandName = productData.brand.name;
-                      } else if (brandId) {
-                        brandName = `Marca ID: ${brandId}`;
-                      }
-                      
-                      return (
-                        <tr key={key} className="align-top border-b last:border-b-0">
-                          <td className="font-semibold pr-2 py-1 align-top text-right whitespace-nowrap text-xs text-muted-foreground">
-                            {FIELD_LABELS[key] || capitalize(key)}
-                          </td>
-                          <td className="py-1 pl-2 align-top">
-                            {renderValue(key, brandName, openImageModal)}
-                          </td>
-                        </tr>
-                      );
-                    }
-                    
-                    if (key === 'categoryName') {
-                      const categoryId = productData.categoryId;
-                      let categoryName = 'No asignada';
-                      
-                      if (productData.categoryName) {
-                        categoryName = productData.categoryName;
-                      } else if (productData.category?.name) {
-                        categoryName = productData.category.name;
-                      } else if (categoryId) {
-                        categoryName = `Categoría ID: ${categoryId}`;
-                      }
-                      
-                      return (
-                        <tr key={key} className="align-top border-b last:border-b-0">
-                          <td className="font-semibold pr-2 py-1 align-top text-right whitespace-nowrap text-xs text-muted-foreground">
-                            {FIELD_LABELS[key] || capitalize(key)}
-                          </td>
-                          <td className="py-1 pl-2 align-top">
-                            {renderValue(key, categoryName, openImageModal)}
-                          </td>
-                        </tr>
-                      );
-                    }
-                    
-                    const value = productData[key];
-                    if (value === undefined) return null;
-                    return (
-                      <tr key={key} className="align-top border-b last:border-b-0">
-                        <td className="font-semibold pr-2 py-1 align-top text-right whitespace-nowrap text-xs text-muted-foreground">
-                          {FIELD_LABELS[key] || capitalize(key)}
-                        </td>
-                        <td className="py-1 pl-2 align-top">
-                          {renderValue(key, value, openImageModal)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <>
+                {/* Fila de imágenes independiente, en card */}
+                <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, marginBottom: 24, boxShadow: '0 1px 4px 0 #0001' }}>
+                  <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 10, color: '#1e293b', letterSpacing: 0.2 }}>Imágenes del producto</div>
+                  {renderValue('media', productData['media'], openImageModal)}
+                </div>
+                {/* Tabla de detalles en card */}
+                <div style={{ background: '#fff', borderRadius: 12, padding: 20, marginBottom: 24, boxShadow: '0 1px 4px 0 #0001', border: '1px solid #f1f5f9' }}>
+                  <table className="w-full text-sm border-collapse">
+                    <tbody>
+                      {DISPLAY_FIELDS.filter(key => key !== 'media').map(key => {
+                        // Manejo especial para marca y categoría
+                        if (key === 'brandName') {
+                          const brandId = productData.brandId;
+                          let brandName = 'No asignada';
+                          
+                          if (productData.brandName) {
+                            brandName = productData.brandName;
+                          } else if (productData.brand?.name) {
+                            brandName = productData.brand.name;
+                          } else if (brandId) {
+                            brandName = `Marca ID: ${brandId}`;
+                          }
+                          
+                          return (
+                            <tr key={key} className="align-top border-b last:border-b-0">
+                              <td className="font-semibold pr-2 py-1 align-top text-right whitespace-nowrap text-xs text-muted-foreground">
+                                {FIELD_LABELS[key] || capitalize(key)}
+                              </td>
+                              <td className="py-1 pl-2 align-top">
+                                {renderValue(key, brandName, openImageModal)}
+                              </td>
+                            </tr>
+                          );
+                        }
+                        
+                        if (key === 'categoryName') {
+                          const categoryId = productData.categoryId;
+                          let categoryName = 'No asignada';
+                          
+                          if (productData.categoryName) {
+                            categoryName = productData.categoryName;
+                          } else if (productData.category?.name) {
+                            categoryName = productData.category.name;
+                          } else if (categoryId) {
+                            categoryName = `Categoría ID: ${categoryId}`;
+                          }
+                          
+                          return (
+                            <tr key={key} className="align-top border-b last:border-b-0">
+                              <td className="font-semibold pr-2 py-1 align-top text-right whitespace-nowrap text-xs text-muted-foreground">
+                                {FIELD_LABELS[key] || capitalize(key)}
+                              </td>
+                              <td className="py-1 pl-2 align-top">
+                                {renderValue(key, categoryName, openImageModal)}
+                              </td>
+                            </tr>
+                          );
+                        }
+                        
+                        const value = productData[key];
+                        if (value === undefined) return null;
+                        return (
+                          <tr key={key} className="align-top border-b last:border-b-0">
+                            <td className="font-semibold pr-2 py-1 align-top text-right whitespace-nowrap text-xs text-muted-foreground">
+                              {FIELD_LABELS[key] || capitalize(key)}
+                            </td>
+                            <td className="py-1 pl-2 align-top">
+                              {renderValue(key, value, openImageModal)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {/* Archivos (PDFs y otros) debajo de la tabla, en card */}
+                {Array.isArray(productData.media) && productData.media.some(item => item.fileType !== 'IMAGE') && (
+                  <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, marginBottom: 24, boxShadow: '0 1px 4px 0 #0001' }}>
+                    <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 10, color: '#1e293b', letterSpacing: 0.2 }}>Archivos adjuntos</div>
+                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                      {productData.media.filter(item => item.fileType !== 'IMAGE' && item.url).map((item, idx) => (
+                        <a
+                          key={item.url || idx}
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', border: '1px solid #e2e8f0', borderRadius: 8, background: '#fff', fontSize: 15, textDecoration: 'none', color: '#2563eb', fontWeight: 500, boxShadow: '0 1px 2px #0001', transition: 'background 0.2s', minWidth: 160 }}
+                          onMouseOver={e => e.currentTarget.style.background = '#f1f5f9'}
+                          onMouseOut={e => e.currentTarget.style.background = '#fff'}
+                        >
+                          {item.fileType === 'PDF' ? <span role="img" aria-label="PDF" style={{ fontSize: 22 }}>📄</span> : <span role="img" aria-label="Archivo" style={{ fontSize: 22 }}>📎</span>}
+                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 }}>{item.name || item.url.split('/').pop()}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Descargas por URL en card */}
+                {Array.isArray(productData.downloads) && productData.downloads.length > 0 && (
+                  <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, marginBottom: 24, boxShadow: '0 1px 4px 0 #0001' }}>
+                    <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 10, color: '#1e293b', letterSpacing: 0.2 }}>Archivos descargables</div>
+                    <ul style={{ paddingLeft: 18, margin: 0 }}>
+                      {productData.downloads.map((item, idx) => (
+                        <li key={idx} style={{ marginBottom: 8 }}>
+                          <a href={item.value} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', fontWeight: 500, textDecoration: 'underline', fontSize: 15 }}>
+                            {item.key || 'Descargar archivo'}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center text-muted-foreground">No hay datos para mostrar.</div>
             )}
@@ -319,12 +410,16 @@ const ViewProductDetailsDialog = ({ open, onOpenChange, productData }) => {
 
       {/* Modal de imagen ampliada */}
       <ImageDialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
-        <DialogContent className="max-w-3xl w-full p-2">
-          <div className="relative w-full h-[70vh] flex items-center justify-center">
+        <DialogContent className="max-w-3xl w-full p-2 bg-white">
+          <div className="relative w-full h-[70vh] flex items-center justify-center bg-white rounded-md">
             <img
               src={currentImage}
               alt="Imagen ampliada del producto"
-              className="max-w-full max-h-full object-contain rounded-md"
+              className="max-w-full max-h-full object-contain bg-white rounded-md"
+              style={{ background: 'white' }}
+              onError={e => {
+                e.target.src = '/placeholder.png'; // Cambia por tu placeholder real si tienes uno
+              }}
             />
           </div>
           <DialogFooter className="pt-2">
