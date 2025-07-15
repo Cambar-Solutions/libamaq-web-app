@@ -41,7 +41,10 @@ export const useProducts = () => {
       try {
         const response = await getProductPreviews(filters);
         // Asegurarse de manejar tanto el formato antiguo como el nuevo de la respuesta
-        return Array.isArray(response) ? response : (response?.data || []);
+        const result = Array.isArray(response) ? response : (response?.data || []);
+        console.log('Filtro brandId:', filters.brandId);
+        console.log('Productos recibidos del backend:', result);
+        return result;
       } catch (error) {
         console.error('Error al obtener productos:', error);
         // Retornar array vacío en lugar de lanzar error
@@ -146,7 +149,10 @@ export const useProducts = () => {
       product.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = !filters.status || product.status === filters.status;
-    const matchesBrand = !filters.brandId || String(product.brandId) === String(filters.brandId);
+    const matchesBrand =
+      !filters.brandId ||
+      String(product.brandId) === String(filters.brandId) ||
+      (product.brand && String(product.brand.id) === String(filters.brandId));
     const matchesCategory = !filters.categoryId || String(product.categoryId) === String(filters.categoryId);
 
     return matchesSearch && matchesStatus && matchesBrand && matchesCategory;
