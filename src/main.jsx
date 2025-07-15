@@ -15,6 +15,7 @@ const App = lazy(() => import('./App.jsx'));
 const Dashboard = lazy(() => import('./app/dashboard/Dashboard.jsx'));
 const Gerente = lazy(() => import('./app/dashboard/Gerente'));
 const Login = lazy(() => import('./app/normal/Login'));
+const Register = lazy(() => import('./app/normal/Register'));
 const DetalleHerramienta = lazy(() => import('./app/e-commerce/DetalleHerramienta'));
 const DetalleProducto = lazy(() => import('./app/e-commerce/DetalleProducto'));
 const RentPage = lazy(() => import('./app/e-commerce/RentPage'));
@@ -52,6 +53,11 @@ createRoot(document.getElementById('root')).render(
                 <AuthRoute isLoginRoute>
                   <Login />
                 </AuthRoute>
+              </AppLayout>
+            } />
+            <Route path="/register" element={
+              <AppLayout>
+                <Register />
               </AppLayout>
             } />
             <Route path="/nosotros" element={
