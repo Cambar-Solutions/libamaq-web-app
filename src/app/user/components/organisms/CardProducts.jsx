@@ -7,6 +7,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Link } from "react-router-dom"; // Asegúrate de importar Link
+import { ShoppingCart, Eye } from "lucide-react";
+import toast from "react-hot-toast";
+import { addProductToCart } from "@/services/customer/shoppingCar";
+import { useCartStore } from "@/stores/useCartStore";
+import { jwtDecode } from "jwt-decode";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function CardProducts({ sectionRef, brand, selectedCategory, isLoading, filteredProducts, setSearchTerm }) { // Añade setSearchTerm a las props
   const getTitle = () => {
@@ -35,10 +41,10 @@ export default function CardProducts({ sectionRef, brand, selectedCategory, isLo
             {isLoading ? (
               <p className="text-center text-gray-600 text-lg py-10">Cargando productos...</p>
             ) : filteredProducts.length > 0 ? (
-              <div className="cursor-pointer grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-8 mb-8">
+              <div className=" grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-8 mb-8">
                 {filteredProducts.map((item, index) => (
-                  <Link to={`/producto/${item.id}`} key={index} className="w-full">
-                    <Card className="h-[25em] flex flex-col bg-white rounded-lg shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300 overflow-hidden mx-auto w-full cursor-pointer group">
+                  <Link to={`/producto/${item.id}`} key={index} className="w-full cursor-default">
+                    <Card className="h-[25em] flex flex-col bg-white rounded-lg shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300 overflow-hidden mx-auto w-full group">
                       <CardHeader className="flex items-center justify-center p-0 h-[10em] overflow-hidden">
                         <img
                           src={item.media && item.media.length > 0 ? item.media[0].url : "/placeholder-product.png"}
@@ -49,7 +55,81 @@ export default function CardProducts({ sectionRef, brand, selectedCategory, isLo
                       <CardContent className="flex flex-col flex-grow justify-between p-3 mt-2">
                         <CardTitle className="text-lg font-semibold text-gray-900 line-clamp-2" title={item.name}> {item.name} </CardTitle>
                         <CardDescription className="text-gray-600 mt-1 line-clamp-3" title={item.description}>{item.description}</CardDescription>
-                        <p className="mt-auto pt-2 font-bold text-2xl text-blue-700">${item.price.toLocaleString()}</p>
+                        <div className="flex items-center justify-between mt-auto pt-2">
+                          <p className="font-bold text-2xl text-blue-700">${item.price.toLocaleString()}</p>
+                          <div className="flex items-center gap-2">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Link
+                                    to={`/producto/${item.id}`}
+                                    className="mr-1 w-5 h-5 text-gray-500 transition-colors duration-500 flex items-center justify-center"
+                                    aria-label="Ver detalles"
+                                    onClick={e => e.stopPropagation()}
+                                  >
+                                    <Eye className="w-5 h-5 text-gray-500 hover:text-blue-600" />
+                                  </Link>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
+                                  Ver detalles
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="cursor-pointer mr-2 w-5 h-5 text-gray-500 transition-colors duration-500 flex items-center justify-center "
+                                    onClick={async (e) => {
+                                      e.preventDefault();
+                                      // Obtener userId del token
+                                      const token = localStorage.getItem("token");
+                                      if (!token) {
+                                        toast.error("Debes iniciar sesión para agregar productos al carrito.");
+                                        return;
+                                      }
+                                      let userId;
+                                      try {
+                                        const decoded = jwtDecode(token);
+                                        userId = decoded.sub ? parseInt(decoded.sub, 10) : null;
+                                      } catch {
+                                        toast.error("Sesión inválida. Inicia sesión de nuevo.");
+                                        return;
+                                      }
+                                      if (!userId) {
+                                        toast.error("No se pudo obtener el usuario. Inicia sesión de nuevo.");
+                                        return;
+                                      }
+                                      try {
+                                        const now = new Date();
+                                        const cartItemData = {
+                                          createdBy: "USER",
+                                          createdAt: now.toISOString(),
+                                          userId,
+                                          productId: Number(item.id),
+                                          quantity: 1,
+                                        };
+                                        await addProductToCart(cartItemData);
+                                        toast.success("Producto agregado al carrito.");
+                                        const refreshCart = useCartStore.getState().refreshCart;
+                                        refreshCart && refreshCart();
+                                      } catch (err) {
+                                        toast.error("Error al agregar el producto al carrito.");
+                                      }
+                                    }}
+                                    aria-label="Agregar al carrito"
+                                  >
+                                    <ShoppingCart className="w-5 h-5 text-gray-500 hover:text-yellow-600" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
+                                  Agregar al carrito
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        </div>
                       </CardContent>
                     </Card>
                   </Link>

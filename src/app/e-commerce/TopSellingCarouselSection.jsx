@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronRight as ChevronRightIcon, Eye } from "lucide-react";
 import ProductImageWithFallback from "./ProductImageWithFallback";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function TopSellingCarouselSection({
   topSellingItems,
@@ -57,7 +58,7 @@ export default function TopSellingCarouselSection({
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ duration: 0.3 }}
-                          className="cardgroup-hover:blur-[0px] hover:!rounded-lg group-hover:!opacity-40 hover:!blur-none hover:!opacity-100 bg-white hover:shadow-md transition-all duration-500 overflow-hidden w-full cursor-pointer hover:scale-105 group-hover:rounded-none"
+                          className="cardgroup-hover:blur-[0px] hover:!rounded-lg group-hover:!opacity-40 hover:!blur-none hover:!opacity-100 bg-white hover:shadow-md transition-all duration-500 overflow-hidden w-full cursor-default hover:scale-105 group-hover:rounded-none"
                         >
                           <div className="flex flex-row sm:flex-col w-full">
                             <ProductImageWithFallback
@@ -70,7 +71,28 @@ export default function TopSellingCarouselSection({
                                 <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={topSellingItem.product_name}>{topSellingItem.product_name}</h3>
                                 <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={topSellingItem.product_description}>{topSellingItem.product_description}</p>
                               </div>
-                              {topSellingItem.product_price && <p className="text-lg sm:text-2xl font-bold text-blue-700 mt-2 sm:mt-3">${topSellingItem.product_price.toLocaleString()}</p>}
+                              {/* Botón de ver detalles SIEMPRE visible */}
+                              <div className="flex items-end justify-end mt-4 w-full border-t border-gray-100">
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        className="cursor-pointer ml-auto p-1 pt-4 rounded-full hover:bg-gray-200 transition-colors"
+                                        onClick={e => {
+                                          e.preventDefault();
+                                          window.location.href = `/producto/${topSellingItem.product_id}`;
+                                        }}
+                                        aria-label="Ver detalles"
+                                      >
+                                        <Eye className="w-5 h-5 text-gray-500 hover:text-blue-600" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
+                                      Ver detalles
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
                             </div>
                           </div>
                         </motion.div>

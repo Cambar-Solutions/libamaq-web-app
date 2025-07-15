@@ -5,13 +5,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 export default function AllProductCardSection({ product }) {
   return (
-    <Link to={`/producto/${product.id}`} className="w-full">
-      <Card className="h-[25em] flex flex-col bg-white rounded-2xl shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 overflow-hidden mx-auto w-full cursor-pointer group border border-gray-200">
+    <Link to={`/producto/${product.id}`} className="w-full cursor-default">
+      <Card className="h-[25em] flex flex-col bg-white rounded-2xl shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 overflow-hidden mx-auto w-full group border border-gray-200">
         <CardHeader className="flex items-center justify-between p-0 h-[10em] overflow-hidden relative">
           <img
             src={product.media && product.media.length > 0 ? product.media[0].url : "/placeholder-product.png"}
             alt={product.name}
-            className="w-full h-full object-contain group-hover:scale-105 transition-all duration-500 bg-white"
+            className="w-full h-full object-contain group-hover:scale-108 transition-all duration-900 bg-white"
           />
           {/* Logo de marca eliminado de la esquina superior derecha */}
         </CardHeader>
@@ -38,7 +38,7 @@ export default function AllProductCardSection({ product }) {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
-                        className="ml-auto p-1 rounded-full hover:bg-gray-200 transition-colors"
+                        className="cursor-pointer ml-auto p-1 rounded-full hover:bg-gray-200 transition-colors"
                         onClick={e => {
                           e.preventDefault();
                           window.location.href = `/producto/${product.id}`;
