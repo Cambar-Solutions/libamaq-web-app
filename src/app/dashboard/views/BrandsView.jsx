@@ -62,6 +62,7 @@ import {
 import { uploadLandingFile } from "@/services/admin/landingService";
 import { useRef } from "react";
 import { useUploadToCloudflare } from '@/hooks/useCloudflare';
+import React, { useMemo } from "react";
 
 function isLightColor(hexColor) {
   const hex = hexColor?.replace("#", "") || "ffffff";
@@ -240,13 +241,22 @@ export function BrandsView() {
     setCurrentBrand(brand);
     setIsEditing(true);
 
-    // Obtener IDs de categorías asignadas a la marca
+    // Obtener IDs de categorías asignadas a la marca y normalizarlos a Number
     const assignedCategoryIds = Array.isArray(brand.brandCategories)
       ? brand.brandCategories.map(bc => Number(bc.categoryId))
       : [];
 
-    // Cargar categorías activas primero
+    // Cargar categorías activas primero y espera a que termine
     await fetchCategories();
+
+    // Asegurarse de que todas las categorías asignadas están en la lista categories
+    setCategories(prevCategories => {
+      const existingIds = new Set(prevCategories.map(cat => String(cat.id)));
+      const extraCategories = (brand.brandCategories || [])
+        .map(bc => bc.category)
+        .filter(cat => cat && !existingIds.has(String(cat.id)));
+      return [...prevCategories, ...extraCategories];
+    });
 
     // Después de cargar las categorías, actualizar el formData
     setFormData(prev => ({
@@ -260,6 +270,7 @@ export function BrandsView() {
       categories: assignedCategoryIds,
       brandCategories: brand.brandCategories || []
     }));
+    setIsBrandDialogOpen(true);
   };
 
   // Guardar marca (crear o actualizar) - lógica central
@@ -475,297 +486,23 @@ export function BrandsView() {
                 </span>
               </div>
               <div className="flex gap-1">
-                <Dialog>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-gray-600 hover:bg-gray-200"
-                            onClick={() => handleEditBrand(brand)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
-                        <p>Editar</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-
-                  <DialogContent className="sm:max-w-[600px] md:max-w-[700px] max-h-[90vh] flex flex-col overflow-hidden">
-                    <DialogHeader className="sticky top-0 z-10 pb-2 border-b">
-                      <DialogTitle>Editar Marca</DialogTitle>
-                      <DialogDescription>
-                        Actualiza los detalles de la marca. Haz clic en guardar cuando termines.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4 overflow-y-auto pr-2">
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right">
-                          Nombre
-                        </Label>
-                        <Input
-                          id="name"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleInputChange}
-                          className="col-span-3"
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="brand-image-file" className="text-right">
-                          Logo de la marca
-                        </Label>
-                        <div className="col-span-3 space-y-2">
-                          <p className="text-xs text-gray-500 mt-1">O ingresa una URL directamente:</p>
-                          <Input
-                            id="brand-image-url"
-                            name="url"
-                            placeholder="https://ejemplo.com/logo.png"
-                            value={formData.url}
-                            onChange={handleInputChange}
-                            onFocus={e => e.currentTarget.select()}
-                            className="inline-block w-[calc(100%-120px)] mr-2"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="inline-block align-middle"
-                            onClick={() => window._brandCloudflareInput && window._brandCloudflareInput.click()}
-                          >
-                            Subir archivo
-                          </Button>
-                          <input
-                            type="file"
-                            accept="image/*,application/pdf"
-                            style={{ display: 'none' }}
-                            ref={el => (window._brandCloudflareInput = el)}
-                            onChange={async (e) => {
-                              const file = e.target.files[0];
-                              if (!file) return;
-                              try {
-                                const res = await uploadToCloudflareMutation.mutateAsync(file);
-                                const url = res?.data?.[0]?.url;
-                                if (url) {
-                                  if (file.type.startsWith('image/')) {
-                                    setFormData(prev => ({ ...prev, url }));
-                                    toast.success('Imagen subida a Cloudflare');
-                                  } else if (file.type === 'application/pdf') {
-                                    toast.success('Archivo PDF subido a Cloudflare');
-                                  }
-                                } else {
-                                  toast.error('Error al subir el archivo');
-                                }
-                              } catch (err) {
-                                toast.error('Error al subir el archivo: ' + (err.message || err));
-                              }
-                            }}
-                          />
-                          {formData.url && (
-                            <div className="mt-2 p-2 border rounded flex justify-center bg-gray-50">
-                              <img
-                                src={formData.url}
-                                alt="Vista previa"
-                                className="max-h-20 object-contain"
-                                onError={e => {
-                                  e.target.src = "/placeholder-logo.png";
-                                  e.target.onerror = null;
-                                }}
-                              />
-                            </div>
-                          )}
-                          {imageFile && formData.url.startsWith("blob:") && (
-                            <Button
-                              type="button"
-                              onClick={handleBrandImageUpload}
-                              disabled={uploadingImage}
-                              className="mt-2"
-                            >
-                              {uploadingImage ? "Subiendo..." : "Subir imagen"}
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="color" className="text-right">
-                          Color
-                        </Label>
-                        <div className="col-span-3">
-                          <div className="flex items-center gap-3">
-                            <div className="relative">
-                              <Input
-                                id="color"
-                                name="color"
-                                type="color"
-                                value={formData.color}
-                                onChange={handleInputChange}
-                                className="w-12 h-12 p-1 cursor-pointer"
-                              />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <div
-                                  className="w-8 h-8 rounded-full border shadow-sm"
-                                  style={{ backgroundColor: formData.color }}
-                                />
-                                <Input
-                                  type="text"
-                                  value={formData.color}
-                                  onChange={handleInputChange}
-                                  name="color"
-                                  className="font-mono uppercase"
-                                />
-                              </div>
-                              <div
-                                className="w-full h-6 rounded-md"
-                                style={{
-                                  background: `linear-gradient(to right, #fff, ${formData.color})`,
-                                  border: '1px solid #e2e8f0'
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="description" className="text-right">
-                          Descripción
-                        </Label>
-                        <Textarea
-                          id="description"
-                          name="description"
-                          value={formData.description}
-                          onChange={handleInputChange}
-                          className="col-span-3"
-                          rows={3}
-                        />
-                      </div>
-
-                      {/* Sección de Categorías */}
-                      <div className="grid grid-cols-4 items-start gap-4">
-                        <Label className="text-right pt-2">
-                          Categorías
-                        </Label>
-                        <div className="col-span-3">
-                          <div className="space-y-4">
-                            {/* Categorías asignadas */}
-                            <div>
-                              <div className="flex justify-between items-center mb-3">
-                                <div className="flex items-start flex-col gap-1">
-                                  <h4 className="text-sm font-medium">Categorías asignadas:</h4>
-                                  <span className="text-xs text-gray-500">
-                                    Da clic en la categoría para quiatarla de {brand.name}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-md min-h-10">
-                                {formData.categories?.length > 0 ? (
-                                  categories
-                                    .filter(cat => formData.categories.some(id => Number(id) === Number(cat.id)))
-                                    .map((category, index) => (
-                                      <CategoryBadge
-                                        key={index}
-                                        category={category}
-                                        brandColor={formData.color}
-                                        isAssigned={true}
-                                        onEdit={handleCategoryUpdate}
-                                        onDelete={handleCategoryDelete}
-                                        onClick={() => {
-                                          // Remover categoría de las asignadas
-                                          const newCategories = formData.categories.filter(
-                                            id => Number(id) !== Number(category.id)
-                                          );
-                                          setFormData(prev => ({
-                                            ...prev,
-                                            categories: newCategories
-                                          }));
-                                        }}
-                                        showActions={true}
-                                      />
-                                    ))
-                                ) : (
-                                  <span className="text-sm text-gray-400">No hay categorías asignadas</span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Categorías disponibles */}
-                            <div>
-                              <div className="flex justify-between items-center mb-3">
-                                <div className="flex items-start flex-col gap-1">
-                                  <h4 className="text-sm font-medium">Categorías disponibles:</h4>
-                                  <span className="text-xs text-gray-500">
-                                    Da clic en la categoría para asignarla a la marca
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="cursor-pointer h-8 px-2 text-xs flex items-center gap-1 bg-gray-100 hover:bg-gray-200"
-                                    onClick={() => setIsCreatingCategory(true)}
-                                  >
-                                    <Plus className="h-3 w-3" />
-                                    Nueva categoría
-                                  </Button>
-                                </div>
-
-                              </div>
-
-                              <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-md max-h-40 overflow-y-auto">
-                                {categories
-                                  .filter(cat => !formData.categories?.some(id => Number(id) === Number(cat.id)))
-                                  .map((category, index) => {
-                                    const assignedBrand = getBrandForCategory(category.id);
-                                    return (
-                                      <CategoryBadge
-                                        key={index}
-                                        category={category}
-                                        brandColor={formData.color}
-                                        isAssigned={false}
-                                        onEdit={handleCategoryUpdate}
-                                        onDelete={handleCategoryDelete}
-                                        onClick={() => {
-                                          // Agregar categoría a las asignadas
-                                          const newCategories = [...new Set([
-                                            ...formData.categories,
-                                            category.id
-                                          ])];
-                                          setFormData(prev => ({
-                                            ...prev,
-                                            categories: newCategories
-                                          }));
-                                        }}
-                                        showActions={true}
-                                        assignedBrand={assignedBrand}
-                                      />
-                                    );
-                                  })}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <DialogFooter className="sticky bottom-0 bg-white z-10 pt-2 border-t mt-4">
-                      <DialogClose asChild>
-                        <Button type="button" variant="secondary" className="cursor-pointer">
-                          Cancelar
-                        </Button>
-                      </DialogClose>
-                      <DialogClose asChild>
-                        <Button type="submit" className="cursor-pointer" onClick={handleSaveBrand}>
-                          Guardar cambios
-                        </Button>
-                      </DialogClose>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-gray-600 hover:bg-gray-200"
+                        onClick={() => handleEditBrand(brand)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                      <p>Editar</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
 
                 {isActive ? (
                   <Sheet>
@@ -874,6 +611,34 @@ export function BrandsView() {
     return brandWithCategory || null;
   };
 
+  const [isBrandDialogOpen, setIsBrandDialogOpen] = useState(false);
+
+  function useBrandCategoriesManager(globalCategories, brandCategories) {
+    // IDs de categorías asignadas
+    const [assignedCategoryIds, setAssignedCategoryIds] = useState(
+      Array.isArray(brandCategories)
+        ? brandCategories.map(bc => Number(bc.categoryId || bc.id))
+        : []
+    );
+
+    // Combina globales + asignadas (sin duplicados)
+    const categoriesToShow = useMemo(() => {
+      const map = new Map();
+      (globalCategories || []).forEach(cat => map.set(String(cat.id), cat));
+      (brandCategories || []).forEach(bc => {
+        const cat = bc.category || bc; // bc puede ser {category: {...}} o la categoría directa
+        if (cat && !map.has(String(cat.id))) map.set(String(cat.id), cat);
+      });
+      return Array.from(map.values());
+    }, [globalCategories, brandCategories]);
+
+    // Helpers para agregar/quitar
+    const addCategory = id => setAssignedCategoryIds(ids => [...new Set([...ids, Number(id)])]);
+    const removeCategory = id => setAssignedCategoryIds(ids => ids.filter(cid => Number(cid) !== Number(id)));
+
+    return { categoriesToShow, assignedCategoryIds, setAssignedCategoryIds, addCategory, removeCategory };
+  }
+
   return (
     <div className="space-y-4 mt-3">
       {/* Título */}
@@ -907,7 +672,7 @@ export function BrandsView() {
           </Button>
         </div>
 
-        <Dialog>
+        <Dialog open={isBrandDialogOpen} onOpenChange={setIsBrandDialogOpen}>
           <DialogTrigger asChild>
             <Button
               className="w-full md:w-auto bg-blue-600 text-white hover:bg-blue-700 hover:border-blue-600 text-sm font-semibold px-4 py-2 rounded-lg transition cursor-pointer"
@@ -1106,16 +871,14 @@ export function BrandsView() {
                 {/* Componente CategoryManager para gestionar categorías */}
                 <CategoryManager
                   categories={categories}
-                  selectedCategories={formData.categories}
-                  onCategoriesChange={(newSelectedCategories) => {
+                  selectedCategories={Array.isArray(formData.categories) ? formData.categories.map(id => String(id)) : []}
+                  onCategoriesChange={newSelectedIds => {
                     setFormData(f => ({
                       ...f,
-                      categories: newSelectedCategories
+                      categories: newSelectedIds.map(id => Number(id))
                     }));
                   }}
-                  onCategoriesListChange={(updatedCategories) => {
-                    setCategories(updatedCategories);
-                  }}
+                  onCategoriesListChange={setCategories}
                 />
               </div>
             </div>

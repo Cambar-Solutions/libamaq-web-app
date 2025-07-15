@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, CreditCard, Clock, ArrowLeft, Share2, Shield, Home } from "lucide-react";
+import { FileText, FileDown, Info, Percent, Tag, CheckCircle, XCircle, Shield, ShoppingCart, CreditCard, Clock, ArrowLeft, Share2, Home } from "lucide-react";
 import ShareProduct from "@/components/ShareProduct";
 import { useProductById } from "@/hooks/useProductQueries";
 import Nav2 from "@/components/Nav2"; // Navbar para usuarios no loggeados
@@ -311,131 +311,155 @@ const DetalleProducto = () => {
 
             {/* Product Information */}
             <div className="w-full md:w-1/2 lg:w-2/5 p-4">
-              <div className="flex items-center mb-1">
-                <span className="text-sm text-gray-500">Nuevo | ID: {product?.externalId}</span>
-                {product?.stock > 0 && (
-                  <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-md">En stock</span>
+              <div className="flex items-center mb-3 gap-4">
+                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 leading-tight flex items-center gap-3">
+                  {product?.name}
+                  {product?.brand?.name && (
+                    <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-700 border border-blue-200 align-middle">
+                      {product.brand.name}
+                    </span>
+                  )}
+                </h1>
+              </div>
+
+              {/* --- Visualización profesional de precio y rebaja --- */}
+              <div className="mb-4 flex flex-col gap-2">
+                <div className="flex items-end gap-3">
+                  <span className="text-4xl font-extrabold text-gray-900">
+                    {product?.price?.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
+                  </span>
+                  {product?.discount > 0 && (
+                    <span className="px-2 py-0.5 bg-red-50 text-red-600 text-xs rounded font-semibold border border-red-200 ml-2">
+                      -{product.discount}%
+                    </span>
+                  )}
+                  {product?.discount > 0 && product?.originalPrice && (
+                    <span className="text-base text-gray-400 line-through ml-2">{product.originalPrice.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</span>
+                  )}
+                </div>
+                {/* Descargas en el bloque principal */}
+                {product?.downloads && Array.isArray(product.downloads) && product.downloads.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {product.downloads
+                      .filter(download => download.value && download.value.trim() !== '')
+                      .map((download, index) => {
+                        const isPdf = download.value && download.value.toLowerCase().includes('.pdf');
+                        const isManual = download.key && download.key.toLowerCase().includes('manual');
+                        const isFicha = download.key && download.key.toLowerCase().includes('ficha');
+                        let icon, color, label;
+                        if (isPdf) {
+                          icon = <FileText className="w-5 h-5 text-red-600 mr-2" />;
+                          color = 'bg-red-50 hover:bg-red-100 border-red-200';
+                          label = 'PDF';
+                        } else if (isManual) {
+                          icon = <Tag className="w-5 h-5 text-blue-600 mr-2" />;
+                          color = 'bg-blue-50 hover:bg-blue-100 border-blue-200';
+                          label = 'Manual';
+                        } else if (isFicha) {
+                          icon = <Info className="w-5 h-5 text-green-600 mr-2" />;
+                          color = 'bg-green-50 hover:bg-green-100 border-green-200';
+                          label = 'Ficha';
+                        } else {
+                          icon = <FileDown className="w-5 h-5 text-gray-500 mr-2" />;
+                          color = 'bg-gray-50 hover:bg-gray-100 border-gray-200';
+                          label = 'Archivo';
+                        }
+                        return (
+                          <a
+                            key={index}
+                            href={download.value}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`flex items-center px-3 py-1 rounded-lg border text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${color}`}
+                          >
+                            {icon}
+                            <span>{label}</span>
+                            <span className="ml-1 text-gray-600">{download.key}</span>
+                          </a>
+                        );
+                      })}
+                  </div>
                 )}
               </div>
 
-              <h1 className="text-xl sm:text-2xl font-medium text-gray-900 mb-3">{product?.name}</h1>
-
-              <div className="mb-4">
-                <div className="flex items-baseline">
-                  <span className="text-3xl font-semibold text-gray-900">${product?.price?.toLocaleString()}</span>
-                  {product?.discount > 0 && (
-                    <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded-md">{product.discount}% OFF</span>
-                  )}
-                </div>
-              </div>
-
-              {product?.garanty && (
-                <div className="mb-4">
-                  <div className="flex items-center text-sm text-gray-700">
-                    <Shield size={18} className="text-green-500 mr-2" />
-                    <div>
-                      <p className="font-medium">Garantía: {product.garanty} {product.garanty === 1 ? 'año' : 'años'}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Product Description */}
+              {/* Descripción corta (sin título) */}
               {product?.shortDescription && (
                 <div className="mb-4">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Descripción</h3>
-                  <p className="text-gray-700 text-sm whitespace-pre-line mb-2">{product.shortDescription}</p>
+                  <p className="text-gray-700 text-base whitespace-pre-line mb-2">{product.shortDescription}</p>
                   {product?.description?.details && (
                     <p className="text-gray-700 text-sm whitespace-pre-line">{product.description.details}</p>
                   )}
                 </div>
               )}
 
-              {/* Action Buttons */}
+              {/* --- Botones de acción --- */}
               <div className="mt-8">
-                {/* Vertical buttons for mobile */}
                 <div className="flex flex-col space-y-3 md:hidden">
                   <Button
-                    className={`w-full bg-blue-500 text-white py-3 rounded-md flex items-center justify-center gap-2
-                      ${(!isUserLoggedIn || !product) ? 'cursor-not-allowed opacity-50' : 'hover:bg-blue-600 cursor-pointer'}`}
+                    className="w-full bg-blue-500 text-white py-3 rounded-md flex items-center justify-center gap-2 hover:bg-blue-600"
                     onClick={handleAddToCart}
                     disabled={!product}
                   >
                     <ShoppingCart className="h-5 w-5" />
-                    {"Agregar al carrito"}
+                    Agregar al carrito
                   </Button>
                   <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-2">
                     <CreditCard className="h-5 w-5" />
                     Comprar ahora
                   </Button>
-                  <Button
-                    className="w-full bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 py-3 rounded-md flex items-center justify-center gap-2"
-                    onClick={() => navigate(`/e-commerce/rentar/${product?.id}`, { state: { product } })}
-                  >
-                    <Clock className="h-5 w-5" />
-                    Rentar
-                  </Button>
+                  {product?.rentable && (
+                    <Button
+                      className="w-full bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 py-3 rounded-md flex items-center justify-center gap-2"
+                      onClick={() => navigate(`/e-commerce/rentar/${product?.id}`, { state: { product } })}
+                    >
+                      <Clock className="h-5 w-5" />
+                      Rentar
+                    </Button>
+                  )}
                 </div>
-
-                {/* Horizontal buttons for tablet/desktop */}
                 <div className="hidden md:grid md:grid-cols-3 md:gap-2 lg:gap-3">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        {!isUserLoggedIn || !product ? (
-                          <span className="inline-block w-full" tabIndex={0}>
-                            <Button
-                              className="cursor-not-allowed w-full bg-blue-500 text-white py-3 rounded-md flex items-center justify-center gap-1 opacity-50"
-                              disabled={true}
-                              onClick={handleAddToCart}
-                            >
-                              <ShoppingCart className="h-5 w-5" />
-                              {"Agregar"}
-                            </Button>
-                          </span>
-                        ) : (
-                          <Button
-                            className="cursor-pointer w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-1"
-                            onClick={handleAddToCart}
-                            disabled={false}
-                          >
-                            <ShoppingCart className="h-5 w-5" />
-                            {"Agregar"}
-                          </Button>
-                        )}
-                      </TooltipTrigger>
-                      {/* Contenido del Tooltip */}
-                      {(!isUserLoggedIn || !product) && (
-                        <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
-                          {!isUserLoggedIn ? (
-                            <p>Debes iniciar sesión para agregar al carrito</p>
-                          ) : !product ? (
-                            <p>Producto no disponible</p>
-                          ) : (
-                            <p>Acción deshabilitada</p>
-                          )}
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
-                  </TooltipProvider>
-
-
-
+                  <Button
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-1"
+                    onClick={handleAddToCart}
+                    disabled={!product}
+                  >
+                    <ShoppingCart className="h-5 w-5" />
+                    Agregar
+                  </Button>
                   <Link to="/payment-method">
-                    <Button className="cursor-pointer w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1">
+                    <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1">
                       <CreditCard className="h-4 w-4 lg:h-5 lg:w-5" />
                       <span className="text-sm lg:text-base">Comprar</span>
                     </Button>
                   </Link>
-
-                  <Button
-                    className="cursor-pointer w-full bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 py-3 rounded-md flex items-center justify-center gap-1"
-                    onClick={() => navigate(`/e-commerce/rentar/${product?.id}`, { state: { product } })}
-                  >
-                    <Clock className="h-4 w-4 lg:h-5 lg:w-5" />
-                    <span className="text-sm lg:text-base">Rentar</span>
-                  </Button>
+                  {product?.rentable && (
+                    <Button
+                      className="w-full bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 py-3 rounded-md flex items-center justify-center gap-1"
+                      onClick={() => navigate(`/e-commerce/rentar/${product?.id}`, { state: { product } })}
+                    >
+                      <Clock className="h-4 w-4 lg:h-5 lg:w-5" />
+                      <span className="text-sm lg:text-base">Rentar</span>
+                    </Button>
+                  )}
                 </div>
+              </div>
+
+              {/* Funcionalidades planas debajo de los botones */}
+              <div className="mt-8">
+                <h2 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  Funcionalidades
+                </h2>
+                {functionalitiesArray.length > 0 ? (
+                  <ul className="list-disc list-inside space-y-1">
+                    {functionalitiesArray.map((feature, index) => (
+                      <li key={index} className="text-gray-800 text-base">
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-500 text-sm">No hay funcionalidades disponibles</p>
+                )}
               </div>
             </div>
           </div>
@@ -445,7 +469,7 @@ const DetalleProducto = () => {
             {/* Highlighted Features on the left side */}
             {product?.description && (
               <div
-                className="p-6 rounded-lg text-white w-full  flex flex-col"
+                className="p-6 rounded-lg text-white w-full flex flex-col"
                 style={{ backgroundColor: product?.color || '#2968c8' }}
               >
                 <h3 className="text-lg lg:text-xl font-bold mb-3 text-white">Características destacadas</h3>
@@ -474,36 +498,22 @@ const DetalleProducto = () => {
               </div>
             )}
 
-            {/* Functionalities (numbered list in columns in a div) */}
-            <div className="w-full lg:w-1/2 flex flex-col gap-4">
-              <div className="bg-white rounded-lg shadow-sm p-4">
-                <h2 className="text-lg lg:text-2xl font-medium text-gray-900">Funcionalidades</h2>
-                {functionalitiesArray.length > 0 ? (
-                  <ol className="list-decimal list-inside py-4 columns-1 gap-x-6">
-                    {functionalitiesArray.map((feature, index) => (
-                      <li key={index} className="text-gray-700 text-sm lg:text-base mb-3 break-inside-avoid">
-                        {feature}
-                      </li>
-                    ))}
-                  </ol>
-                ) : (
-                  <p className="text-gray-500 text-sm">No hay funcionalidades disponibles</p>
-                )}
-              </div>
-            </div>
+            {/* Se elimina la sección de funcionalidades aquí, ya que ahora está arriba */}
           </div>
 
-          {/* Technical Specifications - Returned to table style */}
+          {/* --- Mejorar tabla de datos técnicos --- */}
           {product?.technicalData && product.technicalData.length > 0 && (
             <div className="mt-6 bg-white rounded-lg shadow-sm p-4">
-              <h2 className="text-lg lg:text-2xl font-medium text-gray-900 mb-4">Especificaciones técnicas</h2>
+              <h2 className="flex items-center gap-2 text-lg lg:text-2xl font-medium text-gray-900 mb-4">
+                <Info className="w-5 h-5 text-blue-500" />
+                Especificaciones técnicas
+              </h2>
               <div className="overflow-hidden border border-gray-200 rounded-lg">
                 <table className="min-w-full divide-y divide-gray-200">
                   <tbody>
                     {product.technicalData.map((item, index) => {
                       let renderedKey;
                       let renderedValue;
-
                       if (typeof item === 'object' && item !== null && 'key' in item && 'value' in item) {
                         renderedKey = item.key;
                         renderedValue = item.value;
@@ -520,7 +530,6 @@ const DetalleProducto = () => {
                         renderedKey = 'N/A';
                         renderedValue = 'Datos inválidos';
                       }
-
                       return (
                         <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                           <td className="px-4 py-3 text-sm font-medium text-gray-700 w-1/3 border-r border-gray-200">{renderedKey}</td>
@@ -534,45 +543,8 @@ const DetalleProducto = () => {
             </div>
           )}
 
-          {/* Downloads - Mercado Libre Style */}
-          <div className="mt-6 bg-white rounded-lg shadow-sm p-4 mb-8">
-            <h2 className="text-2xl font-medium text-gray-900 mb-4">Documentación y descargas</h2>
-            {product?.downloads && Array.isArray(product.downloads) && product.downloads.length > 0 ? (
-              <ul className="space-y-2">
-                {product.downloads
-                  .filter(download => download.value && download.value.trim() !== '') // Solo mostrar descargas con URL válida
-                  .map((download, index) => {
-                    const isPdf = download.value && download.value.toLowerCase().includes('.pdf');
-                    const isTemporaryUrl = download.value && download.value.startsWith('blob:');
-                    return (
-                      <li key={index} className="flex items-center">
-                        {isPdf ? (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                          </svg>
-                        ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-6 4h6m-6-8h3" />
-                          </svg>
-                        )}
-                        <a
-                          href={download.value}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`hover:underline ${isTemporaryUrl ? 'text-red-600 hover:text-red-700' : 'text-blue-500 hover:text-blue-700'}`}
-                        >
-                          {download.key}
-                          {isTemporaryUrl && <span className="text-xs text-gray-500 ml-1">(temporal)</span>}
-                        </a>
-                      </li>
-                    );
-                  })}
-              </ul>
-            ) : (
-              <p className="text-gray-500 text-sm">No hay descargas disponibles para este producto.</p>
-            )}
-          </div>
+          {/* --- Mejorar sección de descargas para accesibilidad y público de construcción --- */}
+          {/* Se elimina la sección de descargas de la parte inferior */}
         </div>
       </SidebarProvider>
 

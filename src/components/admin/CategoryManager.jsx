@@ -21,6 +21,7 @@ import {
 import { Plus, Edit, Trash2, X, Check, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 import { createCategory, updateCategory, changeCategoryStatus } from "@/services/admin/categoryService";
+import { useUploadToCloudflare } from '@/hooks/useCloudflare';
 
 /**
  * Componente para gestionar categorías (crear, editar, eliminar)
@@ -43,6 +44,10 @@ const CategoryManager = ({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categoryToEdit, setCategoryToEdit] = useState(null);
+  const uploadToCloudflareMutation = useUploadToCloudflare();
+  const [imageFile, setImageFile] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const imageFileInputRef = React.useRef(null);
 
   // Resetear formulario
   const resetCategoryForm = () => {
@@ -83,6 +88,26 @@ const CategoryManager = ({
       toast.error('Error al crear la categoría');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Handler para subir archivo
+  const handleCategoryImageUpload = async (file) => {
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const res = await uploadToCloudflareMutation.mutateAsync(file);
+      const url = res?.data?.[0]?.url || res?.[0]?.url;
+      if (url) {
+        setCategoryForm(prev => ({ ...prev, url }));
+        toast.success('Imagen subida correctamente');
+      } else {
+        toast.error('Error al subir la imagen');
+      }
+    } catch (err) {
+      toast.error('Error al subir la imagen: ' + (err.message || err));
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -219,13 +244,71 @@ const CategoryManager = ({
             </div>
             <div>
               <Label htmlFor="cat-url" className="mb-1 block text-sm">URL de imagen</Label>
-              <Input
-                id="cat-url"
-                name="url"
-                placeholder="https://ejemplo.com/imagen.jpg"
-                value={categoryForm.url}
-                onChange={e => setCategoryForm({ ...categoryForm, url: e.target.value })}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                <Input
+                  id="cat-url"
+                  name="url"
+                  placeholder="https://ejemplo.com/imagen.jpg"
+                  value={categoryForm.url}
+                  onChange={e => setCategoryForm({ ...categoryForm, url: e.target.value })}
+                  onFocus={e => e.currentTarget.select()}
+                  className="inline-block w-[calc(100%-120px)] mr-2"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="inline-block align-middle"
+                  onClick={() => imageFileInputRef.current && imageFileInputRef.current.click()}
+                >
+                  Subir archivo
+                </Button>
+                {categoryForm.url && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setCategoryForm(prev => ({ ...prev, url: '' }))}
+                    title="Limpiar logo"
+                  >
+                    <span aria-label="Limpiar">✕</span>
+                  </Button>
+                )}
+              </div>
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                style={{ display: 'none' }}
+                ref={imageFileInputRef}
+                onChange={async (e) => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+                  await handleCategoryImageUpload(file);
+                }}
               />
+              {categoryForm.url && (
+                <div className="mt-2 p-2 border rounded flex justify-center bg-gray-50">
+                  <img
+                    src={categoryForm.url}
+                    alt="Vista previa"
+                    className="max-h-20 object-contain"
+                    onError={e => {
+                      e.target.src = "/placeholder-logo.png";
+                      e.target.onerror = null;
+                    }}
+                  />
+                </div>
+              )}
+              {imageFile && categoryForm.url.startsWith("blob:") && (
+                <Button
+                  type="button"
+                  onClick={handleCategoryImageUpload}
+                  disabled={uploadingImage}
+                  className="mt-2"
+                >
+                  {uploadingImage ? "Subiendo..." : "Subir imagen"}
+                </Button>
+              )}
             </div>
             <div>
               <Label htmlFor="cat-description" className="mb-1 block text-sm">Descripción</Label>

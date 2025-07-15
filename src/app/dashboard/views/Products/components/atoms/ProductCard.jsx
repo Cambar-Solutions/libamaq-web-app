@@ -56,27 +56,35 @@ const ProductCard = ({
   };
 
   return (
-    <Card className="w-full flex flex-col hover:shadow-md transition-shadow duration-200 h-full">
-      <CardHeader className="p-3 pb-1 border-b">
+    <Card className="w-full flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-200 h-full border border-gray-200">
+      <CardHeader className="p-4 pb-2 border-b bg-white rounded-t-2xl">
         <div className="flex justify-between items-center">
-          <CardTitle className="text-base font-medium line-clamp-1">
+          <CardTitle className="text-lg font-semibold line-clamp-1 text-gray-900">
             {product.name}
           </CardTitle>
-          <Badge
-            variant={product.status === 'ACTIVE' ? 'default' : 'secondary'}
-            className="ml-2 text-xs h-5"
-          >
-            {getStatusText(product.status)}
-          </Badge>
+          {product.brand?.url && (
+            <img
+              src={product.brand.url}
+              alt={product.brand.name}
+              className="w-8 h-8 object-contain rounded-full border border-gray-200 shadow-sm ml-2"
+              title={product.brand.name}
+            />
+          )}
         </div>
+        <Badge
+          variant={product.status === 'ACTIVE' ? 'default' : 'secondary'}
+          className={`ml-2 text-xs h-6 px-3 rounded-full font-medium ${product.status === 'ACTIVE' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-200 text-gray-600 border-gray-300'}`}
+        >
+          {getStatusText(product.status)}
+        </Badge>
       </CardHeader>
 
-      <CardContent className="flex-1 p-3 flex flex-col">
-        <div className="relative aspect-[4/3] overflow-hidden bg-gray-100 dark:bg-gray-800 rounded-md mb-2">
+      <CardContent className="flex-1 p-4 flex flex-col">
+        <div className="relative aspect-[4/3] overflow-hidden bg-gray-50 rounded-xl mb-3 flex items-center justify-center group">
           <img
             src={mainImage}
             alt={product.name}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
             onError={(e) => {
               e.target.onerror = null;
               e.target.src = '/placeholder-product.jpg';
@@ -85,29 +93,31 @@ const ProductCard = ({
         </div>
 
         {product.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
-            {product.description}
-          </p>
+          <p className="text-xs text-gray-500 line-clamp-2 mb-3 min-h-[32px]">{product.description}</p>
         )}
 
+        {/* Eliminar o comentar la sección de precio */}
+        {/*
         <div className="grid grid-cols-2 gap-2 mt-auto">
           <div>
-            <div className="flex items-center text-xs text-muted-foreground mb-0.5">
+            <div className="flex items-center text-xs text-gray-400 mb-0.5">
               <DollarSign className="h-3 w-3 mr-1 flex-shrink-0" />
               <span className="truncate">Precio</span>
             </div>
-            <p className="text-sm font-semibold text-foreground truncate">{formatCurrency(product.price)}</p>
+            <p className="text-lg font-bold text-gray-900 truncate">{formatCurrency(product.price)}</p>
           </div>
+        </div>
+        */}
 
-          {product.brand && (
-            <div className="flex flex-col">
-              <div className="flex items-center text-xs text-muted-foreground mb-0.5">
+        {product.brand && (
+            <div className="flex flex-col items-end">
+              <div className="flex items-center text-xs text-gray-400 mb-0.5">
                 <span className="truncate">Marca</span>
               </div>
               <Badge
-                className="text-xs font-normal truncate w-fit"
+                className="text-xs font-semibold truncate w-fit px-3 py-1 rounded-full border"
                 style={{
-                  backgroundColor: `${product.brand.color}15`,
+                  backgroundColor: `${product.brand.color}10`,
                   color: product.brand.color,
                   borderColor: product.brand.color
                 }}
@@ -117,22 +127,19 @@ const ProductCard = ({
             </div>
           )}
 
-
           {product.category && (
-            <div className="col-span-2">
-              <div className="flex items-center text-xs text-muted-foreground mb-0.5">
+            <div className="col-span-2 mt-2">
+              <div className="flex items-center text-xs text-gray-400 mb-0.5">
                 <Box className="h-3 w-3 mr-1 flex-shrink-0" />
                 <span className="truncate">Categoría</span>
               </div>
-              <p className="text-xs font-medium truncate">{product.category.name}</p>
+              <p className="text-xs font-medium truncate text-gray-700">{product.category.name}</p>
             </div>
           )}
-        </div>
       </CardContent>
 
-      <CardFooter className="flex justify-end gap-1.5 p-2 border-t mt-auto">
+      <CardFooter className="flex justify-end gap-2 p-3 border-t bg-gray-50 rounded-b-2xl mt-auto">
         <TooltipProvider>
-        
           {/* Ver detalles */}
           {onViewDetails && (
             <Tooltip>
@@ -144,12 +151,12 @@ const ProductCard = ({
                     e.stopPropagation();
                     onViewDetails(product.id);
                   }}
-                  className="h-7 w-7"
+                  className="h-8 w-8 hover:bg-gray-200"
                 >
-                  <Eye className="h-3.5 w-3.5" />
+                  <Eye className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="top" className="bg-gray-600 text-white text-xs px-2 py-1 rounded-sm shadow-md">
+              <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
                 Ver detalles
               </TooltipContent>
             </Tooltip>
@@ -166,12 +173,12 @@ const ProductCard = ({
                     e.stopPropagation();
                     onEdit(product.id);
                   }}
-                  className="h-7 w-7"
+                  className="h-8 w-8 hover:bg-blue-100 text-blue-600"
                 >
-                  <Edit className="h-3.5 w-3.5" />
+                  <Edit className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="top" className="bg-gray-600 text-white text-xs px-2 py-1 rounded-sm shadow-md">
+              <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
                 Editar
               </TooltipContent>
             </Tooltip>
@@ -187,12 +194,12 @@ const ProductCard = ({
                     e.stopPropagation();
                     onDelete(product);
                   }}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7 w-7"
+                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="top" className="bg-gray-600 text-white text-xs px-2 py-1 rounded-sm shadow-md">
+              <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
                 Eliminar
               </TooltipContent>
             </Tooltip>
@@ -223,6 +230,7 @@ ProductCard.propTypes = {
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       color: PropTypes.string,
+      url: PropTypes.string // Added url to brand prop type
     }),
     category: PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
