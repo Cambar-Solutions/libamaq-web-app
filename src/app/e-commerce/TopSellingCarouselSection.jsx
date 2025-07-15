@@ -72,12 +72,12 @@ export default function TopSellingCarouselSection({
                                 <p className="text-xs sm:text-sm text-gray-500 line-clamp-2" title={topSellingItem.product_description}>{topSellingItem.product_description}</p>
                               </div>
                               {/* Botón de ver detalles SIEMPRE visible */}
-                              <div className="flex items-end justify-end mt-4 w-full border-t border-gray-100">
+                              <div className="flex items-end justify-end w-full border-t border-gray-100">
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <button
-                                        className="cursor-pointer ml-auto p-1 pt-4 rounded-full hover:bg-gray-200 transition-colors"
+                                        className="cursor-pointer ml-auto p-1 mt-4 rounded-full hover:bg-gray-200 transition-colors"
                                         onClick={e => {
                                           e.preventDefault();
                                           window.location.href = `/producto/${topSellingItem.product_id}`;

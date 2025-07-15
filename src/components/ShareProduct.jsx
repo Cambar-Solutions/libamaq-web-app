@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Copy, Facebook, MessageCircle, Share2, Twitter } from 'lucide-react';
 import { toast } from 'sonner';
 import MetaDecorator from './MetaDecorator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 /**
  * Componente para compartir productos en redes sociales con metadatos Open Graph
@@ -119,53 +120,60 @@ const ShareProduct = ({ product, baseUrl = window.location.origin }) => {
       />
 
       {/* Botón para mostrar opciones de compartir */}
-      <div className="relative">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setShowOptions(!showOptions)}
-          className="rounded-full"
-          aria-label="Compartir producto"
-        >
-          <Share2 className="h-4 w-4" />
-        </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowOptions(!showOptions)}
+              className="rounded-full cursor-pointer"
+              aria-label="Compartir producto"
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
+            Compartir
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
 
-        {/* Opciones de compartir */}
-        {showOptions && (
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-            <div className="py-1">
-              <button
-                onClick={shareOnWhatsApp}
-                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-              >
-                <MessageCircle className="h-4 w-4 mr-2" />
-                WhatsApp
-              </button>
-              <button
-                onClick={shareOnFacebook}
-                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-              >
-                <Facebook className="h-4 w-4 mr-2" />
-                Facebook
-              </button>
-              <button
-                onClick={shareOnTwitter}
-                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-              >
-                <Twitter className="h-4 w-4 mr-2" />
-                Twitter
-              </button>
-              <button
-                onClick={copyToClipboard}
-                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-              >
-                <Copy className="h-4 w-4 mr-2" />
-                Copiar enlace
-              </button>
-            </div>
+      {/* Opciones de compartir */}
+      {showOptions && (
+        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+          <div className="py-1">
+            <button
+              onClick={shareOnWhatsApp}
+              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+            >
+              <MessageCircle className="h-4 w-4 mr-2" />
+              WhatsApp
+            </button>
+            <button
+              onClick={shareOnFacebook}
+              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+            >
+              <Facebook className="h-4 w-4 mr-2" />
+              Facebook
+            </button>
+            <button
+              onClick={shareOnTwitter}
+              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+            >
+              <Twitter className="h-4 w-4 mr-2" />
+              Twitter
+            </button>
+            <button
+              onClick={copyToClipboard}
+              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              Copiar enlace
+            </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </>
   );
 };

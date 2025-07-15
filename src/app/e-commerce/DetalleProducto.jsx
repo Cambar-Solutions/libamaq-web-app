@@ -19,6 +19,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import toast, { Toaster } from "react-hot-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useCartStore } from "@/stores/useCartStore";
+import LoadingScreen from '@/components/LoadingScreen';
 
 // --- Importa las funciones de API que creamos ---
 // Asegúrate de que la ruta sea correcta según la ubicación de tus archivos de API
@@ -184,24 +185,14 @@ const DetalleProducto = () => {
   // Determine which Navbar to use
   const NavbarComponent = isUserLoggedIn ? NavCustomer : Nav2;
 
+  // Scroll al principio al montar el componente
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+  }, []);
+
   // If loading, show loading indicator
   if (loading) {
-    return (
-      <div className="w-full bg-gray-100 min-h-screen pt-16">
-        <SidebarProvider>
-          <NavbarComponent />
-        </SidebarProvider>
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-pulse flex flex-col items-center">
-              <div className="h-32 w-32 bg-gray-300 rounded-full mb-4"></div>
-              <div className="h-6 w-40 bg-gray-300 rounded mb-2"></div>
-              <div className="h-4 w-64 bg-gray-300 rounded"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (
@@ -311,8 +302,8 @@ const DetalleProducto = () => {
 
             {/* Product Information */}
             <div className="w-full md:w-1/2 lg:w-2/5 p-4">
-              <div className="flex items-center mb-3 gap-4">
-                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 leading-tight flex items-center gap-3">
+              <div className="flex items-center mb-0 gap-4">
+                <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 leading-tight flex items-center gap-3">
                   {product?.name}
                   {product?.brand?.name && (
                     <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-700 border border-blue-200 align-middle">
@@ -323,9 +314,9 @@ const DetalleProducto = () => {
               </div>
 
               {/* --- Visualización profesional de precio y rebaja --- */}
-              <div className="mb-4 flex flex-col gap-2">
+              <div className="mb-2 flex flex-col gap-2">
                 <div className="flex items-end gap-3">
-                  <span className="text-4xl font-extrabold text-gray-900">
+                  <span className="text-4xl font-bold text-blue-700">
                     {product?.price?.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
                   </span>
                   {product?.discount > 0 && (
@@ -337,49 +328,7 @@ const DetalleProducto = () => {
                     <span className="text-base text-gray-400 line-through ml-2">{product.originalPrice.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</span>
                   )}
                 </div>
-                {/* Descargas en el bloque principal */}
-                {product?.downloads && Array.isArray(product.downloads) && product.downloads.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {product.downloads
-                      .filter(download => download.value && download.value.trim() !== '')
-                      .map((download, index) => {
-                        const isPdf = download.value && download.value.toLowerCase().includes('.pdf');
-                        const isManual = download.key && download.key.toLowerCase().includes('manual');
-                        const isFicha = download.key && download.key.toLowerCase().includes('ficha');
-                        let icon, color, label;
-                        if (isPdf) {
-                          icon = <FileText className="w-5 h-5 text-red-600 mr-2" />;
-                          color = 'bg-red-50 hover:bg-red-100 border-red-200';
-                          label = 'PDF';
-                        } else if (isManual) {
-                          icon = <Tag className="w-5 h-5 text-blue-600 mr-2" />;
-                          color = 'bg-blue-50 hover:bg-blue-100 border-blue-200';
-                          label = 'Manual';
-                        } else if (isFicha) {
-                          icon = <Info className="w-5 h-5 text-green-600 mr-2" />;
-                          color = 'bg-green-50 hover:bg-green-100 border-green-200';
-                          label = 'Ficha';
-                        } else {
-                          icon = <FileDown className="w-5 h-5 text-gray-500 mr-2" />;
-                          color = 'bg-gray-50 hover:bg-gray-100 border-gray-200';
-                          label = 'Archivo';
-                        }
-                        return (
-                          <a
-                            key={index}
-                            href={download.value}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`flex items-center px-3 py-1 rounded-lg border text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${color}`}
-                          >
-                            {icon}
-                            <span>{label}</span>
-                            <span className="ml-1 text-gray-600">{download.key}</span>
-                          </a>
-                        );
-                      })}
-                  </div>
-                )}
+
               </div>
 
               {/* Descripción corta (sin título) */}
@@ -419,7 +368,7 @@ const DetalleProducto = () => {
                 </div>
                 <div className="hidden md:grid md:grid-cols-3 md:gap-2 lg:gap-3">
                   <Button
-                    className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-1"
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md flex items-center justify-center gap-1 cursor-pointer"
                     onClick={handleAddToCart}
                     disabled={!product}
                   >
@@ -427,7 +376,7 @@ const DetalleProducto = () => {
                     Agregar
                   </Button>
                   <Link to="/payment-method">
-                    <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1">
+                    <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1 cursor-pointer">
                       <CreditCard className="h-4 w-4 lg:h-5 lg:w-5" />
                       <span className="text-sm lg:text-base">Comprar</span>
                     </Button>
@@ -446,7 +395,7 @@ const DetalleProducto = () => {
 
               {/* Funcionalidades planas debajo de los botones */}
               <div className="mt-8">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
                   Funcionalidades
                 </h2>
                 {functionalitiesArray.length > 0 ? (
@@ -461,6 +410,49 @@ const DetalleProducto = () => {
                   <p className="text-gray-500 text-sm">No hay funcionalidades disponibles</p>
                 )}
               </div>
+              {/* Descargas en el bloque principal */}
+              {product?.downloads && Array.isArray(product.downloads) && product.downloads.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {product.downloads
+                    .filter(download => download.value && download.value.trim() !== '')
+                    .map((download, index) => {
+                      const isPdf = download.value && download.value.toLowerCase().includes('.pdf');
+                      const isManual = download.key && download.key.toLowerCase().includes('manual');
+                      const isFicha = download.key && download.key.toLowerCase().includes('ficha');
+                      let icon, color, label;
+                      if (isPdf) {
+                        icon = <FileText className="w-5 h-5 text-red-600 mr-2" />;
+                        color = 'bg-red-50 hover:bg-red-100 border-red-200';
+                        label = 'PDF';
+                      } else if (isManual) {
+                        icon = <Tag className="w-5 h-5 text-blue-600 mr-2" />;
+                        color = 'bg-blue-50 hover:bg-blue-100 border-blue-200';
+                        label = 'Manual';
+                      } else if (isFicha) {
+                        icon = <Info className="w-5 h-5 text-green-600 mr-2" />;
+                        color = 'bg-green-50 hover:bg-green-100 border-green-200';
+                        label = 'Ficha';
+                      } else {
+                        icon = <FileDown className="w-5 h-5 text-gray-500 mr-2" />;
+                        color = 'bg-gray-50 hover:bg-gray-100 border-gray-200';
+                        label = 'Archivo';
+                      }
+                      return (
+                        <a
+                          key={index}
+                          href={download.value}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex items-center px-3 py-1 rounded-lg border text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${color}`}
+                        >
+                          {icon}
+                          <span>{label}</span>
+                          <span className="ml-1 text-gray-600">{download.key}</span>
+                        </a>
+                      );
+                    })}
+                </div>
+              )}
             </div>
           </div>
 
