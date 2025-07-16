@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Edit, Trash2, X, Check, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
-import { createCategory, updateCategory, changeCategoryStatus } from "@/services/admin/categoryService";
+import { createCategory, updateCategory, changeCategoryStatus, getAllCategories, deleteCategory } from "@/services/admin/categoryService";
 import { useUploadToCloudflare } from '@/hooks/useCloudflare';
 
 /**
@@ -48,48 +48,76 @@ const CategoryManager = ({
   const [imageFile, setImageFile] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const imageFileInputRef = React.useRef(null);
+  const [formErrors, setFormErrors] = useState({});
+  const [lastCreatedCategoryId, setLastCreatedCategoryId] = useState(null);
+  const [formResetKey, setFormResetKey] = useState(0);
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Resetear formulario
   const resetCategoryForm = () => {
     setCategoryForm({ id: null, name: '', url: '', description: '', status: 'ACTIVE' });
+    setFormErrors({});
+    setImageFile(null);
+    if (imageFileInputRef.current) {
+      imageFileInputRef.current.value = '';
+    }
+    setFormResetKey(prev => prev + 1);
+  };
+
+  // Validar campos requeridos
+  const validateCategoryForm = () => {
+    const errors = {};
+    if (!categoryForm.name.trim()) {
+      errors.name = 'El nombre de la categoría es obligatorio';
+    }
+    // Si hay otros campos requeridos, agregar aquí
+    return errors;
   };
 
   // Manejar creación de categoría
   const handleCreateCategory = async () => {
+    // Validación explícita del campo 'name'
+    if (!categoryForm.name || !categoryForm.name.trim()) {
+      toast.error('El nombre de la categoría es obligatorio.');
+      setFormErrors({ name: 'El nombre de la categoría es obligatorio' });
+      return;
+    }
+    const errors = validateCategoryForm();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors({});
     try {
-      if (!categoryForm.name) {
-        toast.error('El nombre de la categoría es obligatorio');
-        return;
-      }
-      
       setIsSubmitting(true);
-      
-      // Solo enviar name, url y description para la categoría
       const { name, url, description } = categoryForm;
       const data = await createCategory({ name, url, description });
-      
       if (data && data.result && data.result.id) {
-        // Actualizar lista de categorías
-        const newCategory = data.result;
+        // Forzar status ACTIVE si el backend no lo retorna así
+        const newCategory = { ...data.result, status: 'ACTIVE' };
         const updatedCategories = [...categories, newCategory];
         onCategoriesListChange(updatedCategories);
-        
-        // Añadir a seleccionadas si estamos creando desde el panel de asignación
-        if (isCreatingCategory) {
-          onCategoriesChange([...selectedCategories, newCategory.id]);
-        }
-        
+        toast.success(`Categoría '${name}' creada correctamente`);
         resetCategoryForm();
-        setIsCreatingCategory(false);
-        toast.success('Categoría creada correctamente');
+        setLastCreatedCategoryId(data.result.id);
+      } else if (data && data.error) {
+        toast.error(data.error);
       }
     } catch (error) {
-      console.error('Error al crear categoría:', error);
-      toast.error('Error al crear la categoría');
+      toast.error(error.message || 'Error al crear la categoría');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Limpiar el formulario si la última categoría creada está en la lista
+  useEffect(() => {
+    if (lastCreatedCategoryId && categories.some(cat => String(cat.id) === String(lastCreatedCategoryId))) {
+      resetCategoryForm();
+      setLastCreatedCategoryId(null);
+    }
+  }, [categories, lastCreatedCategoryId]);
 
   // Handler para subir archivo
   const handleCategoryImageUpload = async (file) => {
@@ -126,6 +154,12 @@ const CategoryManager = ({
 
   // Guardar cambios de categoría
   const handleSaveCategory = async () => {
+    const errors = validateCategoryForm();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors({});
     try {
       if (!categoryForm.name) {
         toast.error('El nombre de la categoría es obligatorio');
@@ -200,6 +234,27 @@ const CategoryManager = ({
     }
   };
 
+  const handleDeleteCategory = async (cat) => {
+    try {
+      setIsSubmitting(true);
+      await deleteCategory(cat.id);
+      // Quitar de la lista local
+      const updatedCategories = categories.filter(c => c.id !== cat.id);
+      onCategoriesListChange(updatedCategories);
+      // Quitar de seleccionadas si estaba
+      if (selectedCategories.includes(cat.id)) {
+        onCategoriesChange(selectedCategories.filter(id => id !== cat.id));
+      }
+      toast.success(`La categoría "${cat.name}" ha sido eliminada correctamente.`);
+      setIsDeleteDialogOpen(false);
+      setCategoryToDelete(null);
+    } catch (error) {
+      toast.error('Error al eliminar la categoría');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Botón para crear nueva categoría */}
@@ -216,7 +271,7 @@ const CategoryManager = ({
           <Plus className="h-4 w-4 mr-1" /> Nueva categoría
         </Button>
       ) : (
-        <div className="border p-3 rounded-md bg-gray-50">
+        <div key={formResetKey} className="border p-3 rounded-md bg-gray-50">
           <div className="flex justify-between items-center mb-2">
             <h4 className="text-sm font-medium">Nueva categoría</h4>
             <Button
@@ -239,8 +294,15 @@ const CategoryManager = ({
                 name="name"
                 placeholder="Nombre de la categoría"
                 value={categoryForm.name}
-                onChange={e => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                onChange={e => {
+                  setCategoryForm({ ...categoryForm, name: e.target.value });
+                  if (formErrors.name) setFormErrors(prev => ({ ...prev, name: undefined }));
+                }}
+                className={formErrors.name ? 'border-red-500' : ''}
               />
+              {formErrors.name && (
+                <div className="text-red-500 text-xs mt-1">{formErrors.name}</div>
+              )}
             </div>
             <div>
               <Label htmlFor="cat-url" className="mb-1 block text-sm">URL de imagen</Label>
@@ -326,12 +388,11 @@ const CategoryManager = ({
                 className="cursor-pointer"
                 onClick={handleCreateCategory}
                 disabled={isSubmitting}
+                type="submit"
               >
                 {isSubmitting ? (
                   <RefreshCcw className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4 mr-1" />
-                )}
+                ) : null}
                 Crear categoría
               </Button>
             </div>
@@ -420,7 +481,10 @@ const CategoryManager = ({
                         ? 'hover:bg-red-100 hover:text-red-600' 
                         : 'hover:bg-green-100 hover:text-green-600'
                     }`}
-                    onClick={() => handleToggleCategoryStatus(cat.id, cat.status)}
+                    onClick={() => {
+                      setCategoryToDelete(cat);
+                      setIsDeleteDialogOpen(true);
+                    }}
                   >
                     {cat.status === 'ACTIVE' ? (
                       <Trash2 className="h-3 w-3" />
@@ -455,9 +519,16 @@ const CategoryManager = ({
               <Input
                 id="edit-cat-name"
                 value={categoryForm.name}
-                onChange={e => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                onChange={e => {
+                  setCategoryForm({ ...categoryForm, name: e.target.value });
+                  if (formErrors.name) setFormErrors(prev => ({ ...prev, name: undefined }));
+                }}
                 placeholder="Nombre de la categoría"
+                className={formErrors.name ? 'border-red-500' : ''}
               />
+              {formErrors.name && (
+                <div className="text-red-500 text-xs mt-1">{formErrors.name}</div>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -508,6 +579,22 @@ const CategoryManager = ({
                 <Check className="h-4 w-4 mr-1" />
               )}
               Guardar cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de confirmación para eliminar categoría */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Estás seguro de que quieres eliminar la categoría <span className="font-bold">{categoryToDelete?.name}</span>?</DialogTitle>
+          </DialogHeader>
+          <div className="py-2 text-sm text-muted-foreground">Esta acción no se puede deshacer.</div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isSubmitting}>Cancelar</Button>
+            <Button variant="destructive" onClick={() => handleDeleteCategory(categoryToDelete)} disabled={isSubmitting}>
+              {isSubmitting ? 'Eliminando...' : 'Eliminar'}
             </Button>
           </DialogFooter>
         </DialogContent>

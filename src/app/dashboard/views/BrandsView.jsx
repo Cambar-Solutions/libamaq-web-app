@@ -89,15 +89,6 @@ export function BrandsView() {
     categories: [] // IDs de categorías seleccionadas
   });
   const [categories, setCategories] = useState([]);
-  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
-  const [newCategoryForm, setNewCategoryForm] = useState({
-    name: '',
-    description: '',
-    url: '',
-    status: 'ACTIVE'
-  });
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [brandToDelete, setBrandToDelete] = useState(null);
   // Las variables de estado para la gestión de categorías ahora están en el componente CategoryManager
 
   // Estado para imagen de marca
@@ -373,44 +364,6 @@ export function BrandsView() {
     }
   };
 
-  // Función para manejar la creación de una nueva categoría
-  const handleCreateCategory = async () => {
-    try {
-      const newCategory = await createCategory({
-        ...newCategoryForm,
-        createdBy: '1'
-      });
-
-      // Añadir la nueva categoría a la lista local
-      setCategories(prev => [...prev, newCategory.data]);
-
-      // Limpiar el formulario
-      setNewCategoryForm({
-        name: '',
-        description: '',
-        url: '',
-        status: 'ACTIVE'
-      });
-
-      // Cerrar el diálogo
-      setIsCreatingCategory(false);
-
-      toast.success(`Categoría ${newCategoryForm.name} creada correctamente`);
-    } catch (error) {
-      console.error('Error al crear categoría:', error);
-      toast.error(error.message || 'No se pudo crear la categoría');
-    }
-  };
-
-  // Manejar cambios en el formulario de nueva categoría
-  const handleNewCategoryInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewCategoryForm(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
   // Eliminar una marca
   const handleDeleteBrand = async () => {
     if (!brandToDelete) return;
@@ -612,6 +565,8 @@ export function BrandsView() {
   };
 
   const [isBrandDialogOpen, setIsBrandDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [brandToDelete, setBrandToDelete] = useState(null);
 
   function useBrandCategoriesManager(globalCategories, brandCategories) {
     // IDs de categorías asignadas
@@ -906,68 +861,6 @@ export function BrandsView() {
                 </Button>
               </DialogClose>
             </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Diálogo para crear nueva categoría */}
-        <Dialog open={isCreatingCategory} onOpenChange={setIsCreatingCategory}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Nueva Categoría</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="newCategoryName" className="text-right">
-                  Nombre
-                </Label>
-                <Input
-                  id="newCategoryName"
-                  name="name"
-                  value={newCategoryForm.name}
-                  onChange={handleNewCategoryInputChange}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="newCategoryDescription" className="text-right">
-                  Descripción
-                </Label>
-                <Textarea
-                  id="newCategoryDescription"
-                  name="description"
-                  value={newCategoryForm.description}
-                  onChange={handleNewCategoryInputChange}
-                  className="col-span-3"
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="newCategoryUrl" className="text-right">
-                  URL de la imagen
-                </Label>
-                <Input
-                  id="newCategoryUrl"
-                  name="url"
-                  value={newCategoryForm.url}
-                  onChange={handleNewCategoryInputChange}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsCreatingCategory(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={handleCreateCategory}
-                  disabled={!newCategoryForm.name.trim()}
-                >
-                  Crear
-                </Button>
-              </div>
-            </div>
           </DialogContent>
         </Dialog>
       </div>
