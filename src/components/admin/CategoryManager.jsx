@@ -593,7 +593,7 @@ const CategoryManager = ({
           <div className="py-2 text-sm text-muted-foreground">Esta acción no se puede deshacer.</div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isSubmitting}>Cancelar</Button>
-            <Button variant="destructive" onClick={() => handleDeleteCategory(categoryToDelete)} disabled={isSubmitting}>
+            <Button variant="destructive" onClick={() => handleDeleteCategory(categoryToDelete)} disabled={isSubmitting} className="cursor-pointer">
               {isSubmitting ? 'Eliminando...' : 'Eliminar'}
             </Button>
           </DialogFooter>
