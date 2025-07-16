@@ -5,8 +5,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 export default function AllProductCardSection({ product }) {
   return (
-    <Link to={`/producto/${product.id}`} className="w-full cursor-default">
-      <Card className="h-[25em] flex flex-col bg-white rounded-2xl shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 overflow-hidden mx-auto w-full group border border-gray-200">
+    <Link to={`/producto/${product.id}`} className="w-full mx-auto cursor-default">
+      <Card className="h-[25em] flex flex-col bg-white rounded-2xl shadow-none lg:shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 overflow-hidden mx-auto w-full group border border-gray-200">
         <CardHeader className="flex items-center justify-between p-0 h-[10em] overflow-hidden relative">
           <img
             src={product.media && product.media.length > 0 ? product.media[0].url : "/placeholder-product.png"}

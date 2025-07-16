@@ -726,7 +726,7 @@ export default function CategoryPage() {
                   />
 
                   {/* Sección "Todos los productos" / Productos Activos */}
-                  <div ref={sectionRef} className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full flex-grow">
+                  <div ref={sectionRef} className="sm:bg-gray-100 sm:max-w-7xl sm:rounded-t-[3rem] sm:shadow-inner px-0 sm:px-6 py-0 sm:py-10 mt-6 w-full flex-grow">
                     <div className="w-full">
                       {activeItems.length > 0 ? (
                         <div className="mb-10">
@@ -735,7 +735,7 @@ export default function CategoryPage() {
                           </div>
                           <div className="mb-10">
                             {/* Reemplaza el carrusel de activeItems por un grid de ProductCard */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-x-6 gap-y-8 mb-8">
+                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 lg:gap-x-6 sm:gap-x-2 gap-x-2 lg:gap-y-8 sm:gap-y-2 gap-y-2 mb-8">
                               {activeItems.map((activeItem, index) => (
                                 <AllProductCardSection key={activeItem.id} product={activeItem} />
                               ))}

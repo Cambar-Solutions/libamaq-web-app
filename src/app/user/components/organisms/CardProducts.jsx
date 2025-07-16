@@ -30,18 +30,18 @@ export default function CardProducts({ sectionRef, brand, selectedCategory, isLo
 
   return (
     <div className="max-w-full mx-auto">
-      <div ref={sectionRef} className="max-w-8xl w-full mx-auto px-4">
+      <div ref={sectionRef} className="max-w-8xl w-full mx-auto px-0 sm:px-0 lg:px-4">
         <div className="mb-6 mt-8 w-full">
           <h1 className="text-xl md:text-2xl font-bold text-gray-800">
             {getTitle()}
           </h1>
         </div>
-        <div className="bg-gray-100 min-h-[90vh] rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full mx-auto flex-grow">
+        <div className="sm:bg-gray-100 sm:min-h-[90vh] sm:rounded-t-[2rem] lg:rounded-t-[3rem] sm:shadow-inner px-0 sm:px-2 lg:px-6 py-0 sm:py-5 lg:py-10 mt-6 w-full mx-auto flex-grow">
           <div className="w-full mx-auto">
             {isLoading ? (
               <p className="text-center text-gray-600 text-lg py-10">Cargando productos...</p>
             ) : filteredProducts.length > 0 ? (
-              <div className=" grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-8 mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 lg:gap-x-6 sm:gap-x-2 gap-x-2 lg:gap-y-8 sm:gap-y-2 gap-y-2 mb-8">
                 {filteredProducts.map((item, index) => (
                   <Link to={`/producto/${item.id}`} key={index} className="w-full cursor-default">
                     <Card className="h-[25em] flex flex-col bg-white rounded-lg shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300 overflow-hidden mx-auto w-full group">
@@ -54,20 +54,20 @@ export default function CardProducts({ sectionRef, brand, selectedCategory, isLo
                       </CardHeader>
                       <CardContent className="flex flex-col flex-grow justify-between p-3 mt-2">
                         <CardTitle className="text-lg font-semibold text-gray-900 line-clamp-2" title={item.name}> {item.name} </CardTitle>
-                        <CardDescription className="text-gray-600 mt-1 line-clamp-3" title={item.description}>{item.description}</CardDescription>
-                        <div className="flex items-center justify-between mt-auto pt-2">
+                        <CardDescription className="text-gray-600 mt-1 line-clamp-2 lg:line-clamp-3" title={item.description}>{item.description}</CardDescription>
+                        <div className="flex flex-col sm:flex-row items-center sm:items-center justify-between mt-auto pt-2 gap-2 sm:gap-0">
                           <p className="font-bold text-2xl text-blue-700">${item.price.toLocaleString()}</p>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-3 mt-2 sm:mt-0">
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Link
                                     to={`/producto/${item.id}`}
-                                    className="mr-1 w-5 h-5 text-gray-500 transition-colors duration-500 flex items-center justify-center"
+                                    className="mr-1 w-6 lg:w-5 h-6 lg:h-5 text-gray-500 transition-colors duration-500 flex items-center justify-center"
                                     aria-label="Ver detalles"
                                     onClick={e => e.stopPropagation()}
                                   >
-                                    <Eye className="w-5 h-5 text-gray-500 hover:text-blue-600" />
+                                    <Eye className="w-6 lg:w-5 h-6 lg:h-5 text-gray-500 hover:text-blue-600" />
                                   </Link>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
@@ -80,7 +80,7 @@ export default function CardProducts({ sectionRef, brand, selectedCategory, isLo
                                 <TooltipTrigger asChild>
                                   <button
                                     type="button"
-                                    className="cursor-pointer mr-2 w-5 h-5 text-gray-500 transition-colors duration-500 flex items-center justify-center "
+                                    className="cursor-pointer mr-2 w-6 lg:w-5 h-6 lg:h-5 text-gray-500 transition-colors duration-500 flex items-center justify-center "
                                     onClick={async (e) => {
                                       e.preventDefault();
                                       // Obtener userId del token
@@ -120,7 +120,7 @@ export default function CardProducts({ sectionRef, brand, selectedCategory, isLo
                                     }}
                                     aria-label="Agregar al carrito"
                                   >
-                                    <ShoppingCart className="w-5 h-5 text-gray-500 hover:text-yellow-600" />
+                                    <ShoppingCart className="w-6 lg:w-5 h-6 lg:h-5 text-gray-500 hover:text-yellow-600" />
                                   </button>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">

@@ -233,7 +233,7 @@ export default function UserHome() {
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
                     >
-                        <div className="max-w-full mx-auto px-4">
+                        <div className="max-w-full mx-auto px-2 sm:px-2 lg:px-4">
                             {/* Buscador y filtros */}
                             <SearchBar
                                 selectedCategory={selectedCategory}
