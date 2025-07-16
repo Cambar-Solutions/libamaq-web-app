@@ -58,7 +58,7 @@ const brandCategories = {
     "Vibradores a gasolina para concreto",
     "Rodillos Vibratorios",
     "Apisonadores o bailarinas",
-    "Torres de ilumiación",
+    "Torres de iluminación",
     "Soldadoras",
     "Bombas para concreto"
   ]

@@ -58,7 +58,7 @@ const brandDetails = {
       { name: "Vibradores a gasolina para concreto", image: "/categorias/cipsa/vibradores.jpg" },
       { name: "Rodillos Vibratorios", image: "/categorias/cipsa/rodillos.jpg" },
       { name: "Apisonadores o bailarinas", image: "/categorias/cipsa/apisonadores.jpg" },
-      { name: "Torres de ilumiación", image: "/categorias/cipsa/torres.jpg" },
+      { name: "Torres de iluminación", image: "/categorias/cipsa/torres.jpg" },
       { name: "Soldadoras", image: "/categorias/cipsa/soldadoras.jpg" },
       { name: "Bombas para concreto", image: "/categorias/cipsa/bombas.jpg" },
     ],

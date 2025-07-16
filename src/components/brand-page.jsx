@@ -44,7 +44,7 @@
     cipsa: {
       name: "Cipsa",
       description: " Cipsa es especialistas en herramientas y maquinaria para construcción.",
-      products: ["Revolvedoras para concreto de 1 y 2 sacos", "Vibradores a gasolina para concreto", "Rodillos Vibratorios", "Apisonadores o bailarinas", "Torres de ilumiación", "Soldadoras", "Bombas para concreto"],
+      products: ["Revolvedoras para concreto de 1 y 2 sacos", "Vibradores a gasolina para concreto", "Rodillos Vibratorios", "Apisonadores o bailarinas", "Torres de iluminación", "Soldadoras", "Bombas para concreto"],
       image: "/cipsa.avif",
     },
   };

@@ -106,7 +106,7 @@ export const simulatedProductsByBrand = {
         { title: "Cipsa AP-90", text: "Apisonador 90kg", price: 24999 },
         { title: "Cipsa AP-110", text: "Apisonador industrial 110kg", price: 29999 },
       ],
-      "Torres de ilumiación": [
+      "Torres de iluminación": [
         { title: "Cipsa TI-2000", text: "Torre de iluminación 2000W", price: 35999 },
         { title: "Cipsa TI-4000", text: "Torre de iluminación 4000W", price: 49999 },
         { title: "Cipsa TI-6000", text: "Torre de iluminación industrial 6000W", price: 69999 },
