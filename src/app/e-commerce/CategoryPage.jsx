@@ -692,8 +692,8 @@ export default function CategoryPage() {
                               />
                               <div className="p-4 flex-grow flex flex-col justify-between">
                                 <div>
-                                  <h3 className="text-lg font-semibold text-gray-800 truncate" title={product.product_name || product.name}>{product.product_name || product.name}</h3>
-                                  <p className="text-sm text-gray-500 line-clamp-2" title={product.product_description || product.description}>{product.product_description || product.description}</p>
+                                  <h3 className="text-lg font-semibold text-gray-800 truncate">{product.product_name || product.name}</h3>
+                                  <p className="text-sm text-gray-500 line-clamp-2">{product.product_description || product.description}</p>
                                 </div>
                                 {(product.product_price || product.price) && <p className="text-xl font-bold text-blue-700 mt-2">${product.product_price || product.price}</p>}
                               </div>

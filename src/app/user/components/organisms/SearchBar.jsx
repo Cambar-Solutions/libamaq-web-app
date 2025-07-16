@@ -54,7 +54,7 @@ export default function SearchBar({
   const categoriesToShow = ["todos-los-productos", ...allCategories];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 mt-23 sticky top-16 z-10 bg-white shadow-md rounded-lg mb-6 p-3">
+    <div className="max-w-6xl mx-auto px-4 lg:mt-23 mt-12 sticky top-16 z-10 bg-white shadow-md rounded-lg mb-6 p-3">
       <div className="flex flex-row items-center gap-2">
         <div className="relative w-4/5">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />

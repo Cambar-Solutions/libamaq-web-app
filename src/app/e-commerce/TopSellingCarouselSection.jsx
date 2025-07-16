@@ -133,8 +133,8 @@ export default function TopSellingCarouselSection({
                             />
                             <div className="p-4 flex-grow flex flex-col justify-between">
                               <div>
-                                <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate" title={topSellingItem.product_name}>{topSellingItem.product_name}</h3>
-                                <p className="text-sm text-gray-500 line-clamp-2" title={topSellingItem.product_description}>{topSellingItem.product_description}</p>
+                                <h3 className="text-base sm:text-lg font-medium text-gray-800 truncate">{topSellingItem.product_name}</h3>
+                                <p className="text-sm text-gray-500 line-clamp-2">{topSellingItem.product_description}</p>
                               </div>
                               <div className="flex items-end justify-end w-full border-t border-gray-100 mt-2">
                                 <TooltipProvider>
