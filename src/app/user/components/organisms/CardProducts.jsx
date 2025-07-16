@@ -41,7 +41,7 @@ export default function CardProducts({ sectionRef, brand, selectedCategory, isLo
             {isLoading ? (
               <p className="text-center text-gray-600 text-lg py-10">Cargando productos...</p>
             ) : filteredProducts.length > 0 ? (
-              <div className=" grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-8 mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 lg:gap-x-6 sm:gap-x-2 gap-x-2 lg:gap-y-8 sm:gap-y-2 gap-y-2 mb-8">
                 {filteredProducts.map((item, index) => (
                   <Link to={`/producto/${item.id}`} key={index} className="w-full cursor-default">
                     <Card className="h-[25em] flex flex-col bg-white rounded-lg shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300 overflow-hidden mx-auto w-full group">
