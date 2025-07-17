@@ -464,7 +464,7 @@ export default function CreateProductFormDialog({
                                             })}
                                             onChange={handleCostoChange}
                                             disabled={isCreating}
-                                            className="pl-3"
+                                            className="pl-3 font-bold"
                                         />
                                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
                                             MXN
