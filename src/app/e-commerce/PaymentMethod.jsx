@@ -1,53 +1,36 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { ShoppingCart, CreditCard, Clock, ArrowLeft, Share2, Shield, Home, ChevronLeft } from "lucide-react";
-import { getActiveProductById } from "@/services/public/productService";
-import ShareProduct from "@/components/ShareProduct";
 import { toast } from "sonner";
-import Nav2 from "@/components/Nav2";
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Link } from "react-router-dom";
-import { MapPin, MapPinHouse, MapPinPlus, Captions, Banknote } from 'lucide-react';
-import { motion, AnimatePresence } from "framer-motion"
-import { NavCustomer } from "../user/components/molecules/NavCustomer";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { FiNavigation } from "react-icons/fi";
+import { FiTruck, FiCreditCard, FiCheck, FiArrowLeft, FiMapPin, FiPhone, FiMail, FiUser, FiNavigation } from 'react-icons/fi';
 import useLocationStore from "@/stores/useLocationStore";
+import { NavCustomer } from "../user/components/molecules/NavCustomer";
+import { getCartByUser } from "@/services/customer/shoppingCar";
+import { jwtDecode } from "jwt-decode";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import React from "react";
+import { getUserById } from "@/services/admin/userService";
+import { FaWhatsappSquare } from "react-icons/fa";
+import { ArrowLeft } from 'lucide-react'
+
+
+const steps = [
+    { id: 1, title: 'Información de Envío', icon: FiTruck },
+    { id: 2, title: 'Método de Pago', icon: FiCreditCard },
+    { id: 3, title: 'Confirmación', icon: FiCheck },
+];
 
 export default function PaymentMethod() {
     const navigate = useNavigate();
     const { id } = useParams();
-    const [product, setProduct] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [mainImage, setMainImage] = useState("");
-    const [favorite, setFavorite] = useState(false);
-    const [highlightActive, setHighlightActive] = useState(false);
-    const { currentLocation, setLocation } = useLocationStore();
-    const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
+    const { setLocation } = useLocationStore();
 
-    const [shippingOption, setShippingOption] = useState(null);
-    const [history, setHistory] = useState([]);
-
-    const [selectedLocation, setSelectedLocation] = useState(null);
-    const [userAddress, setUserAddress] = useState({
-        street: "Calle Del Salto 123",
-        colony: "Colonia San Antón",
-        zipCode: "62000",
-        state: "Morelos",
-        city: "Cuernavaca",
-    }); // Estado para simular la ubicación actual del usuario
-    const [showLocationForm, setShowLocationForm] = useState(false); // Nuevo estado para controlar la visibilidad del formulario
-
-    // Estado para el formulario de dirección de envío
+    // Estados principales
+    const [step, setStep] = useState(0); // 0: envío, 1: pago, 2: confirmación
     const [shippingAddress, setShippingAddress] = useState({
+        name: '',
+        lastName: '',
+        email: '',
+        phoneNumber: '',
         address: '',
         city: '',
         state: '',
@@ -55,6 +38,26 @@ export default function PaymentMethod() {
         country: 'México',
     });
     const [isGettingLocation, setIsGettingLocation] = useState(false);
+    const [shippingMethod, setShippingMethod] = useState('standard');
+    const [paymentMethod, setPaymentMethod] = useState('transferencia');
+    const [selectedBranch, setSelectedBranch] = useState("jiutepec");
+    const branches = {
+        jiutepec: {
+            label: "Jiutepec",
+            address: "Blvd. Paseo Cuauhnáhuac Jiutepec, Mor."
+        },
+        cuautla: {
+            label: "Cuautla",
+            address: "Carr Federal México-Cuautla Cuautla, Mor."
+        }
+    };
+
+    // Carrito y usuario
+    const [cartProducts, setCartProducts] = useState([]);
+    const [cartLoading, setCartLoading] = useState(true);
+    const [cartError, setCartError] = useState(null);
+    const [currentUserId, setCurrentUserId] = useState(null);
+    const [currentCartOrderId, setCurrentCartOrderId] = useState(null); // Si tu backend lo provee
 
     // Handler para campos controlados
     const handleShippingInputChange = (field, value) => {
@@ -64,633 +67,468 @@ export default function PaymentMethod() {
         }));
     };
 
-    // Función para obtener la ubicación actual y autocompletar
+    // Geolocalización
     const getCurrentLocation = () => {
         if (!navigator.geolocation) {
-          toast.error('La geolocalización no está disponible en este navegador');
-          return;
-        }
-    
-        setIsGettingLocation(true);
-    
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            try {
-              const { latitude, longitude } = position.coords;
-              
-              // Usar un servicio de geocodificación inversa para obtener la dirección
-              const response = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&accept-language=es`
-              );
-              
-              if (!response.ok) {
-                throw new Error('Error al obtener la dirección');
-              }
-    
-              const data = await response.json();
-              
-              if (data.address) {
-                const address = data.address;
-                
-                // Construir dirección: calle, número y colonia
-                let direccion = '';
-                if (address.road || address.house_number || address.neighbourhood || address.suburb) {
-                  direccion = [
-                    address.road || '',
-                    address.house_number || '',
-                    address.neighbourhood || address.suburb || address.colony || ''
-                  ].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
-                } else if (address.city) {
-                  direccion = address.city;
-                  toast.warning('No se pudo obtener la calle y número, por favor complétalos manualmente.');
-                } else {
-                  direccion = '';
-                  toast.warning('No se pudo obtener la calle y número, por favor complétalos manualmente.');
-                }
-                setShippingAddress(prev => ({
-                  ...prev,
-                  address: direccion,
-                  city: address.city || address.town || address.village || '',
-                  state: address.state || '',
-                  zipCode: address.postcode || '',
-                  country: address.country || 'México'
-                }));
-    
-                toast.success('Ubicación obtenida exitosamente');
-              } else {
-                toast.error('No se pudo obtener la dirección completa');
-              }
-            } catch (error) {
-              console.error('Error al obtener la dirección:', error);
-              toast.error('Error al obtener la dirección. Intenta llenar manualmente.');
-            } finally {
-              setIsGettingLocation(false);
-            }
-          },
-          (error) => {
-            setIsGettingLocation(false);
-            switch (error.code) {
-              case error.PERMISSION_DENIED:
-                toast.error('Permiso denegado para acceder a la ubicación');
-                break;
-              case error.POSITION_UNAVAILABLE:
-                toast.error('Información de ubicación no disponible');
-                break;
-              case error.TIMEOUT:
-                toast.error('Tiempo de espera agotado para obtener la ubicación');
-                break;
-              default:
-                toast.error('Error al obtener la ubicación');
-            }
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 60000
-          }
-        );
-      };
-
-    // Función genérica para cambiar de pantalla
-    const goTo = (next) => {
-        setHistory((h) => [...h, shippingOption]); // apilar
-        setShippingOption(next);
-    };
-    // Función de “volver”
-    const goBack = () => {
-        setHistory((h) => {
-            const prev = h[h.length - 1] ?? null;       // última opción
-            const newStack = h.slice(0, -1);           // desapilar
-            setShippingOption(prev);
-            return newStack;
-        });
-    };
-
-    // Función para simular obtener la ubicación actual del usuario
-    const useCurrentLocation = () => {
-        // Aquí iría la lógica real para obtener la ubicación (e.g., geolocalización del navegador)
-        // Por ahora, usamos la ubicación simulada
-        setSelectedLocation(
-            `${userAddress.street}, ${userAddress.colony}, ${userAddress.city}, ${userAddress.state} C.P. ${userAddress.zipCode}`
-        );
-        setShowLocationForm(false); // Ocultar el formulario después de usar la ubicación
-        goTo("confirmarEnvio"); // Ir a una pantalla de confirmación o resumen
-        toast.success("Ubicación actual utilizada.");
-    };
-
-    // Función para manejar el envío del formulario de nueva ubicación
-    const handleSubmitNewLocation = (e) => {
-        e.preventDefault();
-        // Validación básica
-        const { firstName, lastName, email, phone, address, city, state, zipCode } = shippingAddress;
-        if (!firstName || !lastName || !email || !phone || !address || !city || !state || !zipCode) {
-            toast.error('Por favor completa todos los campos');
+            toast.error('La geolocalización no está disponible en este navegador');
             return;
         }
-        setSelectedLocation(
-            `${address}, ${city}, ${state}, ${zipCode}, ${shippingAddress.country}`
+        setIsGettingLocation(true);
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                try {
+                    const { latitude, longitude } = position.coords;
+                    const response = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1&accept-language=es`
+                    );
+                    if (!response.ok) throw new Error('Error al obtener la dirección');
+                    const data = await response.json();
+                    if (data.address) {
+                        const address = data.address;
+                        let direccion = '';
+                        if (address.road || address.house_number || address.neighbourhood || address.suburb) {
+                            direccion = [
+                                address.road || '',
+                                address.house_number || '',
+                                address.neighbourhood || address.suburb || address.colony || ''
+                            ].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+                        } else if (address.city) {
+                            direccion = address.city;
+                            toast.warning('No se pudo obtener la calle y número, por favor complétalos manualmente.');
+                        } else {
+                            direccion = '';
+                            toast.warning('No se pudo obtener la calle y número, por favor complétalos manualmente.');
+                        }
+                        setShippingAddress(prev => ({
+                            ...prev,
+                            address: direccion,
+                            city: address.city || address.town || address.village || '',
+                            state: address.state || '',
+                            zipCode: address.postcode || '',
+                            country: address.country || 'México'
+                        }));
+                        toast.success('Ubicación obtenida exitosamente');
+                    } else {
+                        toast.error('No se pudo obtener la dirección completa');
+                    }
+                } catch (error) {
+                    console.error('Error al obtener la dirección:', error);
+                    toast.error('Error al obtener la dirección. Intenta llenar manualmente.');
+                } finally {
+                    setIsGettingLocation(false);
+                }
+            },
+            (error) => {
+                setIsGettingLocation(false);
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        toast.error('Permiso denegado para acceder a la ubicación');
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        toast.error('Información de ubicación no disponible');
+                        break;
+                    case error.TIMEOUT:
+                        toast.error('Tiempo de espera agotado para obtener la ubicación');
+                        break;
+                    default:
+                        toast.error('Error al obtener la ubicación');
+                }
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 60000
+            }
         );
-        // Actualizar la dirección global
-        setLocation(`${address}, ${city}, ${state}, ${zipCode}, ${shippingAddress.country}`);
-        setShowLocationForm(false);
-        goTo("efectivo");
-        toast.success("Nueva ubicación guardada.");
     };
 
-    // --- EFECTO PARA VERIFICAR LA SESIÓN ---
+    // Validación básica
+    const validateShipping = () => {
+        const { name, lastName, email, phoneNumber, address, city, state, zipCode } = shippingAddress;
+        if (!name || !lastName || !email || !phoneNumber || !address || !city || !state || !zipCode) {
+            toast.error('Por favor completa todos los campos');
+            return false;
+        }
+        return true;
+    };
+
+    // Navegación entre pasos
+    const nextStep = () => {
+        if (step === 0 && !validateShipping()) return;
+        setStep((s) => Math.min(s + 1, steps.length - 1));
+    };
+    const prevStep = () => setStep((s) => Math.max(s - 1, 0));
+
+    // Guardar dirección global al avanzar
     useEffect(() => {
-        const token = localStorage.getItem("token"); // O el nombre de tu token
-        setIsUserLoggedIn(!!token); // Si hay token, está loggeado (true), si no, false
+        if (step === 1) {
+            setLocation(`${shippingAddress.address}, ${shippingAddress.city}, ${shippingAddress.state}, ${shippingAddress.zipCode}, ${shippingAddress.country}`);
+        }
+    }, [step]);
+
+    // Obtener currentUserId y currentCartOrderId
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        if (token) {
+            const decoded = jwtDecode(token);
+            setCurrentUserId(decoded.sub);
+            // Si tu backend te da el orderId, puedes setearlo aquí
+            // setCurrentCartOrderId(decoded.cartOrderId) o similar
+        }
     }, []);
 
-    // Función para regresar a la página de categorías
-    const handleBack = () => {
-        navigate("/tienda", { replace: true });
-    };
-
-    // Efecto para activar el resaltado del nombre del producto
+    // Obtener productos del carrito
     useEffect(() => {
-        if (product) {
-            // Activar el resaltado después de cargar el producto
-            setHighlightActive(true);
-        }
-    }, [product]);
+        if (!currentUserId) return;
+        setCartLoading(true);
+        setCartError(null);
+        getCartByUser(currentUserId)
+            .then(data => {
+                setCartProducts(Array.isArray(data?.data) ? data.data : []);
+                // Si la respuesta trae el orderId, setCurrentCartOrderId(data.orderId)
+            })
+            .catch(err => {
+                setCartProducts([]);
+                setCartError(err.message || "Error al cargar el carrito");
+            })
+            .finally(() => setCartLoading(false));
+    }, [currentUserId]);
 
-    // Cargar datos del producto
+    // Prefill shipping form with user data
     useEffect(() => {
-        const fetchProductDetails = async () => {
-            setLoading(true);
-            try {
-                const response = await getActiveProductById(id);
-                if (response && response.type === "SUCCESS") {
-                    console.log('Producto obtenido:', response.result);
-                    setProduct(response.result);
-                    if (response.result?.multimedia?.length > 0) {
-                        setMainImage(response.result.multimedia[0].url);
-                    }
-                } else {
-                    toast.error("No se pudo cargar el producto");
-                    console.error("Respuesta inválida al cargar el producto:", response);
-                }
-            } catch (error) {
-                toast.error("Error al cargar el producto");
-                console.error("Error al cargar el producto:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+        if (!currentUserId) return;
+        getUserById(currentUserId)
+            .then(user => {
+                if (!user) return;
+                setShippingAddress(prev => ({
+                    ...prev,
+                    name: prev.name || user.name || '',
+                    lastName: prev.lastName || user.lastName || '',
+                    email: prev.email || user.email || '',
+                    phoneNumber: prev.phoneNumber || user.phoneNumber || '',
+                    address: prev.address || user.address || '',
+                    city: prev.city || user.city || '',
+                    state: prev.state || user.state || '',
+                    zipCode: prev.zipCode || user.zipCode || '',
+                    country: prev.country || user.country || '',
+                }));
+            })
+            .catch(() => { });
+    }, [currentUserId]);
 
-        if (id) {
-            fetchProductDetails();
-        }
-
-        // Al montar el componente, hacer scroll al inicio de la página
-        window.scrollTo(0, 0);
-    }, [id]);
-
-    const location = {
-        loc1: "Blvd. Paseo Cuauhnáhuac Jiutepec, Mor.",
-        loc2: "Carr Federal México-Cuautla Cuautla, Mor."
-    };
-
-    // Variants para reusar
-    const slideVariants = {
-        initial: { x: 300, opacity: 0 },
-        animate: { x: 0, opacity: 1 },
-        exit: { x: -300, opacity: 0 },
-    };
-
-    const NavbarComponent = isUserLoggedIn ? NavCustomer : Nav2;
-
+    // Render
     return (
-        <>
-            <div className="w-full bg-gray-100 min-h-screen pt-20 pb-0">
-                <SidebarProvider>
-                    <NavbarComponent />
-                    <div className="max-w-7xl mx-auto px-4">
-                        <div className="py-4 mt-4 text-sm lg:text-base">
-                            <Breadcrumb>
-                                <BreadcrumbList>
-                                    <BreadcrumbItem>
-                                        <BreadcrumbLink href="/" className="flex items-center text-gray-700 hover:text-blue-700">
-                                            <Home size={18} className="mr-1" />
-                                            Inicio
-                                        </BreadcrumbLink>
-                                    </BreadcrumbItem>
-                                    <BreadcrumbSeparator />
-                                    <BreadcrumbItem>
-                                        <BreadcrumbLink
-                                            href="/tienda"
-                                            onClick={(e) => { e.preventDefault(); handleBack(); }}
-                                            className="text-gray-700 hover:text-blue-700"
-                                        >
-                                            Tienda
-                                        </BreadcrumbLink>
-                                    </BreadcrumbItem>
-                                    <BreadcrumbSeparator />
-                                    <BreadcrumbItem>
-                                        <BreadcrumbPage className={`truncate transition-colors duration-300 font-semibold ${highlightActive ? 'text-blue-700' : 'text-gray-600'}`}>
-                                            {product?.name} Martillo
-                                        </BreadcrumbPage>
-                                    </BreadcrumbItem>
-                                    <BreadcrumbSeparator />
-                                    <BreadcrumbItem>
-                                        <BreadcrumbPage className="text-gray-700 hover:text-blue-700 select-none">
-                                            Compra
-                                        </BreadcrumbPage>
-                                    </BreadcrumbItem>
-                                </BreadcrumbList>
-                            </Breadcrumb>
-
-                            <div className="">
-                                <div className="flex flex-col md:flex-row gap-4 bg-white shadow-md rounded-2xl mt-6 w-full h-[70vh]">
-                                    {/* Inicio de sección que se va a mover */}
-                                    <div className="flex flex-col justify-center w-full rounded-2xl shadow-sm">
-                                        <AnimatePresence initial={false} mode="wait">
-                                            <motion.div
-                                                key={shippingOption ?? "choose"}
-                                                variants={slideVariants}
-                                                initial="initial"
-                                                animate="animate"
-                                                exit="exit"
-                                                transition={{ duration: 0.3, ease: "easeInOut" }}
-                                                className=""
-                                            >
-                                                {!shippingOption ? (
-                                                    // Primera vista: elegir método
-                                                    <div className="relative w-full h-[70vh] mx-auto grid grid-cols-1 md:grid-cols-2 gap-20 items-center p-6">
-                                                        {/* Columna 1: Imagen */}
-                                                        <div className="flex">
-                                                            <img
-                                                                src="payment.png"
-                                                                alt="Sucursal Cuautla"
-                                                                className="w-[40em] h-[30em] rounded-lg shadow-sm object-cover"
-                                                            />
-                                                        </div>
-
-                                                        {/* Columna 2: Texto y botones */}
-                                                        <div className="flex flex-col items-center">
-                                                            <h3 className="text-2xl font-medium mb-6 text-center">
-                                                                Selecciona el método de pago de tu preferencia
-                                                            </h3>
-
-                                                            <div className="w-full flex flex-col sm:flex-row justify-center gap-5">
-                                                                <Button
-                                                                    onClick={() => goTo("casa")}
-                                                                    className="flex-1 cursor-pointer shadow-md bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-500 py-3"
-                                                                >
-                                                                    <Captions className="mr-2" />
-                                                                    Transferencia
-                                                                </Button>
-                                                                <Button
-                                                                    onClick={() => goTo("tienda")}
-                                                                    className="flex-1 cursor-pointer shadow-md border-2 border-blue-500 bg-white hover:bg-blue-100 text-blue-500 transition-colors duration-500 py-3"
-                                                                >
-                                                                    <Banknote className="mr-2" />
-                                                                    Efectivo
-                                                                </Button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                ) : shippingOption === "tienda" ? (
-                                                    // Vista de "Recoger en tienda"
-                                                    <div className="relative w-full h-[70vh] justify-items-center">
-                                                        <button
-                                                            onClick={goBack}
-                                                            className="cursor-pointer absolute top-2 left-2 p-2 rounded-full bg-white shadow hover:bg-gray-100 transition"
-                                                            aria-label="Volver"
-                                                        >
-                                                            <ChevronLeft size={20} className="text-gray-600" />
-                                                        </button>
-
-                                                        <h3 className="text-2xl font-medium pt-[2em]">Selecciona sucursal</h3>
-                                                        <p className="text-gray-500 mb-8">Escoge la sucursal más cercana</p>
-                                                        <div className="w-[90%] h-[65%] grid grid-cols-1 sm:grid-cols-2 gap-8">
-                                                            {/* Card Jiutepec */}
-                                                            <button
-                                                                onClick={() => { setSelectedLocation(location.loc1); goTo("efectivo"); }}
-                                                                className="group relative w-full h-full cursor-pointer overflow-hidden rounded-lg shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl"
-                                                            >
-                                                                {/* Imagen de fondo */}
-                                                                <img
-                                                                    src="libamaqJiute.png"
-                                                                    alt="Sucursal Jiutepec"
-                                                                    className="w-full h-full object-cover"
-                                                                />
-
-                                                                {/* Degradado para mejorar legibilidad */}
-                                                                <div className="absolute inset-0 bg-gradient-to-t from-blue-500/50 via-transparent to-transparent" />
-
-                                                                {/* Texto sobre la imagen */}
-                                                                <div className="absolute bottom-4 left-4 right-4 text-white">
-                                                                    <span className="flex items-center text-lg font-semibold">
-                                                                        <MapPin className="mr-2" /> {location.loc1}
-                                                                    </span>
-                                                                </div>
-                                                            </button>
-
-
-                                                            {/* Card Cuautla */}
-                                                            <button
-                                                                onClick={() => { setSelectedLocation(location.loc2); goTo("efectivo"); }}
-                                                                className="group relative w-full h-full cursor-pointer overflow-hidden rounded-lg shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl"
-                                                            >
-                                                                {/* Imagen de fondo */}
-                                                                <img
-                                                                    src="libamaqCuautla.png"
-                                                                    alt="Sucursal Cuautla"
-                                                                    className="w-full h-full object-cover"
-                                                                />
-
-                                                                {/* Degradado para mejorar legibilidad */}
-                                                                <div className="absolute inset-0 bg-gradient-to-t from-blue-500/50 via-transparent to-transparent" />
-
-                                                                {/* Texto sobre la imagen */}
-                                                                <div className="absolute bottom-4 left-4 right-4 text-white transition-colors duration-500">
-                                                                    <span className="flex items-center text-lg font-semibold">
-                                                                        <MapPin className="mr-2 " /> {location.loc2}
-                                                                    </span>
-                                                                </div>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-
-                                                ) : shippingOption === "casa" ? (
-                                                    // Vista de "Recoger en casa" - Ahora dividida en dos vistas
-                                                    <div className="relative w-full h-[70vh] mx-auto grid grid-cols-1 md:grid-cols-2 gap-20 items-center p-6">
-                                                        <button
-                                                            onClick={goBack}
-                                                            className="group absolute top-2 left-2 p-2 rounded-full bg-white shadow hover:bg-gray-100 transition"
-                                                            aria-label="Volver"
-                                                        >
-                                                            <ChevronLeft size={20} className="text-gray-600" />
-                                                        </button>
-                                                        <div className="flex flex-col items-center">
-                                                            <h3 className="text-2xl font-medium mb-4">¿Quieres cambiar de ubicación?</h3>
-
-                                                            <div className="w-full flex flex-col sm:flex-row justify-center gap-5">
-                                                                <Button
-                                                                    onClick={() => { useCurrentLocation(); }}
-                                                                    className="cursor-pointer shadow-md bg-blue-500 hover:bg-white text-white hover:text-blue-500 transition-colors duration-500 py-3">
-                                                                    <MapPinHouse className="mr-2" />
-                                                                    Usar ubicación actual
-                                                                </Button>
-                                                                <Button
-                                                                    onClick={() => goTo("cambiarUbicacion")} // Nuevo shippingOption para el formulario
-                                                                    className="cursor-pointer shadow-md bg-blue-500 hover:bg-white text-white hover:text-blue-500 transition-colors duration-500 py-3">
-                                                                    <MapPinPlus className="mr-2" />
-                                                                    Cambiar ubicación
-                                                                </Button>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="flex">
-                                                            <img
-                                                                src="location.png"
-                                                                alt="Ubicación de entrega"
-                                                                className="w-[40em] h-[30em] rounded-lg shadow-sm object-contain"
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                ) : shippingOption === "cambiarUbicacion" ? (
-                                                    // Nueva vista: Formulario para cambiar ubicación
-                                                    <div className="relative w-full h-[70vh] justify-items-center p-6">
-                                                        <button
-                                                            onClick={goBack}
-                                                            className="cursor-pointer absolute top-2 left-2 p-2 rounded-full bg-white shadow hover:bg-gray-100 transition"
-                                                            aria-label="Volver"
-                                                        >
-                                                            <ChevronLeft size={20} className="text-gray-600" />
-                                                        </button>
-                                                        <h3 className="text-2xl font-medium pt-[0em] text-center">Ingresa tu nueva ubicación</h3>
-                                                        <p className="text-gray-500 mb-8 text-center">Completa los campos para actualizar la dirección de envío</p>
-                                                        {selectedLocation && (
-                                                            <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-2">
-                                                                <FiNavigation className="text-blue-600" />
-                                                                <span className="text-blue-800 font-medium">Ubicación actual seleccionada:</span>
-                                                                <span className="text-blue-700">{selectedLocation}</span>
-                                                            </div>
-                                                        )}
-                                                        <form onSubmit={handleSubmitNewLocation} className="w-[90%] mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                                                            <div className="flex flex-col md:col-span-2">
-                                                                <div className="flex items-center justify-between mb-2">
-                                                                    <label htmlFor="address" className="text-sm font-medium text-gray-700">
-                                                                        Dirección
-                                                                    </label>
-                                                                    <button type="button" onClick={getCurrentLocation} disabled={isGettingLocation} className="flex items-center text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed">
-                                                                        <span className="mr-1 flex items-center"><FiNavigation className="w-4 h-4 mr-1" />Usar ubicación actual</span>
-                                                                        {isGettingLocation && <span className="ml-1 animate-spin">⏳</span>}
-                                                                    </button>
-                                                                </div>
-                                                                <input type="text" id="address" name="address" value={shippingAddress.address} onChange={e => handleShippingInputChange('address', e.target.value)} className="mt-1 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Calle, número, colonia" required />
-                                                            </div>
-                                                            <div className="flex flex-col">
-                                                                <label htmlFor="city" className="text-sm font-medium text-gray-700">Ciudad</label>
-                                                                <input type="text" id="city" name="city" value={shippingAddress.city} onChange={e => handleShippingInputChange('city', e.target.value)} className="mt-1 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required />
-                                                            </div>
-                                                            <div className="flex flex-col">
-                                                                <label htmlFor="state" className="text-sm font-medium text-gray-700">Estado</label>
-                                                                <input type="text" id="state" name="state" value={shippingAddress.state} onChange={e => handleShippingInputChange('state', e.target.value)} className="mt-1 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required />
-                                                            </div>
-                                                            <div className="flex flex-col">
-                                                                <label htmlFor="zipCode" className="text-sm font-medium text-gray-700">Código Postal</label>
-                                                                <input type="text" id="zipCode" name="zipCode" value={shippingAddress.zipCode} onChange={e => handleShippingInputChange('zipCode', e.target.value)} className="mt-1 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required />
-                                                            </div>
-                                                            <div className="flex flex-col">
-                                                                <label htmlFor="country" className="text-sm font-medium text-gray-700">País</label>
-                                                                <select id="country" name="country" value={shippingAddress.country} onChange={e => handleShippingInputChange('country', e.target.value)} className="mt-1 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                                                    <option value="México">México</option>
-                                                                    <option value="Estados Unidos">Estados Unidos</option>
-                                                                    <option value="Canadá">Canadá</option>
-                                                                </select>
-                                                            </div>
-                                                            <div className="md:col-span-2 flex justify-center mt-6">
-                                                                <Button type="submit"
-                                                                    onClick={() => goTo("transferencia")}
-                                                                    className="w-1/2 cursor-pointer shadow-md bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-500 py-3">
-                                                                    Guardar nueva ubicación
-                                                                </Button>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-
-                                                ) : shippingOption === "efectivo" ? (
-                                                    <div className="relative w-full h-[70vh] justify-items-center">
-                                                        <button
-                                                            onClick={goBack}
-                                                            className="cursor-pointer absolute top-2 left-2 p-2 rounded-full bg-white shadow hover:bg-gray-100 transition"
-                                                            aria-label="Volver"
-                                                        >
-                                                            <ChevronLeft size={20} className="text-gray-600" />
-                                                        </button>
-
-                                                        <h3 className="text-2xl font-medium pt-[0.5em]">Historial de la compra</h3>
-                                                        <p className="text-gray-500">Acude a la sucursal para realizar el pago de los productos</p>
-                                                        <div className="w-[90%] mx-auto mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4 px-4">
-                                                            <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-1">
-                                                                <dt className="text-sm font-medium text-gray-600">Número de pedido</dt>
-                                                                <dd className="mt-1 text-gray-900">#456</dd>
-                                                                <dt className="text-sm font-medium text-gray-600">Fecha de compra</dt>
-                                                                <dd className="mt-1 text-gray-900">22 de Mayo de 2025</dd>
-                                                            </div>
-
-                                                            <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-1">
-                                                                <dt className="text-sm font-medium text-gray-600">Nombre del Producto</dt>
-                                                                <dd className="mt-1 text-gray-900">GSH 16-28 Professional</dd>
-                                                                <dt className="text-sm font-medium text-gray-600">Precio del Producto</dt>
-                                                                <dd className="mt-1 text-gray-900">$14,500</dd>
-                                                            </div>
-
-                                                            <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-2">
-                                                                <dt className="text-sm font-medium text-gray-600">Detalles del Cliente</dt>
-                                                                <dd className="mt-1 text-gray-900">Angel Murga</dd>
-                                                                <dd className="mt-1 text-gray-900">7771948899</dd>
-                                                                <dd className="mt-1 text-gray-900">angel.murga@gmail.com</dd>
-                                                                {selectedLocation && (
-                                                                    <>
-                                                                        <dt className="text-sm font-medium text-gray-600 mt-2">Ubicación Seleccionada</dt>
-                                                                        <dd className="mt-1 text-gray-900">{selectedLocation}</dd>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <div className="mt-4 flex justify-center">
-                                                            <Button
-                                                                onClick={() => navigate('/user-profile')}
-                                                                className="cursor-pointer shadow-md bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg text-md font-semibold"
-                                                            >
-                                                                Volver al inicio
-                                                            </Button>
-                                                        </div>
-                                                        {/* <div className="mt-4 flex justify-center gap-4">
-                                                            <Button
-                                                                onClick={() => goTo("transferencia")}
-                                                                className="cursor-pointer shadow-md bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-500 py-3"
-                                                            >
-                                                                Proceder al pago
-                                                            </Button>
-                                                            <Button
-                                                                onClick={() => goTo("cambiarUbicacion")}
-                                                                className="cursor-pointer shadow-md border-2 border-blue-500 bg-white hover:bg-blue-100 text-blue-500 transition-colors duration-500 py-3"
-                                                            >
-                                                                Cambiar Dirección
-                                                            </Button> 
-                                                        </div> */}
-                                                    </div>
-                                                ) : shippingOption === "transferencia" ? (
-                                                    // Vista de "Transferencia"
-                                                    <div className="relative w-full h-[70vh] justify-items-center">
-                                                        <button
-                                                            onClick={goBack}
-                                                            className="cursor-pointer absolute top-2 left-2 p-2 rounded-full bg-white shadow hover:bg-gray-100 transition"
-                                                            aria-label="Volver"
-                                                        >
-                                                            <ChevronLeft size={20} className="text-gray-600" />
-                                                        </button>
-
-                                                        <h3 className="text-2xl font-medium pt-[1em]">Transferencia</h3>
-                                                        <div className="w-[90%] mx-auto mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4 px-4">
-                                                            {/* Card 1 */}
-                                                            <div className="bg-gray-50 p-4 rounded-2xl shadow-sm">
-                                                                <dt className="text-sm font-medium text-gray-600">Nombre del beneficiario</dt>
-                                                                <dd className="mt-1 text-gray-900">Juan Pérez García</dd>
-                                                            </div>
-
-                                                            {/* Card 2 */}
-                                                            <div className="bg-gray-50 p-4 rounded-2xl shadow-sm">
-                                                                <dt className="text-sm font-medium text-gray-600">Número de cuenta</dt>
-                                                                <dd className="mt-1 text-gray-900">1234 5678 9012 3456</dd>
-                                                            </div>
-
-                                                            {/* Card 3 */}
-                                                            <div className="bg-gray-50 p-4 rounded-2xl shadow-sm">
-                                                                <dt className="text-sm font-medium text-gray-600">Banco</dt>
-                                                                <dd className="mt-1 text-gray-900">Banco Nacional de México</dd>
-                                                            </div>
-
-                                                            {/* Card 4 */}
-                                                            <div className="bg-gray-50 p-4 rounded-2xl shadow-sm">
-                                                                <dt className="text-sm font-medium text-gray-600">CLABE</dt>
-                                                                <dd className="mt-1 text-gray-900">002180012345678901</dd>
-                                                            </div>
-
-                                                            {/* Última card ocupa todo el ancho en sm+ */}
-                                                            <div className="bg-gray-50 p-4 rounded-2xl shadow-sm sm:col-span-2">
-                                                                <dt className="text-sm font-medium text-gray-600">Concepto / Referencia</dt>
-                                                                <dd className="mt-1 text-gray-900">Pago de servicios profesionales</dd>
-                                                                {/* Mostrar dirección detallada si existe shippingAddress */}
-                                                                {(shippingAddress && shippingAddress.address && shippingAddress.city && shippingAddress.state && shippingAddress.zipCode) ? (
-                                                                    <>
-                                                                        <dt className="text-sm font-medium text-gray-600 mt-2">Dirección de Envío</dt>
-                                                                        <dd className="mt-1 text-gray-900">{shippingAddress.firstName} {shippingAddress.lastName}</dd>
-                                                                        <dd className="mt-1 text-gray-900">{shippingAddress.email}</dd>
-                                                                        <dd className="mt-1 text-gray-900">{shippingAddress.phone}</dd>
-                                                                        <dd className="mt-1 text-gray-900">{shippingAddress.address}</dd>
-                                                                        <dd className="mt-1 text-gray-900">{shippingAddress.city}, {shippingAddress.state}, {shippingAddress.zipCode}, {shippingAddress.country}</dd>
-                                                                    </>
-                                                                ) : selectedLocation ? (
-                                                                    <>
-                                                                        <dt className="text-sm font-medium text-gray-600 mt-2">Ubicación Seleccionada</dt>
-                                                                        <dd className="mt-1 text-gray-900">{selectedLocation}</dd>
-                                                                    </>
-                                                                ) : null}
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="mt-4 flex justify-center">
-                                                            <Button
-                                                                onClick={() => navigate('/user-profile')}
-                                                                className="cursor-pointer shadow-md bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg text-md font-semibold"
-                                                            >
-                                                                Volver al inicio
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                ) : shippingOption === "confirmarEnvio" ? (
-                                                    // Nueva vista: Confirmación del envío con la ubicación
-                                                    <div className="relative w-full h-[70vh] justify-items-center p-6 text-center">
-                                                        <button
-                                                            onClick={goBack}
-                                                            className="cursor-pointer absolute top-2 left-2 p-2 rounded-full bg-white shadow hover:bg-gray-100 transition"
-                                                            aria-label="Volver"
-                                                        >
-                                                            <ChevronLeft size={20} className="text-gray-600" />
-                                                        </button>
-                                                        <h3 className="text-2xl font-medium pt-[3em] mb-4">Confirmar Ubicación de Envío</h3>
-                                                        <p className="text-lg text-gray-700 mb-8">Tu pedido será enviado a la siguiente dirección:</p>
-                                                        <div className="bg-blue-50 p-6 rounded-lg shadow-md mx-auto max-w-md">
-                                                            <MapPin className="mx-auto text-blue-600 mb-4" size={40} />
-                                                            <p className="text-xl font-semibold text-blue-800">{selectedLocation}</p>
-                                                        </div>
-                                                        <div className="mt-8 flex justify-center gap-4">
-                                                            <Button
-                                                                onClick={() => goTo("transferencia")}
-                                                                className="cursor-pointer shadow-md bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-500 py-3"
-                                                            >
-                                                                Proceder al pago
-                                                            </Button>
-                                                            {/* <Button
-                                                                onClick={() => goTo("cambiarUbicacion")} // Permitir cambiar de nuevo la ubicación si es necesario
-                                                                className="cursor-pointer shadow-md border-2 border-blue-500 bg-white hover:bg-blue-100 text-blue-500 transition-colors duration-500 py-3"
-                                                            >
-                                                                Cambiar Dirección
-                                                            </Button> */}
-                                                        </div>
-                                                    </div>
-                                                ) : null}
-                                            </motion.div>
-                                        </AnimatePresence>
+        <SidebarProvider>
+            <div className="min-h-screen bg-gray-50 py-0 pt-20 w-full">
+                {/* Navbar personalizado con currentUserId y currentCartOrderId */}
+                <NavCustomer currentUserId={currentUserId} currentCartOrderId={currentCartOrderId} />
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5">
+                    {/* Progress Steps */}
+                    <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between relative">
+                        {/* Botón volver */}
+                        <button
+                            onClick={() => navigate('/user-profile', { state: { view: 'carrito' } })}
+                            className="mt-4 sm:mt-0 sm:ml-6 px-2 py-1 hover:bg-stone-200 rounded-full flex items-center justify-center absolute top-1 left-0 cursor-pointer shadow-md"
+                            aria-label="Volver al perfil"
+                        >
+                            <ArrowLeft size={18} className="text-gray-600" />
+                        </button>
+                        {/* Stepper: solo el paso actual en móvil, todos en desktop */}
+                        <div className="flex items-center justify-center flex-1">
+                            <div className="block sm:hidden w-full">
+                                <div className="flex items-center justify-center">
+                                    <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 bg-blue-600 border-blue-600 text-white`}>
+                                        {steps[step].icon && React.createElement(steps[step].icon, { className: 'w-5 h-5' })}
                                     </div>
+                                    <span className="ml-2 text-sm font-medium text-blue-600">{steps[step].title}</span>
                                 </div>
+                            </div>
+                            <div className="hidden sm:flex items-center justify-center flex-1">
+                                {steps.map((stepObj, index) => (
+                                    <React.Fragment key={stepObj.id}>
+                                        <div className="flex items-center">
+                                            <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${index <= step ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-300 text-gray-400'}`}>
+                                                {index < step ? <FiCheck className="w-5 h-5" /> : <stepObj.icon className="w-5 h-5" />}
+                                            </div>
+                                            <span className={`ml-2 text-sm font-medium ${index <= step ? 'text-blue-600' : 'text-gray-400'}`}>{stepObj.title}</span>
+                                        </div>
+                                        {index < steps.length - 1 && <div className={`w-16 h-0.5 mx-4 ${index < step ? 'bg-blue-600' : 'bg-gray-300'}`} />}
+                                    </React.Fragment>
+                                ))}
                             </div>
                         </div>
                     </div>
-                </SidebarProvider>
-            </div>
-        </>
-    )
 
-};
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Order Summary Sidebar */}
+                        <div className="order-2 lg:order-2 lg:col-span-1">
+                            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
+                                <h2 className="text-xl font-semibold mb-4">Resumen del Pedido</h2>
+                                <div className="space-y-3 mb-4">
+                                    {cartLoading ? (
+                                        <div className="text-gray-500">Cargando productos del carrito...</div>
+                                    ) : cartError ? (
+                                        <div className="text-red-500">{cartError}</div>
+                                    ) : !cartProducts.length ? (
+                                        <div className="text-gray-500">No hay productos en el carrito.</div>
+                                    ) : (
+                                        cartProducts.map((item, idx) => {
+                                            const product = item.product || item;
+                                            const qty = item.quantity;
+                                            const price = product.price || 0;
+                                            const total = price * qty;
+                                            const key = item.id || product.id || idx;
+                                            return (
+                                                <div key={key} className="flex items-center space-x-3">
+                                                    <img src={product?.media?.[0]?.url || "/placeholder-product.png"} alt={product?.name} className="w-12 h-12 object-cover rounded" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="lg:text-sm text-md font-medium truncate">{product.name}</div>
+                                                        <div className="lg:text-xs text-sm text-gray-500">Cantidad: {qty}</div>
+                                                    </div>
+                                                    <div className="lg:text-sm text-md font-bold">${total.toLocaleString()}</div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                                {/* Totales */}
+                                {cartProducts.length > 0 && (
+                                    (() => {
+                                        let subtotal = cartProducts.reduce((sum, item) => {
+                                            const product = item.product || item;
+                                            const qty = item.quantity;
+                                            const price = product.price || 0;
+                                            return sum + price * qty;
+                                        }, 0);
+                                        let shipping = 50;
+                                        let iva = Math.round(subtotal * 0.16);
+                                        let total = subtotal + shipping + iva;
+                                        return (
+                                            <div className="border-t pt-4 space-y-2">
+                                                <div className="flex justify-between text-sm">
+                                                    <span>Subtotal</span>
+                                                    <span>${subtotal.toLocaleString()}</span>
+                                                </div>
+                                                <div className="flex justify-between text-sm">
+                                                    <span>Envío</span>
+                                                    <span>${shipping.toLocaleString()}</span>
+                                                </div>
+                                                <div className="flex justify-between text-sm">
+                                                    <span>IVA (16%)</span>
+                                                    <span>${iva.toLocaleString()}</span>
+                                                </div>
+                                                <div className="border-t pt-2 flex justify-between font-semibold">
+                                                    <span>Total</span>
+                                                    <span>${total.toLocaleString()}</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()
+                                )}
+                            </div>
+                        </div>
+                        {/* Main Content */}
+                        <div className="order-2 lg:order-none lg:col-span-2">
+                            <div className="bg-white rounded-lg shadow-sm p-6">
+                                {/* Step 1: Shipping Information */}
+                                {step === 0 && (
+                                    <form onSubmit={e => { e.preventDefault(); nextStep(); }}>
+                                        <h2 className="text-2xl font-semibold mb-0 pb-4">Información de Envío</h2>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    <FiUser className="inline mr-1" />
+                                                    Nombre
+                                                </label>
+                                                <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent" value={shippingAddress.name} onChange={e => handleShippingInputChange('name', e.target.value)} required />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Apellidos</label>
+                                                <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent" value={shippingAddress.lastName} onChange={e => handleShippingInputChange('lastName', e.target.value)} required />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    <FiMail className="inline mr-1" />
+                                                    Correo
+                                                </label>
+                                                <input type="email" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent" value={shippingAddress.email} onChange={e => handleShippingInputChange('email', e.target.value)} required />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    <FiPhone className="inline mr-1" />
+                                                    Teléfono
+                                                </label>
+                                                <input type="tel" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent" value={shippingAddress.phoneNumber} onChange={e => handleShippingInputChange('phoneNumber', e.target.value)} required />
+                                            </div>
+                                            <div className="md:col-span-2 mt-4">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <label className="block text-sm font-medium text-gray-700">
+                                                        <FiMapPin className="inline mr-1" />
+                                                        Dirección
+                                                    </label>
+                                                    <button type="button" onClick={getCurrentLocation} disabled={isGettingLocation} className="flex items-center text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        <FiNavigation className="w-4 h-4 mr-1" />Usar ubicación actual
+                                                        {isGettingLocation && <span className="ml-1 animate-spin">⏳</span>}
+                                                    </button>
+                                                </div>
+                                                <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent" placeholder="Calle, número, colonia" value={shippingAddress.address} onChange={e => handleShippingInputChange('address', e.target.value)} required />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Ciudad</label>
+                                                <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent" value={shippingAddress.city} onChange={e => handleShippingInputChange('city', e.target.value)} required />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                                                <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent" value={shippingAddress.state} onChange={e => handleShippingInputChange('state', e.target.value)} required />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Código Postal</label>
+                                                <input type="number" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent" value={shippingAddress.zipCode} onChange={e => handleShippingInputChange('zipCode', e.target.value)} required />
+                                            </div>
+                                            {/* <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">País</label>
+                      <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent" value={shippingAddress.country} onChange={e => handleShippingInputChange('country', e.target.value)}>
+                        <option value="México">México</option>
+                        <option value="Estados Unidos">Estados Unidos</option>
+                        <option value="Canadá">Canadá</option>
+                      </select>
+                    </div> */}
+                                        </div>
+                                        {/* <div className="mt-6">
+                    <h3 className="text-lg font-medium mb-4">Método de Envío</h3>
+                    <div className="space-y-3">
+                      <label className="flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50">
+                        <input type="radio" name="shippingMethod" value="standard" checked={shippingMethod === 'standard'} onChange={() => setShippingMethod('standard')} className="mr-3" />
+                        <div className="flex-1">
+                          <div className="font-medium">Envío Estándar</div>
+                          <div className="text-sm text-gray-600">5-7 días hábiles</div>
+                        </div>
+                        <div className="font-medium">$50.00</div>
+                      </label>
+                      <label className="flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50">
+                        <input type="radio" name="shippingMethod" value="express" checked={shippingMethod === 'express'} onChange={() => setShippingMethod('express')} className="mr-3" />
+                        <div className="flex-1">
+                          <div className="font-medium">Envío Express</div>
+                          <div className="text-sm text-gray-600">2-3 días hábiles</div>
+                        </div>
+                        <div className="font-medium">$150.00</div>
+                      </label>
+                    </div>
+                  </div> */}
+                                        <div className="flex justify-between mt-8">
+                                            <button
+                                                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
+                                                onClick={() => navigate('/user-profile', { state: { view: 'carrito' } })}>
+                                                Salir
+                                            </button>
+                                            <button type="submit"
+                                                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-white hover:text-blue-600 hover:border-blue-600 border-2 border-blue-600 transition-colors duration-600 ml-auto cursor-pointer">
+                                                Siguiente
+                                            </button>
+                                        </div>
+                                    </form>
+                                )}
+                                {/* Step 2: Payment Method */}
+                                {step === 1 && (
+                                    <div>
+                                        <h2 className="text-2xl font-semibold mb-6">Método de Pago</h2>
+                                        <div className="space-y-3">
+                                            <label className="flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50">
+                                                <input type="radio" name="paymentMethod" value="transferencia" checked={paymentMethod === 'transferencia'} onChange={() => setPaymentMethod('transferencia')} className="mr-3" />
+                                                <div className="flex-1">
+                                                    <div className="font-medium">Transferencia Bancaria</div>
+                                                    <div className="text-sm text-gray-600">Paga mediante transferencia bancaria</div>
+                                                </div>
+                                            </label>
+                                            <label className="flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50">
+                                                <input type="radio" name="paymentMethod" value="efectivo" checked={paymentMethod === 'efectivo'} onChange={() => setPaymentMethod('efectivo')} className="mr-3" />
+                                                <div className="flex-1">
+                                                    <div className="font-medium">Pago en Efectivo</div>
+                                                    <div className="text-sm text-gray-600">Paga en sucursal al recoger tu pedido</div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                        {step === 1 && paymentMethod === "efectivo" && (
+                                            <div className="mt-6">
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Selecciona sucursal para recoger:</label>
+                                                <select
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                                    value={selectedBranch}
+                                                    onChange={e => setSelectedBranch(e.target.value)}
+                                                >
+                                                    {Object.entries(branches).map(([key, branch]) => (
+                                                        <option key={key} value={key}>{branch.label}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between mt-8">
+                                            <button className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors cursor-pointer" onClick={prevStep}>Anterior</button>
+                                            <button className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-white hover:text-blue-600 hover:border-blue-600 border-2 border-blue-600 transition-colors duration-600 ml-auto cursor-pointer" onClick={nextStep}>Siguiente</button>
+                                        </div>
+                                    </div>
+                                )}
+                                {/* Step 3: Confirmación */}
+                                {step === 2 && (
+                                    <div>
+                                        <h2 className="text-2xl font-semibold mb-6">Confirmación</h2>
+                                        <div className="mb-6">
+                                            <div className="bg-blue-50 p-4 rounded-lg">
+                                                <div className="font-medium lg:text-lg text-xl text-blue-800 mb-2 ">Dirección de Envío</div>
+                                                <div className="text-gray-700">{shippingAddress.name} {shippingAddress.lastName}</div>
+                                                <div className="text-gray-700">{shippingAddress.email}</div>
+                                                <div className="text-gray-700">{shippingAddress.phoneNumber}</div>
+                                                <div className="text-gray-700">{shippingAddress.address}</div>
+                                                <div className="text-gray-700">{shippingAddress.city}, {shippingAddress.state}, {shippingAddress.zipCode}, {shippingAddress.country}</div>
+                                            </div>
+                                        </div>
+                                        {step === 2 && paymentMethod === "efectivo" && (
+                                            <div className="">
+                                                <div className="bg-indigo-100 p-4 rounded-lg flex flex-col md:flex-row gap-0 items-center md:items-stretch">
+                                                    <div className="flex-1 flex flex-col justify-center">
+                                                        <div className="font-medium lg:text-lg text-xl text-indigo-800 mb-0">Recuerda recoger tu pedido en la sucursal</div>
+                                                        <div className="text-gray-700">{branches[selectedBranch].address}</div>
+                                                    </div>
+                                                    <div className="flex-1 flex justify-center items-center">
+                                                        <img src="/Tipografia_Completa_LIBAMAQ.png" alt="Liba" className="w-2/4 md:w-full max-w-xs" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {step === 2 && paymentMethod === 'transferencia' && (
+                                            <div className="">
+                                                <div className="bg-indigo-100 p-4 rounded-lg flex flex-col md:flex-row gap-4 items-center md:items-stretch">
+                                                    <div className="flex-1 flex flex-col justify-center">
+                                                        <div className="font-medium lg:text-lg text-xl text-indigo-800 mb-2">Datos para Transferencia Bancaria</div>
+                                                        <div className="text-gray-700"><b>LIBAMAQ HERRAMIENTAS S DE RL. de CV.</b></div>
+                                                        <div className="text-gray-700">RFC: <b className="select-all">LHE2311286G3</b></div>
+                                                        <div className="text-gray-700">Número de cuenta: <b className="select-all">0122268418</b></div>
+                                                        <div className="text-gray-700">CLABE interbancaria: <b className="select-all">012542001222684186</b></div>
+                                                        <div className="text-gray-700">Banco: <b>BANCOMER</b></div>
+                                                        <div className="mt-4 text-gray-700 text-lg flex items-center gap-2 flex-col lg:flex-row leading-2">Enviar ficha de transferencia al:
+                                                            <b className="text-green-700">777 111 8924</b> <FaWhatsappSquare className="w-6 h-6 lg:w-4 lg:h-4 text-green-600" />
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex-1 flex justify-center items-center">
+                                                        <img src="/Tipografia_Completa_LIBAMAQ.png" alt="Liba" className="lg:w-2/4 md:w-full w-1/2" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between mt-8">
+                                            <button className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors cursor-pointer" onClick={prevStep}>Anterior</button>
+                                            <button className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-white hover:text-indigo-600 hover:border-indigo-600 border-2 border-indigo-600 transition-colors duration-600 ml-auto cursor-pointer" onClick={() => navigate('/user-profile')}>Finalizar</button>
+                                        </div>
+                                    </div>
+
+                                )}
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </SidebarProvider>
+    );
+} 
