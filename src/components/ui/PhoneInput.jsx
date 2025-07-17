@@ -34,6 +34,7 @@ export function PhoneInput({
   maxDigits = 10,
   helperText = '',
   errorText = `El número de teléfono debe tener ${maxDigits} dígitos`,
+  showPrefix = true, // <-- lo extraigo aquí
   ...rest
 }) {
   // Extraer lada y número
@@ -96,7 +97,7 @@ export function PhoneInput({
           disabled={disabled}
           required={required}
           aria-invalid={error}
-          {...rest}
+          {...rest} // <-- showPrefix ya no va aquí
         />
       </div>
       {error && (

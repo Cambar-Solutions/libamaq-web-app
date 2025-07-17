@@ -5,6 +5,7 @@ import { Mail, User, Lock, CheckCircle, Pencil, BadgeCheck, Eye, EyeOff, Phone }
 import { register as registerUser } from '@/services/authService';
 import { useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
+import { PhoneInput } from "@/components/ui/PhoneInput";
 
 const steps = [
     {
@@ -14,8 +15,10 @@ const steps = [
         icon: Mail,
         completedLabel: (values) => values.email,
         type: 'email',
-        validate: (values) => /.+@.+\..+/.test(values.email),
-        error: 'Ingresa un e-mail válido.'
+        // validate: (values) => /.+@.+\..+/.test(values.email),
+        // error: 'Ingresa un e-mail válido.'
+        validate: () => true,
+        error: ''
     },
     {
         key: 'name',
@@ -24,8 +27,10 @@ const steps = [
         icon: User,
         completedLabel: (values) => `${values.firstName} ${values.lastName}`.trim(),
         type: 'text',
-        validate: (values) => values.firstName.trim().length > 0 && values.lastName.trim().length > 0,
-        error: 'Nombre y apellido no pueden estar vacíos.'
+        // validate: (values) => values.firstName.trim().length > 0 && values.lastName.trim().length > 0,
+        // error: 'Nombre y apellido no pueden estar vacíos.'
+        validate: () => true,
+        error: ''
     },
     {
         key: 'phone',
@@ -34,8 +39,15 @@ const steps = [
         icon: Phone,
         completedLabel: (values) => values.phoneNumber,
         type: 'tel',
-        validate: (values) => /^\d{10}$/.test(values.phoneNumber),
-        error: 'Ingresa un número de teléfono válido de 10 dígitos.'
+        // validate: (values) => {
+        //     const ladaMatch = values.phoneNumber.match(/^(\+\d{1,3})/);
+        //     const lada = ladaMatch ? ladaMatch[1] : '';
+        //     const numero = values.phoneNumber.replace(lada, '').replace(/\D/g, '').slice(0, 10);
+        //     return lada && numero.length === 10;
+        // },
+        // error: 'Ingresa un número de teléfono válido con lada y 10 dígitos.'
+        validate: () => true,
+        error: ''
     },
     {
         key: 'password',
@@ -44,8 +56,10 @@ const steps = [
         icon: Lock,
         completedLabel: () => '••••••••',
         type: 'password',
-        validate: (values) => values.password.length >= 6 && values.password === values.confirmPassword,
-        error: 'La contraseña debe tener al menos 6 caracteres y coincidir en ambos campos.'
+        // validate: (values) => values.password.length >= 6 && values.password === values.confirmPassword,
+        // error: 'La contraseña debe tener al menos 6 caracteres y coincidir en ambos campos.'
+        validate: () => true,
+        error: ''
     },
     {
         key: 'success',
@@ -60,7 +74,7 @@ const steps = [
 ];
 
 export default function Register() {
-    const [values, setValues] = useState({ email: '', firstName: '', lastName: '', phoneNumber: '', password: '', confirmPassword: '' });
+    const [values, setValues] = useState({ email: '', firstName: '', lastName: '', phoneNumber: '+52', password: '', confirmPassword: '' });
     const [completed, setCompleted] = useState({ email: false, name: false, phone: false, password: false, success: false });
     const [currentStep, setCurrentStep] = useState(0);
     const [error, setError] = useState('');
@@ -72,6 +86,7 @@ export default function Register() {
     const navigate = useNavigate();
     const [animatingStep, setAnimatingStep] = useState(currentStep);
     const prevStepRef = useRef(currentStep);
+    const [phoneError, setPhoneError] = useState(false);
 
     useEffect(() => {
         if (prevStepRef.current !== currentStep) {
@@ -86,8 +101,10 @@ export default function Register() {
         const isValid = step.validate(values);
         if (!isValid) {
             setError(step.error);
+            if (step.key === 'phone') setPhoneError(true);
             return;
         }
+        if (step.key === 'phone') setPhoneError(false);
         setError('');
         setCompleted((prev) => ({ ...prev, [step.key]: true }));
         setCurrentStep((prev) => prev + 1);
@@ -239,16 +256,27 @@ export default function Register() {
                                                             </div>
                                                         )}
                                                         {step.key === 'phone' && (
-                                                            <Input
-                                                                name="phoneNumber"
-                                                                type="tel"
-                                                                placeholder="Teléfono (10 dígitos)"
-                                                                autoComplete="tel"
-                                                                value={values.phoneNumber}
-                                                                onChange={handleChange}
-                                                                className="mb-4 w-full"
-                                                                maxLength={10}
-                                                            />
+                                                            <div className="relative pb-4">
+                                                                <PhoneInput
+                                                                    name="phoneNumber"
+                                                                    value={values.phoneNumber}
+                                                                    onChange={val => {
+                                                                        const ladaMatch = val.match(/^(\+52|\+1|\+54|\+57|\+56)/);
+                                                                        const lada = ladaMatch ? ladaMatch[1] : '';
+                                                                        const numero = val.replace(lada, '').replace(/\D/g, '').slice(0, 10);
+                                                                        const limpio = lada + numero;
+                                                                        setValues({ ...values, phoneNumber: limpio });
+                                                                        // Limpia el error si el input es válido
+                                                                        if (lada && numero.length === 10) setPhoneError(false);
+                                                                    }}
+                                                                    error={phoneError}
+                                                                    required
+                                                                    maxDigits={10}
+                                                                    placeholder="10 dígitos"
+                                                                    errorText="El número de teléfono debe tener 10 dígitos"
+                                                                    showPrefix={false}
+                                                                />
+                                                            </div>
                                                         )}
                                                         {step.key === 'password' && (
                                                             <>
@@ -296,7 +324,7 @@ export default function Register() {
                                                         <div className="flex justify-center items-center">
                                                             <Button
                                                                 type="submit"
-                                                                className="w-full sm:w-[40%] cursor-pointer bg-white hover:bg-blue-700 border border-blue-600 text-blue-600 hover:text-white transition-all duration-600">
+                                                                className="w-full sm:w-[40%] cursor-pointer bg-white hover:bg-blue-700 border border-blue-600 text-blue-600 hover:text-white transition-all duration-600 ">
                                                                 {idx === steps.length - 2 ? 'Registrar' : 'Agregar'}
                                                             </Button>
                                                         </div>
