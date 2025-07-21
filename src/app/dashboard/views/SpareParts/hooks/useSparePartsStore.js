@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getActiveSpareParts } from '../../../../../services/admin/sparePartService';
+import { getAllSpareParts } from '../../../../../services/admin/sparePartService';
 
 const useSparePartsStore = create((set, get) => ({
   spareParts: [],
@@ -11,7 +11,7 @@ const useSparePartsStore = create((set, get) => ({
   fetchSpareParts: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await getActiveSpareParts();
+      const response = await getAllSpareParts();
       set({
         spareParts: response.data,
         filteredSpareParts: response.data,

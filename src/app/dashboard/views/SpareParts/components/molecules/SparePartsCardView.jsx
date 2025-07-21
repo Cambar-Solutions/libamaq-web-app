@@ -77,7 +77,7 @@ export const SparePartsCardView = ({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
       {spareParts.map((sparePart) => (
-        <div key={sparePart.id} className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+        <div key={sparePart.id} className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col h-full min-h-[350px]">
           {/* Contenedor de imagen del repuesto */}
           <div className="relative h-48 bg-gray-100">
             {sparePart.media?.[0]?.url ? (
@@ -91,16 +91,11 @@ export const SparePartsCardView = ({
                 <span>Sin imagen</span>
               </div>
             )}
-            <div className="absolute top-2 right-2">
-              <Badge variant={getStatusBadgeVariant(sparePart.status)}>
-                {sparePart.status === 'ACTIVE' ? 'Activo' : 
-                 sparePart.status === 'INACTIVE' ? 'Inactivo' : 'Sin stock'}
-              </Badge>
-            </div>
+            {/* Eliminado: Badge de estado arriba a la derecha */}
           </div>
 
           {/* Contenido de la tarjeta */}
-          <div className="p-4">
+          <div className="p-4 flex-1 flex flex-col">
             <div className="flex justify-between items-start">
               <h3 className="font-semibold text-lg truncate">{sparePart.name}</h3>
               <span className="font-bold text-primary">{formatCurrency(sparePart.price)}</span>
@@ -110,7 +105,7 @@ export const SparePartsCardView = ({
               {sparePart.description}
             </p>
             
-            <div className="flex items-center justify-between mt-3 pt-3 border-t">
+            <div className="flex items-center justify-between mt-3 pt-3 border-t mt-auto">
               <div className="flex items-center justify-between mt-2">
                 <div className="text-sm text-muted-foreground">Stock:</div>
                 <Badge 
@@ -121,7 +116,21 @@ export const SparePartsCardView = ({
                 </Badge>
               </div>
               
-              <div className="flex space-x-1">
+              <div className="flex space-x-1 items-center">
+                {/* Badge de estado al extremo izquierdo */}
+                <Badge
+                  variant={getStatusBadgeVariant(sparePart.status)}
+                  className={`rounded-full font-semibold px-3 py-1 text-xs tracking-wide flex items-center border transition-all duration-200 mr-2
+                    ${sparePart.status === 'ACTIVE'
+                      ? 'bg-gradient-to-r from-green-200 via-green-100 to-green-50 text-green-800 border-green-300 shadow-sm'
+                      : sparePart.status === 'INACTIVE'
+                        ? 'bg-gradient-to-r from-gray-200 via-gray-100 to-blue-50 text-gray-700 border-gray-300 shadow-sm'
+                        : 'bg-gray-200 text-gray-600 border-gray-300'}
+                  `}
+                >
+                  {sparePart.status === 'ACTIVE' ? 'Activo' : 
+                   sparePart.status === 'INACTIVE' ? 'Inactivo' : 'Sin stock'}
+                </Badge>
                 <Button 
                   variant="ghost" 
                   size="icon" 

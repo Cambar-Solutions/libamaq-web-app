@@ -1,40 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Edit, Trash2, Box, DollarSign, Hash, Info, ExternalLink } from 'lucide-react';
+import { Edit, Trash2, Box, DollarSign, Eye } from 'lucide-react';
 import PropTypes from 'prop-types';
-import useSparePartsStore from '../../hooks/useSparePartsStore';
 
-/**
- * Componente de tarjeta para mostrar información de un repuesto
- * @param {Object} props - Propiedades del componente
- * @param {Object} props.sparePart - Datos del repuesto a mostrar
- * @param {Function} [props.onEdit] - Función para manejar la edición del repuesto
- * @param {Function} [props.onDelete] - Función para manejar la eliminación del repuesto
- * @param {Function} [props.onClick] - Función para manejar el clic en la tarjeta
- */
-const SparePartCard = ({ sparePart, onEdit, onDelete, onClick }) => {
-  const { removeSparePart } = useSparePartsStore();
+const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  // Formatear el precio como moneda
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
-    }).format(price);
-  };
-
-  // Determinar el color del badge según el estado del stock
-  const getStockBadgeVariant = (stock) => {
-    if (stock <= 0) return 'destructive';
-    if (stock <= 5) return 'warning';
-    return 'success';
-  };
 
   // Determinar el texto del estado
   const getStatusText = (status) => {
@@ -50,173 +24,147 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onClick }) => {
     }
   };
 
-  const handleDeleteClick = async (e) => {
-    e.stopPropagation();
-    setIsDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!sparePart?.id) return;
-    
-    try {
-      setIsDeleting(true);
-      // Actualizar el store localmente
-      removeSparePart(sparePart.id);
-      
-      // Llamar a la función onDelete si existe (para operaciones adicionales)
-      if (onDelete) {
-        await onDelete(sparePart);
-      }
-      
-      setIsDeleteDialogOpen(false);
-    } catch (error) {
-      console.error('Error al eliminar el repuesto:', error);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
+  const mainImage = sparePart.media?.find(m => m.fileType === 'IMAGE')?.url || '/placeholder-product.jpg';
 
   return (
     <>
-      <Card 
-        className="h-full flex flex-col hover:shadow-md transition-shadow duration-200 overflow-hidden"
-        onClick={onClick}
-      >
-        <CardHeader className="pb-2">
+      <Card className="w-full flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-200 h-full border border-gray-200">
+        <CardHeader className="p-4 pb-2 border-b bg-white rounded-t-2xl">
           <div className="flex justify-between items-start">
-            <div>
-              <CardTitle className="text-lg font-semibold line-clamp-1">
-                {sparePart.name}
-              </CardTitle>
-              <CardDescription className="text-sm flex items-center gap-1 mt-1">
-                <Hash className="h-3 w-3 text-muted-foreground" />
-                <span className="font-mono">{sparePart.code}</span>
-                {sparePart.externalId && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="inline-flex items-center text-xs text-muted-foreground ml-2">
-                          <ExternalLink className="h-3 w-3 mr-1" />
-                          {sparePart.externalId}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>ID Externo</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </CardDescription>
-            </div>
-            <Badge 
-              variant={sparePart.status === 'ACTIVE' ? 'default' : 'secondary'}
-              className="ml-2"
-            >
-              {getStatusText(sparePart.status)}
-            </Badge>
+            <CardTitle className="text-lg font-semibold line-clamp-2 text-gray-900">
+              {sparePart.name}
+            </CardTitle>
+            {sparePart.brand?.url && (
+              <img
+                src={sparePart.brand.url}
+                alt={sparePart.brand.name}
+                className="w-10 h-10 object-contain rounded-full border border-gray-200 shadow-sm ml-2 flex-shrink-0"
+                title={sparePart.brand.name}
+              />
+            )}
           </div>
         </CardHeader>
 
-        <CardContent className="flex-1">
+        <CardContent className="flex-1 p-4 flex flex-col">
+          <div className="relative aspect-[4/3] overflow-hidden bg-gray-50 rounded-xl mb-3 flex items-center justify-center group">
+            <img
+              src={mainImage}
+              alt={sparePart.name}
+              className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = '/placeholder-product.jpg';
+              }}
+            />
+          </div>
+
           {sparePart.description && (
-            <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
-              {sparePart.description}
-            </p>
+            <p className="text-xs text-gray-500 line-clamp-2 mb-3 min-h-[32px]">{sparePart.description}</p>
           )}
 
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div className="space-y-1">
-              <div className="flex items-center text-sm text-muted-foreground">
-                <DollarSign className="h-4 w-4 mr-1" />
-                <span>Precio</span>
+          {sparePart.brand && (
+            <div className="flex flex-col items-end">
+              <div className="flex items-center text-xs text-gray-400 mb-0.5">
+                <span className="truncate">Marca</span>
               </div>
-              <p className="font-medium">{formatPrice(sparePart.price || 0)}</p>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Box className="h-4 w-4 mr-1" />
-                <span>Stock</span>
-              </div>
-              <Badge 
-                variant={getStockBadgeVariant(sparePart.stock || 0)}
-                className="font-medium"
+              <Badge
+                className="text-xs font-semibold truncate w-fit px-3 py-1 rounded-full border"
+                style={{
+                  backgroundColor: `${sparePart.brand.color || '#cccccc'}10`,
+                  color: sparePart.brand.color || '#333333',
+                  borderColor: sparePart.brand.color || '#cccccc'
+                }}
               >
-                {sparePart.stock || 0} unidades
+                {sparePart.brand.name}
               </Badge>
             </div>
-
-            {sparePart.material && (
-              <div className="space-y-1 col-span-2">
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Info className="h-4 w-4 mr-1" />
-                  <span>Material</span>
-                </div>
-                <p className="text-sm">{sparePart.material}</p>
-              </div>
-            )}
-          </div>
+          )}
         </CardContent>
 
-        {(onEdit || onDelete) && (
-          <CardFooter className="flex justify-end gap-2 pt-2 border-t">
-            {onEdit && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(sparePart);
-                }}
-                className="h-8"
-              >
-                <Edit className="h-4 w-4 mr-1" />
-                Editar
-              </Button>
+        <CardFooter className="flex justify-between items-center gap-2 p-3 border-t bg-gray-50 rounded-b-2xl mt-auto">
+          <div className="flex items-center gap-1">
+            {/* Ver detalles */}
+            {onViewDetails && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewDetails(sparePart);
+                    }}
+                    className="h-8 w-8 hover:bg-gray-200"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
+                  Ver detalles
+                </TooltipContent>
+              </Tooltip>
             )}
-            {onDelete && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleDeleteClick}
-                className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                disabled={isDeleting}
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                {isDeleting ? 'Eliminando...' : 'Eliminar'}
-              </Button>
-            )}
-          </CardFooter>
-        )}
-      </Card>
 
-      {/* Diálogo de confirmación para eliminar */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>¿Eliminar repuesto?</DialogTitle>
-            <DialogDescription>
-              ¿Estás seguro de que quieres eliminar "{sparePart.name}"? Esta acción no se puede deshacer.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsDeleteDialogOpen(false)}
-              disabled={isDeleting}
+            {/* Editar */}
+            {onEdit && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(sparePart);
+                    }}
+                    className="h-8 w-8 hover:bg-blue-100 text-blue-600"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
+                  Editar
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {/* Badge de estado al lado del botón de editar */}
+            <Badge
+              variant={sparePart.status === 'ACTIVE' ? 'default' : 'secondary'}
+              className={`rounded-full font-semibold px-3 py-1 text-xs tracking-wide flex items-center border transition-all duration-200 ml-1
+                ${sparePart.status === 'ACTIVE'
+                  ? 'bg-gradient-to-r from-green-200 via-green-100 to-green-50 text-green-800 border-green-300 shadow-sm'
+                  : sparePart.status === 'INACTIVE'
+                    ? 'bg-gradient-to-r from-gray-200 via-gray-100 to-blue-50 text-gray-700 border-gray-300 shadow-sm'
+                    : 'bg-gray-200 text-gray-600 border-gray-300'}
+              `}
             >
-              Cancelar
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={confirmDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? 'Eliminando...' : 'Eliminar'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              {getStatusText(sparePart.status)}
+            </Badge>
+
+            {/* Eliminar */}
+            {onDelete && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(sparePart);
+                    }}
+                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
+                  Eliminar
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        </CardFooter>
+      </Card>
     </>
   );
 };
@@ -233,11 +181,16 @@ SparePartCard.propTypes = {
     material: PropTypes.string,
     status: PropTypes.string,
     rentable: PropTypes.bool,
-    media: PropTypes.array
+    media: PropTypes.array,
+    brand: PropTypes.shape({
+      url: PropTypes.string,
+      name: PropTypes.string,
+      color: PropTypes.string
+    })
   }).isRequired,
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,
-  onClick: PropTypes.func
+  onViewDetails: PropTypes.func
 };
 
 export default SparePartCard;

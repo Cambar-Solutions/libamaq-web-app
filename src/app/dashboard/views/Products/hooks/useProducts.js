@@ -22,7 +22,7 @@ export const useProducts = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
   const [filters, setFilters] = useState({
-    status: 'ACTIVE',
+    status: '',
     brandId: '',
     categoryId: ''
   });
@@ -39,22 +39,19 @@ export const useProducts = () => {
     queryKey: ['products', filters],
     queryFn: async () => {
       try {
-        const response = await getProductPreviews(filters);
+        const response = await getAllProductsService();
         // Asegurarse de manejar tanto el formato antiguo como el nuevo de la respuesta
-        const result = Array.isArray(response) ? response : (response?.data || []);
-        console.log('Filtro brandId:', filters.brandId);
-        console.log('Productos recibidos del backend:', result);
+        const result = Array.isArray(response.data) ? response.data : (response.data?.data || []);
         return result;
       } catch (error) {
         console.error('Error al obtener productos:', error);
-        // Retornar array vacío en lugar de lanzar error
         return [];
       }
     },
     initialData: [],
-    retry: 1, // Solo reintentar una vez
-    retryDelay: 1000, // Esperar 1 segundo antes de reintentar
-    staleTime: 5 * 60 * 1000, // 5 minutos
+    retry: 1,
+    retryDelay: 1000,
+    staleTime: 5 * 60 * 1000,
   });
   
   // Forzar un refetch cuando los filtros cambien
@@ -148,14 +145,13 @@ export const useProducts = () => {
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = !filters.status || product.status === filters.status;
     const matchesBrand =
       !filters.brandId ||
       String(product.brandId) === String(filters.brandId) ||
       (product.brand && String(product.brand.id) === String(filters.brandId));
     const matchesCategory = !filters.categoryId || String(product.categoryId) === String(filters.categoryId);
 
-    return matchesSearch && matchesStatus && matchesBrand && matchesCategory;
+    return matchesSearch && matchesBrand && matchesCategory;
   });
 
   // Manejadores de eventos
