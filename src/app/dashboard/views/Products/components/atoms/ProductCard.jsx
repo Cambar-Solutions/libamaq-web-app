@@ -169,7 +169,7 @@ const ProductCard = ({
                       e.stopPropagation();
                       onViewDetails(product.id);
                     }}
-                    className="h-8 w-8 hover:bg-gray-200"
+                    className="h-8 w-8 hover:bg-gray-200 cursor-pointer"
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
@@ -191,7 +191,7 @@ const ProductCard = ({
                       e.stopPropagation();
                       onEdit(product.id);
                     }}
-                    className="h-8 w-8 hover:bg-blue-100 text-blue-600"
+                    className="h-8 w-8 hover:bg-blue-100 text-blue-600 cursor-pointer"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -212,7 +212,7 @@ const ProductCard = ({
                       e.stopPropagation();
                       onDelete(product);
                     }}
-                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100"
+                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100 cursor-pointer"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

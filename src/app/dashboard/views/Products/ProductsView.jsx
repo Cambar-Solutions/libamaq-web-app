@@ -251,7 +251,7 @@ const ProductsView = () => {
               onClick={() => window.location.reload()}
               variant="default"
               size="sm"
-              className="px-6"
+              className="px-6 cursor-pointer"
             >
               Recargar página
             </Button>
@@ -394,7 +394,7 @@ const ProductsView = () => {
                 onClick={openCreateDialog}
                 variant="default"
                 size="sm"
-                className="px-6"
+                className="px-6 cursor-pointer"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Agregar Producto

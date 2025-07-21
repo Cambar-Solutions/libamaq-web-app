@@ -1204,7 +1204,7 @@ const EditProductFormDialog = ({
                                 </div>
                         </form>
                         <DialogFooter className="border-t pt-4">
-                            <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => onOpenChange ? onOpenChange(false) : onClose && onClose()}>
+                            <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => onOpenChange ? onOpenChange(false) : onClose && onClose()} className="cursor-pointer">
                                 Cancelar
                             </Button>
                             <Button
@@ -1212,6 +1212,7 @@ const EditProductFormDialog = ({
                                 variant="default"
                                 onClick={handleSubmit(handleEditSubmit, onInvalid)}
                                 disabled={isSubmitting || isUpdating}
+                                className="cursor-pointer"
                             >
                                 {(isSubmitting || isUpdating) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Actualizar Producto

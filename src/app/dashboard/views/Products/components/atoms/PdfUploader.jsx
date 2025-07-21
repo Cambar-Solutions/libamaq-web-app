@@ -121,7 +121,7 @@ const PdfUploader = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => handlePreview(dl.value)}
-                  className="text-blue-600 hover:text-blue-700"
+                  className="text-blue-600 hover:text-blue-700 cursor-pointer"
                   title="Ver PDF"
                 >
                   <Download className="w-4 h-4" />
@@ -131,7 +131,7 @@ const PdfUploader = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleDeleteExisting(index)}
-                  className="text-red-600 hover:text-red-700"
+                  className="text-red-600 hover:text-red-700 cursor-pointer"
                   title="Eliminar PDF"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -153,7 +153,7 @@ const PdfUploader = ({
               type="button"
               variant="ghost"
               size="icon"
-              className="absolute top-4 right-4 z-10 bg-black/50 text-white hover:bg-black/70 hover:text-white rounded-full w-10 h-10"
+              className="absolute top-4 right-4 z-10 bg-black/50 text-white hover:bg-black/70 hover:text-white rounded-full w-10 h-10 cursor-pointer"
               onClick={closePreview}
               aria-label="Cerrar vista previa"
             >

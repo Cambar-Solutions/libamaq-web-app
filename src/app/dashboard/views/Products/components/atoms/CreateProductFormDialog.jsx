@@ -384,7 +384,7 @@ export default function CreateProductFormDialog({
             }
         }}>
             <DialogTrigger asChild>
-                <Button onClick={openCreateDialog} className="w-full sm:w-auto">
+                <Button onClick={openCreateDialog} className="w-full sm:w-auto cursor-pointer">
                     <Plus className="h-4 w-4 mr-2" />
                     Nuevo Producto
                 </Button>
@@ -761,6 +761,7 @@ export default function CreateProductFormDialog({
                                     variant="outline"
                                     onClick={() => appendTechnical({ key: '', value: '' })}
                                     disabled={isCreating}
+                                    className="cursor-pointer"
                                 >
                                     <Plus className="h-4 w-4 mr-2" />
                                     Añadir Dato Técnico
@@ -948,11 +949,11 @@ export default function CreateProductFormDialog({
 
                     <DialogFooter className="border-t pt-4">
                         <DialogClose asChild>
-                            <Button type="button" variant="outline" disabled={isCreating}>
+                            <Button type="button" variant="outline" disabled={isCreating} className="cursor-pointer">
                                 Cancelar
                             </Button>
                         </DialogClose>
-                        <Button type="submit" disabled={isSubmitting || isCreating} className="bg-blue-600 hover:bg-blue-700">
+                        <Button type="submit" disabled={isSubmitting || isCreating} className="bg-blue-600 hover:bg-blue-700 cursor-pointer">
                             {isSubmitting || isCreating ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
