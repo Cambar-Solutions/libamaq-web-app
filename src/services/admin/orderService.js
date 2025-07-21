@@ -122,3 +122,17 @@ export const changeOrderStatus = async (id, status) => {
     throw error.response?.data || error.message;
   }
 };
+
+/**
+ * Elimina un producto por su ID
+ * @param {number|string} productId - ID del producto a eliminar
+ * @returns {Promise<Object>} Respuesta de la API
+ */
+export const deleteProductById = async (productId) => {
+  try {
+    const { data } = await apiClient.delete(`/l/products/delete/${productId}`);
+    return data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};

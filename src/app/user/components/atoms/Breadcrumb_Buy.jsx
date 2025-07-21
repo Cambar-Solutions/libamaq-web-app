@@ -28,7 +28,7 @@ export default function Breadcrumb_Buy({ setSelected }) {
                         <BreadcrumbSeparator />
                         <BreadcrumbItem>
                             <BreadcrumbPage className="transition-colors duration-300 font-semibold text-blue-700 select-none">
-                                Estado de la tienda
+                                Estado del pedido
                             </BreadcrumbPage>
                         </BreadcrumbItem>
                     </BreadcrumbList>

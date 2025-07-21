@@ -191,8 +191,8 @@ export default function Account() {
           );
         case "compras":
           return <BuyPanel />;
-        case "pedidos":
-          return <OrderPanel />;
+        // case "pedidos":
+        //   return <OrderPanel />;
         case "rentas":
           return <RentalPanel />;
         case "carrito":

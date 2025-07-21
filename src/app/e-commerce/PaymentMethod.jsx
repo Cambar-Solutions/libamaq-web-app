@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import toast, { Toaster } from "react-hot-toast";
 import { FiTruck, FiCreditCard, FiCheck, FiArrowLeft, FiMapPin, FiPhone, FiMail, FiUser, FiNavigation } from 'react-icons/fi';
 import useLocationStore from "@/stores/useLocationStore";
 import { NavCustomer } from "../user/components/molecules/NavCustomer";
@@ -11,6 +11,8 @@ import React from "react";
 import { getUserById } from "@/services/admin/userService";
 import { FaWhatsappSquare } from "react-icons/fa";
 import { ArrowLeft } from 'lucide-react'
+import { createOrder } from "@/services/admin/orderService";
+import { createOrderDetail } from "@/services/admin/orderDetailService";
 
 
 const steps = [
@@ -500,14 +502,9 @@ export default function PaymentMethod() {
                                             <div className="">
                                                 <div className="bg-indigo-100 p-4 rounded-lg flex flex-col md:flex-row gap-0 items-center md:items-stretch">
                                                     <div className="flex-1 flex flex-col justify-center">
-                                                        <div className="font-medium lg:text-lg text-xl text-indigo-800 mb-2">Datos para Transferencia Bancaria</div>
-                                                        <div className="text-gray-700"><b>LIBAMAQ HERRAMIENTAS S DE RL. de CV.</b></div>
-                                                        <div className="text-gray-700">RFC: <b className="select-all">LHE2311286G3</b></div>
-                                                        <div className="text-gray-700">Número de cuenta: <b className="select-all">0122268418</b></div>
-                                                        <div className="text-gray-700">CLABE interbancaria: <b className="select-all">012542001222684186</b></div>
-                                                        <div className="text-gray-700">Banco: <b>BANCOMER</b></div>
-                                                        <div className="mt-4 text-gray-700 text-lg lg:text-base font-semibold flex items-center gap-2 flex-col lg:flex-row leading-2 lg:leading-4">Enviar ficha de transferencia al:
-                                                            <b className="text-green-700">777 111 8924</b> <FaWhatsappSquare className="w-6 h-6 lg:w-4 lg:h-4 text-green-600" />
+                                                        <div className="font-medium lg:text-lg text-xl text-indigo-800 mb-2">Verifica tus datos</div>
+                                                        <div className="text-gray-700">
+                                                            <b>Antes de realizar el pedido, verifica tus datos para evitar errores...</b>
                                                         </div>
                                                     </div>
                                                     <div className="flex-1 flex justify-center items-center">
@@ -518,7 +515,49 @@ export default function PaymentMethod() {
                                         )}
                                         <div className="flex justify-between mt-8">
                                             <button className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors cursor-pointer" onClick={prevStep}>Anterior</button>
-                                            <button className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-white hover:text-indigo-600 hover:border-indigo-600 border-2 border-indigo-600 transition-colors duration-600 ml-auto cursor-pointer" onClick={() => navigate('/user-profile')}>Realizar pedido</button>
+                                            <button
+                                                className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-white hover:text-indigo-600 hover:border-indigo-600 border-2 border-indigo-600 transition-colors duration-600 ml-auto cursor-pointer"
+                                                onClick={async () => {
+                                                    if (paymentMethod === 'transferencia') {
+                                                        try {
+                                                            // 1. Crear la orden principal
+                                                            const orderPayload = {
+                                                                userId: Number(currentUserId),
+                                                                type: 'PURCHASE',
+                                                                shippingGuide: 'PENDIENTE',
+                                                                shippingStatus: 'PENDING',
+                                                                estimatedDeliveryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 días después
+                                                            };
+                                                            const orderRes = await createOrder(orderPayload);
+                                                            console.log('DEBUG orderRes:', JSON.stringify(orderRes, null, 2));
+                                                            const orderId = orderRes?.data?.data?.id;
+                                                            if (!orderId) throw new Error('No se pudo obtener el ID de la orden creada');
+                                                            // 2. Crear los detalles de la orden (productos)
+                                                            for (const item of cartProducts) {
+                                                                const unitPrice = Number(item.product?.price || item.price || 0);
+                                                                const quantity = Number(item.quantity);
+                                                                const discount = 0;
+                                                                await createOrderDetail({
+                                                                    orderId: Number(orderId),
+                                                                    productId: Number(item.product?.id || item.id),
+                                                                    quantity,
+                                                                    unitPrice,
+                                                                    discount,
+                                                                    total: unitPrice * quantity - discount
+                                                                });
+                                                            }
+                                                            toast.success('¡Pedido realizado con éxito!');
+                                                            navigate('/user-profile', { state: { view: 'compras' } });
+                                                        } catch (err) {
+                                                            toast.error('Error al crear el pedido: ' + (err?.message || err));
+                                                        }
+                                                    } else {
+                                                        navigate('/user-profile');
+                                                    }
+                                                }}
+                                            >
+                                                Realizar pedido
+                                            </button>
                                         </div>
                                     </div>
 
@@ -529,6 +568,34 @@ export default function PaymentMethod() {
                     </div>
                 </div>
             </div>
+            <Toaster
+                position="top-center"
+                reverseOrder={false}
+                toastOptions={{
+                    // Estilos por defecto para todos los toasts
+                    duration: 3000,
+                    style: {
+                        background: '#363636',
+                        color: '#fff',
+                    },
+                    // Estilos específicos para toasts de éxito
+                    success: {
+                        duration: 3000,
+                        iconTheme: {
+                            primary: '#10B981',
+                            secondary: '#fff',
+                        },
+                    },
+                    // Estilos específicos para toasts de error
+                    error: {
+                        duration: 4000,
+                        iconTheme: {
+                            primary: '#EF4444',
+                            secondary: '#fff',
+                        },
+                    },
+                }}
+            />
         </SidebarProvider>
     );
 } 

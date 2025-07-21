@@ -22,15 +22,15 @@ import { NavUserCustomer } from "./nav-userCustomer"
 const data = {
   optionsMenu: [
     {
-      name: "Mis compras",
+      name: "Mis pedidos",
       id: "compras",
       icon: ShoppingBag,
     },
-    {
-      name: "Mis pedidos",
-      id: "pedidos",
-      icon: ClipboardList,
-    },
+    // {
+    //   name: "Mis pedidos",
+    //   id: "pedidos",
+    //   icon: ClipboardList,
+    // },
     {
       name: "Ver rentas",
       id: "rentas",
