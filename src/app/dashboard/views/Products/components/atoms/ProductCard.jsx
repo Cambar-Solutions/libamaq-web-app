@@ -62,7 +62,7 @@ const ProductCard = ({
     <Card className="w-full flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-200 h-full border border-gray-200">
       <CardHeader className="p-4 pb-2 border-b bg-white rounded-t-2xl">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-lg font-semibold line-clamp-2 text-gray-900">
+          <CardTitle className="text-lg font-semibold line-clamp-1 truncate text-gray-900">
             {product.name}
           </CardTitle>
           {product.brand?.url && (

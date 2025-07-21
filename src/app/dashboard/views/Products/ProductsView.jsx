@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 import { useProducts } from './hooks/useProducts';
 import ProductCard from './components/atoms/ProductCard';
 import { getAllBrands } from '../../../../../src/services/admin/brandService';
-import { getActiveCategories, getCategoriesByBrand } from '../../../../../src/services/admin/categoryService';
+import { getActiveCategories } from '../../../../../src/services/admin/categoryService';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import {
   AlertDialog,
@@ -161,7 +161,6 @@ const ProductsView = () => {
   const [loading, setLoading] = useState(true);
   const [selectedBrand, setSelectedBrand] = useState('ALL');
   const [categories, setCategories] = useState([]);
-  const [filteredCategories, setFilteredCategories] = useState([]); // <-- Nuevo estado
   const [dataLoading, setDataLoading] = useState(true); // Nuevo estado para la carga inicial de datos
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [productToView, setProductToView] = useState(null);
@@ -184,7 +183,6 @@ const ProductsView = () => {
 
         if (categoriesResponse && Array.isArray(categoriesResponse.data)) {
           setCategories(categoriesResponse.data);
-          setFilteredCategories(categoriesResponse.data); // Inicialmente todas
         } else {
           toast.error('Formato de respuesta inesperado al cargar las categorías.');
         }
@@ -199,34 +197,12 @@ const ProductsView = () => {
     fetchData();
   }, []);
 
-  // Actualiza las categorías filtradas cuando cambia la marca seleccionada
-  useEffect(() => {
-    const fetchCategoriesForBrand = async () => {
-      if (selectedBrand && selectedBrand !== 'ALL') {
-        try {
-          const response = await getCategoriesByBrand(selectedBrand);
-          if (response && Array.isArray(response.data)) {
-            setFilteredCategories(response.data);
-          } else {
-            setFilteredCategories([]);
-          }
-        } catch (error) {
-          setFilteredCategories([]);
-        }
-      } else {
-        setFilteredCategories(categories);
-      }
-    };
-    fetchCategoriesForBrand();
-  }, [selectedBrand, categories]);
-
   // Handle brand filter change
   const handleBrandFilterChange = (value) => {
     setSelectedBrand(value);
     setFilters(prev => ({
       ...prev,
-      brandId: value === 'ALL' ? '' : value,
-      categoryId: '' // Reinicia la categoría al cambiar la marca
+      brandId: value === 'ALL' ? '' : value
     }));
   };
 
@@ -354,7 +330,7 @@ const ProductsView = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">Todas las categorías</SelectItem>
-                {filteredCategories.map((category) => (
+                {categories.map((category) => (
                   <SelectItem key={category.id} value={String(category.id)}>
                     {category.name}
                   </SelectItem>
