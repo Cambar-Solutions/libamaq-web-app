@@ -518,7 +518,7 @@ export default function PaymentMethod() {
                                         )}
                                         <div className="flex justify-between mt-8">
                                             <button className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors cursor-pointer" onClick={prevStep}>Anterior</button>
-                                            <button className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-white hover:text-indigo-600 hover:border-indigo-600 border-2 border-indigo-600 transition-colors duration-600 ml-auto cursor-pointer" onClick={() => navigate('/user-profile')}>Finalizar</button>
+                                            <button className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-white hover:text-indigo-600 hover:border-indigo-600 border-2 border-indigo-600 transition-colors duration-600 ml-auto cursor-pointer" onClick={() => navigate('/user-profile')}>Realizar pedido</button>
                                         </div>
                                     </div>
 

@@ -152,7 +152,7 @@ export default function CarPanel() {
               </div>
             ))}
           </div>
-          <div className="flex gap-3 text-lg font-semibold py-6">
+          <div className="flex gap-3 text-lg font-semibold py-6 mb-10 lg:mb-0">
             <span>Total:</span>
             <span>
               $
@@ -161,7 +161,7 @@ export default function CarPanel() {
                 .toLocaleString("es-MX")}
             </span>
           </div>
-          <div className="absolute bottom-4 left-0 lg:px-5 md:px-5 px-10 w-full">
+          <div className="absolute top-120 lg:top-90 left-0 lg:px-5 md:px-5 px-15 w-full">
             <Button onClick={() => navigate("/payment-method")}
              className="cursor-pointer w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1">
               <CreditCard className="h-4 w-4 lg:h-5 lg:w-5" />
