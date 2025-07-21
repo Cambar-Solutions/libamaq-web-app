@@ -282,7 +282,7 @@ export default function PaymentMethod() {
                                                 <div key={key} className="flex items-center space-x-3">
                                                     <img src={product?.media?.[0]?.url || "/placeholder-product.png"} alt={product?.name} className="w-12 h-12 object-cover rounded" />
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="lg:text-sm text-md font-medium truncate">{product.name}</div>
+                                                        <div className="lg:text-sm text-md font-medium truncate w-[80%]">{product.name}</div>
                                                         <div className="lg:text-xs text-sm text-gray-500">Cantidad: {qty}</div>
                                                     </div>
                                                     <div className="lg:text-sm text-md font-bold">${total.toLocaleString()}</div>
@@ -317,7 +317,7 @@ export default function PaymentMethod() {
                                                     <span>IVA (16%)</span>
                                                     <span>${iva.toLocaleString()}</span>
                                                 </div>
-                                                <div className="border-t pt-2 flex justify-between font-semibold">
+                                                <div className="border-t pt-5 flex justify-between font-bold text-xl">
                                                     <span>Total</span>
                                                     <span>${total.toLocaleString()}</span>
                                                 </div>
@@ -498,7 +498,7 @@ export default function PaymentMethod() {
 
                                         {step === 2 && paymentMethod === 'transferencia' && (
                                             <div className="">
-                                                <div className="bg-indigo-100 p-4 rounded-lg flex flex-col md:flex-row gap-4 items-center md:items-stretch">
+                                                <div className="bg-indigo-100 p-4 rounded-lg flex flex-col md:flex-row gap-0 items-center md:items-stretch">
                                                     <div className="flex-1 flex flex-col justify-center">
                                                         <div className="font-medium lg:text-lg text-xl text-indigo-800 mb-2">Datos para Transferencia Bancaria</div>
                                                         <div className="text-gray-700"><b>LIBAMAQ HERRAMIENTAS S DE RL. de CV.</b></div>
@@ -506,7 +506,7 @@ export default function PaymentMethod() {
                                                         <div className="text-gray-700">Número de cuenta: <b className="select-all">0122268418</b></div>
                                                         <div className="text-gray-700">CLABE interbancaria: <b className="select-all">012542001222684186</b></div>
                                                         <div className="text-gray-700">Banco: <b>BANCOMER</b></div>
-                                                        <div className="mt-4 text-gray-700 text-lg flex items-center gap-2 flex-col lg:flex-row leading-2">Enviar ficha de transferencia al:
+                                                        <div className="mt-4 text-gray-700 text-lg lg:text-base font-semibold flex items-center gap-2 flex-col lg:flex-row leading-2 lg:leading-4">Enviar ficha de transferencia al:
                                                             <b className="text-green-700">777 111 8924</b> <FaWhatsappSquare className="w-6 h-6 lg:w-4 lg:h-4 text-green-600" />
                                                         </div>
                                                     </div>
