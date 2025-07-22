@@ -297,7 +297,7 @@ const ProductsView = () => {
           <div className="flex-1 max-w-xl">
             <SearchBar
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={setSearchTerm}
               placeholder="Buscar productos..."
               className="w-full"
             />

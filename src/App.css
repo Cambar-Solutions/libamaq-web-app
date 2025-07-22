@@ -35,3 +35,48 @@
     animation: borderMove 1s linear infinite;
   }
   
+/* Scrollbar azul para toda la app */
+html, body {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #1e3a8a #e0e7ef;
+}
+
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 22px;   /* Más ancho */
+  height: 12px;
+  background: #e0e7ef;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e3a8a;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1e40af;
+}
+
+::-webkit-scrollbar-track {
+  background: #e0e7ef;
+}
+
+/* Oculta los botones de flecha del scrollbar en Chrome/Edge/Safari */
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+::-webkit-scrollbar-button:single-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+  

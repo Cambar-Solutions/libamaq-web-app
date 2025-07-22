@@ -5,6 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { SidebarProvider } from './providers/sidebar-provider';
 import './index.css';
+import './App.css';
 import LoadingScreen from './components/LoadingScreen';
 import AuthRoute from './components/AuthRoute';
 
