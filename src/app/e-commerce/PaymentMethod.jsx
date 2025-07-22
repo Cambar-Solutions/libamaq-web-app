@@ -266,7 +266,7 @@ export default function PaymentMethod() {
                         <div className="order-2 lg:order-2 lg:col-span-1">
                             <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
                                 <h2 className="text-xl font-semibold mb-4">Resumen del Pedido</h2>
-                                <div className="space-y-3 mb-4">
+                                <div className="space-y-3 mb-4 overflow-y-scroll h-[200px]">
                                     {cartLoading ? (
                                         <div className="text-gray-500">Cargando productos del carrito...</div>
                                     ) : cartError ? (
