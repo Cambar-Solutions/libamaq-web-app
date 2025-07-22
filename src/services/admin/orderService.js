@@ -1,138 +1,91 @@
 import apiClient from "../apiClient";
+import { useQuery } from "@tanstack/react-query";
+import { getAllUsers } from "./userService";
+import { getAllProducts } from "./productService";
 
-/**
- * Obtiene todas las órdenes
- * @returns {Promise<Object>} Objeto con la respuesta de la API
- */
-export const getAllOrders = async () => {
-  try {
-    console.log('Obteniendo todas las órdenes...');
-    const { data } = await apiClient.get("/l/orders");
-    console.log('Respuesta de órdenes:', data);
-    return data;
-  } catch (error) {
-    console.error('Error al obtener órdenes:', error);
-    throw error.response?.data || error.message;
-  }
+// Utilidad para traducir shippingStatus
+const statusMap = {
+  PENDING: "Pendiente",
+  SHIPPED: "Enviado",
+  DELIVERED: "Entregado",
+  ACTIVE: "Activo",
+  INACTIVE: "Inactivo",
+  // Agrega más si tu backend los usa
 };
 
-/**
- * Obtiene una orden específica por su ID
- * @param {string|number} id - ID de la orden
- * @returns {Promise<Object>} Objeto con la respuesta de la API
- */
-export const getOrderById = async (id) => {
-  try {
-    console.log(`Obteniendo orden con ID ${id}...`);
-    const { data } = await apiClient.get(`/l/orders/${id}`);
-    console.log('Respuesta de orden por ID:', data);
-    return data;
-  } catch (error) {
-    console.error(`Error al obtener orden con ID ${id}:`, error);
-    throw error.response?.data || error.message;
-  }
+// Utilidad para traducir type
+const typeMap = {
+  PURCHASE: "Compra",
+  RENTAL: "Renta",
 };
 
-/**
- * Obtiene órdenes por estado
- * @param {string} status - Estado de las órdenes a buscar (PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED)
- * @returns {Promise<Object>} Objeto con la respuesta de la API
- */
-export const getOrdersByStatus = async (status) => {
-  try {
-    console.log(`Obteniendo órdenes con estado ${status}...`);
-    const { data } = await apiClient.get(`/l/orders/status/${status}`);
-    console.log(`Respuesta de órdenes con estado ${status}:`, data);
-    return data;
-  } catch (error) {
-    console.error(`Error al obtener órdenes con estado ${status}:`, error);
-    throw error.response?.data || error.message;
-  }
+// Adaptador de orden para la tabla (recibe catálogos de users y products)
+function adaptOrder(order, usersById, productsById) {
+  const user = usersById[order.userId];
+  const product = productsById[order.orderHistoryId];
+  return {
+    id: `ORD-2025-00${order.id}`,
+    cliente: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : order.userId || '-',
+    referencia: order.orderHistoryId || '-', // Cambia el nombre de la columna a 'Referencia'
+    tipo: typeMap[order.type] || order.type || '-',
+    estado: statusMap[order.shippingStatus] || order.shippingStatus || '-',
+    guia: order.shippingGuide || '-',
+    fecha: order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '-',
+    fechaEntrega: order.estimatedDeliveryDate ? new Date(order.estimatedDeliveryDate).toLocaleDateString() : '-',
+    estatus: order.status || '-',
+    raw: order,
+  };
+}
+
+// Servicio para obtener órdenes (sin adaptar)
+export const fetchOrders = async () => {
+  const { data } = await apiClient.get("/l/orders");
+  console.log("Array de órdenes (data):", data.data);
+  return data.data || [];
 };
 
-/**
- * Obtiene órdenes de un usuario específico
- * @param {string|number} userId - ID del usuario
- * @returns {Promise<Object>} Objeto con la respuesta de la API
- */
-export const getOrdersByUser = async (userId) => {
-  try {
-    console.log(`Obteniendo órdenes del usuario ${userId}...`);
-    const { data } = await apiClient.get(`/l/orders/user/${userId}`);
-    console.log(`Respuesta de órdenes del usuario ${userId}:`, data);
-    return data;
-  } catch (error) {
-    console.error(`Error al obtener órdenes del usuario ${userId}:`, error);
-    throw error.response?.data || error.message;
-  }
-};
+// Hook para obtener órdenes adaptadas con nombres
+export const useOrdersWithNames = (options = {}) => {
+  // Trae órdenes, usuarios y productos en paralelo
+  const ordersQuery = useQuery({
+    queryKey: ["orders"],
+    queryFn: fetchOrders,
+    refetchInterval: 10000,
+    ...options,
+  });
+  const usersQuery = useQuery({
+    queryKey: ["users"],
+    queryFn: getAllUsers,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+  });
+  const productsQuery = useQuery({
+    queryKey: ["products"],
+    queryFn: async () => {
+      const res = await getAllProducts();
+      // Soporta ambos formatos de respuesta
+      return Array.isArray(res) ? res : res.data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-/**
- * Crea una nueva orden
- * @param {Object} orderData - Datos de la orden a crear
- * @returns {Promise<Object>} Objeto con la respuesta de la API
- */
-export const createOrder = async (orderData) => {
-  try {
-    console.log('Creando nueva orden:', orderData);
-    const { data } = await apiClient.post("/l/orders", orderData);
-    console.log('Respuesta de creación de orden:', data);
-    return data;
-  } catch (error) {
-    console.error('Error al crear orden:', error);
-    throw error.response?.data || error.message;
-  }
-};
+  // Mapeo rápido por ID
+  const usersById = (usersQuery.data || []).reduce((acc, u) => { acc[u.id] = u; return acc; }, {});
+  const productsById = (productsQuery.data || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
 
-/**
- * Actualiza una orden existente
- * @param {Object} orderData - Datos de la orden a actualizar
- * @returns {Promise<Object>} Objeto con la respuesta de la API
- */
-export const updateOrder = async (orderData) => {
-  try {
-    console.log('Actualizando orden:', orderData);
-    const { data } = await apiClient.put("/l/orders", orderData);
-    console.log('Respuesta de actualización de orden:', data);
-    return data;
-  } catch (error) {
-    console.error('Error al actualizar orden:', error);
-    throw error.response?.data || error.message;
-  }
-};
+  // Adaptar órdenes solo si todo está cargado
+  const adaptedOrders =
+    ordersQuery.data && usersQuery.data && productsQuery.data
+      ? ordersQuery.data.map(order => adaptOrder(order, usersById, productsById))
+      : [];
 
-/**
- * Cambia el estado de una orden
- * @param {string|number} id - ID de la orden
- * @param {string} status - Nuevo estado (PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED)
- * @returns {Promise<Object>} Objeto con la respuesta de la API
- */
-export const changeOrderStatus = async (id, status) => {
-  try {
-    console.log(`Cambiando estado de orden ${id} a ${status}...`);
-    const orderData = {
-      id,
-      status
-    };
-    const { data } = await apiClient.put("/l/orders", orderData);
-    console.log('Respuesta de cambio de estado de orden:', data);
-    return data;
-  } catch (error) {
-    console.error(`Error al cambiar estado de orden ${id}:`, error);
-    throw error.response?.data || error.message;
-  }
-};
-
-/**
- * Elimina un producto por su ID
- * @param {number|string} productId - ID del producto a eliminar
- * @returns {Promise<Object>} Respuesta de la API
- */
-export const deleteProductById = async (productId) => {
-  try {
-    const { data } = await apiClient.delete(`/l/products/delete/${productId}`);
-    return data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
+  return {
+    orders: adaptedOrders,
+    isLoading: ordersQuery.isLoading || usersQuery.isLoading || productsQuery.isLoading,
+    error: ordersQuery.error || usersQuery.error || productsQuery.error,
+    refetch: () => {
+      ordersQuery.refetch();
+      usersQuery.refetch();
+      productsQuery.refetch();
+    },
+  };
 };

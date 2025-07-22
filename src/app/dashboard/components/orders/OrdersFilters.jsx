@@ -114,69 +114,95 @@ export const OrdersFilters = ({ onFilterChange }) => {
       {/* Filters Container */}
       <div className={cn(
         "transition-all duration-300 overflow-hidden",
-        isMobileFiltersOpen ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0 md:max-h-[1000px] md:opacity-100"
+        isMobileFiltersOpen ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0 md:max-h-[1000px] md:opacity-100   "
       )}>
         <div className="p-4 md:p-5 space-y-4">
-          {/* Search and Period Row */}
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-end">
+          {/* Search and Filters Row - Responsive */}
+          <div className="flex flex-col md:flex-row gap-4 md:gap-2 items-center w-full">
             {/* Search Bar */}
-            <div className="w-full md:w-[auto] md:max-w-md"> {/* Adjusted width for the new SearchBar design */}
+            <div className="w-full md:flex-1">
               <SearchBar
                 value={searchTerm}
-                onChange={setSearchTerm} // Updates searchTerm state on typing
-                onSearchClick={handleSearchExecute} // Triggers search on button click/Enter
+                onChange={setSearchTerm}
+                onSearchClick={handleSearchExecute}
                 placeholder="Buscar por ID, cliente o producto..."
-                className="w-full" // Ensures SearchBar takes the width of this div
+                className="w-full"
               />
             </div>
-
-            {/* Period Selector */}
-            <div className="w-full md:w-[200px]">
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-                Periodo
-              </label>
-              <Select 
-                value={filters.period}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, period: value }))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar periodo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos los pedidos</SelectItem>
-                  <SelectItem value="hoy">Hoy</SelectItem>
-                  <SelectItem value="semana">Esta semana</SelectItem>
-                  <SelectItem value="mes">Este mes</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Filters (Periodo, Tipo, Pago, Estado) */}
+            <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto md:items-center">
+              {/* Periodo */}
+              <div className="w-full md:w-[180px]">
+                <Select 
+                  value={filters.period}
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, period: value }))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Periodo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los pedidos</SelectItem>
+                    <SelectItem value="hoy">Hoy</SelectItem>
+                    <SelectItem value="semana">Esta semana</SelectItem>
+                    <SelectItem value="mes">Este mes</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Tipo */}
+              <div className="w-full md:w-[140px]">
+                <Select
+                  value={filters.type || 'all'}
+                  onValueChange={value => handleFilterChange('type', value === 'all' ? null : value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {FILTER_OPTIONS.type.map(option => (
+                      <SelectItem key={option.id} value={option.id}>{option.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Pago */}
+              <div className="w-full md:w-[140px]">
+                <Select
+                  value={filters.payment || 'all'}
+                  onValueChange={value => handleFilterChange('payment', value === 'all' ? null : value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pago" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {FILTER_OPTIONS.payment.map(option => (
+                      <SelectItem key={option.id} value={option.id}>{option.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Estado */}
+              <div className="w-full md:w-[140px]">
+                <Select
+                  value={filters.status || 'all'}
+                  onValueChange={value => handleFilterChange('status', value === 'all' ? null : value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {FILTER_OPTIONS.status.map(option => (
+                      <SelectItem key={option.id} value={option.id}>{option.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
-          {/* Filter Chips - 3 columns on desktop */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-            {Object.entries(FILTER_OPTIONS).map(([category, options]) => (
-              <div key={category} className="space-y-2">
-                <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {category === 'type' ? 'Tipo' : category === 'payment' ? 'Pago' : 'Estado'}
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {options.map((option) => (
-                    <Badge
-                      key={option.id}
-                      variant={filters[category] === option.id ? 'default' : 'outline'}
-                      className={cn(
-                        "cursor-pointer transition-colors",
-                        filters[category] === option.id ? option.color : "hover:bg-gray-50"
-                      )}
-                      onClick={() => handleFilterChange(category, option.id)}
-                    >
-                      {option.label}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+        
 
           {/* Clear Filters Button */}
           {activeFiltersCount > 0 && (

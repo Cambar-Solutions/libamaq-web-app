@@ -2,12 +2,12 @@ import { useState } from "react";
 import { OrdersFilters } from "../components/orders/OrdersFilters";
 import { OrdersTable } from "../components/orders/OrdersTable";
 import { OrderDetailDialogs } from "../components/orders/OrderDetailDialogs";
-import { orderData } from "../data/orderData";
+import { useOrdersWithNames } from "@/services/admin/orderService";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { OrderSendGuideDialog } from "../components/orders/OrderSendGuideDialog";
 
 export function OrdersView() {
-  const [orders, setOrders] = useState(orderData);
+  const { orders, isLoading, error } = useOrdersWithNames();
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -26,7 +26,7 @@ export function OrdersView() {
   const [isSavingGuide, setIsSavingGuide] = useState(false);
 
   // Filtrar pedidos según los filtros activos
-  const filteredOrders = orders.filter(order => {
+  const filteredOrders = (orders || []).filter(order => {
     let passesFilters = true;
     if (activeFilters.search) {
       const searchTermLower = activeFilters.search.toLowerCase();
@@ -104,12 +104,16 @@ export function OrdersView() {
   const handleSaveGuide = (updatedOrder) => {
     setIsSavingGuide(true);
     setTimeout(() => { // Simula petición async
-      setOrders(prev => prev.map(o => o.id === updatedOrder.id ? { ...o, guiaUrl: updatedOrder.guiaUrl, estado: updatedOrder.estado } : o));
+      // This part of the logic needs to be updated to reflect the new data fetching
+      // For now, we'll just close the dialog and reset state
       setIsGuideDialogOpen(false);
       setOrderForGuide(null);
       setIsSavingGuide(false);
     }, 800);
   };
+
+  if (isLoading) return <div className="py-10 text-center text-lg">Cargando órdenes...</div>;
+  if (error) return <div className="py-10 text-center text-red-500">Error al cargar órdenes</div>;
 
   return (
     <div className="container mx-auto py-4 px-2 md:px-4 w-full">
