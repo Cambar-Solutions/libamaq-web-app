@@ -1,33 +1,78 @@
 import React, { useEffect, useState } from 'react';
-import { getOrdersByUser } from '@/services/public/orderService';
+import { getOrdersByUser, deleteOrder } from '@/services/public/orderService';
 import { jwtDecode } from 'jwt-decode';
 import { X } from 'lucide-react';
+import toast, { Toaster } from "react-hot-toast";
+import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogHeader,
+    AlertDialogFooter,
+    AlertDialogTitle,
+    AlertDialogDescription,
+    AlertDialogAction,
+    AlertDialogCancel
+} from "@/components/ui/alert-dialog";
+// Ya no necesitamos AlertDialogTrigger aquí porque lo abriremos programáticamente
 
 export default function CardCarProducts({ setSelected }) {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [orderToDelete, setOrderToDelete] = useState(null);
+
+    async function fetchOrders() {
+        setLoading(true);
+        setError(null);
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) throw new Error('No autenticado');
+            const decoded = jwtDecode(token);
+            const userId = decoded.sub ? parseInt(decoded.sub, 10) : null;
+            if (!userId) throw new Error('No se pudo obtener el ID de usuario');
+            const res = await getOrdersByUser(userId);
+            setOrders(Array.isArray(res?.data) ? res.data : []);
+        } catch (err) {
+            setError(err.message || 'Error al cargar las órdenes');
+        } finally {
+            setLoading(false);
+        }
+    }
 
     useEffect(() => {
-        async function fetchOrders() {
-            setLoading(true);
-            setError(null);
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) throw new Error('No autenticado');
-                const decoded = jwtDecode(token);
-                const userId = decoded.sub ? parseInt(decoded.sub, 10) : null;
-                if (!userId) throw new Error('No se pudo obtener el ID de usuario');
-                const res = await getOrdersByUser(userId);
-                setOrders(Array.isArray(res?.data) ? res.data : []);
-            } catch (err) {
-                setError(err.message || 'Error al cargar las órdenes');
-            } finally {
-                setLoading(false);
-            }
-        }
         fetchOrders();
     }, []);
+
+    // Función que se llama al hacer clic en la 'X' para abrir el diálogo de confirmación
+    const handleTriggerDelete = (orderId) => {
+        setOrderToDelete(orderId);
+        setDeleteDialogOpen(true); // Abre el diálogo programáticamente
+    };
+
+    // Función que se llama cuando el usuario confirma la eliminación en el AlertDialog
+    const confirmDeleteOrder = async () => {
+        if (!orderToDelete) return;
+
+        setDeleteDialogOpen(false); // Cerrar el diálogo inmediatamente
+
+        try {
+            console.log(`Intentando eliminar la orden con ID: ${orderToDelete}`);
+            await deleteOrder(orderToDelete);
+            console.log(`Orden ${orderToDelete} eliminada exitosamente.`);
+
+            setOrders(prevOrders => prevOrders.filter(order => order.id !== orderToDelete));
+
+            toast.success(`Orden ${orderToDelete} eliminada exitosamente.`);
+        } catch (err) {
+            console.error(`Error al eliminar la orden ${orderToDelete}:`, err);
+            const errorMessage = err.response?.data?.message || err.message || `Error al eliminar la orden ${orderToDelete}`;
+            setError(errorMessage);
+            toast.error(errorMessage);
+        } finally {
+            setOrderToDelete(null); // Limpiar el ID de la orden después de la operación
+        }
+    };
 
     if (loading) {
         return <p className="text-center text-gray-500">Cargando órdenes...</p>;
@@ -49,9 +94,13 @@ export default function CardCarProducts({ setSelected }) {
                 >
                     <div className="mt-2 flex items-center text-xl text-gray-600 pl-5 py-3 border-b-2 justify-between relative">
                         <span className="font-medium">{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'Sin fecha'}</span>
+                        {/* Se elimina AlertDialogTrigger de aquí */}
                         <button
                             className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full hover:bg-red-100 transition-colors"
-                            onClick={e => e.stopPropagation() /* prevent card click */}
+                            onClick={e => {
+                                e.stopPropagation(); // Evita que se dispare el onClick del div padre
+                                handleTriggerDelete(order.id); // Llama a la función para abrir el diálogo
+                            }}
                         >
                             <X className="w-6 h-6 text-red-500" />
                         </button>
@@ -71,6 +120,51 @@ export default function CardCarProducts({ setSelected }) {
                     </div>
                 </div>
             ))}
+
+            {/* AlertDialog para confirmación de eliminación (único para todas las órdenes) */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar orden?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción eliminará la orden {orderToDelete ? `con ID ${orderToDelete}` : ''} de forma permanente. ¿Estás seguro de que deseas continuar?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => {
+                            setOrderToDelete(null); // Limpiar el ID al cancelar
+                            setDeleteDialogOpen(false);
+                        }}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDeleteOrder} className="bg-red-600 hover:bg-red-700 text-white">Eliminar</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <Toaster
+                position="top-center"
+                reverseOrder={false}
+                toastOptions={{
+                    duration: 3000,
+                    style: {
+                        background: '#363636',
+                        color: '#fff',
+                    },
+                    success: {
+                        duration: 3000,
+                        iconTheme: {
+                            primary: '#10B981',
+                            secondary: '#fff',
+                        },
+                    },
+                    error: {
+                        duration: 4000,
+                        iconTheme: {
+                            primary: '#EF4444',
+                            secondary: '#fff',
+                        },
+                    },
+                }}
+            />
         </div>
     );
 }

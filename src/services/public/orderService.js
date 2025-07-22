@@ -143,18 +143,18 @@ export const updateOrderDetail = async (updateData) => {
 };
 
 /**
- * Elimina un detalle de orden específico (eliminar un producto del carrito).
- * @param {string|number} detailId - ID del detalle de orden a eliminar.
- * @returns {Promise<Object>} Objeto con la respuesta de la API (o vacío si es una eliminación sin contenido).
+ * Elimina una orden por su ID.
+ * @param {string|number} id - ID de la orden a eliminar.
+ * @returns {Promise<Object>} Objeto con la respuesta de la API.
  */
-export const deleteOrderDetail = async (detailId) => {
+export const deleteOrder = async (id) => {
   try {
-    console.log(`Eliminando detalle de orden ${detailId}...`);
-    const { data } = await apiClient.delete(`/l/order-details/delete/${detailId}`);
-    console.log(`Respuesta de eliminación de detalle de orden ${detailId}:`, data);
+    console.log(`Eliminando orden con ID ${id}...`);
+    const { data } = await apiClient.delete(`/l/orders/delete/${id}`);
+    console.log(`Respuesta de eliminación de orden con ID ${id}:`, data);
     return data;
   } catch (error) {
-    console.error(`Error al eliminar detalle de orden ${detailId}:`, error);
+    console.error(`Error al eliminar orden con ID ${id}:`, error);
     throw error.response?.data || error.message;
   }
 };
