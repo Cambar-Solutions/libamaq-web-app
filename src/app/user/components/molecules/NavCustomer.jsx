@@ -202,85 +202,81 @@ export function NavCustomer({ onViewChange }) {
             </div>
 
             {/* Mobile menu */}
-            {menuOpen && (
-                <div className="sm:hidden fixed top-0 right-0 w-64 h-full bg-white shadow-lg p-6 z-40">
-                    <button
-                        onClick={toggleMenu}
-                        className="absolute top-4 right-4 text-gray-600"
-                    >
-                        <FaTimes size={20} />
-                    </button>
-                    <nav className="mt-12 flex flex-col space-y-8">
-                        {/* Info de usuario */}
-                        <div className="w-full mb-5 p-2 border-b-2 border-yellow-600">
-                            <p className="text-base font-semibold text-gray-800">{userLoading ? "Cargando..." : userInfo.name + " " + userInfo.lastName}</p>
-                            {userInfo.email && (
-                                <p className="text-sm text-gray-600">{userInfo.email}</p>
-                            )}
-                        </div>
-                        <div className="w-full">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Explorar por marca</label>
-                            <Select
-                                value={selectedBrandId}
-                                onValueChange={handleBrandChange}
-                                disabled={loading}
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Selecciona una marca" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-blue-100">
-                                    {brands.map((brand) => (
-                                        <SelectItem
-                                            key={brand.id}
-                                            value={brand.id.toString()}
-                                            className="cursor-pointer">
-                                            {brand.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-
-
-                        <button onClick={() =>
-                            navigate('/user-profile', {
-                                state: { view: 'perfil', openLocation: true }
-                            })}
-                            className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
-                        >
-                            <MapPin size={20} />
-                            <div className="text-left">
-                                <p className="text-sm line-clamp-1 max-w-[20em]">
-                                    {principalCity ? principalCity : "Selecciona una dirección principal"}
-                                </p>
-                                <p className="text-base">{getStoreStatus()}</p>
-                            </div>
-                        </button>
-
-                        <Link to="/user-profile"
-                            onClick={() => { onViewChange("perfil"); setMenuOpen(false); }}
-                            className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
-                        >
-                            <GrUserWorker size={20} />
-                            Mi perfil
-                        </Link>
-
-                        <button
-                            onClick={() => navigate('/user-profile', { state: { view: 'carrito' } })}
-                            className="flex items-center gap-2 text-gray-800 hover:text-blue-600 relative"
-                        >
-                            <RiShoppingCartFill size={20} />
-                            Mi Carrito
-                            {cartCount > 0 && (
-                                <span className="absolute -top-2 left-3 bg-yellow-600 text-white text-[10px] font-semibold rounded-full w-4 h-4 flex items-center justify-center group-hover:bg-yellow-400 group-hover:text-black transition-colors duration-600">
-                                    {cartCount}
-                                </span>
-                            )}
-                        </button>
-                    </nav>
+            <div
+              className={`sm:hidden fixed top-0 left-0 w-full h-[45vh] bg-white shadow-lg p-6 z-40 transform transition-all duration-300 ease-in-out ${menuOpen ? "translate-y-0" : "-translate-y-full"}`}
+              style={{ pointerEvents: menuOpen ? 'auto' : 'none' }}
+            >
+              <button
+                onClick={toggleMenu}
+                className="absolute top-4 right-4 text-gray-600"
+              >
+                <FaTimes size={20} />
+              </button>
+              <nav className="mt-4 flex flex-col space-y-8 overflow-y-auto h-[calc(90vh-3rem)]">
+                {/* Info de usuario */}
+                <div className="w-full mb-5 p-2 border-b-2 border-yellow-600">
+                  <p className="text-base font-semibold text-gray-800">{userLoading ? "Cargando..." : userInfo.name + " " + userInfo.lastName}</p>
+                  {userInfo.email && (
+                    <p className="text-sm text-gray-600">{userInfo.email}</p>
+                  )}
                 </div>
-            )}
+                <div className="w-full">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Explorar por marca</label>
+                  <Select
+                    value={selectedBrandId}
+                    onValueChange={handleBrandChange}
+                    disabled={loading}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecciona una marca" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-blue-100">
+                      {brands.map((brand) => (
+                        <SelectItem
+                          key={brand.id}
+                          value={brand.id.toString()}
+                          className="cursor-pointer">
+                          {brand.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <button onClick={() =>
+                  navigate('/user-profile', {
+                    state: { view: 'perfil', openLocation: true }
+                  })}
+                  className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
+                >
+                  <MapPin size={20} />
+                  <div className="text-left">
+                    <p className="text-sm line-clamp-1 max-w-[20em]">
+                      {principalCity ? principalCity : "Selecciona una dirección principal"}
+                    </p>
+                    <p className="text-base">{getStoreStatus()}</p>
+                  </div>
+                </button>
+                <Link to="/user-profile"
+                  onClick={() => { onViewChange("perfil"); setMenuOpen(false); }}
+                  className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
+                >
+                  <GrUserWorker size={20} />
+                  Mi perfil
+                </Link>
+                <button
+                  onClick={() => navigate('/user-profile', { state: { view: 'carrito' } })}
+                  className="flex items-center gap-2 text-gray-800 hover:text-blue-600 relative"
+                >
+                  <RiShoppingCartFill size={20} />
+                  Mi Carrito
+                  {cartCount > 0 && (
+                    <span className="absolute -top-2 left-3 bg-yellow-600 text-white text-[10px] font-semibold rounded-full w-4 h-4 flex items-center justify-center group-hover:bg-yellow-400 group-hover:text-black transition-colors duration-600">
+                      {cartCount}
+                    </span>
+                  )}
+                </button>
+              </nav>
+            </div>
 
             {/* Desktop header */}
             <div className="hidden sm:flex items-center justify-between px-12 py-4">

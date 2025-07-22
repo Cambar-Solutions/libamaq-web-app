@@ -187,15 +187,17 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
       </div>
 
       {/* Mobile menu */}
-      {menuOpen && (
-        <div className="sm:hidden fixed top-0 right-0 w-64 h-full bg-white shadow-lg p-6 z-40">
-          <button
-            onClick={toggleMenu}
-            className="absolute top-4 right-4 text-gray-600"
-          >
-            <FaTimes size={20} />
-          </button>
-          <nav className="mt-12 flex flex-col space-y-8">
+      <div
+        className={`sm:hidden fixed top-0 left-0 w-full h-[45vh] bg-white shadow-lg p-6 z-40 transform transition-all duration-300 ease-in-out ${menuOpen ? "translate-y-0" : "-translate-y-full"}`}
+        style={{ pointerEvents: menuOpen ? 'auto' : 'none' }}
+      >
+        <button
+          onClick={toggleMenu}
+          className="absolute top-4 right-4 text-gray-600"
+        >
+          <FaTimes size={20} />
+        </button>
+        <nav className="mt-4 flex flex-col space-y-8 overflow-y-auto h-[calc(45vh-3rem)]">
             {/* Info de usuario */}
             <div className="w-full mb-5 p-2 border-b-2 border-yellow-600">
               <p className="text-base font-semibold text-gray-800">{userInfo.name} {userInfo.lastName}</p>
@@ -265,9 +267,8 @@ export function SiteHeaderCustomer({ onViewChange, userInfo }) {
                 </span>
               )}
             </button>
-          </nav>
-        </div>
-      )}
+        </nav>
+      </div>
 
       {/* Desktop header */}
       <div className="hidden sm:flex items-center justify-between px-12 py-4">

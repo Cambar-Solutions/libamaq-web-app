@@ -130,8 +130,7 @@ const Nav2 = () => {
 
       {/* Sidebar móvil */}
       <div
-        className={`fixed top-0 right-0 bg-white dark:bg-gray-500 shadow-lg p-4 h-full w-64 transform transition-all duration-300 ease-in-out ${menuOpen ? "translate-x-0" : "translate-x-full"
-          } md:hidden`}
+        className={`fixed top-0 left-0 bg-white dark:bg-gray-500 shadow-lg p-4 w-full h-80 z-50 transform transition-all duration-300 ease-in-out ${menuOpen ? "translate-y-0" : "-translate-y-full"} md:hidden`}
       >
         <button
           onClick={toggleMenu}

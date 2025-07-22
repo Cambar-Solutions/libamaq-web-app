@@ -35,16 +35,9 @@ const DrawerCategories = forwardRef((props, ref) => {
     const loadBrands = async () => {
       try {
         setLoading(true);
-        const { data: brandsData, error } = await getAllBrandsWithCategories();
-        
-        if (error) {
-          throw new Error(error.message || 'Error al cargar marcas');
-        }
-  
-        if (!brandsData || !Array.isArray(brandsData)) {
-          throw new Error('Formato de datos inválido');
-        }
-  
+        const response = await getAllBrandsWithCategories();
+        const brandsData = Array.isArray(response) ? response : (response?.data || []);
+
         // Transformar los datos de la API al formato esperado
         const transformedBrands = brandsData
           .filter(brand => brand.status === "ACTIVE")
@@ -53,7 +46,7 @@ const DrawerCategories = forwardRef((props, ref) => {
             const activeCategories = (brand.brandCategories || [])
               .filter(bc => bc.category?.status === "ACTIVE")
               .map(bc => bc.category);
-  
+
             return {
               id: brand.id,
               name: brand.name,
@@ -63,7 +56,7 @@ const DrawerCategories = forwardRef((props, ref) => {
               categories: activeCategories
             };
           });
-  
+
         setBrands(transformedBrands);
       } catch (error) {
         console.error("Error al cargar marcas:", error);
