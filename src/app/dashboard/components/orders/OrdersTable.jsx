@@ -29,30 +29,45 @@ export const OrdersTable = ({ orders, onOrderClick, onSendGuide }) => {
             <div className="flex justify-between items-center">
               <span className="font-bold text-base">{order.id}</span>
               <Badge variant="outline" className={
-                order.tipo === 'Renta'
+                order.tipo === 'Compra' || order.tipo === 'PURCHASE'
                   ? 'bg-blue-100 text-blue-800 border-blue-300'
                   : 'bg-green-100 text-green-800 border-green-300'
               }>
                 {order.tipo}
               </Badge>
             </div>
-            <div className="text-sm text-gray-700 font-medium truncate">{order.producto}</div>
-            <div className="flex justify-between items-center text-xs text-gray-500">
-              <span>{order.cliente}</span>
-              <span>{new Date(order.fecha).toLocaleDateString()}</span>
-            </div>
-            <div className="flex justify-between items-center mt-1">
-              <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                order.estado === 'Pendiente' ? 'bg-yellow-100 text-yellow-800' :
-                order.estado === 'En proceso' || order.estado === 'En Proceso' ? 'bg-blue-100 text-blue-800' :
-                order.estado === 'En Revisión' ? 'bg-purple-100 text-purple-800' :
-                order.estado === 'Listo para Entrega' ? 'bg-green-100 text-green-800' :
-                order.estado === 'Entregado' ? 'bg-gray-100 text-gray-800' :
-                'bg-orange-100 text-orange-800'
-              }`}>
+            <div className="text-sm text-gray-700 font-medium truncate">{order.cliente}</div>
+            <div className="text-xs text-gray-500">Referencia: {order.referencia}</div>
+            <div className="flex flex-wrap gap-2 items-center mt-1">
+              <span className="text-xs text-gray-500">Estado Envío:</span>
+              <Badge variant="outline" className={
+                order.estado === 'Pendiente' || order.estado === 'PENDING'
+                  ? 'bg-amber-100 text-amber-800 border-amber-300'
+                  : order.estado === 'Enviado' || order.estado === 'SHIPPED'
+                    ? 'bg-blue-100 text-blue-800 border-blue-300'
+                    : order.estado === 'Entregado' || order.estado === 'DELIVERED'
+                      ? 'bg-gray-100 text-gray-800 border-gray-300'
+                      : 'bg-gray-100 text-gray-800 border-gray-300'
+              }>
                 {order.estado}
-              </span>
-              <span className="font-bold text-sm">{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(order.total)}</span>
+              </Badge>
+            </div>
+            <div className="text-xs text-gray-900">Guía de envío: {order.guia}</div>
+            <div className="flex flex-wrap gap-4 text-xs text-gray-500 mt-1">
+              <span>Fecha: {order.fecha && order.fecha !== '-' ? order.fecha : '-'}</span>
+              <span>Entrega estimada: {order.fechaEntrega && order.fechaEntrega !== '-' ? order.fechaEntrega : '-'}</span>
+            </div>
+            <div className="flex flex-wrap gap-2 items-center mt-1">
+              <span className="text-xs text-gray-500">Estatus:</span>
+              <Badge variant="outline" className={
+                order.estatus === 'Activo' || order.estatus === 'ACTIVE'
+                  ? 'bg-green-100 text-green-800 border-green-300'
+                  : order.estatus === 'Inactivo' || order.estatus === 'INACTIVE'
+                    ? 'bg-red-100 text-red-800 border-red-300'
+                    : 'bg-gray-100 text-gray-800 border-gray-300'
+              }>
+                {order.estatus}
+              </Badge>
             </div>
             <div className="flex gap-3 pt-2">
               <button
