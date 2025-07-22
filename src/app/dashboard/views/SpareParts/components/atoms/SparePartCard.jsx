@@ -31,9 +31,9 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
       <Card className="w-full flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-200 h-full border border-gray-200">
         <CardHeader className="p-4 pb-2 border-b bg-white rounded-t-2xl">
           <div className="flex justify-between items-start">
-            <CardTitle className="text-lg font-semibold line-clamp-2 text-gray-900">
-              {sparePart.name}
-            </CardTitle>
+            <CardTitle className="text-lg font-semibold line-clamp-1 truncate text-gray-900">
+                {sparePart.name}
+              </CardTitle>
             {sparePart.brand?.url && (
               <img
                 src={sparePart.brand.url}
@@ -67,7 +67,7 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
               <div className="flex items-center text-xs text-gray-400 mb-0.5">
                 <span className="truncate">Marca</span>
               </div>
-              <Badge
+              <Badge 
                 className="text-xs font-semibold truncate w-fit px-3 py-1 rounded-full border"
                 style={{
                   backgroundColor: `${sparePart.brand.color || '#cccccc'}10`,
@@ -77,8 +77,8 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
               >
                 {sparePart.brand.name}
               </Badge>
-            </div>
-          )}
+              </div>
+            )}
         </CardContent>
 
         <CardFooter className="flex justify-between items-center gap-2 p-3 border-t bg-gray-50 rounded-b-2xl mt-auto">
@@ -109,20 +109,20 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
             {onEdit && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
+              <Button 
                     variant="ghost"
                     size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(sparePart);
-                    }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(sparePart);
+                }}
                     className="h-8 w-8 hover:bg-blue-100 text-blue-600"
-                  >
+              >
                     <Edit className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
-                  Editar
+                Editar
                 </TooltipContent>
               </Tooltip>
             )}
@@ -145,7 +145,7 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
             {onDelete && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
+              <Button 
                     variant="ghost"
                     size="icon"
                     onClick={(e) => {
@@ -153,9 +153,9 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
                       onDelete(sparePart);
                     }}
                     className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100"
-                  >
+              >
                     <Trash2 className="h-4 w-4" />
-                  </Button>
+              </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
                   Eliminar
@@ -163,7 +163,7 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
               </Tooltip>
             )}
           </div>
-        </CardFooter>
+          </CardFooter>
       </Card>
     </>
   );

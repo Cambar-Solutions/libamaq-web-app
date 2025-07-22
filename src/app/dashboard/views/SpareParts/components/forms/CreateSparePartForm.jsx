@@ -11,6 +11,7 @@ import { toast } from 'react-hot-toast';
 import ImageUploader from '../molecules/ImageUploader';
 import { generateDescriptionIA } from '@/services/admin/AIService';
 import mediaService from '@/services/admin/mediaService';
+import StarRating from '../../../../../dashboard/views/Products/components/atoms/StarRating';
 
 /**
  * Componente para crear un nuevo repuesto
@@ -32,7 +33,8 @@ export const CreateSparePartForm = ({
       stock: '0',
       rentable: false,
       status: 'ACTIVE',
-      files: []
+      files: [],
+      ranking: null
     }
   });
 
@@ -45,6 +47,7 @@ export const CreateSparePartForm = ({
   // Observar cambios en el valor de rentable
   const rentable = watch('rentable', false);
   const name = watch('name', '');
+  const watchedRanking = watch('ranking');
 
   // Efecto para manejar la animación de shake
   useEffect(() => {
@@ -346,6 +349,17 @@ export const CreateSparePartForm = ({
                 {rentable ? 'El repuesto estará disponible para renta' : 'El repuesto no estará disponible para renta'}
               </span>
             </div>
+          </div>
+
+          {/* Ranking */}
+          <div className="space-y-2">
+            <Label htmlFor="ranking" className="text-sm font-medium text-gray-700">Ranking</Label>
+            <StarRating
+              value={watchedRanking || 0}
+              onChange={(val) => setValue('ranking', val === 0 ? null : val, { shouldDirty: true })}
+              readOnly={isSaving}
+            />
+            <p className="text-xs text-gray-500">Selecciona de 1 a 5 estrellas. 0 estrellas equivale a sin ranking.</p>
           </div>
 
           {/* Estado */}

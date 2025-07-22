@@ -14,6 +14,7 @@ import {
 import ImageUploader from '../molecules/ImageUploader';
 import mediaService from '@/services/admin/mediaService';
 import { toast } from 'react-hot-toast';
+import StarRating from '../../../../../dashboard/views/Products/components/atoms/StarRating';
 
 const statusStyles = {
   ACTIVE: 'text-green-600',
@@ -120,6 +121,8 @@ export const EditSparePartForm = ({ sparePart, onSave, onCancel, isSaving }) => 
     img => !mediaToDelete.includes(img.id)
   );
 
+  const watchedRanking = watch('ranking');
+
   return (
     <div className="space-y-6">
       <div className="border-b border-gray-200 pb-4">
@@ -130,6 +133,16 @@ export const EditSparePartForm = ({ sparePart, onSave, onCancel, isSaving }) => 
         <p className="mt-1 text-sm text-gray-500">
           Edita la información del repuesto. Los campos con * son obligatorios.
         </p>
+      </div>
+      {/* Ranking destacado al inicio */}
+      <div className="mb-6">
+        <Label htmlFor="ranking" className="text-base font-semibold text-gray-800">Ranking</Label>
+        <StarRating
+          value={watchedRanking || 0}
+          onChange={(val) => setValue('ranking', val === 0 ? null : val, { shouldDirty: true })}
+          readOnly={isSaving}
+        />
+        <p className="text-xs text-gray-500 mt-1">Selecciona de 1 a 5 estrellas. 0 estrellas equivale a sin ranking.</p>
       </div>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-7 text-sm">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

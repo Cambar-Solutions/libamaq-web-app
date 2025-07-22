@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Edit, Trash2, ShoppingCart, Box, DollarSign, Tag, Info, Eye } from 'lucide-react';
 import PropTypes from 'prop-types';
+import StarRating from './StarRating';
 
 // Función local para formatear moneda
 const formatCurrency = (amount) => {
@@ -65,36 +66,25 @@ const ProductCard = ({
           <CardTitle className="text-lg font-semibold line-clamp-1 truncate text-gray-900">
             {product.name}
           </CardTitle>
-          {product.brand?.url && (
-            <img
-              src={product.brand.url}
-              alt={product.brand.name}
-              className="w-10 h-10 object-contain rounded-full border border-gray-200 shadow-sm ml-2 flex-shrink-0"
-              title={product.brand.name}
-            />
-          )}
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 p-4 flex flex-col">
-        <div className="relative aspect-[4/3] overflow-hidden bg-gray-50 rounded-xl mb-3 flex items-center justify-center group">
-          <img
-            src={mainImage}
-            alt={product.name}
-            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = '/placeholder-product.jpg';
-            }}
-          />
-        </div>
-
-        {product.description && (
-          <p className="text-xs text-gray-500 line-clamp-2 mb-3 min-h-[32px]">{product.description}</p>
-        )}
-
-        {/* Eliminar o comentar la sección de precio */}
-        {/*
+      <CardContent className="flex-1 flex flex-col justify-between p-4 pt-2">
+        <div className="flex flex-col gap-2">
+          <div className="w-full flex justify-center items-center mb-2">
+            <img
+              src={mainImage}
+              alt={product.name}
+              className="w-full h-32 object-contain rounded-lg bg-gray-50 border border-gray-100"
+            />
+          </div>
+          {product.description && (
+            <div className="text-xs text-gray-600 line-clamp-2 mb-1">
+              {product.description}
+            </div>
+          )}
+          {/* Eliminar o comentar la sección de precio */}
+          {/*
         <div className="grid grid-cols-2 gap-2 mt-auto">
           <div>
             <div className="flex items-center text-xs text-gray-400 mb-0.5">
@@ -106,7 +96,7 @@ const ProductCard = ({
         </div>
         */}
 
-        {product.brand && (
+          {product.brand && (
             <div className="flex flex-col items-end">
               <div className="flex items-center text-xs text-gray-400 mb-0.5">
                 <span className="truncate">Marca</span>
@@ -133,7 +123,12 @@ const ProductCard = ({
               <p className="text-xs font-medium truncate text-gray-700">{product.category.name}</p>
             </div>
           )}
+        </div>
       </CardContent>
+      {/* Ranking de estrellas justo encima del footer, alineado a la izquierda */}
+      <div className="px-4 pb-1 flex items-center">
+        <StarRating value={product.ranking || 0} readOnly size={10} />
+      </div>
 
       <CardFooter className="flex justify-between items-center gap-2 p-3 border-t bg-gray-50 rounded-b-2xl mt-auto">
         <div className="flex items-center gap-2">
@@ -158,70 +153,70 @@ const ProductCard = ({
         </div>
         <TooltipProvider>
           <div className="flex items-center gap-1">
-            {/* Ver detalles */}
-            {onViewDetails && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onViewDetails(product.id);
-                    }}
+          {/* Ver detalles */}
+          {onViewDetails && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewDetails(product.id);
+                  }}
                     className="h-8 w-8 hover:bg-gray-200 cursor-pointer"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
-                  Ver detalles
-                </TooltipContent>
-              </Tooltip>
-            )}
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
+                Ver detalles
+              </TooltipContent>
+            </Tooltip>
+          )}
 
-            {/* Edit Dialog Integration */}
-            {onEdit && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(product.id);
-                    }}
+          {/* Edit Dialog Integration */}
+          {onEdit && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(product.id);
+                  }}
                     className="h-8 w-8 hover:bg-blue-100 text-blue-600 cursor-pointer"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
-                  Editar
-                </TooltipContent>
-              </Tooltip>
-            )}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
+                Editar
+              </TooltipContent>
+            </Tooltip>
+          )}
 
-            {onDelete && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(product);
-                    }}
+          {onDelete && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(product);
+                  }}
                     className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100 cursor-pointer"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
-                  Eliminar
-                </TooltipContent>
-              </Tooltip>
-            )}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
+                Eliminar
+              </TooltipContent>
+            </Tooltip>
+          )}
           </div>
         </TooltipProvider>
       </CardFooter>

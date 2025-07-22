@@ -385,7 +385,9 @@ export const updateProduct = async (productData) => {
         entityId: Number(media.entityId) || 0,
         entityType: media.entityType || 'PRODUCT',
         displayOrder: Number(media.displayOrder) || 0
-      }))
+      })),
+      // Agregar ranking si está presente
+      ...(productData.ranking !== undefined ? { ranking: productData.ranking } : {})
     };
 
     console.log('Enviando datos al servidor (PUT):', JSON.stringify(productDto, null, 2));
@@ -459,7 +461,9 @@ export const createProduct = async (productData) => {
             entityType: media.entityType || 'PRODUCT',
             displayOrder: media.displayOrder || index
           }))
-        : []
+        : [],
+      // Agregar ranking si está presente
+      ...(productData.ranking !== undefined ? { ranking: productData.ranking } : {})
     };
 
     console.log('Enviando datos al servidor (POST):', JSON.stringify(productDto, null, 2));

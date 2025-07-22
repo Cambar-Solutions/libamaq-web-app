@@ -36,6 +36,7 @@ import mediaService from '@/services/admin/mediaService';
 // Components
 import ImageUploader from './ImageUploader';
 import PdfUploader from './PdfUploader';
+import StarRating from './StarRating';
 
 // --- Form Schema for Validation
 const editProductSchema = z.object({
@@ -119,6 +120,7 @@ const editProductSchema = z.object({
             value: z.string().optional()
         })
     ).default([]),
+    ranking: z.number().optional(),
 
     media: z.array(z.any()).default([])
 });
@@ -176,6 +178,7 @@ const getProductDefaultValues = (product) => {
         downloads: Array.isArray(productData?.downloads)
             ? productData.downloads.map(dl => ({ key: dl.key || '', value: dl.value || '' }))
             : [{ key: '', value: '' }],
+        ranking: productData?.ranking || null,
 
         media: Array.isArray(productData?.media)
             ? productData.media.map(img => ({
@@ -231,6 +234,7 @@ const EditProductFormDialog = ({
     const watchedDiscount = watch('discount');
     const watchedColor = watch('color');
     const watchedProductName = watch('name');
+    const watchedRanking = watch('ranking');
 
 
 
@@ -671,6 +675,16 @@ const EditProductFormDialog = ({
                 ) : (
                     <>
                         <form onSubmit={handleSubmit(handleEditSubmit, onInvalid)} className="space-y-6 pt-0">
+                            {/** Ranking destacado al inicio del formulario */}
+                            <div className="mb-6">
+                              <Label htmlFor="ranking" className="text-base font-semibold text-gray-800">Ranking</Label>
+                              <StarRating
+                                value={watchedRanking || 0}
+                                onChange={(val) => setValue('ranking', val === 0 ? null : val, { shouldDirty: true })}
+                                readOnly={isSubmitting}
+                              />
+                              <p className="text-xs text-gray-500 mt-1">Selecciona de 1 a 5 estrellas. 0 estrellas equivale a sin ranking.</p>
+                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <Label htmlFor="name">Nombre *</Label>

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Dialog as ImageDialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import StarRating from './StarRating';
 
 // Campos que se mostrarán en el modal
 const DISPLAY_FIELDS = [
@@ -280,6 +281,13 @@ const ViewProductDetailsDialog = ({ open, onOpenChange, productData }) => {
               Visualiza la información registrada para este producto.
             </DialogDescription>
           </DialogHeader>
+          {/* Ranking destacado al inicio */}
+          {typeof productData?.ranking !== 'undefined' && (
+            <div className="mb-6 flex flex-col items-start">
+              <span className="font-semibold text-base text-gray-800 mb-1">Ranking</span>
+              <StarRating value={productData.ranking || 0} readOnly />
+            </div>
+          )}
           <div className="overflow-y-auto max-h-[60vh] px-1" style={{ overflowX: 'unset' }}>
             {productData ? (
               <>
