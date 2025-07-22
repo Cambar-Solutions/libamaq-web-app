@@ -167,7 +167,7 @@ export default function BuyPanel() {
                                 animate="animate"
                                 exit="exit"
                                 transition={{ duration: 0.4, ease: "easeInOut" }}
-                                className="absolute inset-0 min-h-screen bg-stone-100 overflow-auto pt-6 sm:pb-30"
+                                className="absolute inset-0 min-h-screen bg-stone-100 overflow-y-auto pt-6 pb-0 lg:pb-0"
                             >
                                 {/* Breadcrumb “Compras” como volver */}
                                 <Breadcrumb_Buy

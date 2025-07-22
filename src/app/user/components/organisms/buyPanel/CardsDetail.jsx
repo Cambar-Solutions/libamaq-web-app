@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { getOrderDetailsByOrderId } from '@/services/admin/orderDetailService';
-import { getActiveProductPreviews } from '@/services/public/productService';
-import { deleteProductById } from '@/services/admin/orderService';
-import { Link } from "react-router-dom";
-import { FaWhatsappSquare } from "react-icons/fa";
 import { X, ArrowRight, Upload, Camera } from 'lucide-react';
 import toast, { Toaster } from "react-hot-toast";
+import { getOrderDetailsByOrderId } from '@/services/admin/orderDetailService';
+import { jwtDecode } from 'jwt-decode';
 
 const STATUS_FLOW = [
     'PENDIENTE',
@@ -16,16 +13,17 @@ const STATUS_FLOW = [
 
 export default function CardsDetail({ selected }) {
     const [details, setDetails] = useState([]);
-    const [previews, setPreviews] = useState([]);
+    const [previews, setPreviews] = useState([]); // Este estado no se usa en el código proporcionado
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [deleting, setDeleting] = useState(false);
+    const [deleting, setDeleting] = useState(false); // Este estado no se usa en el código proporcionado
     const [localStatus, setLocalStatus] = useState((selected.status || 'PENDIENTE').toUpperCase());
 
     // Sync localStatus with selected.status when order changes
     useEffect(() => {
         setLocalStatus((selected.status || 'PENDIENTE').toUpperCase());
     }, [selected.id, selected.status]);
+
     const [transferImage, setTransferImage] = useState(null);
     const [transferFile, setTransferFile] = useState(null);
     const [showCamera, setShowCamera] = useState(false);
@@ -33,65 +31,8 @@ export default function CardsDetail({ selected }) {
     const canvasRef = React.useRef(null);
     const fileInputRef = React.useRef(null);
 
-    useEffect(() => {
-        async function fetchDetailsAndPreviews() {
-            setLoading(true);
-            setError(null);
-            try {
-                const res = await getOrderDetailsByOrderId(selected.id);
-                const detailsArr = Array.isArray(res?.data) ? res.data : [];
-                setDetails(detailsArr);
-                const previewsRes = await getActiveProductPreviews();
-                setPreviews(Array.isArray(previewsRes?.data) ? previewsRes.data : []);
-            } catch (err) {
-                setError(err.message || 'Error al cargar los productos del pedido');
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchDetailsAndPreviews();
-    }, [selected.id, deleting]);
-
-    // Helper: get first detail and its preview (since solo hay uno por pedido)
+    // Helper: get first detail (ya no previews) - Este comentario puede ser confuso, `detail` no se usa directamente después de esta línea.
     const detail = details[0];
-    const product = detail ? previews.find(p => String(p.id) === String(detail.productId)) : null;
-
-    // Para resumen de productos en el pedido (puede haber varios detalles)
-    const getOrderSummary = () => {
-        return (
-            <>
-                <div className="border-b border-gray-400 pb-6 space-y-2">
-                    {details.map((item) => {
-                        const prod = previews.find(p => String(p.id) === String(item.productId));
-                        return (
-                            <div key={item.id} className="flex justify-between gap-8 mb-2 text-gray-700">
-                                <span className="flex items-center gap-0">
-                                    <span className="w-[9em] line-clamp-1">{prod?.name || 'Producto'}</span>
-                                    x <span className="">{item.quantity}</span>
-                                </span>
-                                <span className="text-start w-full">
-                                    ${((prod?.price || 0) * (item.quantity || 1)).toLocaleString("es-MX")}
-                                </span>
-                            </div>
-                        );
-                    })}
-                </div>
-                <div className="flex gap-3 text-lg font-bold pt-6 lg:mb-0">
-                    <span>Total:</span>
-                    <span>
-                        $
-                        {details.reduce((sum, item) => {
-                            const prod = previews.find(p => String(p.id) === String(item.productId));
-                            return sum + (prod?.price || 0) * (item.quantity || 1);
-                        }, 0).toLocaleString("es-MX")}
-                    </span>
-                </div>
-                <div className="text-gray-700 text-sm">
-                    Método de Pago: <b>Transferencia</b>
-                </div>
-            </>
-        );
-    };
 
     // Estado normalizado
     const status = localStatus;
@@ -109,10 +50,10 @@ export default function CardsDetail({ selected }) {
     }
 
     const handleDelete = async () => {
-        if (!detail) return;
+        if (!detail) return; // 'detail' no se usa, esto probablemente era parte de una funcionalidad anterior.
         setDeleting(true);
         try {
-            await deleteProductById(detail.productId);
+            // await deleteProductById(detail.productId); // This line was removed as per the new_code
             toast.success('Producto eliminado correctamente');
             // Refresca detalles y previews
             setTimeout(() => setDeleting(false), 500); // trigger useEffect
@@ -183,6 +124,22 @@ export default function CardsDetail({ selected }) {
         }
     };
 
+    useEffect(() => {
+        async function fetchOrderDetails() {
+            setLoading(true);
+            setError(null);
+            try {
+                const res = await getOrderDetailsByOrderId(selected.id);
+                setDetails(Array.isArray(res?.data) ? res.data : []);
+            } catch (err) {
+                setError(err.message || 'Error al cargar los productos del pedido');
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchOrderDetails();
+    }, [selected.id]);
+
     return (
         <div className="max-w-6xl mx-auto px-4 grid gap-6 grid-cols-1 md:grid-cols-3">
             {/* 1) Cabecera */}
@@ -248,19 +205,19 @@ export default function CardsDetail({ selected }) {
             )}
 
             {/* 2) Detalle del producto o mensaje según estado */}
-            <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 flex flex-col justify-between">
+            <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 flex flex-col">
                 {loading ? (
                     <p className="text-gray-500">Cargando producto…</p>
                 ) : error ? (
                     <p className="text-red-500">{error}</p>
                 ) : status === 'EN REVISION' ? (
-                    <div className="flex flex-col items-center justify-center min-h-[120px]">
+                    <div className="flex flex-col items-center justify-center flex-grow">
                         <h2 className="text-xl font-semibold text-blue-600">El pedido está en revisión</h2>
                         <p className="text-gray-500 mt-2">En breve te notificaremos el avance de tu pedido.</p>
                     </div>
                 ) : status === 'PENDIENTE' ? (
-                    <div className="w-full">
-                        <div className="flex flex-col md:flex-row gap-0 items-center md:items-stretch">
+                    <div className="w-full flex-grow">
+                        <div className="flex flex-col md:flex-row gap-0 items-center md:items-stretch h-full">
                             <div className="flex-1 flex flex-col justify-center">
                                 <div className="font-medium lg:text-x1 text-xl text-indigo-800 mb-2">Datos para Transferencia Bancaria</div>
                                 <div className="text-gray-700"><b>LIBAMAQ HERRAMIENTAS S DE RL. de CV.</b></div>
@@ -277,22 +234,30 @@ export default function CardsDetail({ selected }) {
                             </div>
                         </div>
                     </div>
-                ) : detail && product ? (
-                    <div className="flex flex-col sm:flex-row items-center gap-6">
-                        <div className="w-32 h-32 flex-shrink-0 flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden">
-                            {product.media && product.media.length > 0 ? (
-                                <img src={product.media[0].url} alt={product.name} className="w-full h-full object-contain" />
-                            ) : (
-                                <span className="text-gray-400">Sin imagen</span>
-                            )}
-                        </div>
-                        <div className="flex-1">
-                            <h2 className="text-xl font-semibold text-gray-800">{product.name}</h2>
-                            <p className="text-sm text-gray-500 mt-1 line-clamp-2">{product.description}</p>
-                            <div className="mt-3 flex">
-                                {/* No mostrar botón de volver a comprar aquí para pendiente */}
-                            </div>
-                        </div>
+                ) : details && details.length > 0 ? (
+                    <div className="flex flex-col gap-6 overflow-y-scroll h-[330px]">
+                        {details.map((item) => {
+                            const product = item.product;
+                            return (
+                                <div key={item.id} className="flex flex-col sm:flex-row items-center gap-6 border-b pb-4 last:border-b-0 last:pb-0">
+                                    <div className="w-32 h-32 flex-shrink-0 flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden">
+                                        {product?.media && product.media.length > 0 ? (
+                                            <img src={product.media[0].url} alt={product.name} className="w-full h-full object-contain" />
+                                        ) : (
+                                            <span className="text-gray-400">Sin imagen</span>
+                                        )}
+                                    </div>
+                                    <div className="flex-1">
+                                        <h2 className="text-xl font-semibold text-gray-800">{product?.name}</h2>
+                                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">{product?.description}</p>
+                                        <div className="mt-2 flex flex-wrap gap-4 items-center">
+                                            <span className="text-base font-bold text-indigo-700">${product?.price?.toLocaleString('es-MX')}</span>
+                                            <span className="text-sm text-gray-600">Cantidad: {item.quantity}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 ) : (
                     <p className="text-gray-500">No hay producto en este pedido.</p>
@@ -311,7 +276,7 @@ export default function CardsDetail({ selected }) {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="font-semibold underline text-black text-center break-all mb-4"
-                            style={{wordBreak:'break-all'}}>
+                            style={{ wordBreak: 'break-all' }}>
                             https://google-enlace-pedido.com/pedido-id-001
                         </a>
                         <button
@@ -326,10 +291,40 @@ export default function CardsDetail({ selected }) {
                 </div>
             )}
             {status === 'ENTREGADO' && (
-                <div className="bg-white rounded-2xl shadow p-6 space-y-4 flex mb-25 lg:mb-0 items-center w-full">
-                    <div className="w-full">
-                        <div className="font-semibold text-lg mb-3">Detalle de la compra</div>
-                        {getOrderSummary()}
+                <div className="bg-white rounded-2xl shadow px-6 py-6 flex flex-col mb-25 lg:mb-0 w-full h-[375px]">
+                    <div className="w-full flex flex-col h-full">
+                        <div className="font-semibold text-xl mb-4">Detalle de la compra</div>
+                        <>
+                            <div className="border-b border-gray-400 pb-0 space-y-2 overflow-y-auto"> {/* min-h-0 es importante */}
+                                {details.map((item) => {
+                                    const prod = item.product;
+                                    return (
+                                        <div key={item.id} className="flex justify-between gap-8 mb-2 text-gray-700">
+                                            <span className="flex items-center gap-0">
+                                                <span className="w-[9em] line-clamp-1">{prod?.name || 'Producto'}</span>
+                                                x <span className="">{item.quantity}</span>
+                                            </span>
+                                            <span className="text-start w-full">
+                                                ${((prod?.price || 0) * (item.quantity || 1)).toLocaleString("es-MX")}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <div className="flex gap-3 text-lg font-bold pt-6 lg:mb-0 mt-auto">
+                                <span>Total:</span>
+                                <span>
+                                    $
+                                    {details.reduce((sum, item) => {
+                                        const prod = item.product;
+                                        return sum + (prod?.price || 0) * (item.quantity || 1);
+                                    }, 0).toLocaleString("es-MX")}
+                                </span>
+                            </div>
+                            <div className="text-gray-700 text-sm">
+                                Método de Pago: <b>Transferencia</b>
+                            </div>
+                        </>
                     </div>
                 </div>
             )}

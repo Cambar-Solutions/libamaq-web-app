@@ -11,7 +11,7 @@ import React from "react";
 import { getUserById } from "@/services/admin/userService";
 import { FaWhatsappSquare } from "react-icons/fa";
 import { ArrowLeft } from 'lucide-react'
-import { createOrder } from "@/services/admin/orderService";
+import { createOrder } from "@/services/public/orderService";
 import { createOrderDetail } from "@/services/admin/orderDetailService";
 
 
