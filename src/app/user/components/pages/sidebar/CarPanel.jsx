@@ -133,14 +133,14 @@ export default function CarPanel() {
   // --- JSX del Resumen de la compra (reutilizable) ---
   const Summary = (
     <>
-      <h2 className="text-lg text-gray-800 mb-4">Resumen de la compra</h2>
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">Resumen de la compra</h2>
       {anySelected ? (
         <>
-          <div className="border-b border-gray-400 pb-6 space-y-2">
+          <div className="border-b border-gray-400 pb-6 space-y-2 overflow-y-scroll h-[300px]">
             {selectedProductDetails.map((item) => (
               <div
                 key={item.id}
-                className="flex justify-between gap-8 mb-2 text-gray-700"
+                className="flex justify-between gap-6 mb-2 text-gray-700"
               >
                 <span className="flex items-center gap-0">
                   <span className="w-[9em] line-clamp-1">{item.product?.name || item.name}</span>
@@ -161,7 +161,7 @@ export default function CarPanel() {
                 .toLocaleString("es-MX")}
             </span>
           </div>
-          <div className="absolute top-120 lg:top-90 left-0 lg:px-5 md:px-5 px-15 w-full">
+          <div className="absolute top-174 lg:top-106 left-0 lg:px-5 md:px-5 px-15 w-full">
             <Button onClick={() => navigate("/payment-method")}
              className="cursor-pointer w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1">
               <CreditCard className="h-4 w-4 lg:h-5 lg:w-5" />
@@ -297,7 +297,7 @@ export default function CarPanel() {
         </div>
 
         {/* PANEL DE RESUMEN (solo en escritorio) */}
-        <div className="hidden lg:block order-1 lg:order-2 w-[25%] ml-3 px-4 mt-13 h-[26em] lg:sticky lg:top-24 z-10 bg-white shadow-md rounded-lg p-3">
+        <div className="hidden lg:block order-1 lg:order-2 w-[25%] ml-3 px-4 mt-13 h-[30em] lg:sticky lg:top-24 z-10 bg-white shadow-md rounded-lg p-3">
           {Summary}
         </div>
       </div>
