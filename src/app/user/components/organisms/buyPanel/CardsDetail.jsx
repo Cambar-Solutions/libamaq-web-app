@@ -33,8 +33,8 @@ export default function CardsDetail({ selected }) {
         backgroundIsGroup: false,
         strokeWidth: 1,
         defaultColours: {
-            "group-1": "#000000",
-            "group-2": "#215DFCFF",
+            "group-1": "#99A1AF", // 000000
+            "group-2": "#99A1AF", // 215DFCFF
             background: "#FFFFFF"
         },
     };

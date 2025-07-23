@@ -6,6 +6,8 @@ import { register as registerUser } from '@/services/authService';
 import { useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import { PhoneInput } from "@/components/ui/PhoneInput";
+import { motion, AnimatePresence } from "framer-motion";
+
 
 const steps = [
     {
@@ -153,16 +155,36 @@ export default function Register() {
 
     return (
         <>
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-100 via-yellow-50 to-white px-2">
+            {/* Fondo animado */}
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.7, ease: "easeOut" }}
+                className="fixed inset-0 z-0 pointer-events-none"
+            >
+                <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-300 rounded-full blur-3xl opacity-30 animate-pulse" />
+                <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-yellow-200 rounded-full blur-3xl opacity-20 animate-pulse" />
+            </motion.div>
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-yellow-200 to-yellow-400 px-2 relative overflow-hidden">
                 <div className="bg-transparent p-2 sm:p-8 w-full max-w-2xl mx-auto">
+                    {/* Logo animado */}
                     <div className="flex justify-center items-center">
-                        <img
+                        <motion.img
                             src="/Tipografia_LIBAMAQ.png"
                             alt="Libamaq"
-                            className="h-20 sm:h-28 mb-0"
+                            className="h-20 sm:h-28 mb-0 z-10"
+                            initial={{ y: -40, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ duration: 0.7, delay: 0.2, type: "spring" }}
                         />
                     </div>
-                    <div className="flex flex-col gap-0">
+                    {/* Formulario animado */}
+                    <motion.div
+                        className="flex flex-col gap-0 z-10"
+                        initial={{ y: 40, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.7, delay: 0.3, type: "spring" }}
+                    >
                         {steps.map((step, idx) => {
                             const Icon = step.icon;
                             const isCompleted = completed[step.key];
@@ -364,7 +386,7 @@ export default function Register() {
                                 </div>
                             );
                         })}
-                    </div>
+                    </motion.div>
                 </div>
             </div>
 
