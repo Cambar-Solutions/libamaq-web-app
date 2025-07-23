@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { FileText, FileDown, Info, Percent, Tag, CheckCircle, XCircle, Shield, ShoppingCart, CreditCard, Clock, ArrowLeft, Share2, Home } from "lucide-react";
+import { FileText, FileDown, Info, Percent, Tag, CheckCircle, XCircle, Shield, ShoppingCart, CreditCard, Clock, ArrowLeft, Share2, Home, Star, StarOff } from "lucide-react";
 import ShareProduct from "@/components/ShareProduct";
 import { useProductById } from "@/hooks/useProductQueries";
 import Nav2 from "@/components/Nav2"; // Navbar para usuarios no loggeados
@@ -24,6 +24,33 @@ import LoadingScreen from '@/components/LoadingScreen';
 // --- Importa las funciones de API que creamos ---
 // Asegúrate de que la ruta sea correcta según la ubicación de tus archivos de API
 import { addProductToCart } from "@/services/customer/shoppingCar";
+
+// Componente para mostrar estrellas de ranking
+const RankingStars = ({ ranking }) => {
+  if (ranking === null || ranking === undefined) {
+    return (
+      <div className="flex items-center gap-2 mt-1 mb-2">
+        <StarOff className="w-5 h-5 text-gray-400" />
+        <span className="text-xs text-gray-500">Sin valoración por el momento</span>
+      </div>
+    );
+  }
+  const stars = [];
+  const rounded = Math.round(ranking * 2) / 2; // permite medias estrellas si se desea
+  for (let i = 1; i <= 5; i++) {
+    if (i <= rounded) {
+      stars.push(<Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" fill="currentColor" />);
+    } else {
+      stars.push(<Star key={i} className="w-5 h-5 text-gray-300" />);
+    }
+  }
+  return (
+    <div className="flex items-center gap-2 mt-1 mb-2">
+      {stars}
+      <span className="text-xs text-gray-600">{ranking.toFixed(1)} / 5</span>
+    </div>
+  );
+};
 
 const DetalleProducto = () => {
   const navigate = useNavigate();
@@ -312,6 +339,8 @@ const DetalleProducto = () => {
                   )}
                 </h1>
               </div>
+              {/* Ranking visualización */}
+              <RankingStars ranking={product?.ranking} />
 
               {/* --- Visualización profesional de precio y rebaja --- */}
               <div className="mb-2 flex flex-col gap-2">
