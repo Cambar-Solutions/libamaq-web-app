@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" viewBox="6.484839916229248 6.453289031982422 35.03031921386719 35.093421936035156" enable-background="new 0 0 48 48">
+<g>
+	<g>
+		
+			<path fill="#FFFFFF" stroke="#215DFCFF" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="    M40.90757,10.72865v2.24518c0,1.02354-0.82974,1.85329-1.85329,1.85329H19.55677v-3.58155    c0-2.36308-0.44306-4.29228-2.80614-4.29228h20.38158C39.21729,6.95329,40.90757,8.64357,40.90757,10.72865z"/>
+		
+			<path fill="#FFFFFF" stroke="#215DFCFF" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="    M37.46946,6.95747H14.71971c-2.37337,0-4.29736,1.92399-4.29736,4.29736l0.02075,25.49452    c0,2.37336,1.92399,4.29736,4.29736,4.29736h15.96339c2.37336,0,4.29736-1.92399,4.29736-4.29736l-0.02076-25.50571    C34.98045,8.87888,35.1047,6.95747,37.46946,6.95747z"/>
+		
+			<path fill="#FFFFFF" stroke="#215DFCFF" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="    M6.98484,36.74519v-1.71902c0-1.02354,0.82975-1.85329,1.85329-1.85329h17.64422c1.02354,0,1.85329,0.82974,1.85329,1.85329    v1.72826c0,2.36308,0.44306,4.29228,2.80614,4.29228H11.28636C8.9107,41.04671,6.98484,39.12086,6.98484,36.74519z"/>
+	</g>
+</g>
+<g>
+	<g>
+		
+			<line fill="none" stroke="#000000" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" x1="19.25369" y1="24.40352" x2="16.47745" y2="24.40352"/>
+		
+			<line fill="none" stroke="#000000" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" x1="19.25369" y1="19.25073" x2="16.47745" y2="19.25073"/>
+	</g>
+</g>
+<g>
+	<g>
+		
+			<circle fill="#FFFFFF" stroke="#000000" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" cx="33.80248" cy="24.84384" r="7.21268"/>
+		
+			<polyline fill="none" stroke="#000000" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" points="    31.6718,22.44681 33.80248,24.84384 36.25048,24.84384   "/>
+	</g>
+</g>
+</svg>
