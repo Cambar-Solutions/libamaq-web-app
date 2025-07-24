@@ -154,6 +154,17 @@ export default function CardsDetail({ selected }) {
         fetchOrderDetails();
     }, [selected.id]);
 
+    // Simulación: detectar si esta orden fue de efectivo
+    let isEfectivo = false;
+    let branchSim = null;
+    try {
+        const lastEf = JSON.parse(localStorage.getItem('lastEfectivoOrder'));
+        if (lastEf && String(selected.id) === String(lastEf.orderId)) {
+            isEfectivo = true;
+            branchSim = lastEf.branch;
+        }
+    } catch { }
+
     // Efecto para aplicar los atributos cuando el componente se monta o los atributos cambian
     useEffect(() => {
         // Asegúrate de que el estado que controla la visibilidad del icono (e.g., status)
@@ -209,26 +220,50 @@ export default function CardsDetail({ selected }) {
                     </div>
                 </div>
             ) : (
-                <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 relative">
-                    <div className="flex items-center gap-2">
-                        <span className={`text-md font-medium ${statusColor}`}>{statusLabel}</span>
-                        <button
-                            className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                            title="Siguiente estado"
-                            onClick={handleNextStatus}
-                        >
-                            <ArrowRight className="w-5 h-5 text-gray-500" />
-                        </button>
+                (selected.paymentMethod === 'efectivo' || isEfectivo) ? (
+                    <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 relative">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className={`text-md font-semibold ${statusColor}`}>{statusLabel}</span>
+                            {/* <button
+                                className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                                title="Siguiente estado"
+                                onClick={handleNextStatus}
+                            >
+                                <ArrowRight className="w-5 h-5 text-gray-500" />
+                            </button> */}
+                        </div>
+                        <h3 className="text-2xl font-semibold text-gray-800 mb-1">
+                            Se realizó el {selected.estimatedDeliveryDate ? new Date(selected.estimatedDeliveryDate).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }) : '10 de mayo, 2025'}
+                        </h3>
+
+
+                        <div className="text-gray-700 mb-1">
+                            ¡No lo olvides! Tienes solo un par de días para recoger tu pedido, si no, <br /> <b>se cancelará automáticamente.</b>
+                        </div>
                     </div>
-                    <h3 className="mt-2 text-2xl font-semibold text-gray-800 flex items-center justify-between">
-                        <span>
-                            Fecha que se realizó el pedido: {selected.createdAt ? new Date(selected.createdAt).toLocaleDateString() : 'Sin fecha'}
-                        </span>
-                    </h3>
-                    <p className=" text-gray-700">
-                        <strong>ID del pedido:</strong> {selected.id}
-                    </p>
-                </div>
+                ) : (
+                    <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 relative">
+                        <div className="flex items-center gap-2">
+                            <span className={`text-md font-medium ${statusColor}`}>{statusLabel}</span>
+                            <button
+                                className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                                title="Siguiente estado"
+                                onClick={handleNextStatus}
+                            >
+                                <ArrowRight className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+                        <h3 className="mt-2 text-2xl font-semibold text-gray-800 flex items-center justify-between">
+                            <span>
+                                Fecha que se realizó el pedido: {selected.createdAt ? new Date(selected.createdAt).toLocaleDateString() : 'Sin fecha'}
+                            </span>
+                        </h3>
+                        <p className=" text-gray-700">
+                            <strong>ID del pedido:</strong> {selected.id}
+                        </p>
+                    </div>
+                )
+
             )}
 
             {/* 2) Detalle del producto o mensaje según estado */}
@@ -268,6 +303,18 @@ export default function CardsDetail({ selected }) {
                             <div className="flex-1 flex justify-center items-center">
                                 <img src="/Tipografia_Completa_LIBAMAQ.png" alt="Liba" className="lg:w-4/4 md:w-full w-1/1" />
                             </div>
+                        </div>
+                    </div>
+                ) : (selected.paymentMethod === 'efectivo' || isEfectivo) ? (
+                    <div className="w-full flex-grow flex flex-col items-center justify-center">
+                        <div className="bg-green-100 border border-green-300 rounded-lg p-8 text-center max-w-lg mx-auto">
+                            <div className="text-2xl font-bold text-green-800 mb-2">¡Recuerda!</div>
+                            <div className="text-lg text-green-700 mb-2">Debes acudir a la sucursal escogida para pagar y recoger tu compra en:</div>
+                            <div className="font-semibold text-indigo-800 text-lg mb-0">
+                                {(branchSim === 'jiutepec' || selected.branch === 'jiutepec') && 'Blvd. Paseo Cuauhnáhuac Jiutepec, Mor.'}
+                                {(branchSim === 'cuautla' || selected.branch === 'cuautla') && 'Carr Federal México-Cuautla Cuautla, Mor.'}
+                            </div>
+                            <img src="/Tipografia_Completa_LIBAMAQ.png" alt="Liba" className="w-1/2 mx-auto mb-0" />
                         </div>
                     </div>
                 ) : details && details.length > 0 ? (
@@ -327,7 +374,7 @@ export default function CardsDetail({ selected }) {
                 </div>
             )}
             {status === 'ENTREGADO' && (
-                <div className="bg-white rounded-2xl shadow px-6 py-6 flex flex-col mb-25 lg:mb-0 w-full h-[375px]">
+                <div className="bg-white rounded-2xl shadow px-6 py-6 flex flex-col mb-25 lg:mb-0 w-full h-[300px]">
                     <div className="w-full flex flex-col h-full">
                         <div className="font-semibold text-xl mb-4">Detalle de la compra</div>
                         <>
@@ -366,40 +413,79 @@ export default function CardsDetail({ selected }) {
             )}
             {/* 3) Sección de "Resumen de la Orden" (tercer div) */}
             {status === 'EN REVISION' || (status !== 'PENDIENTE' && status !== 'EN CURSO' && status !== 'ENTREGADO') ? (
-                <div className="bg-white rounded-2xl shadow px-6 space-y-10 flex flex-col mb-25 lg:mb-0 items-center w-full h-[320px] justify-center">
-                    <h2 className="text-xl font-bold text-gray-800 my-4">Resumen de la Orden</h2>
-                    <hr className="w-full mb-4" />
-                    <p className="text-center text-gray-700 mb-4 text-sm">
-                        Aquí puedes revisar los detalles de tu pedido.
-                    </p>
-                    <div className="w-full">
-                        <div className="flex gap-3 text-lg font-bold pt-2 lg:mb-0 mt-auto">
-                            <span>Total a pagar:</span>
-                            <span>
-                                $
-                                {details.reduce((sum, item) => {
-                                    const prod = item.product;
-                                    return sum + (prod?.price || 0) * (item.quantity || 1);
-                                }, 0).toLocaleString("es-MX")}
-                            </span>
-                        </div>
-                        <div className="text-gray-700 text-sm mb-4">
-                            Método de Pago: <b>Transferencia Bancaria</b>
+                (selected.paymentMethod === 'efectivo' || isEfectivo) ? (
+                    <div className="bg-white rounded-2xl shadow px-6 py-6 flex flex-col mb-25 lg:mb-0 w-full h-[300px]">
+                        <div className="w-full flex flex-col h-full">
+                            <div className="font-semibold text-xl mb-4">Detalle de la compra</div>
+                            <>
+                                <div className="border-b border-gray-400 pb-0 space-y-2 overflow-y-auto">
+                                    {details.map((item) => {
+                                        const prod = item.product;
+                                        return (
+                                            <div key={item.id} className="flex justify-between gap-8 mb-2 text-gray-700">
+                                                <span className="flex items-center gap-0">
+                                                    <span className="w-[9em] line-clamp-1">{prod?.name || 'Producto'}</span>
+                                                    x <span className="">{item.quantity}</span>
+                                                </span>
+                                                <span className="text-start w-full">
+                                                    ${((prod?.price || 0) * (item.quantity || 1)).toLocaleString("es-MX")}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <div className="flex gap-3 text-lg font-bold pt-6 lg:mb-0 mt-auto">
+                                    <span>Total:</span>
+                                    <span>
+                                        $
+                                        {details.reduce((sum, item) => {
+                                            const prod = item.product;
+                                            return sum + (prod?.price || 0) * (item.quantity || 1);
+                                        }, 0).toLocaleString("es-MX")}
+                                    </span>
+                                </div>
+                                <div className="text-gray-700 text-sm">
+                                    Método de Pago: <b>Efectivo</b>
+                                </div>
+                            </>
                         </div>
                     </div>
-
-                    {status !== 'EN REVISION' && status !== 'PENDIENTE' && (
-                        <div className="mb-6">
-                            <button
-                                className="px-4 py-2 w-full lg:w-auto bg-indigo-600 text-white rounded-md hover:bg-white hover:text-indigo-600 hover:border-indigo-600 border-2 border-indigo-600 transition-colors duration-600 cursor-pointer text-sm font-semibold"
-                                onClick={handleInitiatePayment}
-                            >
-                                Realizar Pago
-                            </button>
+                ) : (
+                    <div className="bg-white rounded-2xl shadow px-6 space-y-10 flex flex-col mb-25 lg:mb-0 items-center w-full h-[320px] justify-center">
+                        <h2 className="text-xl font-bold text-gray-800 my-4">Resumen de la Orden</h2>
+                        <hr className="w-full mb-4" />
+                        <p className="text-center text-gray-700 mb-4 text-sm">
+                            Aquí puedes revisar los detalles de tu pedido.
+                        </p>
+                        <div className="w-full">
+                            <div className="flex gap-3 text-lg font-bold pt-2 lg:mb-0 mt-auto">
+                                <span>Total a pagar:</span>
+                                <span>
+                                    $
+                                    {details.reduce((sum, item) => {
+                                        const prod = item.product;
+                                        return sum + (prod?.price || 0) * (item.quantity || 1);
+                                    }, 0).toLocaleString("es-MX")}
+                                </span>
+                            </div>
+                            <div className="text-gray-700 text-sm mb-4">
+                                Método de Pago: <b>Transferencia Bancaria</b>
+                            </div>
                         </div>
 
-                    )}
-                </div>
+                        {status !== 'EN REVISION' && status !== 'PENDIENTE' && (
+                            <div className="mb-6">
+                                <button
+                                    className="px-4 py-2 w-full lg:w-auto bg-indigo-600 text-white rounded-md hover:bg-white hover:text-indigo-600 hover:border-indigo-600 border-2 border-indigo-600 transition-colors duration-600 cursor-pointer text-sm font-semibold"
+                                    onClick={handleInitiatePayment}
+                                >
+                                    Realizar Pago
+                                </button>
+                            </div>
+
+                        )}
+                    </div>)
+
             ) : null /* Si es 'PENDIENTE', 'EN CURSO', 'ENTREGADO', no se muestra esta sección */}
 
             {/* Contenido para subir imagen de transferencia, solo si el estado es PENDIENTE */}
@@ -500,6 +586,7 @@ export default function CardsDetail({ selected }) {
                         </div>
                     )}
                 </div>
+
             )}
             <Toaster
                 position="top-center"

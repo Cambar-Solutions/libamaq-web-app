@@ -221,6 +221,8 @@ export default function PaymentMethod() {
     }, [currentUserId]);
 
     // Render
+    const [orderCompleted, setOrderCompleted] = useState(false); // Nuevo estado
+    const [orderCompletedBranch, setOrderCompletedBranch] = useState(null); // Para mostrar sucursal
     return (
         <SidebarProvider>
             <div className="min-h-screen bg-gray-50 py-0 pt-20 w-full">
@@ -473,7 +475,7 @@ export default function PaymentMethod() {
                                     </div>
                                 )}
                                 {/* Step 3: Confirmación */}
-                                {step === 2 && (
+                                {step === 2 && !orderCompleted && (
                                     <div>
                                         <h2 className="text-2xl font-semibold mb-6">Confirmación</h2>
                                         <div className="mb-6">
@@ -487,15 +489,15 @@ export default function PaymentMethod() {
                                             </div>
                                         </div>
                                         {step === 2 && paymentMethod === "efectivo" && (
-                                            <div className="">
-                                                <div className="bg-indigo-100 p-4 rounded-lg flex flex-col md:flex-row gap-0 items-center md:items-stretch">
-                                                    <div className="flex-1 flex flex-col justify-center">
-                                                        <div className="font-medium lg:text-lg text-xl text-indigo-800 mb-0">Recuerda recoger tu pedido en la sucursal</div>
-                                                        <div className="text-gray-700">{branches[selectedBranch].address}</div>
+                                            <div className="bg-indigo-100 p-4 rounded-lg flex flex-col md:flex-row gap-0 items-center md:items-stretch">
+                                                <div className="flex-1 flex flex-col justify-center">
+                                                    <div className="font-medium lg:text-lg text-xl text-indigo-800 mb-2">Verifica tus datos</div>
+                                                    <div className="text-gray-700">
+                                                        <b>Antes de realizar el pedido, verifica tus datos para evitar errores...</b>
                                                     </div>
-                                                    <div className="flex-1 flex justify-center items-center">
-                                                        <img src="/Tipografia_Completa_LIBAMAQ.png" alt="Liba" className="w-2/4 md:w-full max-w-xs" />
-                                                    </div>
+                                                </div>
+                                                <div className="flex-1 flex justify-center items-center">
+                                                    <img src="/Tipografia_Completa_LIBAMAQ.png" alt="Liba" className="lg:w-2/3 md:w-full w-1/2" />
                                                 </div>
                                             </div>
                                         )}
@@ -510,7 +512,7 @@ export default function PaymentMethod() {
                                                         </div>
                                                     </div>
                                                     <div className="flex-1 flex justify-center items-center">
-                                                        <img src="/Tipografia_Completa_LIBAMAQ.png" alt="Liba" className="lg:w-2/4 md:w-full w-1/2" />
+                                                        <img src="/Tipografia_Completa_LIBAMAQ.png" alt="Liba" className="lg:w-2/3 md:w-full w-1/2" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -528,9 +530,10 @@ export default function PaymentMethod() {
                                                             shippingGuide: 'PENDIENTE',
                                                             shippingStatus: 'PENDING',
                                                             estimatedDeliveryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 días después
+                                                            paymentMethod, // nuevo campo
+                                                            branch: paymentMethod === 'efectivo' ? selectedBranch : null, // nuevo campo solo si es efectivo
                                                         };
                                                         const orderRes = await createOrder(orderPayload);
-                                                        console.log('DEBUG orderRes:', JSON.stringify(orderRes, null, 2));
                                                         const orderId = orderRes?.data?.data?.id;
                                                         if (!orderId) throw new Error('No se pudo obtener el ID de la orden creada');
                                                         // 2. Crear los detalles de la orden (productos)
@@ -560,8 +563,19 @@ export default function PaymentMethod() {
                                                         if (typeof useCartStore.getState === 'function') {
                                                             await useCartStore.getState().refreshCart();
                                                         }
-                                                        toast.success('¡Pedido realizado con éxito!');
-                                                        navigate('/user-profile', { state: { view: paymentMethod === 'transferencia' ? 'compras' : 'carrito' } });
+                                                        if (paymentMethod === 'efectivo') {
+                                                            setOrderCompleted(true);
+                                                            setOrderCompletedBranch(selectedBranch);
+                                                            // Simulación: guardar en localStorage
+                                                            localStorage.setItem('lastEfectivoOrder', JSON.stringify({
+                                                                orderId,
+                                                                branch: selectedBranch
+                                                            }));
+                                                            navigate('/user-profile', { state: { view: paymentMethod === 'efectivo' ? 'compras' : 'carrito' } });
+                                                        } else {
+                                                            toast.success('¡Pedido realizado con éxito!');
+                                                            navigate('/user-profile', { state: { view: paymentMethod === 'transferencia' ? 'compras' : 'carrito' } });
+                                                        }
                                                     } catch (err) {
                                                         toast.error('Error al crear el pedido: ' + (err?.message || err));
                                                     }
@@ -571,9 +585,7 @@ export default function PaymentMethod() {
                                             </button>
                                         </div>
                                     </div>
-
                                 )}
-
                             </div>
                         </div>
                     </div>

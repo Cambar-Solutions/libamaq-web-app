@@ -97,7 +97,7 @@ export default function CardCarProducts({ setSelected }) {
         try {
             await deleteOrder(orderToDelete);
             setOrders(prevOrders => prevOrders.filter(order => order.id !== orderToDelete));
-            toast.success(`Orden ${orderToDelete} eliminada exitosamente.`);
+            toast.success(`Pedido ${orderToDelete} eliminada exitosamente.`);
         } catch (err) {
             const errorMessage = err.response?.data?.message || err.message || `Error al eliminar la orden ${orderToDelete}`;
             setError(errorMessage);

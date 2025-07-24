@@ -230,7 +230,7 @@ export default function CarPanel() {
             <div className="flex flex-col items-center justify-center py-10 text-gray-600">
               <ShoppingCart size={48} className="mb-4 text-gray-400" />
               <p className="text-lg font-semibold">No hay productos en el carrito.</p>
-              <Link to="/tienda" className="mt-4 text-blue-600 hover:underline">
+              <Link to="/user-home" className="mt-4 text-blue-600 hover:underline">
                 Ir a la tienda
               </Link>
             </div>
