@@ -107,6 +107,21 @@ export const sendVerificationCode = async (userId) => {
 };
 
 /**
+ * Envía un código de verificación al usuario vía WhatsApp
+ * @param {number} userId - ID del usuario
+ * @returns {Promise<Object>} - Respuesta del servidor
+ */
+export const sendVerificationCodeWhatsApp = async (userId) => {
+  try {
+    const { data } = await apiClient.post("/l/users/send-verification-code", { id: userId });
+    return data;
+  } catch (error) {
+    console.error("Error al enviar código por WhatsApp:", error);
+    throw error.response?.data || error.message;
+  }
+};
+
+/**
  * Restablece la contraseña de un usuario con código de verificación
  * @param {Object} resetData - Datos para restablecer la contraseña
  * @param {string} resetData.email - Correo electrónico del usuario

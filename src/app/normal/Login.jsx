@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { getUserByEmail, sendCodeToUserEmail } from "@/services/admin/userService";
 import { resetPasswordWithCode } from "@/services/authService";
+import { sendVerificationCodeWhatsApp } from "@/services/authService";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -242,6 +243,9 @@ export default function Login() {
                 >
                   {forgotStep === 1 && (
                     <div className="space-y-4">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        Te enviaremos un código de verificación a tu WhatsApp asociado a tu cuenta.
+                      </p>
                       <input
                         type="email"
                         placeholder="Ingresa tu correo electrónico"
@@ -264,9 +268,9 @@ export default function Login() {
                             const user = await getUserByEmail(forgotEmail);
                             if (!user || !user.id) throw new Error("No se encontró un usuario con ese correo");
                             setForgotUserId(user.id);
-                            // Enviar código al email
-                            await sendCodeToUserEmail(user.id);
-                            setForgotSuccess("Código enviado a tu correo electrónico");
+                            // Enviar código por WhatsApp
+                            await sendVerificationCodeWhatsApp(user.id);
+                            setForgotSuccess("Código enviado a tu WhatsApp");
                             setTimeout(() => {
                               setForgotSuccess("");
                               setForgotStep(2);
