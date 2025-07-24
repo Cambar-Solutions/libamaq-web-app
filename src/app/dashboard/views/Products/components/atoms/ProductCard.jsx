@@ -60,10 +60,10 @@ const ProductCard = ({
   console.log('PRODUCT:', product.name, 'STOCK:', product.stock);
 
   return (
-    <Card className="w-full flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-200 h-full border border-gray-200">
+    <Card className="min-w-[220px] max-w-xs w-full flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-200 h-full border border-gray-200">
       <CardHeader className="p-4 pb-2 border-b bg-white rounded-t-2xl">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-lg font-semibold line-clamp-1 truncate text-gray-900">
+          <CardTitle className="text-lg font-semibold truncate line-clamp-1 text-gray-900">
             {product.name}
           </CardTitle>
         </div>
@@ -75,11 +75,12 @@ const ProductCard = ({
             <img
               src={mainImage}
               alt={product.name}
-              className="w-full h-32 object-contain rounded-lg bg-gray-50 border border-gray-100"
+              className="w-full h-32 object-contain rounded-lg bg-gray-50 border border-gray-100 max-h-32"
+              style={{ maxWidth: '100%', height: 'auto' }}
             />
           </div>
           {product.description && (
-            <div className="text-xs text-gray-600 line-clamp-2 mb-1">
+            <div className="text-xs text-gray-600 line-clamp-2 mb-1 truncate">
               {product.description}
             </div>
           )}
@@ -127,11 +128,13 @@ const ProductCard = ({
       </CardContent>
       {/* Ranking de estrellas justo encima del footer, alineado a la izquierda */}
       <div className="px-4 pb-1 flex items-center">
-        <StarRating value={product.ranking || 0} readOnly size={10} />
+        <div className="min-w-0 max-w-full overflow-hidden">
+          <StarRating value={product.ranking || 0} readOnly size={20} />
+        </div>
       </div>
 
-      <CardFooter className="flex justify-between items-center gap-2 p-3 border-t bg-gray-50 rounded-b-2xl mt-auto">
-        <div className="flex items-center gap-2">
+      <CardFooter className="flex flex-wrap justify-between items-center gap-2 p-3 border-t bg-gray-50 rounded-b-2xl mt-auto">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
           <Badge
             variant={getStockBadgeVariant(product.stock)}
             className={`rounded-full font-semibold px-3 py-1 text-xs tracking-wide flex items-center border transition-all duration-200`}

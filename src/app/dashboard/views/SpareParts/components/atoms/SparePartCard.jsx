@@ -33,11 +33,11 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
       <div className="px-4 pt-4 mb-2 flex items-center">
         <StarRating value={sparePart.ranking || 0} readOnly size={24} />
       </div>
-      <Card className="w-full flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-200 h-full border border-gray-200">
+      <Card className="min-w-[220px] max-w-xs w-full flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-200 h-full border border-gray-200">
         <CardHeader className="p-4 pb-2 border-b bg-white rounded-t-2xl">
           <div className="flex justify-between items-start">
             <div className="flex-1 min-w-0">
-              <CardTitle className="text-lg font-semibold line-clamp-1 truncate text-gray-900">
+              <CardTitle className="text-lg font-semibold truncate line-clamp-1 text-gray-900">
                 {sparePart.name}
               </CardTitle>
             </div>
@@ -57,7 +57,8 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
             <img
               src={mainImage}
               alt={sparePart.name}
-              className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+              className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105 max-h-32"
+              style={{ maxWidth: '100%', height: 'auto' }}
               onError={(e) => {
                 e.target.onerror = null;
                 e.target.src = '/placeholder-product.jpg';
@@ -66,12 +67,12 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
           </div>
 
           {sparePart.description && (
-            <p className="text-xs text-gray-500 line-clamp-2 mb-3 min-h-[32px]">{sparePart.description}</p>
+            <p className="text-xs text-gray-500 line-clamp-2 mb-1 truncate min-h-[32px]">{sparePart.description}</p>
           )}
 
           {/* Ranking de estrellas debajo de la descripción */}
-          <div className="flex items-center mt-1 mb-2">
-            <StarRating value={sparePart.ranking || 0} readOnly size={24} />
+          <div className="flex items-center mt-1 mb-2 min-w-0 max-w-full overflow-hidden">
+            <StarRating value={sparePart.ranking || 0} readOnly size={20} />
           </div>
 
           {sparePart.brand && (
@@ -92,10 +93,9 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
               </div>
             )}
         </CardContent>
-        {/* Elimina el StarRating de antes del footer */}
 
-        <CardFooter className="flex justify-between items-center gap-2 p-3 border-t bg-gray-50 rounded-b-2xl mt-auto">
-          <div className="flex items-center gap-1">
+        <CardFooter className="flex flex-wrap justify-between items-center gap-2 p-3 border-t bg-gray-50 rounded-b-2xl mt-auto">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
             {/* Ver detalles */}
             {onViewDetails && (
               <Tooltip>
