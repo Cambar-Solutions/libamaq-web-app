@@ -363,7 +363,7 @@ const ProductsView = () => {
               ))}
             </div>
           ) : products?.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
               {products?.map((product) => (
                 <ProductCard
                   key={product.id}

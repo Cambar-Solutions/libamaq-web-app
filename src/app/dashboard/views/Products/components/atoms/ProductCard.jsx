@@ -60,7 +60,7 @@ const ProductCard = ({
   console.log('PRODUCT:', product.name, 'STOCK:', product.stock);
 
   return (
-    <Card className="min-w-[220px] max-w-xs w-full flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-200 h-full border border-gray-200">
+    <Card className="min-w-[260px] max-w-sm w-full flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-200 h-full border border-gray-200">
       <CardHeader className="p-4 pb-2 border-b bg-white rounded-t-2xl">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg font-semibold truncate line-clamp-1 text-gray-900">
@@ -133,29 +133,33 @@ const ProductCard = ({
         </div>
       </div>
 
-      <CardFooter className="flex flex-wrap justify-between items-center gap-2 p-3 border-t bg-gray-50 rounded-b-2xl mt-auto">
-        <div className="flex flex-wrap items-center gap-2 min-w-0">
-          <Badge
-            variant={getStockBadgeVariant(product.stock)}
-            className={`rounded-full font-semibold px-3 py-1 text-xs tracking-wide flex items-center border transition-all duration-200`}
-          >
-            {product.stock ?? 0} 
-          </Badge>
-          <Badge
-            variant={product.status === 'ACTIVE' ? 'default' : 'secondary'}
-            className={`rounded-full font-semibold px-3 py-1 text-xs tracking-wide flex items-center border transition-all duration-200
-              ${product.status === 'ACTIVE'
-                ? 'bg-gradient-to-r from-green-200 via-green-100 to-green-50 text-green-800 border-green-300 shadow-sm'
-                : product.status === 'INACTIVE'
-                  ? 'bg-gradient-to-r from-gray-200 via-gray-100 to-blue-50 text-gray-700 border-gray-300 shadow-sm'
-                  : 'bg-gray-200 text-gray-600 border-gray-300'}
-            `}
-          >
-            {getStatusText(product.status)}
-          </Badge>
-        </div>
-        <TooltipProvider>
-          <div className="flex items-center gap-1">
+      <CardFooter className="flex flex-wrap md:flex-nowrap md:w-full justify-start items-center gap-x-3 gap-y-2 p-3 border-t bg-gray-50 rounded-b-2xl mt-auto min-w-0">
+        {/* Grupo de badges e iconos en una sola fila en desktop */}
+        <div className="flex flex-wrap md:flex-nowrap md:w-full md:justify-between items-center gap-x-3 gap-y-2 min-w-0">
+          {/* Badges */}
+          <div className="flex items-center gap-x-2 flex-shrink-0">
+            <Badge
+              variant={getStockBadgeVariant(product.stock)}
+              className={`rounded-full font-semibold px-3 py-1 text-xs tracking-wide flex items-center border transition-all duration-200`}
+            >
+              {product.stock ?? 0} 
+            </Badge>
+            <Badge
+              variant={product.status === 'ACTIVE' ? 'default' : 'secondary'}
+              className={`rounded-full font-semibold px-3 py-1 text-xs tracking-wide flex items-center border transition-all duration-200
+                ${product.status === 'ACTIVE'
+                  ? 'bg-gradient-to-r from-green-200 via-green-100 to-green-50 text-green-800 border-green-300 shadow-sm'
+                  : product.status === 'INACTIVE'
+                    ? 'bg-gradient-to-r from-gray-200 via-gray-100 to-blue-50 text-gray-700 border-gray-300 shadow-sm'
+                    : 'bg-gray-200 text-gray-600 border-gray-300'}
+              `}
+            >
+              {getStatusText(product.status)}
+            </Badge>
+          </div>
+          {/* Iconos de acción */}
+          <TooltipProvider>
+            <div className="flex items-center gap-x-1 flex-shrink-0">
           {/* Ver detalles */}
           {onViewDetails && (
             <Tooltip>
@@ -220,8 +224,9 @@ const ProductCard = ({
               </TooltipContent>
             </Tooltip>
           )}
-          </div>
-        </TooltipProvider>
+            </div>
+          </TooltipProvider>
+        </div>
       </CardFooter>
     </Card>
   );
