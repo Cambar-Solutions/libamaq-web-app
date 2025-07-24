@@ -162,10 +162,10 @@ export default function Register() {
                 transition={{ duration: 0.7, ease: "easeOut" }}
                 className="fixed inset-0 z-0 pointer-events-none"
             >
-                <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-300 rounded-full blur-3xl opacity-30 animate-pulse" />
-                <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-yellow-200 rounded-full blur-3xl opacity-20 animate-pulse" />
+                <div className="absolute -top-32 -left-32 w-96 h-96 bg-yellow-600 rounded-full blur-3xl opacity-30 animate-pulse" />
+                <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-yellow-400 rounded-full blur-3xl opacity-20 animate-pulse" />
             </motion.div>
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-yellow-100 to-yellow-200 px-2 relative overflow-hidden">
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 via-yellow-100 to-yellow-200 px-2 relative overflow-hidden">
                 <div className="bg-transparent p-2 sm:p-8 w-full max-w-2xl mx-auto">
                     {/* Logo animado */}
                     <div className="flex justify-center items-center">

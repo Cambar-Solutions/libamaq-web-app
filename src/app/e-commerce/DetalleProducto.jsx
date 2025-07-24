@@ -63,6 +63,9 @@ const DetalleProducto = () => {
   const descriptionRef = useRef(null);
   const [hasOverflow, setHasOverflow] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [pdfPreviewError, setPdfPreviewError] = useState(false);
 
   // Estado para el ID del carrito actual del usuario
   const [currentUserId, setCurrentUserId] = useState(null); // Para almacenar el ID del usuario loggeado
@@ -227,7 +230,7 @@ const DetalleProducto = () => {
       <SidebarProvider>
         <NavbarComponent />
 
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="lg:max-w-7xl w-[90%] mx-auto lg:px-4 px-0">
           {/* Breadcrumbs */}
           <div className="py-4 mt-4 text-sm lg:text-base">
             <Breadcrumb>
@@ -268,7 +271,7 @@ const DetalleProducto = () => {
           {/* Main content */}
           <div className="flex flex-col md:flex-row gap-4 bg-white rounded-lg shadow-sm mt-2">
             {/* Image Gallery */}
-            <div className="w-full md:w-1/2 lg:w-3/5 p-4">
+            <div className="w-full md:w-1/2 lg:w-3/5 lg:p-4 py-4">
               <div className="flex flex-row gap-4">
                 <div className="hidden sm:flex flex-col space-y-2 overflow-y-auto max-h-96">
                   {product?.media?.map((img, index) => (
@@ -441,45 +444,68 @@ const DetalleProducto = () => {
               </div>
               {/* Descargas en el bloque principal */}
               {product?.downloads && Array.isArray(product.downloads) && product.downloads.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {product.downloads
-                    .filter(download => download.value && download.value.trim() !== '')
-                    .map((download, index) => {
-                      const isPdf = download.value && download.value.toLowerCase().includes('.pdf');
-                      const isManual = download.key && download.key.toLowerCase().includes('manual');
-                      const isFicha = download.key && download.key.toLowerCase().includes('ficha');
-                      let icon, color, label;
-                      if (isPdf) {
-                        icon = <FileText className="w-5 h-5 text-red-600 mr-2" />;
-                        color = 'bg-red-50 hover:bg-red-100 border-red-200';
-                        label = 'PDF';
-                      } else if (isManual) {
-                        icon = <Tag className="w-5 h-5 text-blue-600 mr-2" />;
-                        color = 'bg-blue-50 hover:bg-blue-100 border-blue-200';
-                        label = 'Manual';
-                      } else if (isFicha) {
-                        icon = <Info className="w-5 h-5 text-green-600 mr-2" />;
-                        color = 'bg-green-50 hover:bg-green-100 border-green-200';
-                        label = 'Ficha';
-                      } else {
-                        icon = <FileDown className="w-5 h-5 text-gray-500 mr-2" />;
-                        color = 'bg-gray-50 hover:bg-gray-100 border-gray-200';
-                        label = 'Archivo';
-                      }
-                      return (
-                        <a
-                          key={index}
-                          href={download.value}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`flex items-center px-3 py-1 rounded-lg border text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${color}`}
-                        >
-                          {icon}
-                          <span>{label}</span>
-                          <span className="ml-1 text-gray-600">{download.key}</span>
-                        </a>
-                      );
-                    })}
+                <div className="mt-4 flex flex-wrap gap-2 p-2 rounded-lg bg-red-100 border-2 border-red-200">
+                  <div className="">
+                    <h2 className="text-lg font-semibold text-rose-950 mb-2">
+                      No olvides dar clic en el PDF para acceder al contenido adicional del producto
+                    </h2>
+                    {product.downloads
+                      .filter(download => download.value && download.value.trim() !== '')
+                      .map((download, index) => {
+                        const isPdf = download.value && download.value.toLowerCase().includes('.pdf');
+                        const isManual = download.key && download.key.toLowerCase().includes('manual');
+                        const isFicha = download.key && download.key.toLowerCase().includes('ficha');
+                        let icon, color, label;
+                        if (isPdf) {
+                          icon = <FileText className="w-5 h-5 text-red-600 " />;
+                          color = 'bg-rose-50 hover:bg-rose-300 border-red-700 ';
+                          label = 'PDF';
+                          // Botón para vista previa PDF
+                          return (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => {
+                                setPdfPreviewUrl(download.value);
+                                setShowPdfModal(true);
+                                setPdfPreviewError(false);
+                              }}
+                              className={`flex my-0.5 items-center px-3 py-1 rounded-lg border text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${color}`}
+                            >
+                              {icon}
+                              <span>{label}</span>
+                              <span className="ml-1 text-gray-600">{download.key}</span>
+                            </button>
+                          );
+                        } else if (isManual) {
+                          icon = <Tag className="w-5 h-5 text-blue-600 mr-2" />;
+                          color = 'bg-blue-50 hover:bg-blue-100 border-blue-200';
+                          label = 'Manual';
+                        } else if (isFicha) {
+                          icon = <Info className="w-5 h-5 text-green-600 mr-2" />;
+                          color = 'bg-green-50 hover:bg-green-100 border-green-200';
+                          label = 'Ficha';
+                        } else {
+                          icon = <FileDown className="w-5 h-5 text-gray-500 mr-2" />;
+                          color = 'bg-gray-50 hover:bg-gray-100 border-gray-200';
+                          label = 'Archivo';
+                        }
+                        // Para otros archivos, descarga directa
+                        return (
+                          <a
+                            key={index}
+                            href={download.value}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`flex my-0.5 items-center px-3 py-1 rounded-lg border text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${color}`}
+                          >
+                            {icon}
+                            <span>{label}</span>
+                            <span className="ml-1 text-gray-600">{download.key}</span>
+                          </a>
+                        );
+                      })}
+                  </div>
                 </div>
               )}
             </div>
@@ -568,6 +594,44 @@ const DetalleProducto = () => {
           {/* Se elimina la sección de descargas de la parte inferior */}
         </div>
       </SidebarProvider>
+
+      {/* Modal de vista previa PDF */}
+      {showPdfModal && pdfPreviewUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+          <div className="bg-white rounded-lg w-[90vw] h-[90vh] flex flex-col relative">
+            <button
+              className="cursor-pointer absolute top-1 right-4 text-gray-700 hover:text-red-600 text-3xl font-bold"
+              onClick={() => setShowPdfModal(false)}
+              aria-label="Cerrar vista previa"
+            >
+              &times;
+            </button>
+            <div className="flex justify-between items-center px-4 pt-3 pb-3">
+              <span className="font-semibold text-xl text-gray-800">Vista previa del PDF</span>
+            </div>
+            <iframe
+              src={pdfPreviewUrl}
+              title="Vista previa PDF"
+              className="w-full flex-1 rounded-b-lg border-none"
+              onError={() => setPdfPreviewError(true)}
+            />
+            <div className="flex flex-col items-center justify-center py-2">
+              <p className="text-center text-gray-600 lg:text-sm text-base mb-2">
+                Si no puedes ver la vista previa, descarga el archivo aquí.
+              </p>
+              <a
+                href={pdfPreviewUrl}
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 lg:text-sm text-base font-medium shadow"
+              >
+                <FileDown className="w-5 h-5 mr-2" /> Descargar PDF
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Toaster
         position="top-center"
