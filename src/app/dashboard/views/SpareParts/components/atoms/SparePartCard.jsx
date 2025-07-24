@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Edit, Trash2, Box, DollarSign, Eye } from 'lucide-react';
 import PropTypes from 'prop-types';
+import StarRating from './StarRating';
 
 const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -28,12 +29,18 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
 
   return (
     <>
+      {/* Ranking de estrellas fuera de la card, igual que en ProductCard.jsx */}
+      <div className="px-4 pt-4 mb-2 flex items-center">
+        <StarRating value={sparePart.ranking || 0} readOnly size={24} />
+      </div>
       <Card className="w-full flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-200 h-full border border-gray-200">
         <CardHeader className="p-4 pb-2 border-b bg-white rounded-t-2xl">
           <div className="flex justify-between items-start">
-            <CardTitle className="text-lg font-semibold line-clamp-1 truncate text-gray-900">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-lg font-semibold line-clamp-1 truncate text-gray-900">
                 {sparePart.name}
               </CardTitle>
+            </div>
             {sparePart.brand?.url && (
               <img
                 src={sparePart.brand.url}
@@ -62,6 +69,11 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
             <p className="text-xs text-gray-500 line-clamp-2 mb-3 min-h-[32px]">{sparePart.description}</p>
           )}
 
+          {/* Ranking de estrellas debajo de la descripción */}
+          <div className="flex items-center mt-1 mb-2">
+            <StarRating value={sparePart.ranking || 0} readOnly size={24} />
+          </div>
+
           {sparePart.brand && (
             <div className="flex flex-col items-end">
               <div className="flex items-center text-xs text-gray-400 mb-0.5">
@@ -80,6 +92,7 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
               </div>
             )}
         </CardContent>
+        {/* Elimina el StarRating de antes del footer */}
 
         <CardFooter className="flex justify-between items-center gap-2 p-3 border-t bg-gray-50 rounded-b-2xl mt-auto">
           <div className="flex items-center gap-1">
@@ -186,7 +199,8 @@ SparePartCard.propTypes = {
       url: PropTypes.string,
       name: PropTypes.string,
       color: PropTypes.string
-    })
+    }),
+    ranking: PropTypes.number
   }).isRequired,
   onEdit: PropTypes.func,
   onDelete: PropTypes.func,

@@ -74,6 +74,7 @@ export const EditSparePartForm = ({ sparePart, onSave, onCancel, isSaving }) => 
       externalId: sparePart?.externalId || '',
       material: sparePart?.material || '',
       status: sparePart?.status || 'ACTIVE',
+      ranking: sparePart?.ranking || 0,
     }
   });
 
@@ -90,6 +91,7 @@ export const EditSparePartForm = ({ sparePart, onSave, onCancel, isSaving }) => 
         externalId: sparePart.externalId || '',
         material: sparePart.material || '',
         status: sparePart.status || 'ACTIVE',
+        ranking: sparePart.ranking || 0,
       });
       setSelectedFiles([]);
       setMediaToDelete([]);
@@ -106,6 +108,7 @@ export const EditSparePartForm = ({ sparePart, onSave, onCancel, isSaving }) => 
       price: parseFloat(data.price) || 0,
       stock: parseInt(data.stock, 10) || 0,
       rentable: Boolean(data.rentable),
+      ranking: data.ranking === null ? 0 : data.ranking,
       media: filteredMedia.map(media => ({
         id: Number(media.id),
         url: media.url,

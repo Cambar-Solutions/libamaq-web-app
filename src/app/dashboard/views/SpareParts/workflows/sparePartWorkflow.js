@@ -37,7 +37,8 @@ const sparePartWorkflow = {
             entityType: 'SPARE_PART',
             displayOrder: 0
           }))
-        ]
+        ],
+        ...(sparePartData.ranking !== undefined ? { ranking: sparePartData.ranking } : {})
       };
 
       const response = await createSparePartService(sparePartWithMedia);
@@ -103,7 +104,8 @@ const sparePartWorkflow = {
             entityType: 'SPARE_PART',
             displayOrder: 0
           }))
-        ]
+        ],
+        ...(sparePartData.ranking !== undefined ? { ranking: sparePartData.ranking } : {})
       };
 
       // 5. Eliminar campos que no deberían ir en el payload

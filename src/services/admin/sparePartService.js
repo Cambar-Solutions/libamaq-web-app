@@ -53,7 +53,8 @@ const createSparePart = async (sparePartData) => {
       entityType: 'SPARE_PART',
       entityId: 0, // Se asignará automáticamente en el backend
       displayOrder: Number(media.displayOrder) || 0
-    })) || []
+    })) || [],
+    ...(sparePartData.ranking !== undefined ? { ranking: sparePartData.ranking } : {})
   });
   return data;
 };
@@ -80,14 +81,14 @@ const updateSparePart = async (id, updateData) => {
     status: updateData.status || 'ACTIVE',
     externalId: updateData.externalId,
     code: updateData.code,
-    // Asegurarse de que el media tenga el formato correcto
     media: (updateData.media || []).map(media => ({
       id: Number(media.id),
       url: media.url,
       fileType: media.fileType || 'IMAGE',
       entityType: 'SPARE_PART',
       displayOrder: Number(media.displayOrder) || 0
-    }))
+    })),
+    ...(updateData.ranking !== undefined ? { ranking: updateData.ranking } : {})
   };
 
   console.log('Enviando actualización de repuesto:', payload);
