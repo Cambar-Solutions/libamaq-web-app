@@ -72,8 +72,20 @@ export default function CardCarProducts({ setSelected }) {
             // Esperar a que todas las llamadas de detalles se completen
             const completedOrders = await Promise.all(ordersWithDetailsPromises);
 
-            setOrders(completedOrders); // Actualiza el estado con las órdenes completas
-            console.log("Órdenes cargadas (con detalles):", completedOrders);
+            // Lógica para marcar compra rápida desde localStorage
+            let lastCompraRapida = null;
+            try {
+                lastCompraRapida = JSON.parse(localStorage.getItem('lastCompraRapida'));
+            } catch {}
+            const completedOrdersWithCompra = completedOrders.map(order => {
+                if (lastCompraRapida && String(order.id) === String(lastCompraRapida.orderId) && lastCompraRapida.compra) {
+                    return { ...order, compra:true };
+                }
+                return order;
+            });
+
+            setOrders(completedOrdersWithCompra); // Actualiza el estado con la marca de compra rápida
+            console.log("Órdenes cargadas (con detalles):", completedOrdersWithCompra);
 
         } catch (err) {
             setError(err.message || 'Error al cargar las órdenes');

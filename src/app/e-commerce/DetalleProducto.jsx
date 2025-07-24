@@ -20,6 +20,8 @@ import toast, { Toaster } from "react-hot-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useCartStore } from "@/stores/useCartStore";
 import LoadingScreen from '@/components/LoadingScreen';
+import { createOrder } from "@/services/public/orderService";
+import { createOrderDetail } from "@/services/admin/orderDetailService";
 
 // --- Importa las funciones de API que creamos ---
 // Asegúrate de que la ruta sea correcta según la ubicación de tus archivos de API
@@ -225,6 +227,58 @@ const DetalleProducto = () => {
     return <LoadingScreen />;
   }
 
+  // Nueva función para comprar ahora (crea la orden y redirige a Mis pedidos)
+  const handleBuyNow = async () => {
+    if (!isUserLoggedIn) {
+      toast.error("Debes iniciar sesión para comprar.");
+      return;
+    }
+    if (!product) {
+      toast.error("No se pudo obtener la información del producto.");
+      return;
+    }
+    try {
+      // 1. Crear la orden principal
+      const orderPayload = {
+        userId: Number(currentUserId),
+        type: 'PURCHASE', // debe ser mayúsculas
+        shippingGuide: 'PENDIENTE',
+        shippingStatus: 'PENDING',
+        estimatedDeliveryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+        paymentMethod: 'transferencia',
+        branch: null,
+      };
+      const orderRes = await createOrder(orderPayload);
+      const orderId = orderRes?.data?.data?.id;
+      if (!orderId) throw new Error('No se pudo obtener el ID de la orden creada');
+      // 2. Crear el detalle de la orden (solo este producto)
+      await createOrderDetail({
+        orderId: Number(orderId),
+        productId: Number(product.id),
+        quantity: 1,
+        unitPrice: Number(product.price),
+        discount: 0,
+        total: Number(product.price),
+      });
+      // 3. Guardar en localStorage que esta orden es una compra rápida
+      localStorage.setItem('lastCompraRapida', JSON.stringify({ orderId, compra: true }));
+      toast.success('¡Compra realizada! Puedes ver el estado en Mis pedidos.');
+      // 4. Redirigir a Mis pedidos
+      navigate('/user-profile', { state: { view: 'compras' } });
+    } catch (err) {
+      toast.error('Error al crear la orden: ' + (err?.message || err));
+    }
+  };
+
+  // Nueva función para ir al formulario de PaymentMethod
+  const handleGoToPaymentMethod = () => {
+    if (!isUserLoggedIn) {
+      toast.error("Debes iniciar sesión para completar la compra.");
+      return;
+    }
+    navigate('/payment-method', { state: { productId: product?.id } });
+  };
+
   return (
     <div className="w-full bg-gray-100 min-h-screen pt-20 pb-8">
       <SidebarProvider>
@@ -384,7 +438,9 @@ const DetalleProducto = () => {
                     <ShoppingCart className="h-5 w-5" />
                     Agregar al carrito
                   </Button>
-                  <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-2">
+                  <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-2"
+                    onClick={handleBuyNow}
+                  >
                     <CreditCard className="h-5 w-5" />
                     Comprar ahora
                   </Button>
@@ -407,12 +463,13 @@ const DetalleProducto = () => {
                     <ShoppingCart className="h-5 w-5" />
                     Agregar
                   </Button>
-                  <Link to="/payment-method">
-                    <Button className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1 cursor-pointer">
-                      <CreditCard className="h-4 w-4 lg:h-5 lg:w-5" />
-                      <span className="text-sm lg:text-base">Comprar</span>
-                    </Button>
-                  </Link>
+                  <Button
+                    className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 py-3 rounded-md flex items-center justify-center gap-1 cursor-pointer"
+                    onClick={handleBuyNow}
+                  >
+                    <CreditCard className="h-4 w-4 lg:h-5 lg:w-5" />
+                    <span className="text-sm lg:text-base">Comprar</span>
+                  </Button>
                   {product?.rentable && (
                     <Button
                       className="w-full bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 py-3 rounded-md flex items-center justify-center gap-1"

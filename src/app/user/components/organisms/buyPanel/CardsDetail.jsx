@@ -3,6 +3,7 @@ import { X, ArrowRight, Upload, Camera } from 'lucide-react';
 import toast, { Toaster } from "react-hot-toast";
 import { getOrderDetailsByOrderId } from '@/services/admin/orderDetailService';
 import { jwtDecode } from 'jwt-decode';
+import { useNavigate } from 'react-router-dom';
 
 const STATUS_FLOW = [
     'PENDIENTE',
@@ -178,6 +179,16 @@ export default function CardsDetail({ selected }) {
         }
     }, [status]);
 
+    const navigate = useNavigate();
+
+    // Nueva función para ir al formulario de PaymentMethod
+    const handleGoToPaymentMethod = () => {
+        navigate('/payment-method', { state: { orderId: selected.id, productId: selected?.orderDetails?.[0]?.productId } });
+    };
+
+    console.log('selected:', selected);
+    console.log('status:', status);
+
     return (
         <div className="max-w-6xl mx-auto px-4 grid gap-6 grid-cols-1 md:grid-cols-3">
             {/* 1) Cabecera */}
@@ -241,6 +252,31 @@ export default function CardsDetail({ selected }) {
                             ¡No lo olvides! Tienes solo un par de días para recoger tu pedido, si no, <br /> <b>se cancelará automáticamente.</b>
                         </div>
                     </div>
+                ) : (selected.compra === true) ? (
+                    <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 relative">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className={`text-md font-semibold ${statusColor}`}>{statusLabel}</span>
+                            {/* <button
+                                className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                                title="Siguiente estado"
+                                onClick={handleNextStatus}
+                            >
+                                <ArrowRight className="w-5 h-5 text-gray-500" />
+                            </button> */}
+                        </div>
+                        <h3 className="text-2xl font-semibold text-gray-800 mb-1">
+                            Todavía no has comprado este producto, no te preocupes
+                        </h3>
+
+
+                        <div className="text-gray-700 mb-1 text-lg">
+                            Para completar con la compra da clic en el botón "Completar compra" <br />
+                        </div>
+
+                        <div className="text-gray-700 mb-1">
+                            Fecha: <b>{selected.estimatedDeliveryDate ? new Date(selected.estimatedDeliveryDate).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }) : '10 de mayo, 2025'}</b>
+                        </div>
+                    </div>
                 ) : (
                     <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 relative">
                         <div className="flex items-center gap-2">
@@ -263,7 +299,6 @@ export default function CardsDetail({ selected }) {
                         </p>
                     </div>
                 )
-
             )}
 
             {/* 2) Detalle del producto o mensaje según estado */}
@@ -473,7 +508,7 @@ export default function CardsDetail({ selected }) {
                             </div>
                         </div>
 
-                        {status !== 'EN REVISION' && status !== 'PENDIENTE' && (
+                        {status !== 'EN REVISION' && status !== 'PENDIENTE' && !selected.compra && (
                             <div className="mb-6">
                                 <button
                                     className="px-4 py-2 w-full lg:w-auto bg-indigo-600 text-white rounded-md hover:bg-white hover:text-indigo-600 hover:border-indigo-600 border-2 border-indigo-600 transition-colors duration-600 cursor-pointer text-sm font-semibold"
@@ -482,10 +517,19 @@ export default function CardsDetail({ selected }) {
                                     Realizar Pago
                                 </button>
                             </div>
-
                         )}
-                    </div>)
 
+                        {/* Botón solo si es compra rápida y PENDIENTE */}
+                        {selected.compra && (status === 'PENDIENTE' || status === 'ACTIVE') && (
+                            <button
+                                className="px-4 py-2 w-full lg:w-auto bg-indigo-600 text-white rounded-md hover:bg-white hover:text-indigo-600 hover:border-indigo-600 border-2 border-indigo-600 transition-colors duration-600 cursor-pointer text-sm font-semibold"
+                                onClick={handleGoToPaymentMethod}
+                            >
+                                Completar compra
+                            </button>
+                        )}
+                    </div>
+                )
             ) : null /* Si es 'PENDIENTE', 'EN CURSO', 'ENTREGADO', no se muestra esta sección */}
 
             {/* Contenido para subir imagen de transferencia, solo si el estado es PENDIENTE */}
