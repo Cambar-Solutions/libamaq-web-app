@@ -173,7 +173,7 @@ export const EditSparePartForm = ({ sparePart, onSave, onCancel, isSaving }) => 
             <Input 
               id="name" 
               {...register('name', { required: 'El nombre es requerido' })} 
-              placeholder="Ej: Pantalla OLED" 
+              placeholder="Ej: Carbones para rotomartillo" 
               disabled={isSaving} 
               className="h-10 text-sm max-w-md border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors" 
             />

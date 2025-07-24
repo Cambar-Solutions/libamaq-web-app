@@ -6,6 +6,17 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Edit, Trash2, Box, DollarSign, Eye } from 'lucide-react';
 import PropTypes from 'prop-types';
 import StarRating from './StarRating';
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 
 const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -156,24 +167,50 @@ const SparePartCard = ({ sparePart, onEdit, onDelete, onViewDetails }) => {
 
             {/* Eliminar */}
             {onDelete && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-              <Button 
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(sparePart);
-                    }}
-                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100"
-              >
-                    <Trash2 className="h-4 w-4" />
-              </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
-                  Eliminar
-                </TooltipContent>
-              </Tooltip>
+              <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogTrigger asChild>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsDeleteDialogOpen(true);
+                        }}
+                        className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
+                      Eliminar
+                    </TooltipContent>
+                  </Tooltip>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Eliminar repuesto?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta acción no se puede deshacer. ¿Seguro que deseas eliminar este repuesto?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
+                      Cancelar
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        setIsDeleteDialogOpen(false);
+                        onDelete(sparePart);
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      Eliminar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
           </CardFooter>

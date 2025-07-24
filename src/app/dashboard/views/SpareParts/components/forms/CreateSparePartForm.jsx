@@ -120,22 +120,13 @@ export const CreateSparePartForm = ({
   const handleFormSubmit = async (data) => {
     setIsSaving(true);
     try {
-      // 1. Subir imágenes primero
-      let media = [];
-      if (selectedFiles.length > 0) {
-        media = await mediaService.uploadImages(selectedFiles);
-      }
-
-      // 2. Crear el repuesto con la media subida
       const formData = {
         ...data,
         price: parseFloat(data.price) || 0,
         stock: parseInt(data.stock, 10) || 0,
-        rentable: Boolean(data.rentable),
-        media // array de objetos { id, url, fileType }
+        rentable: Boolean(data.rentable)
       };
-
-      await onSave(formData);
+      await onSave(formData, selectedFiles);
     } catch (err) {
       toast.error('Error al crear el repuesto: ' + (err.message || ''));
     } finally {
@@ -216,7 +207,7 @@ export const CreateSparePartForm = ({
                   required: 'El nombre es requerido',
                   onChange: () => setShowNameError(false)
                 })}
-                placeholder="Ej: Pantalla OLED Galaxy S21"
+                placeholder="Ej: Carbones para rotomartillo"
                 disabled={isSaving}
                 className={`h-10 focus:ring-blue-500 focus:border-blue-500 pr-10 ${
                   showNameError ? 'border-red-500 focus:ring-red-500 focus:border-red-500 bg-red-50' : ''

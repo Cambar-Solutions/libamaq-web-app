@@ -45,10 +45,7 @@ export const SparePartsCardView = ({
   // Manejar eliminación de repuesto
   const handleDelete = async (sparePart) => {
     try {
-      // Actualizar el store localmente
-      removeSparePart(sparePart.id);
-      
-      // Llamar a la función onDelete si existe (para operaciones adicionales)
+      // Solo llama a onDelete para que la confirmación se maneje en el padre
       if (onDelete) {
         await onDelete(sparePart);
       }
