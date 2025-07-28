@@ -60,7 +60,7 @@ export default function Login() {
 
         // Mostrar mensaje de bienvenida
         toast.success(`¡Bienvenido, ${user.name || user.email}!`, {
-          position: 'top-right',
+          position: 'top-center',
           style: { background: '#4caf50', color: '#fff', borderRadius: '10px' },
         });
 

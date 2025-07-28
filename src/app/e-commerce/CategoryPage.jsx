@@ -600,7 +600,7 @@ export default function CategoryPage() {
         <div className="min-h-screen bg-gray-50 flex flex-col pt-20 w-full">
           <div className="max-w-7xl w-full mx-auto px-4">
             {/* Barra de búsqueda y filtros (tu código actual, se mantiene) */}
-            <div className="lg:mt-4 mt-2 mx-auto px-2 sticky lg:top-20 top-19 z-10 bg-white shadow-md rounded-full mb-6 p-2">
+            <div className="lg:mt-4 mt-2 mx-auto px-2 sticky lg:top-20 top-19 z-20 bg-white shadow-md rounded-full mb-6 p-2">
               <div className="flex flex-row items-center gap-2">
                 <div className="relative w-full">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
