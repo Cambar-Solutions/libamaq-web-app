@@ -54,9 +54,9 @@ export default function SearchBar({
   const categoriesToShow = ["todos-los-productos", ...allCategories];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 lg:mt-23 mt-12 sticky top-16 z-10 bg-white shadow-md rounded-lg mb-6 p-3">
+    <div className="max-w-6xl mx-auto px-2 lg:mt-23 mt-12 sticky lg:top-20 top-13 z-10 bg-white shadow-md rounded-full mb-6 p-2">
       <div className="flex flex-row items-center gap-2">
-        <div className="relative w-4/5">
+        <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
           <input
             type="text"
@@ -66,13 +66,7 @@ export default function SearchBar({
             className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center justify-center w-1/5 gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-full transition-colors"
-        >
-          <Filter size={18} />
-          <span className="hidden sm:inline">Filtros</span>
-        </button>
+        
         {(brand || selectedCategory) && ( // Mostrar el botón de regresar si hay marca o categoría seleccionada
           <button
             onClick={handleBack}
@@ -104,5 +98,6 @@ export default function SearchBar({
         </div>
       )}
     </div>
+    
   );
 }

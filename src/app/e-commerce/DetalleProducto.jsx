@@ -348,7 +348,7 @@ const DetalleProducto = () => {
                 </div>
 
                 <div className="relative group flex-1">
-                  <div className="absolute top-2 right-2 z-10">
+                  <div className="absolute lg:top-2 lg:right-2 lg:z-10 top-0 right-4 z-10 ">
                     <ShareProduct product={product} />
                   </div>
                   <div className="w-full h-80 sm:h-96 flex justify-center items-center bg-white rounded-lg">
@@ -363,7 +363,7 @@ const DetalleProducto = () => {
                 </div>
               </div>
 
-              <div className="flex sm:hidden mt-4 space-x-2 overflow-x-auto pb-2">
+              <div className="flex sm:hidden mt-4 space-x-2 overflow-x-auto pb-2 mx-4">
                 {product?.media?.map((img, index) => (
                   <img
                     key={index}

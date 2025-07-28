@@ -19,16 +19,16 @@ export default function TopSellingCarouselSection({
     <div>
       {/* Carrusel móvil */}
       <div className="flex items-center justify-between mb-4 sm:hidden">
-              <h2 className="text-xl font-bold text-gray-500">Destacados</h2>
-              <button
-                className="text-blue-500 underline underline-offset-4 hover:text-indigo-800 hover:font-bold hover:transition-all hover:duration-200 hover:ease-in-out flex items-center cursor-pointer"
-                onClick={() => {
-                  setSearchTerm("");
-                  scrollToSection();
-                }}
-              > Ver todos <ChevronRightIcon size={16} />
-              </button>
-            </div>
+        <h2 className="text-xl font-bold text-gray-500">Destacados</h2>
+        <button
+          className="text-blue-500 underline underline-offset-4 hover:text-indigo-800 hover:font-bold hover:transition-all hover:duration-200 hover:ease-in-out flex items-center cursor-pointer"
+          onClick={() => {
+            setSearchTerm("");
+            scrollToSection();
+          }}
+        > Ver todos <ChevronRightIcon size={16} />
+        </button>
+      </div>
       <div className="flex overflow-x-auto gap-2 snap-x snap-mandatory sm:hidden bg-white rounded-lg">
         {topSellingItems.map((topSellingItem, index) => (
           <div

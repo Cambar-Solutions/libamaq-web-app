@@ -40,6 +40,11 @@ export default function UserHome() {
 
     const navigate = useNavigate();
 
+    // Debug: Monitorear cambios en searchTerm
+    useEffect(() => {
+        console.log('searchTerm cambió:', searchTerm);
+    }, [searchTerm]);
+
     // Función para manejar la carga de imágenes individuales (si se usan)
     const handleImageLoad = () => {
         setLoadedImagesCount(prev => prev + 1);
@@ -147,6 +152,7 @@ export default function UserHome() {
 
     // Cargar productos según los filtros seleccionados (marca, categoría y término de búsqueda)
     useEffect(() => {
+        console.log('useEffect de filtrado ejecutado con:', { brand, selectedCategory, searchTerm, allBrandsLength: allBrands.length });
         const loadFilteredProducts = async () => {
             setLoadingFilteredProducts(true);
             try {
@@ -188,12 +194,17 @@ export default function UserHome() {
                 // Aplicar filtro por término de búsqueda
                 let finalFilteredProducts = productsFromApi;
                 if (searchTerm) {
+                    console.log('Filtrando por searchTerm:', searchTerm);
+                    console.log('Productos antes del filtro:', productsFromApi.length);
                     finalFilteredProducts = productsFromApi.filter(
                         item =>
-                            item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            item.shortDescription?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            item.description?.toLowerCase().includes(searchTerm.toLowerCase())
+                            (item.name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                            (item.product_name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                            (item.shortDescription?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                            (item.description?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                            (item.product_description?.toLowerCase().includes(searchTerm.toLowerCase()))
                     );
+                    console.log('Productos después del filtro:', finalFilteredProducts.length);
                 }
                 setFilteredProducts(finalFilteredProducts);
             } catch (error) {
@@ -227,7 +238,7 @@ export default function UserHome() {
             <SidebarProvider>
                 <NavCustomer />
 
-                <div className="w-full bg-stone-100 min-h-screen pb-10 pt-1">
+                <div className="w-full bg-gray-50 min-h-screen pb-0 pt-1">
                     <motion.div
                         initial={{ opacity: 0, y: 50 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -252,6 +263,7 @@ export default function UserHome() {
                                 selectedCategory={selectedCategory}
                                 isLoading={loadingFilteredProducts} // Usar el nuevo estado de carga
                                 filteredProducts={filteredProducts}
+                                searchTerm={searchTerm}
                             />
                         </div>
                     </motion.div>

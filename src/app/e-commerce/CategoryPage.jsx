@@ -600,9 +600,9 @@ export default function CategoryPage() {
         <div className="min-h-screen bg-gray-50 flex flex-col pt-20 w-full">
           <div className="max-w-7xl w-full mx-auto px-4">
             {/* Barra de búsqueda y filtros (tu código actual, se mantiene) */}
-            <div className="sticky top-20 z-20 bg-white shadow-xl rounded-lg mb-6 p-3">
+            <div className="lg:mt-4 mt-2 mx-auto px-2 sticky lg:top-20 top-19 z-10 bg-white shadow-md rounded-full mb-6 p-2">
               <div className="flex flex-row items-center gap-2">
-                <div className="relative w-4/5">
+                <div className="relative w-full">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                   <input
                     type="text"
@@ -612,13 +612,13 @@ export default function CategoryPage() {
                     className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                <button
+                {/* <button
                   onClick={() => setShowFilters(!showFilters)}
                   className="flex items-center justify-center w-1/5 gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-full transition-colors"
                 >
                   <Filter size={18} />
                   <span className="hidden sm:inline">Filtros</span>
-                </button>
+                </button> */}
                 {/* Asegúrate de que 'brand' aquí se refiera a tu 'selectedBrand' si es lo que usas para filtrar */}
                 {(brand || selectedCategory) && ( // Muestra el botón de regresar si hay alguna selección
                   <button
@@ -650,7 +650,7 @@ export default function CategoryPage() {
 
             {/* Título de la sección de productos */}
             <div className="mb-6 mt-8 w-full">
-              <h1 className="text-xl md:text-2xl font-bold text-gray-800">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-500">
                 {/* Aquí la lógica de título debe reflejar los productos que se están mostrando */}
                 {/* Asumiendo que 'brand' y 'selectedCategory' son tus estados de filtro */}
                 {brand && selectedCategory

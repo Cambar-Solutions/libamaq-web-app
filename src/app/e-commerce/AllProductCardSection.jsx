@@ -29,28 +29,40 @@ export default function AllProductCardSection({ product }) {
             <div className="" />
             {product.brand && (
               <div className="flex items-center justify-between gap-2 mt-2 w-full">
-
                 {/* Botón solo visible en móvil */}
-                <span className="block md:hidden">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          className="cursor-pointer ml-auto p-1 rounded-full hover:bg-gray-200 transition-colors"
-                          onClick={e => {
-                            e.preventDefault();
-                            window.location.href = `/producto/${product.id}`;
-                          }}
-                          aria-label="Ver detalles"
-                        >
-                          <Eye className="w-5 h-5 text-gray-500 hover:text-blue-600" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
-                        Ver detalles
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                <span className="block md:hidden w-full">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {product.brand?.url && (
+                        <img
+                          src={product.brand.url}
+                          alt={product.brand.name}
+                          className="rounded-md object-contain"
+                          style={{ width: '48px', height: '27px', aspectRatio: '16/9', background: '#fff' }}
+                        />
+                      )}
+                    </div>
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            className="cursor-pointer p-1 rounded-full hover:bg-gray-200 transition-colors"
+                            onClick={e => {
+                              e.preventDefault();
+                              window.location.href = `/producto/${product.id}`;
+                            }}
+                            aria-label="Ver detalles"
+                          >
+                            <Eye className="w-5 h-5 text-gray-500 hover:text-blue-600" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-md">
+                          Ver detalles
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </span>
               </div>
             )}
