@@ -198,7 +198,6 @@ export default function CardsDetail({ selected }) {
                         <span className="text-md font-semibold text-orange-500">En curso</span>
                         <button
                             className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                            title="Siguiente estado"
                             onClick={handleNextStatus}
                         >
                             <ArrowRight className="w-5 h-5 text-gray-500" />
@@ -217,7 +216,6 @@ export default function CardsDetail({ selected }) {
                         <span className={`text-md font-semibold ${statusColor}`}>{statusLabel}</span>
                         <button
                             className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                            title="Siguiente estado"
                             onClick={handleNextStatus}
                         >
                             <ArrowRight className="w-5 h-5 text-gray-500" />
@@ -237,7 +235,6 @@ export default function CardsDetail({ selected }) {
                             <span className={`text-md font-semibold ${statusColor}`}>{statusLabel}</span>
                             {/* <button
                                 className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                                title="Siguiente estado"
                                 onClick={handleNextStatus}
                             >
                                 <ArrowRight className="w-5 h-5 text-gray-500" />
@@ -283,7 +280,6 @@ export default function CardsDetail({ selected }) {
                             <span className={`text-md font-medium ${statusColor}`}>{statusLabel}</span>
                             <button
                                 className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                                title="Siguiente estado"
                                 onClick={handleNextStatus}
                             >
                                 <ArrowRight className="w-5 h-5 text-gray-500" />

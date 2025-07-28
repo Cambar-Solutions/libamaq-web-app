@@ -19,7 +19,7 @@ export default function TopSellingCarouselSection({
     <div>
       {/* Carrusel móvil */}
       <div className="flex items-center justify-between mb-4 sm:hidden">
-              <h2 className="text-xl font-bold text-gray-500">Los más vendidos</h2>
+              <h2 className="text-xl font-bold text-gray-500">Destacados</h2>
               <button
                 className="text-blue-500 underline underline-offset-4 hover:text-indigo-800 hover:font-bold hover:transition-all hover:duration-200 hover:ease-in-out flex items-center cursor-pointer"
                 onClick={() => {
@@ -29,7 +29,7 @@ export default function TopSellingCarouselSection({
               > Ver todos <ChevronRightIcon size={16} />
               </button>
             </div>
-      <div className="flex overflow-x-auto gap-2 snap-x snap-mandatory sm:hidden">
+      <div className="flex overflow-x-auto gap-2 snap-x snap-mandatory sm:hidden bg-white rounded-lg">
         {topSellingItems.map((topSellingItem, index) => (
           <div
             key={`top-mobile-${index}`}
@@ -50,8 +50,8 @@ export default function TopSellingCarouselSection({
                   />
                   <div className="p-4 flex-grow flex flex-col justify-between">
                     <div>
-                      <h3 className="text-base font-medium text-gray-800 truncate" title={topSellingItem.product_name}>{topSellingItem.product_name}</h3>
-                      <p className="text-sm text-gray-500 line-clamp-2" title={topSellingItem.product_description}>{topSellingItem.product_description}</p>
+                      <h3 className="text-base font-medium text-gray-800 truncate">{topSellingItem.product_name}</h3>
+                      <p className="text-sm text-gray-500 line-clamp-2">{topSellingItem.product_description}</p>
                     </div>
                     <div className="flex items-end justify-end w-full border-t border-gray-100 mt-2">
                       <TooltipProvider>
@@ -86,7 +86,7 @@ export default function TopSellingCarouselSection({
         <div className="rounded-t-[3rem] px-0 pt-0 w-full mx-auto flex-grow">
           <div className="mb-10">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-500">Los más vendidos</h2>
+              <h2 className="text-xl font-bold text-gray-500">Destacados</h2>
               <button
                 className="text-blue-500 underline underline-offset-4 hover:text-indigo-800 hover:font-bold hover:transition-all hover:duration-200 hover:ease-in-out flex items-center cursor-pointer"
                 onClick={() => {
