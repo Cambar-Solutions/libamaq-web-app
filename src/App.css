@@ -35,32 +35,91 @@
     animation: borderMove 1s linear infinite;
   }
   
-/* Webkit (Chrome, Edge, Safari) */
-html, body {
-  scrollbar-width: thin; /* Firefox */
-  scrollbar-color: #1e3a8a transparent; /* Firefox */
+  
+/* Safari-specific styles */
+@supports (-webkit-appearance: none) {
+  /* Fix for Safari input styling */
+  input, textarea, select {
+    -webkit-appearance: none;
+  }
+  
+  /* Fix for Safari button styling */
+  button {
+    -webkit-appearance: none;
+  }
 }
 
-html::-webkit-scrollbar,
-body::-webkit-scrollbar {
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  /* Prevent zoom on input focus in iOS Safari */
+  input, textarea, select {
+    font-size: 16px;
+  }
+  
+  /* Fix for iOS Safari viewport height */
+  .h-screen {
+    height: 100vh;
+    height: -webkit-fill-available;
+  }
+  
+  /* Fix for iOS Safari safe areas */
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Safari scrollbar styling */
+::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #1e3a8a, #ccccca);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #1e3a8a, #ccccca);
+}
+
+/* Custom scrollbar styles for FiltersTabs */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 2px;
+  height: 2px;
+}
+
+.scrollbar-thumb-gray-700::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #1e3a8a, #ccccca);
+  border-radius: 1px;
+}
+
+.scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #1e3a8a, #ccccca);
+  border-radius: 1px;
+}
+
+.scrollbar-track-transparent::-webkit-scrollbar-track {
   background: transparent;
 }
 
-html::-webkit-scrollbar-thumb,
-body::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, transparent, transparent);
-  border-radius: 0px;
+/* Hide scrollbar by default, show on hover */
+.scrollbar-thin {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
-html::-webkit-scrollbar-thumb:hover,
-body::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, transparent, transparent);
-}
-
-html::-webkit-scrollbar-button,
-body::-webkit-scrollbar-button {
+.scrollbar-thin::-webkit-scrollbar {
   display: none;
-  height: 0;
-  width: 0;
+}
+
+.scrollbar-thin:hover::-webkit-scrollbar {
+  display: block;
 }
