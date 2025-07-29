@@ -526,14 +526,34 @@ export default function PaymentMethod() {
                                                         // 1. Crear la orden principal
                                                         const orderPayload = {
                                                             userId: Number(currentUserId),
-                                                            type: 'PURCHASE',
+                                                            type: 'PURCHASE', // Usar PURCHASE como tipo válido
+                                                            paymentMethod: paymentMethod === 'transferencia' ? 'BANK_TRANSFER' : 'CASH', // Usar los valores del enum del backend
                                                             shippingGuide: 'PENDIENTE',
                                                             shippingStatus: 'PENDING',
                                                             estimatedDeliveryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 días después
-                                                            paymentMethod, // nuevo campo
-                                                            branch: paymentMethod === 'efectivo' ? selectedBranch : null, // nuevo campo solo si es efectivo
+                                                            ...(paymentMethod === 'efectivo' && { branch: selectedBranch }), // solo incluir branch si es efectivo
+                                                            // Removemos el campo status que está causando problemas
+                                                            total: cartProducts.reduce((sum, item) => {
+                                                                const product = item.product || item;
+                                                                const qty = item.quantity;
+                                                                const price = product.price || 0;
+                                                                return sum + price * qty;
+                                                            }, 0) + 50 + Math.round(cartProducts.reduce((sum, item) => {
+                                                                const product = item.product || item;
+                                                                const qty = item.quantity;
+                                                                const price = product.price || 0;
+                                                                return sum + price * qty;
+                                                            }, 0) * 0.16)
                                                         };
+                                                        console.log('Payload que se enviará:', JSON.stringify(orderPayload, null, 2));
                                                         const orderRes = await createOrder(orderPayload);
+                                                        console.log('Respuesta del servidor:', orderRes);
+                                                        
+                                                        // Verificar si la respuesta indica éxito o error
+                                                        if (orderRes?.data?.success === false) {
+                                                            throw new Error(orderRes.data.error || 'Error al crear la orden');
+                                                        }
+                                                        
                                                         const orderId = orderRes?.data?.data?.id;
                                                         if (!orderId) throw new Error('No se pudo obtener el ID de la orden creada');
                                                         // 2. Crear los detalles de la orden (productos)
@@ -566,18 +586,25 @@ export default function PaymentMethod() {
                                                         if (paymentMethod === 'efectivo') {
                                                             setOrderCompleted(true);
                                                             setOrderCompletedBranch(selectedBranch);
-                                                            // Simulación: guardar en localStorage
-                                                            localStorage.setItem('lastEfectivoOrder', JSON.stringify({
-                                                                orderId,
-                                                                branch: selectedBranch
-                                                            }));
-                                                            navigate('/user-profile', { state: { view: paymentMethod === 'efectivo' ? 'compras' : 'carrito' } });
+                                                            navigate('/user-profile', { state: { view: 'compras' } });
                                                         } else {
                                                             toast.success('¡Pedido realizado con éxito!');
-                                                            navigate('/user-profile', { state: { view: paymentMethod === 'transferencia' ? 'compras' : 'carrito' } });
+                                                            navigate('/user-profile', { state: { view: 'compras' } });
                                                         }
                                                     } catch (err) {
-                                                        toast.error('Error al crear el pedido: ' + (err?.message || err));
+                                                        console.error('Error completo:', err);
+                                                        console.error('Respuesta del servidor:', err.response?.data);
+                                                        console.error('Status:', err.response?.status);
+                                                        
+                                                        // Mostrar mensaje de error más específico
+                                                        let errorMessage = 'Error al crear el pedido';
+                                                        if (err?.message) {
+                                                            errorMessage += ': ' + err.message;
+                                                        } else if (err?.response?.data?.error) {
+                                                            errorMessage += ': ' + err.response.data.error;
+                                                        }
+                                                        
+                                                        toast.error(errorMessage);
                                                     }
                                                 }}
                                             >

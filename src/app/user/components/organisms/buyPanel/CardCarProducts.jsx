@@ -167,6 +167,7 @@ export default function CardCarProducts({ setSelected }) {
                             <TableHead className="px-6 py-3 text-center">ID del Pedido</TableHead>
                             <TableHead className="px-6 py-3 text-center">Fecha</TableHead>
                             <TableHead className="px-6 py-3 text-center">Cantidad</TableHead>
+                            <TableHead className="px-6 py-3 text-center">Tipo</TableHead>
                             <TableHead className="px-6 py-3 text-center">Estado</TableHead>
                             <TableHead className="px-6 py-3 text-center">Acciones</TableHead>
                         </TableRow>
@@ -177,6 +178,7 @@ export default function CardCarProducts({ setSelected }) {
                                 <TableCell className="px-6 py-4 font-medium text-gray-900">{order.id}</TableCell>
                                 <TableCell className="px-6 py-4">{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'Sin fecha'}</TableCell>
                                 <TableCell className="px-6 py-4">{order.totalProducts || "..."}</TableCell>
+                                <TableCell className="px-6 py-4">{order.type || "..."}</TableCell>
                                 <TableCell className="px-6 py-4">
                                     <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                         Pendiente
@@ -285,7 +287,7 @@ export default function CardCarProducts({ setSelected }) {
                         <div className="flex-1 ml-4 sm:mt-0 sm:ml-4">
                             <h2 className="text-2xl font-semibold">Pedido: {order.id}</h2>
                             <p className="mt-1 text-gray-700 line-clamp-3 w-[80%] text-justify">
-                                Cantidad: {order.totalProducts || "..."}
+                                Cantidad: {order.totalProducts || "..."} | {order.type || "..."}
                             </p>
                         </div>
                         <div className="flex flex-col items-center sm:mt-0">
