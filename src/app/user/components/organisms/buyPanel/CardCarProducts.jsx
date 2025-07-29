@@ -123,15 +123,6 @@ export default function CardCarProducts({ setSelected }) {
         setSelected(order);
     };
 
-    const countUniqueProducts = (orderDetails) => {
-        if (!Array.isArray(orderDetails) || orderDetails.length === 0) {
-            return 0;
-        }
-        const productIds = orderDetails.map(detail => detail.productId);
-        const uniqueProductIds = new Set(productIds);
-        return uniqueProductIds.size;
-    };
-
     const renderViewControls = () => !isMobile && (
         <div className="flex items-center gap-2 mb-4">
             <div className="flex border rounded-md overflow-hidden">
@@ -185,7 +176,7 @@ export default function CardCarProducts({ setSelected }) {
                             <TableRow key={order.id} className="hover:bg-gray-50" >
                                 <TableCell className="px-6 py-4 font-medium text-gray-900">{order.id}</TableCell>
                                 <TableCell className="px-6 py-4">{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'Sin fecha'}</TableCell>
-                                <TableCell className="px-6 py-4">{countUniqueProducts(order.orderDetails)}</TableCell>
+                                <TableCell className="px-6 py-4">{order.totalProducts || "..."}</TableCell>
                                 <TableCell className="px-6 py-4">
                                     <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                         Pendiente
@@ -294,7 +285,7 @@ export default function CardCarProducts({ setSelected }) {
                         <div className="flex-1 ml-4 sm:mt-0 sm:ml-4">
                             <h2 className="text-2xl font-semibold">Pedido: {order.id}</h2>
                             <p className="mt-1 text-gray-700 line-clamp-3 w-[80%] text-justify">
-                                Cantidad: {countUniqueProducts(order.orderDetails)}
+                                Cantidad: {order.totalProducts || "..."}
                             </p>
                         </div>
                         <div className="flex flex-col items-center sm:mt-0">
