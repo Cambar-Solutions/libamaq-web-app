@@ -14,12 +14,15 @@ import SearchBar from "./components/organisms/SearchBar";
 import CardProducts from "./components/organisms/CardProducts";
 import { jwtDecode } from "jwt-decode";
 import { getUserById } from "@/services/admin/userService";
+import FC_CardProducts from "./components/organisms/FC_CardProducts";
 
 // Importamos el componente LoadingScreen de forma lazy
 const LoadingScreen = lazy(() => import('@/components/LoadingScreen'));
 
 export default function UserHome() {
     const [userInfo, setUserInfo] = useState({ name: "null", email: "null@gmail.com" });
+    const [userRole, setUserRole] = useState(null); // Nuevo estado para el rol del usuario
+
     const [activeItems, setActiveItems] = useState([]); // Productos activos, para el estado inicial o fallback
     const [filteredProducts, setFilteredProducts] = useState([]); // Productos que se mostrarán después de filtros/búsqueda
     const [loadingFilteredProducts, setLoadingFilteredProducts] = useState(true); // Nuevo estado de carga para productos filtrados
@@ -74,15 +77,25 @@ export default function UserHome() {
         const fetchUserData = async () => {
             try {
                 const token = localStorage.getItem("token");
-                if (!token) return;
+                if (!token) {
+                    // Si no hay token, podrías redirigir o establecer un rol predeterminado si es necesario
+                    setUserRole(null);
+                    return;
+                }
 
                 const decoded = jwtDecode(token);
                 const userId = decoded.sub;
+                // Asumiendo que el rol está en 'decoded.role' o similar
+                // Ajusta 'decoded.role' si la propiedad es diferente en tu token
+                setUserRole(decoded.role); // <-- ¡Aquí obtenemos el rol!
 
                 const user = await getUserById(userId);
                 setUserInfo({ name: user.name, email: user.email });
             } catch (error) {
                 console.error("Error al obtener el usuario:", error);
+                // En caso de error, podrías querer manejar el rol también
+                setUserRole(null);
+                toast.error("Error al cargar la información del usuario.");
             }
         };
 
@@ -256,15 +269,36 @@ export default function UserHome() {
                                 allCategories={allCategories} // Pasar todas las categorías
                             />
 
-                            {/* CARDS */}
-                            <CardProducts
-                                sectionRef={sectionRef}
-                                brand={brand}
-                                selectedCategory={selectedCategory}
-                                isLoading={loadingFilteredProducts} // Usar el nuevo estado de carga
-                                filteredProducts={filteredProducts}
-                                searchTerm={searchTerm}
-                            />
+                            {userRole === "GENERAL_CUSTOMER" && (
+                                <CardProducts
+                                    sectionRef={sectionRef}
+                                    brand={brand}
+                                    selectedCategory={selectedCategory}
+                                    isLoading={loadingFilteredProducts}
+                                    filteredProducts={filteredProducts}
+                                    searchTerm={searchTerm}
+                                />
+                            )}
+
+                            {userRole === "FREQUENT_CUSTOMER" && (
+                                <FC_CardProducts
+                                    sectionRef={sectionRef}
+                                    brand={brand}
+                                    selectedCategory={selectedCategory}
+                                    isLoading={loadingFilteredProducts}
+                                    filteredProducts={filteredProducts}
+                                    searchTerm={searchTerm}
+                                />
+                            )}
+
+
+                            {/* Opcional: Mostrar un mensaje si el rol no es reconocido o es nulo */}
+                            {userRole && userRole !== "GENERAL_CUSTOMER" && userRole !== "FREQUENT_CUSTOMER" && (
+                                <p className="text-center text-red-500 mt-8">Tipo de usuario no reconocido. Contacte a la empresa Libamaq.</p>
+                            )}
+                            {!userRole && !loadingFilteredProducts && ( // Solo muestra esto si no hay rol y no está cargando productos
+                                <p className="text-center text-gray-500 mt-8">Cargando productos...</p>
+                            )}
                         </div>
                     </motion.div>
                 </div>
