@@ -11,9 +11,6 @@ import { Link } from "react-router-dom";
 // Importa tu método getOrdersByUser
 import { getOrdersByUser } from "@/services/public/orderService"; // Asegúrate de que la ruta sea correcta
 
-// La función parseDDMMYYYY ya no es necesaria si solo usas ISO o YYYY-MM-DD
-// function parseDDMMYYYY(str) { /* ... */ }
-
 const slideVariants = {
     initial: (dir) => ({ x: dir > 0 ? "100%" : "100%" }),
     animate: { x: "0%" },
@@ -26,16 +23,51 @@ export default function BuyPanel() {
     const [backendOrders, setBackendOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [userId, setUserId] = useState(null); // Nuevo estado para el userId
     const direction = selected ? 1 : -1;
 
-    const userId = "53"; // Reemplaza esto con el ID real de tu usuario
+    // useEffect para obtener el userId del localStorage al montar el componente
+    useEffect(() => {
+        try {
+            const userDataString = localStorage.getItem("user_data");
+            if (userDataString) {
+                const userData = JSON.parse(userDataString);
+                // Asegúrate de que userData tenga la propiedad 'id'
+                if (userData && userData.id) {
+                    setUserId(userData.id);
+                } else {
+                    console.warn("user_data en localStorage no contiene una propiedad 'id'.");
+                    // Opcional: Manejar el caso donde no hay ID de usuario (e.g., redirigir a login)
+                    setError("No se pudo obtener el ID de usuario. Por favor, inicia sesión.");
+                }
+            } else {
+                console.warn("No se encontró user_data en localStorage.");
+                // Opcional: Manejar el caso donde no hay user_data (e.g., redirigir a login)
+                setError("No se encontraron datos de usuario. Por favor, inicia sesión.");
+            }
+        } catch (e) {
+            console.error("Error al parsear user_data desde localStorage:", e);
+            setError("Error al procesar los datos de usuario.");
+        }
+    }, []); // El array de dependencias vacío asegura que se ejecute solo una vez al montar
 
     useEffect(() => {
         const fetchUserOrders = async () => {
+            // Solo intenta cargar pedidos si tenemos un userId
+            if (!userId) {
+                setLoading(false);
+                // Si ya se estableció un error por falta de userId en el useEffect anterior, lo mantenemos.
+                // Si no, podríamos establecer uno aquí.
+                if (!error) {
+                    setError("ID de usuario no disponible. No se pueden cargar los pedidos.");
+                }
+                return;
+            }
+
             try {
                 setLoading(true);
                 setError(null);
-                const response = await getOrdersByUser(userId);
+                const response = await getOrdersByUser(userId); // Usa el userId obtenido del estado
 
                 if (response && Array.isArray(response.data)) {
                     setBackendOrders(response.data);
@@ -54,7 +86,7 @@ export default function BuyPanel() {
         };
 
         fetchUserOrders();
-    }, [userId]);
+    }, [userId, error]); // Ahora userId es una dependencia para que se recarguen los pedidos cuando esté disponible
 
     const ordersWithFilterDate = useMemo(() =>
         backendOrders.map(o => {
@@ -75,13 +107,11 @@ export default function BuyPanel() {
         }), [backendOrders]
     );
 
-    // MODIFICACIÓN CLAVE: Ahora agrupamos los pedidos por fecha
     const groupedAndFilteredOrders = useMemo(() => {
         console.log("LOG 3: Valor actual de filterDate (desde el input):", filterDate);
 
         let ordersToProcess = [];
 
-        // Primero, aplica el filtro de fecha si filterDate no está vacío
         if (filterDate) {
             ordersToProcess = ordersWithFilterDate.filter(o => {
                 const match = o.filterableDate === filterDate;
@@ -89,33 +119,29 @@ export default function BuyPanel() {
                 return match;
             });
         } else {
-            // Si no hay filtro, considera todos los pedidos
             ordersToProcess = ordersWithFilterDate;
         }
 
-        // Ahora, agrupa los pedidos restantes por su 'filterableDate'
         const groupedTemp = ordersToProcess.reduce((acc, order) => {
             const date = order.filterableDate;
-            if (date) { // Asegúrate de que la fecha sea válida para agrupar
+            if (date) {
                 if (!acc[date]) {
-                    acc[date] = []; // Crea un array para esta fecha si no existe
+                    acc[date] = [];
                 }
-                acc[date].push(order); // Añade el pedido al array de su fecha
+                acc[date].push(order);
             }
             return acc;
-        }, {}); // groupedTemp será un objeto como { 'YYYY-MM-DD': [orden1, orden2], 'YYYY-MM-DD': [orden3] }
+        }, {});
 
-        // Convierte el objeto agrupado en un array de objetos para facilitar la iteración en el render
-        // Y los ordena por fecha de forma descendente (más reciente primero)
         const sortedGroupedArray = Object.keys(groupedTemp)
-            .sort((a, b) => new Date(b) - new Date(a)) // Ordena las fechas de la más nueva a la más antigua
+            .sort((a, b) => new Date(b) - new Date(a))
             .map(date => ({
                 date: date,
                 orders: groupedTemp[date]
             }));
 
         console.log("LOG 5: Pedidos agrupados y filtrados:", sortedGroupedArray);
-        return sortedGroupedArray; // Esto ahora es un array de { date: 'YYYY-MM-DD', orders: [] }
+        return sortedGroupedArray;
     }, [filterDate, ordersWithFilterDate]);
 
     return (
@@ -154,8 +180,14 @@ export default function BuyPanel() {
                                 ) : error ? (
                                     <div className="flex flex-col items-center justify-center py-10 text-red-600">
                                         <p className="text-lg font-semibold">{error}</p>
+                                        {/* Opcional: Botón para intentar de nuevo si el error es recuperable */}
+                                        {!userId && ( // Si el error es por falta de userId, sugiere ir a login
+                                            <Link to="/login" className="mt-4 text-blue-600 hover:underline">
+                                                Ir a iniciar sesión
+                                            </Link>
+                                        )}
                                     </div>
-                                ) : groupedAndFilteredOrders.length === 0 ? ( // Usamos groupedAndFilteredOrders aquí
+                                ) : groupedAndFilteredOrders.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-10 text-gray-600">
                                         <ShoppingBag size={48} className="mb-4 text-gray-400" />
                                         <p className="text-lg font-semibold">No hay pedidos para mostrar.</p>
@@ -165,7 +197,6 @@ export default function BuyPanel() {
                                     </div>
                                 ) : (
                                     <CardCarProducts
-                                        // ¡IMPORTANTE! Pasamos los pedidos agrupados
                                         groupedOrders={groupedAndFilteredOrders}
                                         setSelected={setSelected}
                                     />
