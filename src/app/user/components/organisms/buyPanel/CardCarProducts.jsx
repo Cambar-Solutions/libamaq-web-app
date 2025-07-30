@@ -45,26 +45,24 @@ export default function CardCarProducts({ groupedOrders, setSelected, onDeleteOr
         setSelected(order);
     };
 
-    const getOrderTypeIcon = (type) => {
+    const getOrderTypeIcon = (order) => {
         let iconComponent;
         let bgColorClass;
         let iconColor = "#364153";
 
-        switch (type) {
-            case 'PURCHASE':
-                iconComponent = <TbShoppingBagEdit size={22} color={iconColor} />;
-                bgColorClass = "bg-orange-100";
-                break;
-            case 'CASH':
-                iconComponent = <BsCash size={22} color={iconColor} />;
-                bgColorClass = "bg-green-100";
-                break;
-            case 'BANK_TRANSFER':
-                iconComponent = <BsFillCreditCardFill size={22} color={iconColor} />;
-                bgColorClass = "bg-blue-100";
-                break;
-            default:
-                return null;
+        // Usar paymentMethod para determinar el tipo de pago
+        const paymentMethod = order.paymentMethod;
+        
+        if (paymentMethod === 'CASH') {
+            iconComponent = <BsCash size={22} color={iconColor} />;
+            bgColorClass = "bg-green-100";
+        } else if (paymentMethod === 'BANK_TRANSFER') {
+            iconComponent = <BsFillCreditCardFill size={22} color={iconColor} />;
+            bgColorClass = "bg-blue-100";
+        } else {
+            // Para otros tipos o por defecto
+            iconComponent = <TbShoppingBagEdit size={22} color={iconColor} />;
+            bgColorClass = "bg-orange-100";
         }
 
         return (
@@ -74,16 +72,16 @@ export default function CardCarProducts({ groupedOrders, setSelected, onDeleteOr
         );
     };
 
-    const getTranslatedOrderTypeText = (type) => {
-        switch (type) {
-            case 'PURCHASE':
-                return 'Compra';
-            case 'CASH':
-                return 'Efectivo';
-            case 'BANK_TRANSFER':
-                return 'Transferencia';
-            default:
-                return type;
+    const getTranslatedOrderTypeText = (order) => {
+        // Usar paymentMethod para determinar el tipo de pago
+        const paymentMethod = order.paymentMethod;
+        
+        if (paymentMethod === 'CASH') {
+            return 'Efectivo';
+        } else if (paymentMethod === 'BANK_TRANSFER') {
+            return 'Transferencia';
+        } else {
+            return 'Compra';
         }
     };
 
@@ -149,11 +147,11 @@ export default function CardCarProducts({ groupedOrders, setSelected, onDeleteOr
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <div className="">
-                                                            {getOrderTypeIcon(order.type)}
+                                                            {getOrderTypeIcon(order)}
                                                         </div>
                                                     </TooltipTrigger>
                                                     <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
-                                                        <p>{getTranslatedOrderTypeText(order.type)}</p>
+                                                        <p>{getTranslatedOrderTypeText(order)}</p>
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </TooltipProvider>
@@ -287,11 +285,11 @@ export default function CardCarProducts({ groupedOrders, setSelected, onDeleteOr
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
                                                             <div className="">
-                                                                {getOrderTypeIcon(order.type)}
+                                                                {getOrderTypeIcon(order)}
                                                             </div>
                                                         </TooltipTrigger>
                                                         <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
-                                                            <p>{getTranslatedOrderTypeText(order.type)}</p>
+                                                            <p>{getTranslatedOrderTypeText(order)}</p>
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </TooltipProvider>

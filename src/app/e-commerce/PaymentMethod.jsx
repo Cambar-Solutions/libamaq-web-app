@@ -508,7 +508,7 @@ export default function PaymentMethod() {
                                                     <div className="flex-1 flex flex-col justify-center">
                                                         <div className="font-medium lg:text-lg text-xl text-indigo-800 mb-2">Verifica tus datos</div>
                                                         <div className="text-gray-700">
-                                                            <b>Antes de realizar el pedido, verifica tus datos para evitar errores...</b>
+                                                            <b>Antes de realizar el pedido, verifica tus datos para evitar errores al realizar la transferencia...</b>
                                                         </div>
                                                     </div>
                                                     <div className="flex-1 flex justify-center items-center">
@@ -532,7 +532,6 @@ export default function PaymentMethod() {
                                                             shippingStatus: 'PENDING',
                                                             estimatedDeliveryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 días después
                                                             ...(paymentMethod === 'efectivo' && { branch: selectedBranch }), // solo incluir branch si es efectivo
-                                                            // Removemos el campo status que está causando problemas
                                                             total: cartProducts.reduce((sum, item) => {
                                                                 const product = item.product || item;
                                                                 const qty = item.quantity;
