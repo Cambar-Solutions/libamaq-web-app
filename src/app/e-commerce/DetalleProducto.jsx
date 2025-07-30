@@ -270,6 +270,57 @@ const DetalleProducto = () => {
     }
   };
 
+  // Nueva función para rentar ahora (crea la orden de tipo RENTAL y redirige a Mis rentas)
+const handleRentNow = async () => {
+  if (!isUserLoggedIn) {
+    toast.error("Debes iniciar sesión para rentar.");
+    return;
+  }
+  if (!product) {
+    toast.error("No se pudo obtener la información del producto.");
+    return;
+  }
+  try {
+    // 1. Crear la orden principal de tipo RENTAL
+    const orderPayload = {
+      userId: Number(currentUserId),
+      type: 'RENTAL', // tipo RENTAL en mayúsculas
+      shippingGuide: 'PENDIENTE',
+      shippingStatus: 'PENDING',
+      estimatedDeliveryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+      paymentMethod: 'CASH',
+      // Elimina la línea 'branch: null,' completamente
+    };
+
+    console.log("Creando nueva orden (RENTAL):", orderPayload); // Para verificar el payload antes de enviar
+
+    const orderRes = await createOrder(orderPayload);
+    const orderId = orderRes?.data?.data?.id;
+    if (!orderId) throw new Error('No se pudo obtener el ID de la orden creada');
+
+    // 2. Crear el detalle de la orden (solo este producto)
+    await createOrderDetail({
+      orderId: Number(orderId),
+      productId: Number(product.id),
+      quantity: 1,
+      unitPrice: Number(product.price),
+      discount: 0,
+      total: Number(product.price),
+    });
+
+    // 3. Guardar en localStorage que esta orden es una renta rápida
+    localStorage.setItem('lastRentaRapida', JSON.stringify({ orderId, renta: true }));
+    toast.success('¡Renta realizada! Puedes ver el estado en Mis rentas.');
+
+    // 4. Redirigir a Mis rentas
+    navigate('/user-profile', { state: { view: 'rentas' } });
+  } catch (err) {
+    console.error("❌ Error al crear la orden de renta:", err);
+    // Mejora el mensaje de error para ver la respuesta detallada del servidor
+    toast.error('Error al crear la orden de renta: ' + (err?.response?.data?.message || err?.message || 'Error desconocido'));
+  }
+};
+
   // Nueva función para ir al formulario de PaymentMethod
   const handleGoToPaymentMethod = () => {
     if (!isUserLoggedIn) {
@@ -447,7 +498,7 @@ const DetalleProducto = () => {
                   {product?.rentable && (
                     <Button
                       className="w-full bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 py-3 rounded-md flex items-center justify-center gap-2"
-                      onClick={() => navigate(`/e-commerce/rentar/${product?.id}`, { state: { product } })}
+                      onClick={handleRentNow}
                     >
                       <Clock className="h-5 w-5" />
                       Rentar
@@ -473,7 +524,7 @@ const DetalleProducto = () => {
                   {product?.rentable && (
                     <Button
                       className="w-full bg-amber-100 hover:bg-amber-200 text-amber-700 border border-amber-300 py-3 rounded-md flex items-center justify-center gap-1"
-                      onClick={() => navigate(`/e-commerce/rentar/${product?.id}`, { state: { product } })}
+                      onClick={handleRentNow}
                     >
                       <Clock className="h-4 w-4 lg:h-5 lg:w-5" />
                       <span className="text-sm lg:text-base">Rentar</span>
