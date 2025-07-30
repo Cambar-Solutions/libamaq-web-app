@@ -286,7 +286,7 @@ export default function PaymentMethod() {
                                             const key = item.id || product.id || idx;
                                             return (
                                                 <div key={key} className="flex items-center space-x-3">
-                                                    <img src={product?.media?.[0]?.url || "/placeholder-product.png"} alt={product?.name} className="w-12 h-12 object-cover rounded" />
+                                                    <img src={product?.media?.[0]?.url || "/placeholder-product.png"} alt={product?.name} className="w-12 h-12 object-contain rounded" />
                                                     <div className="flex-1 min-w-0">
                                                         <div className="lg:text-sm text-md font-medium truncate w-[80%]">{product.name}</div>
                                                         <div className="lg:text-xs text-sm text-gray-500">Cantidad: {qty}</div>
@@ -439,38 +439,85 @@ export default function PaymentMethod() {
                                     <div>
                                         <h2 className="text-2xl font-semibold mb-6">Método de Pago</h2>
                                         <div className="space-y-3">
-                                            <label className="flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50">
-                                                <input type="radio" name="paymentMethod" value="transferencia" checked={paymentMethod === 'transferencia'} onChange={() => setPaymentMethod('transferencia')} className="mr-3" />
+                                            {/* Opción Transferencia Bancaria */}
+                                            <label
+                                                className={`flex items-center p-3 border rounded-md cursor-pointer transition-all duration-200 ${paymentMethod === 'transferencia'
+                                                    ? 'border-blue-500 ring-2 ring-blue-200 bg-blue-50' // Estilos cuando está seleccionado
+                                                    : 'border-gray-300 hover:bg-gray-50' // Estilos por defecto/hover
+                                                    }`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="paymentMethod"
+                                                    value="transferencia"
+                                                    checked={paymentMethod === 'transferencia'}
+                                                    onChange={() => setPaymentMethod('transferencia')}
+                                                    className="mr-3"
+                                                />
                                                 <div className="flex-1">
                                                     <div className="font-medium">Transferencia Bancaria</div>
-                                                    <div className="text-sm text-gray-600">Paga mediante transferencia bancaria</div>
+                                                    <div className="text-sm text-gray-600">
+                                                        Paga mediante transferencia bancaria
+                                                    </div>
                                                 </div>
                                             </label>
-                                            <label className="flex items-center p-3 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50">
-                                                <input type="radio" name="paymentMethod" value="efectivo" checked={paymentMethod === 'efectivo'} onChange={() => setPaymentMethod('efectivo')} className="mr-3" />
+
+                                            {/* Opción Pago en Efectivo */}
+                                            <label
+                                                className={`flex items-center p-3 border rounded-md cursor-pointer transition-all duration-200 ${paymentMethod === 'efectivo'
+                                                    ? 'border-blue-500 ring-2 ring-blue-200 bg-blue-50' // Estilos cuando está seleccionado
+                                                    : 'border-gray-300 hover:bg-gray-50' // Estilos por defecto/hover
+                                                    }`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="paymentMethod"
+                                                    value="efectivo"
+                                                    checked={paymentMethod === 'efectivo'}
+                                                    onChange={() => setPaymentMethod('efectivo')}
+                                                    className="mr-3"
+                                                />
                                                 <div className="flex-1">
                                                     <div className="font-medium">Pago en Efectivo</div>
-                                                    <div className="text-sm text-gray-600">Paga en sucursal al recoger tu pedido</div>
+                                                    <div className="text-sm text-gray-600">
+                                                        Paga en sucursal al recoger tu pedido
+                                                    </div>
                                                 </div>
                                             </label>
                                         </div>
-                                        {step === 1 && paymentMethod === "efectivo" && (
+
+                                        {step === 1 && paymentMethod === 'efectivo' && (
                                             <div className="mt-6">
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">Selecciona sucursal para recoger:</label>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Selecciona sucursal para recoger:
+                                                </label>
                                                 <select
                                                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                                                     value={selectedBranch}
-                                                    onChange={e => setSelectedBranch(e.target.value)}
+                                                    onChange={(e) => setSelectedBranch(e.target.value)}
                                                 >
                                                     {Object.entries(branches).map(([key, branch]) => (
-                                                        <option key={key} value={key}>{branch.label}</option>
+                                                        <option key={key} value={key}>
+                                                            {branch.label}
+                                                        </option>
                                                     ))}
                                                 </select>
                                             </div>
                                         )}
+
                                         <div className="flex justify-between mt-8">
-                                            <button className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors cursor-pointer" onClick={prevStep}>Anterior</button>
-                                            <button className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-white hover:text-blue-600 hover:border-blue-600 border-2 border-blue-600 transition-colors duration-600 ml-auto cursor-pointer" onClick={nextStep}>Siguiente</button>
+                                            <button
+                                                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
+                                                onClick={prevStep}
+                                            >
+                                                Anterior
+                                            </button>
+                                            <button
+                                                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-white hover:text-blue-600 hover:border-blue-600 border-2 border-blue-600 transition-colors duration-600 ml-auto cursor-pointer"
+                                                onClick={nextStep}
+                                            >
+                                                Siguiente
+                                            </button>
                                         </div>
                                     </div>
                                 )}
@@ -547,12 +594,12 @@ export default function PaymentMethod() {
                                                         console.log('Payload que se enviará:', JSON.stringify(orderPayload, null, 2));
                                                         const orderRes = await createOrder(orderPayload);
                                                         console.log('Respuesta del servidor:', orderRes);
-                                                        
+
                                                         // Verificar si la respuesta indica éxito o error
                                                         if (orderRes?.data?.success === false) {
                                                             throw new Error(orderRes.data.error || 'Error al crear la orden');
                                                         }
-                                                        
+
                                                         const orderId = orderRes?.data?.data?.id;
                                                         if (!orderId) throw new Error('No se pudo obtener el ID de la orden creada');
                                                         // 2. Crear los detalles de la orden (productos)
@@ -594,7 +641,7 @@ export default function PaymentMethod() {
                                                         console.error('Error completo:', err);
                                                         console.error('Respuesta del servidor:', err.response?.data);
                                                         console.error('Status:', err.response?.status);
-                                                        
+
                                                         // Mostrar mensaje de error más específico
                                                         let errorMessage = 'Error al crear el pedido';
                                                         if (err?.message) {
@@ -602,7 +649,7 @@ export default function PaymentMethod() {
                                                         } else if (err?.response?.data?.error) {
                                                             errorMessage += ': ' + err.response.data.error;
                                                         }
-                                                        
+
                                                         toast.error(errorMessage);
                                                     }
                                                 }}

@@ -36,41 +36,6 @@
   }
   
   
-/* Safari-specific styles */
-@supports (-webkit-appearance: none) {
-  /* Fix for Safari input styling */
-  input, textarea, select {
-    -webkit-appearance: none;
-  }
-  
-  /* Fix for Safari button styling */
-  button {
-    -webkit-appearance: none;
-  }
-}
-
-/* iOS Safari specific fixes */
-@supports (-webkit-touch-callout: none) {
-  /* Prevent zoom on input focus in iOS Safari */
-  input, textarea, select {
-    font-size: 16px;
-  }
-  
-  /* Fix for iOS Safari viewport height */
-  .h-screen {
-    height: 100vh;
-    height: -webkit-fill-available;
-  }
-  
-  /* Fix for iOS Safari safe areas */
-  .safe-area-inset {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-}
-
 /* Safari scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
@@ -78,7 +43,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #f5f5f5;
+  background: none;
 }
 
 ::-webkit-scrollbar-thumb {
