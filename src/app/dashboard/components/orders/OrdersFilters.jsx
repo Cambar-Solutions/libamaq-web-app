@@ -9,17 +9,21 @@ import { cn } from "@/lib/utils";
 
 const FILTER_OPTIONS = {
   type: [
-    { id: 'renta', label: 'Renta', color: 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200' },
     { id: 'compra', label: 'Compra', color: 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200' },
-  ],
-  payment: [
-    { id: 'efectivo', label: 'Efectivo', color: 'bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200' },
-    { id: 'transferencia', label: 'Transferencia', color: 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200' }
+    { id: 'renta', label: 'Renta', color: 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200' },
+    { id: 'servicio', label: 'Servicio', color: 'bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200' },
   ],
   status: [
     { id: 'pendiente', label: 'Pendiente', color: 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200' },
-    { id: 'proceso', label: 'En Proceso', color: 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200' },
-    { id: 'completado', label: 'Completado', color: 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200' },
+    { id: 'enviado', label: 'Enviado', color: 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200' },
+    { id: 'entregado', label: 'Entregado', color: 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200' },
+    { id: 'en tránsito', label: 'En Tránsito', color: 'bg-orange-100 text-orange-800 border-orange-300 hover:bg-orange-200' },
+  ],
+  payment: [
+    { id: 'efectivo', label: 'Efectivo', color: 'bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200' },
+    { id: 'tarjeta de crédito', label: 'Tarjeta de Crédito', color: 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200' },
+    { id: 'tarjeta de débito', label: 'Tarjeta de Débito', color: 'bg-indigo-100 text-indigo-800 border-indigo-300 hover:bg-indigo-200' },
+    { id: 'transferencia bancaria', label: 'Transferencia', color: 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200' }
   ]
 };
 
@@ -27,9 +31,8 @@ export const OrdersFilters = ({ onFilterChange }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     type: null,
-    payment: null,
     status: null,
-    period: 'todos'
+    payment: null
   });
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
@@ -66,18 +69,15 @@ export const OrdersFilters = ({ onFilterChange }) => {
     setSearchTerm('');
     setFilters({
       type: null,
-      payment: null,
       status: null,
-      period: 'todos'
+      payment: null
     });
   };
 
   const activeFiltersCount = [
-    // searchTerm ? 1 : 0, // Excluido del conteo de filtros activos
     filters.type ? 1 : 0,
-    filters.payment ? 1 : 0,
     filters.status ? 1 : 0,
-    filters.period !== 'todos' ? 1 : 0
+    filters.payment ? 1 : 0
   ].reduce((a, b) => a + b, 0);
 
   return (
@@ -114,7 +114,7 @@ export const OrdersFilters = ({ onFilterChange }) => {
       {/* Filters Container */}
       <div className={cn(
         "transition-all duration-300 overflow-hidden",
-        isMobileFiltersOpen ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0 md:max-h-[1000px] md:opacity-100   "
+        isMobileFiltersOpen ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0 md:max-h-[1000px] md:opacity-100"
       )}>
         <div className="p-4 md:p-5 space-y-4">
           {/* Search and Filters Row - Responsive */}
@@ -125,29 +125,12 @@ export const OrdersFilters = ({ onFilterChange }) => {
                 value={searchTerm}
                 onChange={setSearchTerm}
                 onSearchClick={handleSearchExecute}
-                placeholder="Buscar por ID, cliente o producto..."
+                placeholder="Buscar por ID o cliente..."
                 className="w-full"
               />
             </div>
-            {/* Filters (Periodo, Tipo, Pago, Estado) */}
+            {/* Filters (Tipo, Estado, Pago) */}
             <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto md:items-center">
-              {/* Periodo */}
-              <div className="w-full md:w-[180px]">
-                <Select 
-                  value={filters.period}
-                  onValueChange={(value) => setFilters(prev => ({ ...prev, period: value }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Periodo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos los pedidos</SelectItem>
-                    <SelectItem value="hoy">Hoy</SelectItem>
-                    <SelectItem value="semana">Esta semana</SelectItem>
-                    <SelectItem value="mes">Este mes</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
               {/* Tipo */}
               <div className="w-full md:w-[140px]">
                 <Select
@@ -160,23 +143,6 @@ export const OrdersFilters = ({ onFilterChange }) => {
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
                     {FILTER_OPTIONS.type.map(option => (
-                      <SelectItem key={option.id} value={option.id}>{option.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* Pago */}
-              <div className="w-full md:w-[140px]">
-                <Select
-                  value={filters.payment || 'all'}
-                  onValueChange={value => handleFilterChange('payment', value === 'all' ? null : value)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pago" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    {FILTER_OPTIONS.payment.map(option => (
                       <SelectItem key={option.id} value={option.id}>{option.label}</SelectItem>
                     ))}
                   </SelectContent>
@@ -199,10 +165,25 @@ export const OrdersFilters = ({ onFilterChange }) => {
                   </SelectContent>
                 </Select>
               </div>
+              {/* Pago */}
+              <div className="w-full md:w-[140px]">
+                <Select
+                  value={filters.payment || 'all'}
+                  onValueChange={value => handleFilterChange('payment', value === 'all' ? null : value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pago" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {FILTER_OPTIONS.payment.map(option => (
+                      <SelectItem key={option.id} value={option.id}>{option.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
-
-        
 
           {/* Clear Filters Button */}
           {activeFiltersCount > 0 && (
@@ -226,8 +207,6 @@ export const OrdersFilters = ({ onFilterChange }) => {
         <div className="border-t border-gray-100 p-3 bg-gray-50">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-gray-500 mr-1">Filtros activos:</span>
-            
-            {/* searchTerm ya no se muestra como un badge de filtro activo aquí */}
             
             {Object.entries(filters).map(([key, value]) => {
               if (!value || value === 'todos') return null;

@@ -3,7 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, CreditCard, DollarSign } from 'lucide-react';
+import { Eye, CreditCard, DollarSign, Banknote, Building, ExternalLink, Package } from 'lucide-react';
 
 export const OrderCard = ({ order, columnId }) => {
   // Configuración para hacer esta tarjeta arrastrable
@@ -46,19 +46,53 @@ export const OrderCard = ({ order, columnId }) => {
         return 'bg-blue-100 text-blue-800 border-blue-300';
       case 'compra':
         return 'bg-green-100 text-green-800 border-green-300';
+      case 'servicio':
+        return 'bg-purple-100 text-purple-800 border-purple-300';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
-  // Determinar el icono según el método de pago (simulado)
-  const getPaymentIcon = () => {
-    // Simulamos que algunos pedidos son en efectivo y otros con tarjeta
-    const isEfectivo = order.id.endsWith('1') || order.id.endsWith('3') || order.id.endsWith('5');
+  // Determinar el icono según el método de pago
+  const getPaymentIcon = (metodoPago) => {
+    if (!metodoPago || metodoPago === '-') return null;
     
-    return isEfectivo ? 
-      <DollarSign className="h-4 w-4 text-green-600" /> : 
-      <CreditCard className="h-4 w-4 text-blue-600" />;
+    const metodo = metodoPago.toLowerCase();
+    if (metodo.includes('tarjeta') || metodo.includes('card')) {
+      return <CreditCard className="h-4 w-4 text-blue-600" />;
+    } else if (metodo.includes('efectivo') || metodo.includes('cash')) {
+      return <DollarSign className="h-4 w-4 text-green-600" />;
+    } else if (metodo.includes('transferencia') || metodo.includes('bank')) {
+      return <Building className="h-4 w-4 text-purple-600" />;
+    } else {
+      return <Banknote className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  // Función para renderizar la guía de envío
+  const renderShippingGuide = (guia) => {
+    if (guia === 'Pendiente') {
+      return (
+        <div className="flex items-center justify-center gap-1">
+          <Package className="h-3 w-3 text-gray-400" />
+          <span className="text-gray-500 italic text-xs">{guia}</span>
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex justify-center">
+          <a 
+            href={guia} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 transition-colors"
+            title={guia}
+          >
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+      );
+    }
   };
 
   return (
@@ -74,27 +108,31 @@ export const OrderCard = ({ order, columnId }) => {
           <div className="flex justify-between items-start">
             <h4 className="font-semibold truncate max-w-[100px]">{order.id}</h4>
             <div className="flex items-center gap-1">
-              {getPaymentIcon()}
+              {getPaymentIcon(order.metodoPago)}
               <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${getBadgeColor(order.tipo)}`}>
                 {order.tipo}
               </Badge>
             </div>
           </div>
           
-          <div className="mt-1 mb-1.5 truncate">{order.producto}</div>
+          <div className="mt-1 mb-1.5 truncate">
+            {order.producto || order.cliente}
+            {order.guia && order.guia !== 'Pendiente' && (
+              <div className="mt-1">
+                {renderShippingGuide(order.guia)}
+              </div>
+            )}
+          </div>
           
           <div className="flex justify-between items-center text-gray-500">
-            <div className="truncate max-w-[100px]">{order.cliente}</div>
-            <div className="font-semibold">{formatPrice(order.total)}</div>
+            <div className="truncate max-w-[100px] text-xs">{order.metodoPago}</div>
+            <div className="font-semibold">{formatPrice(order.total || 0)}</div>
           </div>
         </CardContent>
         
         <CardFooter className="p-1.5 pt-0 flex justify-between items-center">
           <div className="text-gray-500 text-[11px]">
-            {new Date(order.fecha).toLocaleDateString('es-MX', { 
-              day: '2-digit', 
-              month: '2-digit' 
-            })}
+            {order.fecha && order.fecha !== '-' ? order.fecha : '-'}
           </div>
           <button className="p-0.5 rounded-full hover:bg-gray-100">
             <Eye className="h-3.5 w-3.5 text-gray-500" />

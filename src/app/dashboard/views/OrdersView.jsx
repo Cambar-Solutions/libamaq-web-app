@@ -102,14 +102,10 @@ export function OrdersView() {
 
   // Guardar guía y estado
   const handleSaveGuide = (updatedOrder) => {
-    setIsSavingGuide(true);
-    setTimeout(() => { // Simula petición async
-      // This part of the logic needs to be updated to reflect the new data fetching
-      // For now, we'll just close the dialog and reset state
-      setIsGuideDialogOpen(false);
-      setOrderForGuide(null);
-      setIsSavingGuide(false);
-    }, 800);
+    // El componente OrderSendGuideDialog ahora maneja la actualización automáticamente
+    // Solo necesitamos cerrar el diálogo
+    setIsGuideDialogOpen(false);
+    setOrderForGuide(null);
   };
 
   if (isLoading) return <div className="py-10 text-center text-lg">Cargando órdenes...</div>;
@@ -128,6 +124,7 @@ export function OrdersView() {
         setIsDialogOpen={setIsDialogOpen}
         isDrawerOpen={isDrawerOpen}
         setIsDrawerOpen={setIsDrawerOpen}
+        onEditOrder={handleSaveGuide}
       />
       <OrderSendGuideDialog
         open={isGuideDialogOpen}
@@ -135,7 +132,6 @@ export function OrdersView() {
         order={orderForGuide}
         onSave={handleSaveGuide}
         onCancel={() => setIsGuideDialogOpen(false)}
-        isLoading={isSavingGuide}
       />
     </div>
   );
