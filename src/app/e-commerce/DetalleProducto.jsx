@@ -346,7 +346,7 @@ const DetalleProducto = () => {
   }
 
   return (
-    <div className="w-full bg-gray-100 min-h-screen pt-20 pb-8">
+    <div className="w-full bg-gray-100 min-h-screen lg:pt-20 pt-12 pb-8">
       <SidebarProvider>
         <NavbarComponent />
 
@@ -389,9 +389,9 @@ const DetalleProducto = () => {
           </div>
 
           {/* Main content */}
-          <div className="flex flex-col md:flex-row gap-4 bg-white rounded-lg shadow-sm mt-2">
+          <div className="flex flex-col lg:flex-row gap-4 bg-white rounded-lg shadow-sm mt-2">
             {/* Image Gallery */}
-            <div className="w-full md:w-1/2 lg:w-3/5 lg:p-4 py-4">
+            <div className="w-full lg:w-3/5 lg:p-4 py-4 lg:sticky lg:top-20 lg:self-start">
               <div className="flex flex-row gap-4">
                 <div className="hidden sm:flex flex-col space-y-2 overflow-y-auto max-h-96">
                   {product?.media?.map((img, index) => (
@@ -417,7 +417,7 @@ const DetalleProducto = () => {
                   <div className="absolute lg:top-2 lg:right-2 lg:z-10 top-0 right-4 z-10 ">
                     <ShareProduct product={product} />
                   </div>
-                  <div className="w-full h-80 sm:h-96 flex justify-center items-center bg-white rounded-lg">
+                  <div className="w-full h-96 flex justify-center items-center bg-white rounded-lg">
                     <img
                       src={product?.media && product.media.length > 0
                         ? mainImage || product.media[0].url
@@ -451,7 +451,7 @@ const DetalleProducto = () => {
             </div>
 
             {/* Product Information */}
-            <div className="w-full md:w-1/2 lg:w-2/5 p-4">
+            <div className="w-full lg:w-2/5 p-4">
               <div className="flex items-center mb-0 gap-4">
                 <h1 className="text-2xl lg:text-3xl font-semibold text-gray-900 leading-tight flex items-center gap-3">
                   {product?.name}
