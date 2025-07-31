@@ -38,7 +38,7 @@ export default function AllProductCardSection({ product }) {
                           src={product.brand.url}
                           alt={product.brand.name}
                           className="rounded-md object-contain"
-                          style={{ width: '48px', height: '27px', aspectRatio: '16/9', background: '#fff' }}
+                          style={{ width: '58px', height: '37px', aspectRatio: '16/9', background: '#fff' }}
                         />
                       )}
                     </div>
@@ -80,7 +80,7 @@ export default function AllProductCardSection({ product }) {
                     src={product.brand.url}
                     alt={product.brand.name}
                     className="rounded-md object-contain"
-                    style={{ width: '48px', height: '27px', aspectRatio: '16/9', background: '#fff' }}
+                    style={{ width: '58px', height: '37px', aspectRatio: '16/9', background: '#fff' }}
                   />
                 )}
               </div>

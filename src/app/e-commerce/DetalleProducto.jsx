@@ -271,55 +271,55 @@ const DetalleProducto = () => {
   };
 
   // Nueva función para rentar ahora (crea la orden de tipo RENTAL y redirige a Mis rentas)
-const handleRentNow = async () => {
-  if (!isUserLoggedIn) {
-    toast.error("Debes iniciar sesión para rentar.");
-    return;
-  }
-  if (!product) {
-    toast.error("No se pudo obtener la información del producto.");
-    return;
-  }
-  try {
-    // 1. Crear la orden principal de tipo RENTAL
-    const orderPayload = {
-      userId: Number(currentUserId),
-      type: 'RENTAL', // tipo RENTAL en mayúsculas
-      shippingGuide: 'PENDIENTE',
-      shippingStatus: 'PENDING',
-      estimatedDeliveryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-      paymentMethod: 'CASH',
-      // Elimina la línea 'branch: null,' completamente
-    };
+  const handleRentNow = async () => {
+    if (!isUserLoggedIn) {
+      toast.error("Debes iniciar sesión para rentar.");
+      return;
+    }
+    if (!product) {
+      toast.error("No se pudo obtener la información del producto.");
+      return;
+    }
+    try {
+      // 1. Crear la orden principal de tipo RENTAL
+      const orderPayload = {
+        userId: Number(currentUserId),
+        type: 'RENTAL', // tipo RENTAL en mayúsculas
+        shippingGuide: 'PENDIENTE',
+        shippingStatus: 'PENDING',
+        estimatedDeliveryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+        paymentMethod: 'CASH',
+        // Elimina la línea 'branch: null,' completamente
+      };
 
-    console.log("Creando nueva orden (RENTAL):", orderPayload); // Para verificar el payload antes de enviar
+      console.log("Creando nueva orden (RENTAL):", orderPayload); // Para verificar el payload antes de enviar
 
-    const orderRes = await createOrder(orderPayload);
-    const orderId = orderRes?.data?.data?.id;
-    if (!orderId) throw new Error('No se pudo obtener el ID de la orden creada');
+      const orderRes = await createOrder(orderPayload);
+      const orderId = orderRes?.data?.data?.id;
+      if (!orderId) throw new Error('No se pudo obtener el ID de la orden creada');
 
-    // 2. Crear el detalle de la orden (solo este producto)
-    await createOrderDetail({
-      orderId: Number(orderId),
-      productId: Number(product.id),
-      quantity: 1,
-      unitPrice: Number(product.price),
-      discount: 0,
-      total: Number(product.price),
-    });
+      // 2. Crear el detalle de la orden (solo este producto)
+      await createOrderDetail({
+        orderId: Number(orderId),
+        productId: Number(product.id),
+        quantity: 1,
+        unitPrice: Number(product.price),
+        discount: 0,
+        total: Number(product.price),
+      });
 
-    // 3. Guardar en localStorage que esta orden es una renta rápida
-    localStorage.setItem('lastRentaRapida', JSON.stringify({ orderId, renta: true }));
-    toast.success('¡Renta realizada! Puedes ver el estado en Mis rentas.');
+      // 3. Guardar en localStorage que esta orden es una renta rápida
+      localStorage.setItem('lastRentaRapida', JSON.stringify({ orderId, renta: true }));
+      toast.success('¡Renta realizada! Puedes ver el estado en Mis rentas.');
 
-    // 4. Redirigir a Mis rentas
-    navigate('/user-profile', { state: { view: 'rentas' } });
-  } catch (err) {
-    console.error("❌ Error al crear la orden de renta:", err);
-    // Mejora el mensaje de error para ver la respuesta detallada del servidor
-    toast.error('Error al crear la orden de renta: ' + (err?.response?.data?.message || err?.message || 'Error desconocido'));
-  }
-};
+      // 4. Redirigir a Mis rentas
+      navigate('/user-profile', { state: { view: 'rentas' } });
+    } catch (err) {
+      console.error("❌ Error al crear la orden de renta:", err);
+      // Mejora el mensaje de error para ver la respuesta detallada del servidor
+      toast.error('Error al crear la orden de renta: ' + (err?.response?.data?.message || err?.message || 'Error desconocido'));
+    }
+  };
 
   // Nueva función para ir al formulario de PaymentMethod
   const handleGoToPaymentMethod = () => {
@@ -329,6 +329,21 @@ const handleRentNow = async () => {
     }
     navigate('/payment-method', { state: { productId: product?.id } });
   };
+
+  // Función para determinar si un color hexadecimal es claro u oscuro
+  function isLightColor(hexColor) {
+    if (!hexColor) return false;
+    // Convierte el color hex a RGB
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+
+    // Calcula la luminancia (el valor varía entre 0-255)
+    // Fórmula de luminancia para la legibilidad (W3C)
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    // Considera el color claro si la luminancia es mayor a 0.5
+    return luminance > 0.5;
+  }
 
   return (
     <div className="w-full bg-gray-100 min-h-screen pt-20 pb-8">
@@ -627,15 +642,15 @@ const handleRentNow = async () => {
                 className="p-6 rounded-lg text-white w-full flex flex-col"
                 style={{ backgroundColor: product?.color || '#2968c8' }}
               >
-                <h3 className="text-lg lg:text-xl font-bold mb-3 text-white">Características destacadas</h3>
+                <h3 className={`text-lg lg:text-xl font-bold mb-3 ${isLightColor(product?.color) ? 'text-gray-900' : 'text-white'}`}>Características destacadas</h3>
                 <div
                   ref={descriptionRef}
                   className={`relative transition-max-height duration-700 ease-in-out overflow-hidden`}
                   style={{
-                    maxHeight: showFullDescription ? `${descriptionRef.current?.scrollHeight}px` : '20em',
+                    maxHeight: showFullDescription ? `${descriptionRef.current?.scrollHeight}px` : '15em',
                   }}
                 >
-                  <p className="whitespace-pre-line text-sm lg:text-base leading-relaxed text-white text-justify">
+                  <p className={`whitespace-pre-line text-sm lg:text-base leading-relaxed text-justify ${isLightColor(product?.color) ? 'text-gray-800' : 'text-white'}`}>
                     {product.description}
                   </p>
                   {!showFullDescription && hasOverflow && (
@@ -645,7 +660,7 @@ const handleRentNow = async () => {
                 {hasOverflow && (
                   <Button
                     onClick={() => setShowFullDescription(!showFullDescription)}
-                    className="mt-4 self-start text-white hover:text-blue-950 transition-all duration-300 cursor-pointer underline underline-offset-2 bg-transparent hover:bg-transparent"
+                    className="mt-4 self-start text-indigo-600 hover:text-white bg-white hover:bg-indigo-600 border-2 border-indigo-600 transition-all duration-600 cursor-pointer underline underline-offset-2 "
                   >
                     {showFullDescription ? 'Mostrar menos' : 'Mostrar más'}
                   </Button>
