@@ -4,12 +4,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Table2, Smartphone } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
-import { BsFillCreditCardFill } from "react-icons/bs";
-import { BsCash } from "react-icons/bs";
+import { BsFillCreditCardFill, BsCash } from "react-icons/bs";
 import { TbShoppingBagEdit } from "react-icons/tb";
 
-export default function CardCarProducts({ groupedOrders, setSelected, onDeleteOrder }) {
+
+export default function CardCarProducts({ groupedOrders, setSelected, handleTriggerDelete }) {
     const [viewMode, setViewMode] = useState('card');
     const [isMobile, setIsMobile] = useState(false);
 
@@ -24,12 +23,6 @@ export default function CardCarProducts({ groupedOrders, setSelected, onDeleteOr
         window.addEventListener('resize', checkIfMobile);
         return () => window.removeEventListener('resize', checkIfMobile);
     }, []);
-
-    const handleTriggerDelete = (orderId) => {
-        if (onDeleteOrder) {
-            onDeleteOrder(orderId);
-        }
-    };
 
     const handleViewDetails = (order) => {
         setSelected(order);
@@ -72,25 +65,20 @@ export default function CardCarProducts({ groupedOrders, setSelected, onDeleteOr
         }
     };
 
-    // Helper function to format date consistently in 'DD/MM/YYYY' or 'Month Day, Year'
     const formatUTCDate = (dateString, options = {}) => {
         if (!dateString) return 'Sin fecha';
         const date = new Date(dateString);
-        // Use UTC methods to get the day, month, and year
         const year = date.getUTCFullYear();
-        const month = date.getUTCMonth(); // 0-indexed
+        const month = date.getUTCMonth();
         const day = date.getUTCDate();
 
         if (options.long) {
-            // For "Pedidos del 29 de julio de 2025"
             const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
             return `${day} de ${months[month]} de ${year}`;
         } else {
-            // For "30/7/2025"
-            return `${day}/${month + 1}/${year}`; // Add 1 to month because it's 0-indexed
+            return `${day}/${month + 1}/${year}`;
         }
     };
-
 
     const renderViewControls = () => !isMobile && (
         <div className="flex items-center gap-2 mb-0 mx-30">
@@ -128,7 +116,6 @@ export default function CardCarProducts({ groupedOrders, setSelected, onDeleteOr
                     <TableHeader className="bg-gray-50">
                         <TableRow className="border-b border-gray-200">
                             <TableHead className="px-6 py-3 text-center">ID del Pedido</TableHead>
-                            {/* <TableHead className="px-6 py-3 text-center">Fecha</TableHead> */}
                             <TableHead className="px-6 py-3 text-center">Cantidad</TableHead>
                             <TableHead className="px-6 py-3 text-center">Tipo</TableHead>
                             <TableHead className="px-6 py-3 text-center">Estado</TableHead>
@@ -146,7 +133,6 @@ export default function CardCarProducts({ groupedOrders, setSelected, onDeleteOr
                                 {group.orders.map(order => (
                                     <TableRow key={order.id} className="hover:bg-gray-50" >
                                         <TableCell className="px-6 py-4 font-medium text-gray-900">{order.id}</TableCell>
-                                        {/* <TableCell className="px-6 py-4">{formatUTCDate(order.createdAt)}</TableCell> */}
                                         <TableCell className="px-6 py-4">{order.totalProducts || "..."}</TableCell>
                                         <TableCell className="px-6 py-4 flex justify-center items-center h-full">
                                             <TooltipProvider>
@@ -195,7 +181,7 @@ export default function CardCarProducts({ groupedOrders, setSelected, onDeleteOr
                                                                 size="sm"
                                                                 onClick={e => {
                                                                     e.stopPropagation();
-                                                                    handleTriggerDelete(order.id);
+                                                                    handleTriggerDelete(order.id); // Llama a la función del padre
                                                                 }}
                                                                 className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
                                                             >
@@ -234,27 +220,8 @@ export default function CardCarProducts({ groupedOrders, setSelected, onDeleteOr
                                 className="bg-white rounded-lg shadow-sm hover:shadow-lg duration-500 select-none overflow-hidden lg:mx-10"
                                 onClick={() => setSelected(order)}
                             >
-                                <div className=" flex items-center text-gray-600  justify-between relative mt-0">
-                                    {/* <span className="font-medium">{formatUTCDate(order.createdAt)}</span> */}
+                                <div className=" flex items-center text-gray-600 justify-between relative mt-0">
                                     <div className="absolute right-0 top-5 -translate-y-1/2 flex space-x-2 mt-2 mr-4">
-                                        {/* <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <button
-                                                        className="p-2 rounded-full hover:bg-blue-100 transition-colors"
-                                                        onClick={e => {
-                                                            e.stopPropagation();
-                                                            handleViewDetails(order);
-                                                        }}
-                                                    >
-                                                        <Eye className="w-6 h-6 text-blue-500 cursor-pointer" />
-                                                    </button>
-                                                </TooltipTrigger>
-                                                <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
-                                                    <p>Ver detalles</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider> */}
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
@@ -262,7 +229,7 @@ export default function CardCarProducts({ groupedOrders, setSelected, onDeleteOr
                                                         className="p-2 rounded-full hover:bg-red-100 transition-colors"
                                                         onClick={e => {
                                                             e.stopPropagation();
-                                                            handleTriggerDelete(order.id);
+                                                            handleTriggerDelete(order.id); // Llama a la función del padre
                                                         }}
                                                     >
                                                         <X className="w-6 h-6 text-red-500 cursor-pointer" />
@@ -286,7 +253,7 @@ export default function CardCarProducts({ groupedOrders, setSelected, onDeleteOr
                                                                 <div>
                                                                     {getOrderTypeIcon(order)}
                                                                 </div>
-                                                                
+
                                                                 <div className='sm:hidden text-sm text-gray-500'>
                                                                     {getTranslatedOrderTypeText(order)}
                                                                 </div>
@@ -305,7 +272,6 @@ export default function CardCarProducts({ groupedOrders, setSelected, onDeleteOr
                                                 Cantidad: {order.totalProducts || "..."}
                                             </p>
                                         </div>
-
                                     </div>
                                     <div className="flex flex-col items-center sm:mt-0 lg:ml-0 ml-9">
                                         <span className="mt-2 px-2 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">

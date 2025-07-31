@@ -238,15 +238,15 @@ const DetalleProducto = () => {
       return;
     }
     try {
-      // 1. Crear la orden principal
+      // 1. Crear la orden principal tipo PURCHASE (COMPRA)
       const orderPayload = {
         userId: Number(currentUserId),
         type: 'PURCHASE', // debe ser mayúsculas
         shippingGuide: 'PENDIENTE',
         shippingStatus: 'PENDING',
         estimatedDeliveryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-        paymentMethod: 'transferencia',
-        branch: null,
+        paymentMethod: 'CREDIT_CARD',
+        // branch: null,
       };
       const orderRes = await createOrder(orderPayload);
       const orderId = orderRes?.data?.data?.id;
