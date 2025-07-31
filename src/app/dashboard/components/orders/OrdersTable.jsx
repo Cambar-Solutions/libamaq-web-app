@@ -53,20 +53,6 @@ export const OrdersTable = ({ orders, onOrderClick, onSendGuide }) => {
     }
   };
 
-  // Función para obtener el color del badge según el estatus
-  const getStatusBadgeColor = (estatus) => {
-    switch (estatus.toLowerCase()) {
-      case 'activo':
-      case 'active':
-        return 'bg-green-100 text-green-800 border-green-300';
-      case 'inactivo':
-      case 'inactive':
-        return 'bg-red-100 text-red-800 border-red-300';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-    }
-  };
-
   // Función para renderizar la guía de envío
   const renderShippingGuide = (guia) => {
     if (guia === 'Pendiente') {
@@ -93,6 +79,17 @@ export const OrdersTable = ({ orders, onOrderClick, onSendGuide }) => {
     }
   };
 
+  // Función para mostrar el método de pago
+  const renderPaymentMethod = (metodoPago) => {
+    if (!metodoPago || metodoPago === '-') return '-';
+    
+    const metodo = metodoPago.toLowerCase();
+    if (metodo.includes('tarjeta de crédito') || metodo.includes('credit card')) {
+      return 'Efectivo';
+    }
+    return metodoPago;
+  };
+
   return (
     <>
       {/* Mobile: Cards */}
@@ -110,7 +107,7 @@ export const OrdersTable = ({ orders, onOrderClick, onSendGuide }) => {
               </Badge>
             </div>
             <div className="text-sm text-gray-700 font-medium truncate">{order.cliente}</div>
-            <div className="text-xs text-gray-500">Método de pago: {order.metodoPago}</div>
+            <div className="text-xs text-gray-500">Método de pago: {renderPaymentMethod(order.metodoPago)}</div>
             <div className="flex flex-wrap gap-2 items-center mt-1">
               <span className="text-xs text-gray-500">Estado Envío:</span>
               <Badge variant="outline" className={getShippingStatusBadgeColor(order.estado)}>
@@ -124,12 +121,6 @@ export const OrdersTable = ({ orders, onOrderClick, onSendGuide }) => {
             <div className="flex flex-wrap gap-4 text-xs text-gray-500 mt-1">
               <span>Fecha: {order.fecha}</span>
               <span>Entrega estimada: {order.fechaEntrega}</span>
-            </div>
-            <div className="flex flex-wrap gap-2 items-center mt-1">
-              <span className="text-xs text-gray-500">Estatus:</span>
-              <Badge variant="outline" className={getStatusBadgeColor(order.estatus)}>
-                {order.estatus}
-              </Badge>
             </div>
             <div className="flex gap-3 pt-2">
               <button
@@ -163,7 +154,6 @@ export const OrdersTable = ({ orders, onOrderClick, onSendGuide }) => {
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Guía de envío</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Entrega estimada</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Estatus</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
@@ -178,7 +168,7 @@ export const OrdersTable = ({ orders, onOrderClick, onSendGuide }) => {
                     </Badge>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                    {order.metodoPago}
+                    {renderPaymentMethod(order.metodoPago)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                     <Badge variant="outline" className={getShippingStatusBadgeColor(order.estado)}>
@@ -190,11 +180,6 @@ export const OrdersTable = ({ orders, onOrderClick, onSendGuide }) => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{order.fecha}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{order.fechaEntrega}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                    <Badge variant="outline" className={getStatusBadgeColor(order.estatus)}>
-                      {order.estatus}
-                    </Badge>
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center flex gap-2 justify-center">
                     <button
                       className="text-blue-600 hover:text-blue-900 mr-3"

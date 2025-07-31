@@ -66,20 +66,6 @@ const getShippingStatusBadgeColor = (estado) => {
   }
 };
 
-// Función para obtener el color del badge según el estatus
-const getStatusBadgeColor = (estatus) => {
-  switch (estatus.toLowerCase()) {
-    case 'activo':
-    case 'active':
-      return 'bg-green-100 text-green-800 border-green-300';
-    case 'inactivo':
-    case 'inactive':
-      return 'bg-red-100 text-red-800 border-red-300';
-    default:
-      return 'bg-gray-100 text-gray-800 border-gray-300';
-  }
-};
-
 // Componente para mostrar los detalles de un pedido en formato desktop
 export const OrderDetailsDesktop = ({ order }) => {
   if (!order) return null;
@@ -111,12 +97,6 @@ export const OrderDetailsDesktop = ({ order }) => {
         </div>
         <p><span className="text-gray-500">Fecha:</span> {order.fecha}</p>
         <p><span className="text-gray-500">Entrega estimada:</span> {order.fechaEntrega}</p>
-        <div className="flex items-center gap-2">
-          <span className="text-gray-500">Estatus:</span>
-          <Badge variant="outline" className={getStatusBadgeColor(order.estatus)}>
-            {order.estatus}
-          </Badge>
-        </div>
       </div>
     </div>
   );
@@ -149,7 +129,7 @@ export const OrderDetailsMobile = ({ order }) => {
         <p className="text-xs"><span className="text-gray-500">Entrega estimada:</span> {order.fechaEntrega}</p>
       </div>
       <div className="space-y-1">
-        <h3 className="font-semibold text-sm">Tipo y Estatus</h3>
+        <h3 className="font-semibold text-sm">Tipo</h3>
         <div className="flex items-center gap-2">
           <span className="text-gray-500">Tipo:</span>
           <Badge variant="outline" className={getTypeBadgeColor(order.tipo)}>
@@ -160,12 +140,6 @@ export const OrderDetailsMobile = ({ order }) => {
           <span className="text-gray-500">Estado Envío:</span>
           <Badge variant="outline" className={getShippingStatusBadgeColor(order.estado)}>
             {order.estado}
-          </Badge>
-        </div>
-        <div className="flex items-center gap-2 mt-1">
-          <span className="text-gray-500">Estatus:</span>
-          <Badge variant="outline" className={getStatusBadgeColor(order.estatus)}>
-            {order.estatus}
           </Badge>
         </div>
       </div>

@@ -95,6 +95,17 @@ export const OrderCard = ({ order, columnId }) => {
     }
   };
 
+  // Función para mostrar el método de pago
+  const renderPaymentMethod = (metodoPago) => {
+    if (!metodoPago || metodoPago === '-') return '-';
+    
+    const metodo = metodoPago.toLowerCase();
+    if (metodo.includes('tarjeta de crédito') || metodo.includes('credit card')) {
+      return 'Efectivo';
+    }
+    return metodoPago;
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -125,7 +136,7 @@ export const OrderCard = ({ order, columnId }) => {
           </div>
           
           <div className="flex justify-between items-center text-gray-500">
-            <div className="truncate max-w-[100px] text-xs">{order.metodoPago}</div>
+            <div className="truncate max-w-[100px] text-xs">{renderPaymentMethod(order.metodoPago)}</div>
             <div className="font-semibold">{formatPrice(order.total || 0)}</div>
           </div>
         </CardContent>
