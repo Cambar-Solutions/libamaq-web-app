@@ -89,7 +89,6 @@ export default function CardsDetail({ selected }) {
 
     const handleInitiatePayment = () => {
         setLocalStatus('PENDIENTE');
-        toast.success('Se ha iniciado el proceso de pago. Estado: PENDIENTE');
     };
 
     const handleTransferFileUpload = (e) => {
@@ -169,10 +168,10 @@ export default function CardsDetail({ selected }) {
     } else if (paymentMethod === 'BANK_TRANSFER') {
         isBankTransfer = true;
     } else if (paymentMethod === 'CREDIT_CARD' || paymentMethod === 'DEBIT_CARD') {
-        isBankTransfer = true; // Tratar tarjetas como transferencia bancaria para efectos de UI
+        isPurchase = true; // Tratar tarjetas como transferencia bancaria para efectos de UI
     } else {
         // Por defecto, asumir transferencia bancaria
-        isBankTransfer = true;
+        isPurchase = true;
     }
 
     // Obtener la sucursal desde el campo branch del backend (si existe)
@@ -273,7 +272,7 @@ export default function CardsDetail({ selected }) {
                             ¡No lo olvides! Tienes solo un par de días para recoger tu pedido, si no, <br /> <b>se cancelará automáticamente.</b>
                         </div>
                     </div>
-                ) : (selected.compra === true) ? (
+                ) : isPurchase ? (
                     <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 relative">
                         <div className="flex items-center gap-2 mb-2">
                             <span className={`text-md font-semibold ${statusColor}`}>{statusLabel}</span>
@@ -372,19 +371,6 @@ export default function CardsDetail({ selected }) {
                                     {(branchSim === 'cuautla' || selected.branch === 'cuautla') && 'Carr Federal México-Cuautla Cuautla, Mor.'}
                                 </div>
                                 <img src="/Tipografia_Completa_LIBAMAQ.png" alt="Liba" className="w-1/2 mx-auto mb-0" />
-                            </div>
-                        </div>
-                    ) : isPurchase ? (
-                        <div className="w-full flex-grow flex flex-col items-center justify-center">
-                            <div className="bg-blue-100 border border-blue-300 rounded-lg p-8 text-center max-w-lg mx-auto">
-                                <div className="text-2xl font-bold text-blue-800 mb-2">Compra Rápida</div>
-                                <div className="text-lg text-blue-700 mb-4">Este es un pedido de compra rápida. Puedes completar la compra cuando estés listo.</div>
-                                <button
-                                    className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors cursor-pointer text-lg font-semibold"
-                                    onClick={handleGoToPaymentMethod}
-                                >
-                                    Completar Compra
-                                </button>
                             </div>
                         </div>
                     ) : (
@@ -583,10 +569,10 @@ export default function CardsDetail({ selected }) {
                     </div>
                 ) : isPurchase ? (
                     <div className="bg-white rounded-2xl shadow px-6 space-y-10 flex flex-col mb-25 lg:mb-0 items-center w-full h-[320px] justify-center">
-                        <h2 className="text-xl font-bold text-gray-800 my-4">Compra Rápida</h2>
+                        <h2 className="text-xl font-bold text-gray-800 my-4">Compra Directa</h2>
                         <hr className="w-full mb-4" />
                         <p className="text-center text-gray-700 mb-4 text-sm">
-                            Este es un pedido de compra rápida. Puedes completar la compra cuando estés listo.
+                            Este es un pedido de compra directa. Puedes completar la compra cuando estés listo y seleccionar el método de pago.
                         </p>
                         <div className="w-full">
                             <div className="flex gap-3 text-lg font-bold pt-2 lg:mb-0 mt-auto">
