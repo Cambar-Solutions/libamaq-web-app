@@ -7,7 +7,8 @@ import Breadcrumb_Buy from "../../atoms/Breadcrumb_Buy";
 
 import { ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getOrdersByUser, deleteOrder } from "@/services/public/orderService";
+import { deleteOrder } from "@/services/public/orderService";
+import { useOrders } from "@/hooks/useOrders";
 import toast, { Toaster } from "react-hot-toast";
 
 // Importa los componentes de AlertDialog del padre
@@ -32,13 +33,14 @@ const slideVariants = {
 export default function BuyPanel() {
     const [filterDate, setFilterDate] = useState("");
     const [selected, setSelected] = useState(null);
-    const [backendOrders, setBackendOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [userId, setUserId] = useState(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [orderToDelete, setOrderToDelete] = useState(null);
     const direction = selected ? 1 : -1;
+
+    // Usar el hook de TanStack Query para las órdenes
+    const { data: ordersResponse, isLoading, error, refetch } = useOrders(userId);
+    const backendOrders = ordersResponse?.data || [];
 
     useEffect(() => {
         try {
@@ -61,39 +63,7 @@ export default function BuyPanel() {
         }
     }, []);
 
-    const fetchUserOrders = async () => {
-        if (!userId) {
-            setLoading(false);
-            if (!error) {
-                setError("ID de usuario no disponible. No se pueden cargar los pedidos.");
-            }
-            return;
-        }
-
-        try {
-            setLoading(true);
-            setError(null);
-            const response = await getOrdersByUser(userId);
-
-            if (response && Array.isArray(response.data)) {
-                setBackendOrders(response.data);
-                console.log("LOG 1: Pedidos cargados del backend:", response.data);
-            } else {
-                console.warn("La respuesta de getOrdersByUser no tiene el formato esperado (array en .data):", response);
-                setBackendOrders([]);
-            }
-        } catch (err) {
-            console.error("Error al cargar pedidos:", err);
-            setError("No se pudieron cargar tus pedidos. Intenta de nuevo más tarde.");
-            setBackendOrders([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchUserOrders();
-    }, [userId]); // Ahora userId es una dependencia para que se recarguen los pedidos cuando esté disponible
+    // El hook useOrders maneja automáticamente la carga y recarga de datos
 
     const handleTriggerDelete = (orderId) => {
         setOrderToDelete(orderId);
@@ -105,12 +75,11 @@ export default function BuyPanel() {
         setDeleteDialogOpen(false);
         try {
             await deleteOrder(orderToDelete);
-            // Actualiza el estado en el componente padre
-            setBackendOrders(prevOrders => prevOrders.filter(order => order.id !== orderToDelete));
+            // Refetch para actualizar los datos después de eliminar
+            refetch();
             toast.success(`Pedido ${orderToDelete} eliminado exitosamente.`);
         } catch (err) {
             const errorMessage = err.response?.data?.message || err.message || `Error al eliminar la orden ${orderToDelete}`;
-            setError(errorMessage);
             toast.error(errorMessage);
         } finally {
             setOrderToDelete(null);
@@ -191,7 +160,7 @@ export default function BuyPanel() {
                                 exit="exit"
                                 transition={{ duration: 0.4, ease: "easeInOut" }}
                             >
-                                {loading ? (
+                                {isLoading ? (
                                     <div className="flex flex-col items-center justify-center py-10 text-gray-600">
                                         <p className="text-lg font-semibold">Cargando pedidos...</p>
                                     </div>

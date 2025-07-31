@@ -4,13 +4,11 @@ import toast, { Toaster } from "react-hot-toast";
 import { getOrderDetailsByOrderId } from '@/services/admin/orderDetailService';
 import { jwtDecode } from 'jwt-decode';
 import { useNavigate } from 'react-router-dom';
+import { getShippingStatusInfo } from '@/utils/shippingStatus';
+import ShippingStatusBadge from '@/components/ui/ShippingStatusBadge';
+import { useShippingStatus } from '@/hooks/useShippingStatus';
 
-const STATUS_FLOW = [
-    'PENDIENTE',
-    'EN REVISION',
-    'EN CURSO',
-    'ENTREGADO'
-];
+// Usar directamente el shippingStatus del backend en lugar de STATUS_FLOW local
 
 export default function CardsDetail({ selected }) {
     const [details, setDetails] = useState([]);
@@ -18,7 +16,8 @@ export default function CardsDetail({ selected }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [deleting, setDeleting] = useState(false);
-    const [localStatus, setLocalStatus] = useState((selected.status || 'PENDIENTE').toUpperCase());
+    // Usar el hook personalizado para manejar el estado de envío
+    const { localStatus, setLocalStatus, statusInfo, statusLabel, statusColor } = useShippingStatus(selected);
 
     // Referencia al elemento <animated-icons>
     const animatedIconRef = useRef(null);
@@ -40,12 +39,6 @@ export default function CardsDetail({ selected }) {
         },
     };
 
-
-
-    useEffect(() => {
-        setLocalStatus((selected.status || 'PENDIENTE').toUpperCase());
-    }, [selected.id, selected.status]);
-
     const [transferImage, setTransferImage] = useState(null);
     const [transferFile, setTransferFile] = useState(null);
     const [showCamera, setShowCamera] = useState(false);
@@ -56,18 +49,6 @@ export default function CardsDetail({ selected }) {
     const detail = details[0];
 
     const status = localStatus;
-    let statusLabel = 'Pendiente';
-    let statusColor = 'text-yellow-500';
-    if (status === 'EN REVISION') {
-        statusLabel = 'En revisión';
-        statusColor = 'text-blue-500';
-    } else if (status === 'EN CURSO') {
-        statusLabel = 'En curso';
-        statusColor = 'text-orange-500';
-    } else if (status === 'ENTREGADO') {
-        statusLabel = 'Entregado';
-        statusColor = 'text-green-600';
-    }
 
     const handleDelete = async () => {
         if (!detail) return;
@@ -82,9 +63,9 @@ export default function CardsDetail({ selected }) {
     };
 
     const handleNextStatus = () => {
-        const idx = STATUS_FLOW.indexOf(localStatus);
-        const next = STATUS_FLOW[(idx + 1) % STATUS_FLOW.length];
-        setLocalStatus(next);
+        // Esta función ya no es necesaria ya que usamos el shippingStatus del backend
+        // Los cambios de estado se manejan desde el backend
+        toast.info('Los cambios de estado se manejan automáticamente desde el servidor');
     };
 
     const handleInitiatePayment = () => {
@@ -193,7 +174,7 @@ export default function CardsDetail({ selected }) {
     useEffect(() => {
         // Asegúrate de que el estado que controla la visibilidad del icono (e.g., status)
         // se actualice antes de que este efecto se ejecute, o maneja la lógica aquí.
-        if (animatedIconRef.current && status === 'EN REVISION') { // Condición para aplicar solo cuando el icono es visible
+        if (animatedIconRef.current && selected.shippingStatus === 'SHIPPED') { // Condición para aplicar solo cuando el icono es visible
             // Convierte el objeto JavaScript a una cadena JSON
             const attrsJsonString = JSON.stringify(animatedIconAttrs);
 
@@ -215,10 +196,10 @@ export default function CardsDetail({ selected }) {
     return (
         <div className="max-w-6xl mx-auto px-4 grid gap-6 grid-cols-1 md:grid-cols-3">
             {/* 1) Cabecera */}
-            {status === 'EN CURSO' ? (
+            {selected.shippingStatus === 'IN_TRANSIT' ? (
                 <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 relative">
                     <div className="flex items-center gap-2 mb-2">
-                        <span className="text-md font-semibold text-orange-500">En curso</span>
+                        <ShippingStatusBadge shippingStatus={selected.shippingStatus} size="md" />
                         <button
                             className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
                             onClick={handleNextStatus}
@@ -233,10 +214,10 @@ export default function CardsDetail({ selected }) {
                         Entregaremos tu paquete en <b>Carr Federal México-Cuautla Cuautla, Mor.</b>
                     </div>
                 </div>
-            ) : status === 'ENTREGADO' ? (
+            ) : selected.shippingStatus === 'DELIVERED' ? (
                 <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 relative">
                     <div className="flex items-center gap-2 mb-2">
-                        <span className={`text-md font-semibold ${statusColor}`}>{statusLabel}</span>
+                        <ShippingStatusBadge shippingStatus={selected.shippingStatus} size="md" />
                         <button
                             className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
                             onClick={handleNextStatus}
@@ -255,7 +236,7 @@ export default function CardsDetail({ selected }) {
                 (selected.paymentMethod === 'efectivo' || isEfectivo) ? (
                     <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 relative">
                         <div className="flex items-center gap-2 mb-2">
-                            <span className={`text-md font-semibold ${statusColor}`}>{statusLabel}</span>
+                            <ShippingStatusBadge shippingStatus={selected.shippingStatus} size="md" />
                             {/* <button
                                 className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
                                 onClick={handleNextStatus}
@@ -275,7 +256,7 @@ export default function CardsDetail({ selected }) {
                 ) : isPurchase ? (
                     <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 relative">
                         <div className="flex items-center gap-2 mb-2">
-                            <span className={`text-md font-semibold ${statusColor}`}>{statusLabel}</span>
+                            <ShippingStatusBadge shippingStatus={selected.shippingStatus} size="md" />
                             {/* <button
                                 className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
                                 title="Siguiente estado"
@@ -300,7 +281,7 @@ export default function CardsDetail({ selected }) {
                 ) : (
                     <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 relative">
                         <div className="flex items-center gap-2">
-                            <span className={`text-md font-medium ${statusColor}`}>{statusLabel}</span>
+                            <ShippingStatusBadge shippingStatus={selected.shippingStatus} size="md" />
                             <button
                                 className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
                                 onClick={handleNextStatus}
@@ -326,10 +307,10 @@ export default function CardsDetail({ selected }) {
                     <p className="text-gray-500">Cargando producto…</p>
                 ) : error ? (
                     <p className="text-red-500">{error}</p>
-                ) : status === 'EN REVISION' ? (
+                ) : selected.shippingStatus === 'SHIPPED' ? (
                     <div className="flex flex-col items-center justify-center flex-grow">
-                        <h2 className="text-xl font-semibold text-blue-600">El pedido está en revisión</h2>
-                        <p className="text-gray-500 mt-2">En breve te notificaremos el avance de tu pedido.</p>
+                        <h2 className="text-xl font-semibold text-blue-600">El pedido está enviado</h2>
+                        <p className="text-gray-500 mt-2">Tu pedido ha sido enviado y está en camino.</p>
 
                         {/* Aquí insertas el Web Component <animated-icons> */}
                         <animated-icons
@@ -340,7 +321,7 @@ export default function CardsDetail({ selected }) {
                             width="200"
                         ></animated-icons>
                     </div>
-                ) : status === 'PENDIENTE' ? (
+                ) : selected.shippingStatus === 'PENDING' ? (
                     // Mostrar contenido según el tipo de pedido
                     isBankTransfer ? (
                         <div className="w-full flex-grow">
@@ -431,32 +412,46 @@ export default function CardsDetail({ selected }) {
             </div>
 
             {/* 3) Resumen de compra o sección de pago/transferencia */}
-            {status === 'EN CURSO' && (
+            {selected.shippingStatus === 'IN_TRANSIT' && (
                 <div className="bg-white rounded-2xl shadow p-6 flex flex-col items-center mb-25 lg:mb-0 w-full h-[320px] justify-center">
                     <h2 className="text-xl font-bold text-gray-800 mb-2">Rastrear pedido</h2>
                     <hr className="w-full mb-4" />
                     <p className="text-center text-gray-700 mb-4 text-sm">Copia el siguiente enlace y pégalo en tu buscador para seguir su pedido</p>
                     <div className="bg-indigo-50 rounded-2xl p-6 flex flex-col items-center w-full max-w-xl shadow">
-                        <a
-                            href="https://google-enlace-pedido.com/pedido-id-001"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-semibold underline text-black text-center break-all mb-4"
-                            style={{ wordBreak: 'break-all' }}>
-                            https://google-enlace-pedido.com/pedido-id-001
-                        </a>
-                        <button
-                            className="px-6 py-2 w-full lg:w-auto mt-3 lg:mt-0 bg-indigo-600 text-white rounded-md hover:bg-white hover:text-indigo-600 hover:border-indigo-600 border-2 border-indigo-600 transition-colors duration-600 cursor-pointer lg:text-sm"
-                            onClick={() => {
-                                navigator.clipboard.writeText('https://google-enlace-pedido.com/pedido-id-001');
-                            }}
-                        >
-                            Copiar enlace
-                        </button>
+                        {selected.shippingGuide ? (
+                            <>
+                                <a
+                                    href={selected.shippingGuide}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-semibold underline text-black text-center break-all mb-4"
+                                    style={{ wordBreak: 'break-all' }}>
+                                    {selected.shippingGuide}
+                                </a>
+                                <button
+                                    className="px-6 py-2 w-full lg:w-auto mt-3 lg:mt-0 bg-indigo-600 text-white rounded-md hover:bg-white hover:text-indigo-600 hover:border-indigo-600 border-2 border-indigo-600 transition-colors duration-600 cursor-pointer lg:text-sm"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(selected.shippingGuide);
+                                    }}
+                                >
+                                    Copiar enlace
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-gray-500 text-center mb-4">No hay guía de seguimiento disponible</p>
+                                <button
+                                    className="px-6 py-2 w-full lg:w-auto mt-3 lg:mt-0 bg-gray-400 text-white rounded-md cursor-not-allowed lg:text-sm"
+                                    disabled
+                                >
+                                    Sin enlace disponible
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
             )}
-            {status === 'ENTREGADO' && (
+            {selected.shippingStatus === 'DELIVERED' && (
                 <div className="bg-white rounded-2xl shadow px-6 py-6 flex flex-col mb-25 lg:mb-0 w-full h-[300px]">
                     <div className="w-full flex flex-col h-full">
                         <div className="font-semibold text-xl mb-4">Detalle de la compra</div>
@@ -488,14 +483,14 @@ export default function CardsDetail({ selected }) {
                                 </span>
                             </div>
                             <div className="text-gray-700 text-sm">
-                                Método de Pago: <b>{paymentMethod === 'BANK_TRANSFER' ? 'Transferencia Bancaria' : paymentMethod === 'CASH' ? 'Efectivo' : paymentMethod}</b>
+                                Método de Pago: <b>{paymentMethod === 'BANK_TRANSFER' ? 'TRANSFERENCIA BANCARIA' : paymentMethod === 'CASH' ? 'EFECTIVO' : paymentMethod === 'CREDIT_CARD' ? 'COMPRA DIRECTA' : paymentMethod}</b>
                             </div>
                         </>
                     </div>
                 </div>
             )}
             {/* 3) Sección de "Resumen de la Orden" (tercer div) */}
-            {status === 'EN REVISION' || (status !== 'PENDIENTE' && status !== 'EN CURSO' && status !== 'ENTREGADO') ? (
+            {selected.shippingStatus === 'SHIPPED' || (selected.shippingStatus !== 'PENDING' && selected.shippingStatus !== 'IN_TRANSIT' && selected.shippingStatus !== 'DELIVERED') ? (
                 isEfectivo ? (
                     <div className="bg-white rounded-2xl shadow px-6 py-6 flex flex-col mb-25 lg:mb-0 w-full h-[300px]">
                         <div className="w-full flex flex-col h-full">
@@ -528,7 +523,7 @@ export default function CardsDetail({ selected }) {
                                     </span>
                                 </div>
                                 <div className="text-gray-700 text-sm">
-                                    Método de Pago: <b>{paymentMethod === 'CASH' ? 'Efectivo' : paymentMethod === 'BANK_TRANSFER' ? 'Transferencia Bancaria' : paymentMethod}</b>
+                                    Método de Pago: <b>{paymentMethod === 'CASH' ? 'EFECTIVO' : paymentMethod === 'BANK_TRANSFER' ? 'TRANSFERENCIA BANCARIA' : paymentMethod}</b>
                                 </div>
                             </>
                         </div>
@@ -556,7 +551,7 @@ export default function CardsDetail({ selected }) {
                             </div>
                         </div>
 
-                        {status !== 'EN REVISION' && status !== 'PENDIENTE' && !selected.compra && (
+                        {selected.shippingStatus !== 'SHIPPED' && selected.shippingStatus !== 'PENDING' && !selected.compra && (
                             <div className="mb-6">
                                 <button
                                     className="px-4 py-2 w-full lg:w-auto bg-indigo-600 text-white rounded-md hover:bg-white hover:text-indigo-600 hover:border-indigo-600 border-2 border-indigo-600 transition-colors duration-600 cursor-pointer text-sm font-semibold"
@@ -574,21 +569,21 @@ export default function CardsDetail({ selected }) {
                         <p className="text-center text-gray-700 mb-4 text-sm">
                             Este es un pedido de compra directa. Puedes completar la compra cuando estés listo y seleccionar el método de pago.
                         </p>
-                        <div className="w-full">
-                            <div className="flex gap-3 text-lg font-bold pt-2 lg:mb-0 mt-auto">
-                                <span>Total a pagar:</span>
-                                <span>
-                                    $
-                                    {details.reduce((sum, item) => {
-                                        const prod = item.product;
-                                        return sum + (prod?.price || 0) * (item.quantity || 1);
-                                    }, 0).toLocaleString("es-MX")}
-                                </span>
+                                                    <div className="w-full">
+                                <div className="flex gap-3 text-lg font-bold pt-2 lg:mb-0 mt-auto">
+                                    <span>Total a pagar:</span>
+                                    <span>
+                                        $
+                                        {details.reduce((sum, item) => {
+                                            const prod = item.product;
+                                            return sum + (prod?.price || 0) * (item.quantity || 1);
+                                        }, 0).toLocaleString("es-MX")}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
 
                         {/* Botón para completar compra */}
-                        {(status === 'PENDIENTE' || status === 'ACTIVE') && (
+                        {(selected.shippingStatus === 'PENDING' || selected.shippingStatus === 'ACTIVE') && (
                             <button
                                 className="px-4 py-2 w-full lg:w-auto bg-indigo-600 text-white rounded-md hover:bg-white hover:text-indigo-600 hover:border-indigo-600 border-2 border-indigo-600 transition-colors duration-600 cursor-pointer text-sm font-semibold"
                                 onClick={handleGoToPaymentMethod}
@@ -622,7 +617,7 @@ export default function CardsDetail({ selected }) {
             ) : null /* Si es 'PENDIENTE', 'EN CURSO', 'ENTREGADO', no se muestra esta sección */}
 
             {/* Contenido para subir imagen de transferencia, solo si el estado es PENDIENTE y es transferencia bancaria */}
-            {status === 'PENDIENTE' && isBankTransfer && (
+            {selected.shippingStatus === 'PENDING' && isBankTransfer && (
                 <div className="bg-white rounded-2xl shadow p-6 space-y-4 flex flex-col mb-25 lg:mb-0 items-center w-full justify-center">
                     <h3 className="text-lg font-semibold mb-4">Subir comprobante de pago</h3>
                     {!transferImage ? (
@@ -671,7 +666,7 @@ export default function CardsDetail({ selected }) {
                                     className="px-4 py-2 w-full lg:w-auto bg-indigo-600 text-white rounded-md hover:bg-white hover:text-indigo-600 hover:border-indigo-600 border-2 border-indigo-600 transition-colors duration-600 cursor-pointer text-sm font-semibold"
                                     onClick={() => {
                                         if (transferImage) {
-                                            setLocalStatus('EN REVISION');
+                                            // El cambio de estado se maneja desde el backend
                                             toast.success('Comprobante de pago enviado. El pedido está en revisión.');
                                         } else {
                                             toast.error('Por favor, sube una imagen de la transferencia primero.');

@@ -6,6 +6,7 @@ import { Table2, Smartphone } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { BsFillCreditCardFill, BsCash } from "react-icons/bs";
 import { TbShoppingBagEdit } from "react-icons/tb";
+import ShippingStatusBadge from '@/components/ui/ShippingStatusBadge';
 
 
 export default function CardCarProducts({ groupedOrders, setSelected, handleTriggerDelete }) {
@@ -149,9 +150,7 @@ export default function CardCarProducts({ groupedOrders, setSelected, handleTrig
                                             </TooltipProvider>
                                         </TableCell>
                                         <TableCell className="px-6 py-4">
-                                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                Pendiente
-                                            </span>
+                                            <ShippingStatusBadge shippingStatus={order.shippingStatus} size="xs" />
                                         </TableCell>
                                         <TableCell className="px-6 py-4 text-center">
                                             <TooltipProvider>
@@ -274,9 +273,7 @@ export default function CardCarProducts({ groupedOrders, setSelected, handleTrig
                                         </div>
                                     </div>
                                     <div className="flex flex-col items-center sm:mt-0 lg:ml-0 ml-9">
-                                        <span className="mt-2 px-2 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                                            Pendiente
-                                        </span>
+                                        <ShippingStatusBadge shippingStatus={order.shippingStatus} size="sm" className="mt-2" />
                                     </div>
                                 </div>
                             </div>
