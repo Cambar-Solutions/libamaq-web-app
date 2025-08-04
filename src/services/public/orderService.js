@@ -125,6 +125,23 @@ export const createOrderDetail = async (orderDetailData) => {
 };
 
 /**
+ * Actualiza una orden completa (incluyendo el shippingStatus).
+ * @param {Object} updatedOrderData - Datos de la orden a actualizar.
+ * @returns {Promise<Object>} Objeto con la respuesta de la API.
+ */
+export const updateOrder = async (updatedOrderData) => {
+  try {
+    console.log(`Actualizando orden con ID ${updatedOrderData.id}...`);
+    const { data } = await apiClient.put("/l/orders", updatedOrderData);
+    console.log('Respuesta de actualización de orden:', data);
+    return data;
+  } catch (error) {
+    console.error(`Error al actualizar orden ${updatedOrderData.id}:`, error);
+    throw error.response?.data || error.message;
+  }
+};
+
+/**
  * Actualiza un detalle de orden existente (ej. para cambiar la cantidad de un producto en el carrito).
  * Recibe el ID del detalle de orden como parte de los datos a actualizar en el cuerpo de la solicitud.
  * @param {Object} updateData - Datos completos del detalle de orden a actualizar, incluyendo su 'id' (ej. { id: 1, orderId: 1, productId: 1, quantity: 2, unitPrice: 100.5, discount: 10 }).

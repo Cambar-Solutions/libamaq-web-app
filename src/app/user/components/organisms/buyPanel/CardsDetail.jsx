@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { X, ArrowRight, Upload, Camera } from 'lucide-react';
 import toast, { Toaster } from "react-hot-toast";
 import { getOrderDetailsByOrderId } from '@/services/admin/orderDetailService';
+import { updateOrder } from '@/services/public/orderService';
 import { jwtDecode } from 'jwt-decode';
 import { useNavigate } from 'react-router-dom';
 import { getShippingStatusInfo } from '@/utils/shippingStatus';
@@ -62,14 +63,52 @@ export default function CardsDetail({ selected }) {
         }
     };
 
-    const handleNextStatus = () => {
-        // Esta función ya no es necesaria ya que usamos el shippingStatus del backend
-        // Los cambios de estado se manejan desde el backend
-        toast.info('Los cambios de estado se manejan automáticamente desde el servidor');
-    };
-
     const handleInitiatePayment = () => {
         setLocalStatus('PENDIENTE');
+    };
+
+    const handleSendImageAndChangeStatus = async () => {
+        if (!transferImage) {
+            toast.error('Por favor, sube una imagen de la transferencia primero.');
+            return;
+        }
+
+        const formData = new FormData();
+        if (transferFile) {
+            formData.append('file', transferFile);
+        } else {
+            const blob = await fetch(transferImage).then(res => res.blob());
+            formData.append('file', blob, 'screenshot.png');
+        }
+
+        try {
+            // Asegúrate de que selected contiene todos los datos de la orden
+            const updatedOrderData = {
+                id: Number(selected.id),
+                // Agrega todos los campos necesarios que el backend espera
+                // Por ejemplo:
+                userId: Number(selected.userId),
+                type: selected.type,
+                status: selected.status,
+                paymentMethod: selected.paymentMethod,
+                // ... otros campos como `estimatedDeliveryDate`, `totalProducts`, etc.
+
+                // Y finalmente, el campo que quieres cambiar
+                shippingStatus: 'SHIPPED',
+            };
+
+            // Llama a la función de servicio para actualizar la orden
+            await updateOrder(updatedOrderData);
+
+            // Si la llamada fue exitosa, actualiza el estado local
+            setLocalStatus('SHIPPED');
+
+            toast.success('Comprobante enviado. El estado del pedido se actualizó a SHIPPED.');
+
+        } catch (err) {
+            console.error('Error al actualizar la orden:', err);
+            toast.error('Error al enviar el comprobante o actualizar el estado.');
+        }
     };
 
     const handleTransferFileUpload = (e) => {
@@ -281,7 +320,7 @@ export default function CardsDetail({ selected }) {
                             </span>
                         </h3>
                         <p className=" text-gray-700">
-                            Sube una foto o captura de tu transferencia. Así podremos validar tu pago lo más pronto posible
+                            <strong>Estamos revisando tu pedido.</strong> Te avisaremos en breve
                         </p>
                     </div>
                 )
@@ -295,8 +334,8 @@ export default function CardsDetail({ selected }) {
                     <p className="text-red-500">{error}</p>
                 ) : selected.shippingStatus === 'SHIPPED' ? (
                     <div className="flex flex-col items-center justify-center flex-grow">
-                        <h2 className="text-xl font-semibold text-blue-600">El pedido está enviado</h2>
-                        <p className="text-gray-500 mt-2">Tu pedido ha sido enviado y está en camino.</p>
+                        <h2 className="text-xl font-semibold text-blue-600">El pedido está en revisión</h2>
+                        <p className="text-gray-500 mt-2"> Por favor, ten paciencia, te notificaremos apenas esté listo.</p>
 
                         {/* Aquí insertas el Web Component <animated-icons> */}
                         <animated-icons
@@ -700,8 +739,10 @@ export default function CardsDetail({ selected }) {
                                     className="px-4 py-2 w-full lg:w-auto bg-indigo-600 text-white rounded-md hover:bg-white hover:text-indigo-600 hover:border-indigo-600 border-2 border-indigo-600 transition-colors duration-600 cursor-pointer text-sm font-semibold"
                                     onClick={() => {
                                         if (transferImage) {
-                                            // El cambio de estado se maneja desde el backend
-                                            toast.success('Comprobante de pago enviado. El pedido está en revisión.');
+                                            // Reemplaza esto:
+                                            // toast.success('Comprobante de pago enviado. El pedido está en revisión.');
+                                            // Con esto:
+                                            handleSendImageAndChangeStatus();
                                         } else {
                                             toast.error('Por favor, sube una imagen de la transferencia primero.');
                                         }
