@@ -14,7 +14,7 @@ import {
 export default function Breadcrumb_Buy({ setSelected }) {
     return (
         <>
-            <div className="text-sm lg:text-base max-w-6xl mx-auto px-4 mb-8">
+            <div className="text-sm lg:text-base max-w-6xl mx-auto px-4 mb-4">
                 <Breadcrumb>
                     <BreadcrumbList>
                         <BreadcrumbItem>

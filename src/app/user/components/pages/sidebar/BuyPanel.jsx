@@ -137,9 +137,9 @@ export default function BuyPanel() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
         >
-            <div className="w-full bg-stone-100 min-h-screen pb-10 pt-22 p-4">
-                <div className=" max-w-7xl mx-auto px-2 sm:px-4 sticky top-16 z-10 p-2 sm:p-3">
-                    <div className="flex flex-col sm:flex-row items-center justify-between mx-4 mb-6 border-b border-gray-400 pb-3 px-0">
+            <div className="w-full bg-stone-100 min-h-screen lg:pb-0 pb-10 pt-24 px-4">
+                <div className=" max-w-7xl mx-auto px-2 sm:px-4 sticky top-16 z-10 pb-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between mx-4 mb-5 border-b border-gray-400 pb-3 px-0">
                         <div>
                             <h1 className="text-3xl font-semibold text-indigo-950">Mis Pedidos</h1>
                             <p className="text-base text-gray-400 font-semibold">Aquí puedes ver tus pedidos realizados</p>
@@ -198,7 +198,7 @@ export default function BuyPanel() {
                                 animate="animate"
                                 exit="exit"
                                 transition={{ duration: 0.4, ease: "easeInOut" }}
-                                className="absolute inset-0 min-h-screen bg-stone-100 overflow-y-auto pt-6 pb-0 lg:pb-0"
+                                className=" inset-0 bg-stone-100 overflow-y-auto pt-0 pb-0 lg:pb-0"
                             >
                                 <Breadcrumb_Buy
                                     setSelected={setSelected}

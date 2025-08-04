@@ -194,18 +194,12 @@ export default function CardsDetail({ selected }) {
     console.log('status:', status);
 
     return (
-        <div className="max-w-6xl mx-auto px-4 grid gap-6 grid-cols-1 md:grid-cols-3">
+        <div className="max-w-6xl mx-auto px-4 pb-1 grid gap-6 grid-cols-1 md:grid-cols-3">
             {/* 1) Cabecera */}
             {selected.shippingStatus === 'IN_TRANSIT' ? (
                 <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 relative">
                     <div className="flex items-center gap-2 mb-2">
-                        <ShippingStatusBadge shippingStatus={selected.shippingStatus} size="md" />
-                        <button
-                            className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                            onClick={handleNextStatus}
-                        >
-                            <ArrowRight className="w-5 h-5 text-gray-500" />
-                        </button>
+                        <ShippingStatusBadge shippingStatus={selected.shippingStatus} size="sm" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-800 mb-1">
                         ¡Buenas noticias! Tu pedido está en camino y te lo entregaremos pronto...
@@ -214,35 +208,40 @@ export default function CardsDetail({ selected }) {
                         Entregaremos tu paquete en <b>Carr Federal México-Cuautla Cuautla, Mor.</b>
                     </div>
                 </div>
-            ) : selected.shippingStatus === 'DELIVERED' ? (
+            ) : selected.shippingStatus === 'DELIVERED' && isBankTransfer ? (
                 <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 relative">
                     <div className="flex items-center gap-2 mb-2">
-                        <ShippingStatusBadge shippingStatus={selected.shippingStatus} size="md" />
-                        <button
-                            className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                            onClick={handleNextStatus}
-                        >
-                            <ArrowRight className="w-5 h-5 text-gray-500" />
-                        </button>
+                        <ShippingStatusBadge shippingStatus={selected.shippingStatus} size="sm" />
                     </div>
                     <h3 className="text-2xl font-semibold text-gray-800 mb-1">
                         Llegó el {selected.estimatedDeliveryDate ? new Date(selected.estimatedDeliveryDate).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }) : '10 de mayo, 2025'}
                     </h3>
-                    <div className="text-gray-700 mb-1">
+                    <div className="text-gray-700 text-lg mb-2">
                         Entregamos tu paquete en <b>{selected.shippingAddress || 'Carr Federal México-Cuautla Cuautla, Mor.'}</b>
                     </div>
+                    <div className="text-gray-700 mb-1">
+                        ¡Agradecemos mucho tu compra! Nos encantaría verte de nuevo por aquí.
+                    </div>
+                </div>
+            ) : selected.shippingStatus === 'DELIVERED' && (isEfectivo || isPurchase) ? (
+                <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 relative">
+                    <div className="flex items-center gap-2">
+                        <ShippingStatusBadge shippingStatus={selected.shippingStatus} size="sm" />
+                    </div>
+                    <h3 className="mt-2 text-2xl font-semibold text-gray-800 flex items-center justify-between">
+                        <span>
+                            Fecha que se realizó el pedido: {selected.createdAt ? new Date(selected.createdAt).toLocaleDateString() : 'Sin fecha'}
+                        </span>
+                    </h3>
+                    <p className=" text-gray-700">
+                        <strong>¡Agradecemos mucho tu compra! </strong> Nos encantaría verte de nuevo por aquí.
+                    </p>
                 </div>
             ) : (
                 (selected.paymentMethod === 'efectivo' || isEfectivo) ? (
                     <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 relative">
                         <div className="flex items-center gap-2 mb-2">
-                            <ShippingStatusBadge shippingStatus={selected.shippingStatus} size="md" />
-                            {/* <button
-                                className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                                onClick={handleNextStatus}
-                            >
-                                <ArrowRight className="w-5 h-5 text-gray-500" />
-                            </button> */}
+                            <ShippingStatusBadge shippingStatus={selected.shippingStatus} size="sm" />
                         </div>
                         <h3 className="text-2xl font-semibold text-gray-800 mb-1">
                             Se realizó el {selected.estimatedDeliveryDate ? new Date(selected.estimatedDeliveryDate).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }) : '10 de mayo, 2025'}
@@ -256,14 +255,7 @@ export default function CardsDetail({ selected }) {
                 ) : isPurchase ? (
                     <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 relative">
                         <div className="flex items-center gap-2 mb-2">
-                            <ShippingStatusBadge shippingStatus={selected.shippingStatus} size="md" />
-                            {/* <button
-                                className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                                title="Siguiente estado"
-                                onClick={handleNextStatus}
-                            >
-                                <ArrowRight className="w-5 h-5 text-gray-500" />
-                            </button> */}
+                            <ShippingStatusBadge shippingStatus={selected.shippingStatus} size="sm" />
                         </div>
                         <h3 className="text-2xl font-semibold text-gray-800 mb-1">
                             Todavía no has comprado este producto, no te preocupes
@@ -281,13 +273,7 @@ export default function CardsDetail({ selected }) {
                 ) : (
                     <div className="bg-white rounded-2xl shadow p-6 md:col-span-2 relative">
                         <div className="flex items-center gap-2">
-                            <ShippingStatusBadge shippingStatus={selected.shippingStatus} size="md" />
-                            <button
-                                className="ml-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                                onClick={handleNextStatus}
-                            >
-                                <ArrowRight className="w-5 h-5 text-gray-500" />
-                            </button>
+                            <ShippingStatusBadge shippingStatus={selected.shippingStatus} size="sm" />
                         </div>
                         <h3 className="mt-2 text-2xl font-semibold text-gray-800 flex items-center justify-between">
                             <span>
@@ -295,7 +281,7 @@ export default function CardsDetail({ selected }) {
                             </span>
                         </h3>
                         <p className=" text-gray-700">
-                            <strong>ID del pedido:</strong> {selected.id}
+                            Sube una foto o captura de tu transferencia. Así podremos validar tu pago lo más pronto posible
                         </p>
                     </div>
                 )
@@ -325,7 +311,7 @@ export default function CardsDetail({ selected }) {
                     // Mostrar contenido según el tipo de pedido
                     isBankTransfer ? (
                         <div className="w-full flex-grow">
-                            <div className="flex flex-col md:flex-row gap-0 items-center md:items-stretch h-full">
+                            <div className="flex flex-col md:flex-row gap-0 items-center md:items-stretch h-[256px]">
                                 <div className="flex-1 flex flex-col justify-center">
                                     <div className="font-medium lg:text-x1 text-xl text-indigo-800 mb-2">Datos para Transferencia Bancaria</div>
                                     <div className="text-gray-700"><b>LIBAMAQ HERRAMIENTAS S DE RL. de CV.</b></div>
@@ -343,7 +329,7 @@ export default function CardsDetail({ selected }) {
                             </div>
                         </div>
                     ) : isEfectivo ? (
-                        <div className="w-full flex-grow flex flex-col items-center justify-center">
+                        <div className="w-full flex-grow flex flex-col items-center justify-center h-[256px]">
                             <div className="bg-green-100 border border-green-300 rounded-lg p-8 text-center max-w-lg mx-auto">
                                 <div className="text-2xl font-bold text-green-800 mb-2">¡Recuerda!</div>
                                 <div className="text-lg text-green-700 mb-2">Debes acudir a la sucursal escogida para pagar y recoger tu compra en:</div>
@@ -354,6 +340,35 @@ export default function CardsDetail({ selected }) {
                                 <img src="/Tipografia_Completa_LIBAMAQ.png" alt="Liba" className="w-1/2 mx-auto mb-0" />
                             </div>
                         </div>
+                    ) : isPurchase ? (
+                        details && details.length > 0 ? (
+                            <div className="flex flex-col gap-6 overflow-y-scroll h-[310px]">
+                                {details.map((item) => {
+                                    const product = item.product;
+                                    return (
+                                        <div key={item.id} className="flex flex-col sm:flex-row items-center gap-6 border-b pb-4 last:border-b-0 last:pb-0">
+                                            <div className="w-32 h-32 flex-shrink-0 flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden">
+                                                {product?.media && product.media.length > 0 ? (
+                                                    <img src={product.media[0].url} alt={product.name} className="w-full h-full object-contain" />
+                                                ) : (
+                                                    <span className="text-gray-400">Sin imagen</span>
+                                                )}
+                                            </div>
+                                            <div className="flex-1">
+                                                <h2 className="text-xl font-semibold text-gray-800">{product?.name}</h2>
+                                                <p className="text-sm text-gray-500 mt-1 line-clamp-2">{product?.description}</p>
+                                                <div className="mt-2 flex flex-wrap gap-4 items-center">
+                                                    <span className="text-base font-bold text-indigo-700">${product?.price?.toLocaleString('es-MX')}</span>
+                                                    <span className="text-sm text-gray-600">Cantidad: {item.quantity}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <p className="text-gray-500">No hay producto en este pedido.</p>
+                        )
                     ) : (
                         // Contenido por defecto para otros tipos
                         <div className="w-full flex-grow">
@@ -369,20 +384,37 @@ export default function CardsDetail({ selected }) {
                             </div>
                         </div>
                     )
-                ) : (selected.paymentMethod === 'efectivo' || isEfectivo) ? (
-                    <div className="w-full flex-grow flex flex-col items-center justify-center">
-                        <div className="bg-green-100 border border-green-300 rounded-lg p-8 text-center max-w-lg mx-auto">
-                            <div className="text-2xl font-bold text-green-800 mb-2">¡Recuerda!</div>
-                            <div className="text-lg text-green-700 mb-2">Debes acudir a la sucursal escogida para pagar y recoger tu compra en:</div>
-                            <div className="font-semibold text-indigo-800 text-lg mb-0">
-                                {(branchSim === 'jiutepec' || selected.branch === 'jiutepec') && 'Blvd. Paseo Cuauhnáhuac Jiutepec, Mor.'}
-                                {(branchSim === 'cuautla' || selected.branch === 'cuautla') && 'Carr Federal México-Cuautla Cuautla, Mor.'}
-                            </div>
-                            <img src="/Tipografia_Completa_LIBAMAQ.png" alt="Liba" className="w-1/2 mx-auto mb-0" />
+                ) : isPurchase ? (
+                    details && details.length > 0 ? (
+                        <div className="flex flex-col gap-6 overflow-y-scroll h-[256px]">
+                            {details.map((item) => {
+                                const product = item.product;
+                                return (
+                                    <div key={item.id} className="flex flex-col sm:flex-row items-center gap-6 border-b pb-4 last:border-b-0 last:pb-0">
+                                        <div className="w-32 h-32 flex-shrink-0 flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden">
+                                            {product?.media && product.media.length > 0 ? (
+                                                <img src={product.media[0].url} alt={product.name} className="w-full h-full object-contain" />
+                                            ) : (
+                                                <span className="text-gray-400">Sin imagen</span>
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <h2 className="text-xl font-semibold text-gray-800">{product?.name}</h2>
+                                            <p className="text-sm text-gray-500 mt-1 line-clamp-2">{product?.description}</p>
+                                            <div className="mt-2 flex flex-wrap gap-4 items-center">
+                                                <span className="text-base font-bold text-indigo-700">${product?.price?.toLocaleString('es-MX')}</span>
+                                                <span className="text-sm text-gray-600">Cantidad: {item.quantity}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
-                    </div>
+                    ) : (
+                        <p className="text-gray-500">No hay producto en este pedido.</p>
+                    )
                 ) : details && details.length > 0 ? (
-                    <div className="flex flex-col gap-6 overflow-y-scroll h-[330px]">
+                    <div className="flex flex-col gap-6 overflow-y-scroll h-[256px]">
                         {details.map((item) => {
                             const product = item.product;
                             return (
@@ -489,6 +521,8 @@ export default function CardsDetail({ selected }) {
                     </div>
                 </div>
             )}
+
+
             {/* 3) Sección de "Resumen de la Orden" (tercer div) */}
             {selected.shippingStatus === 'SHIPPED' || (selected.shippingStatus !== 'PENDING' && selected.shippingStatus !== 'IN_TRANSIT' && selected.shippingStatus !== 'DELIVERED') ? (
                 isEfectivo ? (
@@ -569,18 +603,18 @@ export default function CardsDetail({ selected }) {
                         <p className="text-center text-gray-700 mb-4 text-sm">
                             Este es un pedido de compra directa. Puedes completar la compra cuando estés listo y seleccionar el método de pago.
                         </p>
-                                                    <div className="w-full">
-                                <div className="flex gap-3 text-lg font-bold pt-2 lg:mb-0 mt-auto">
-                                    <span>Total a pagar:</span>
-                                    <span>
-                                        $
-                                        {details.reduce((sum, item) => {
-                                            const prod = item.product;
-                                            return sum + (prod?.price || 0) * (item.quantity || 1);
-                                        }, 0).toLocaleString("es-MX")}
-                                    </span>
-                                </div>
+                        <div className="w-full">
+                            <div className="flex gap-3 text-lg font-bold pt-2 lg:mb-0 mt-auto">
+                                <span>Total a pagar:</span>
+                                <span>
+                                    $
+                                    {details.reduce((sum, item) => {
+                                        const prod = item.product;
+                                        return sum + (prod?.price || 0) * (item.quantity || 1);
+                                    }, 0).toLocaleString("es-MX")}
+                                </span>
                             </div>
+                        </div>
 
                         {/* Botón para completar compra */}
                         {(selected.shippingStatus === 'PENDING' || selected.shippingStatus === 'ACTIVE') && (
@@ -648,7 +682,7 @@ export default function CardsDetail({ selected }) {
                                 <img
                                     src={transferImage}
                                     alt="Transferencia"
-                                    className="w-full max-h-40 object-contain border rounded-md"
+                                    className="w-full max-h-30 object-contain border rounded-md"
                                 />
                                 <button
                                     type="button"
@@ -716,6 +750,48 @@ export default function CardsDetail({ selected }) {
                 </div>
 
             )}
+
+            {/* Contenido para subir imagen de transferencia, solo si el estado es PENDIENTE y es transferencia bancaria */}
+            {selected.shippingStatus === 'PENDING' && (isEfectivo || isPurchase) && (
+                <div className="bg-white rounded-2xl shadow px-6 py-6 flex flex-col mb-25 lg:mb-0 w-full h-[300px]">
+                    <div className="w-full flex flex-col h-full">
+                        <div className="font-semibold text-xl mb-4">Detalle del Pedido</div>
+                        <>
+                            <div className="border-b border-gray-400 pb-0 space-y-2 overflow-y-auto">
+                                {details.map((item) => {
+                                    const prod = item.product;
+                                    return (
+                                        <div key={item.id} className="flex justify-between gap-8 mb-2 text-gray-700">
+                                            <span className="flex items-center gap-0">
+                                                <span className="w-[9em] line-clamp-1">{prod?.name || 'Producto'}</span>
+                                                x <span className="">{item.quantity}</span>
+                                            </span>
+                                            <span className="text-start w-full">
+                                                ${((prod?.price || 0) * (item.quantity || 1)).toLocaleString("es-MX")}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <div className="flex gap-3 text-lg font-bold pt-6 lg:mb-0 mt-auto">
+                                <span>Total:</span>
+                                <span>
+                                    $
+                                    {details.reduce((sum, item) => {
+                                        const prod = item.product;
+                                        return sum + (prod?.price || 0) * (item.quantity || 1);
+                                    }, 0).toLocaleString("es-MX")}
+                                </span>
+                            </div>
+                            <div className="text-gray-700 text-sm">
+                                Método de Pago: <b>{paymentMethod === 'CASH' ? 'EFECTIVO' : paymentMethod === 'BANK_TRANSFER' ? 'TRANSFERENCIA BANCARIA' : paymentMethod}</b>
+                            </div>
+                        </>
+                    </div>
+                </div>
+
+            )}
+
             <Toaster
                 position="top-center"
                 reverseOrder={false}
