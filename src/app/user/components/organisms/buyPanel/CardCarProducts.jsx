@@ -225,6 +225,25 @@ export default function CardCarProducts({ groupedOrders, setSelected, handleTrig
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={e => {
+                                                            e.stopPropagation();
+                                                            handleViewDetails(order);
+                                                        }}
+                                                        className="sm:hidden p-2 rounded-full hover:text-blue-700 hover:bg-blue-50 cursor-pointer"
+                                                    >
+                                                        <Eye className="h-6 w-6 text-blue-600 cursor-pointer" />
+                                                    </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                                                    <p>Ver detalles</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <button
                                                         className="p-2 rounded-full hover:bg-red-100 transition-colors"
                                                         onClick={e => {
                                                             e.stopPropagation();
@@ -248,7 +267,7 @@ export default function CardCarProducts({ groupedOrders, setSelected, handleTrig
                                                 <TooltipProvider>
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
-                                                            <div className=" justify-items-center " >
+                                                            <div className=" justify-items-center" >
                                                                 <div>
                                                                     {getOrderTypeIcon(order)}
                                                                 </div>
