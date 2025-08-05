@@ -79,14 +79,20 @@ export default function Nav() {
           />
         </Link>
         <div className="flex items-center space-x-4 md:flex ">
-          <Button asChild className="flex items-center bg-transparent hover:bg-transparent text-white hover:text-yellow-500 transition-colors duration-400">
-            <Link to="/location" className="flex items-center">
+          <Button
+            asChild
+            className="flex items-center bg-transparent shadow-transparent text-white hover:text-transparent bg-clip-text bg-no-repeat transition-colors duration-600"
+          >
+            <Link
+              to="/location"
+              className="flex items-center group hover:bg-gradient-to-l from-yellow-400 from via-yellow-500 to-orange-600 transition-colors duration-600"
+            >
               Ubicaciones
-              <GrMapLocation className="mr-2" />
+              <GrMapLocation className="mr-2 group-hover:text-yellow-400" />
             </Link>
           </Button>
           {/* Botón "Explorar Tienda" */}
-          <Button asChild className="flex items-center bg-blue-600 hover:bg-blue-900 border border-blue-600 hover:border-white text-white transition-colors duration-600">
+          <Button asChild className="flex items-center bg-blue-600 hover:bg-indigo-800 border-blue-600 border-2 hover:border-white text-white transition-colors duration-600">
             <Link to="/tienda" className="flex items-center">
               Tienda
               <FaStore className="mr-2" />
@@ -94,7 +100,7 @@ export default function Nav() {
           </Button>
 
           {/* Botón "Iniciar Sesión" */}
-          <Button asChild className="bg-white text-black hover:bg-black hover:text-white border-2 border-gray-900 hover:border-gray-900 transition-colors duration-600">
+          <Button asChild className="bg-transparent text-white hover:bg-white hover:text-black border-2 border-white  transition-all duration-600">
             <Link to="/login">Iniciar sesión</Link>
           </Button>
         </div>
