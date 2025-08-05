@@ -208,72 +208,102 @@ export default function CardCarProducts({ groupedOrders, setSelected, handleTrig
         <div className="space-y-8 max-w-4xl justify-items-center lg:ml-30">
             {groupedOrders.map(group => (
                 <React.Fragment key={group.date}>
-                    <h2 className="text-xl md:text-2xl font-semibold text-indigo-950 mb-4 ml-10 mt-8">
+                    <h2 className="text-xl md:text-2xl font-semibold text-indigo-950 mb-4 ml-4 lg:ml-10 mt-8">
                         Pedidos del {formatUTCDate(group.date, { long: true })}
                     </h2>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-1 gap-3 w-full">
+                    <div className="grid grid-cols-1 lg:grid-cols-1 gap-3 w-full lg:mb-10">
                         {group.orders.map(order => (
                             <div
                                 key={order.id}
-                                className="bg-white rounded-lg shadow-sm hover:shadow-lg duration-500 select-none overflow-hidden lg:mx-10"
+                                className="bg-white rounded-lg shadow-sm hover:shadow-lg duration-500 select-none overflow-hidden mx-4 lg:mx-10"
                                 onClick={() => setSelected(order)}
                             >
-                                <div className=" flex items-center text-gray-600 justify-between relative mt-0">
-                                    <div className="absolute right-0 top-5 -translate-y-1/2 flex space-x-2 mt-2 mr-4">
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={e => {
-                                                            e.stopPropagation();
-                                                            handleViewDetails(order);
-                                                        }}
-                                                        className="sm:hidden p-2 rounded-full hover:text-blue-700 hover:bg-blue-50 cursor-pointer"
-                                                    >
-                                                        <Eye className="h-6 w-6 text-blue-600 cursor-pointer" />
-                                                    </button>
-                                                </TooltipTrigger>
-                                                <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
-                                                    <p>Ver detalles</p>
-                                                </TooltipContent>
-                                            </Tooltip>
+                                {/* Contenedor para móvil */}
+                                <div className="flex flex-col lg:hidden p-4 pb-5 justify-between items-center relative ml-4">
+                                    {/* Fila superior para móvil: Estado y botones de acción */}
+                                    <div className="flex justify-between w-full mb-2">
+                                        <div className="flex items-center">
+                                            <ShippingStatusBadge shippingStatus={order.shippingStatus} size="sm" className="mt-0" />
+                                        </div>
+                                        <div className="flex space-x-0">
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={e => {
+                                                                e.stopPropagation();
+                                                                handleViewDetails(order);
+                                                            }}
+                                                            className="p-2 rounded-full hover:text-blue-700 hover:bg-blue-50 cursor-pointer"
+                                                        >
+                                                            <Eye className="h-6 w-6 text-blue-600 cursor-pointer" />
+                                                        </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                                                        <p>Ver detalles</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
 
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <button
-                                                        className="p-2 rounded-full hover:bg-red-100 transition-colors"
-                                                        onClick={e => {
-                                                            e.stopPropagation();
-                                                            handleTriggerDelete(order.id); // Llama a la función del padre
-                                                        }}
-                                                    >
-                                                        <X className="w-6 h-6 text-red-500 cursor-pointer" />
-                                                    </button>
-                                                </TooltipTrigger>
-                                                <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
-                                                    <p>Eliminar</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <button
+                                                            className="p-2 rounded-full hover:bg-red-100 transition-colors"
+                                                            onClick={e => {
+                                                                e.stopPropagation();
+                                                                handleTriggerDelete(order.id);
+                                                            }}
+                                                        >
+                                                            <X className="w-6 h-6 text-red-500 cursor-pointer" />
+                                                        </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                                                        <p>Eliminar</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
+                                    </div>
+                                    {/* Contenido principal de la card para móvil */}
+                                    <div className="flex items-center w-full relative">
+                                        <div className='flex flex-col items-start'>
+                                            <h2 className="text-2xl font-semibold">Pedido: {order.id}</h2>
+                                            <p className="mt-0 text-gray-700">
+                                                Cantidad: {order.totalProducts || "..."}
+                                            </p>
+                                        </div>
+                                        <span className="absolute right-2.5 top-5 -translate-y-1/2 flex space-x-2 mt-2 mr-4">
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <div className="justify-items-center" >
+                                                            <div>
+                                                                {getOrderTypeIcon(order)}
+                                                            </div>
+                                                        </div>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                                                        <p>{getTranslatedOrderTypeText(order)}</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </span>
                                     </div>
                                 </div>
-                                <div className="px-0 lg:px-10 py-6 flex flex-col sm:flex-row items-center">
-                                    <div className="flex lg:ml-4 ml-0 w-[80%] items-center justify-items-center lg:justify-items-start lg:gap-3 gap-11">
-                                        <div className='items-center h-full'>
+
+                                {/* Contenedor para desktop */}
+                                <div className="hidden lg:flex px-20 py-6 items-center justify-between relative">
+                                    <div className="flex items-center lg:gap-4">
+                                        <div className="h-full">
                                             <span className="">
                                                 <TooltipProvider>
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
-                                                            <div className=" justify-items-center" >
+                                                            <div className="justify-items-center" >
                                                                 <div>
                                                                     {getOrderTypeIcon(order)}
-                                                                </div>
-
-                                                                <div className='sm:hidden text-sm text-gray-500'>
-                                                                    {getTranslatedOrderTypeText(order)}
                                                                 </div>
                                                             </div>
                                                         </TooltipTrigger>
@@ -284,15 +314,56 @@ export default function CardCarProducts({ groupedOrders, setSelected, handleTrig
                                                 </TooltipProvider>
                                             </span>
                                         </div>
-                                        <div className='lg:justify-items-start justify-items-center'>
+                                        <div className='justify-items-start'>
                                             <h2 className="text-2xl font-semibold">Pedido: {order.id}</h2>
                                             <p className="mt-1 text-gray-700 line-clamp-3 text-justify flex items-center">
                                                 Cantidad: {order.totalProducts || "..."}
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex flex-col items-center sm:mt-0 lg:ml-0 ml-9">
-                                        <ShippingStatusBadge shippingStatus={order.shippingStatus} size="sm" className="mt-2" />
+
+                                    <div className="flex items-center">
+                                        <ShippingStatusBadge shippingStatus={order.shippingStatus} size="sm" className='mr-[5em]' />
+
+                                        <div className="flex space-x-0 absolute right-10 top-7 -translate-y-1/2">
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={e => {
+                                                                e.stopPropagation();
+                                                                handleViewDetails(order);
+                                                            }}
+                                                            className="p-2 rounded-full hover:text-blue-700 hover:bg-blue-50 cursor-pointer"
+                                                        >
+                                                            <Eye className="h-6 w-6 text-blue-600 cursor-pointer" />
+                                                        </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                                                        <p>Ver detalles</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <button
+                                                            className="p-2 rounded-full hover:bg-red-100 transition-colors"
+                                                            onClick={e => {
+                                                                e.stopPropagation();
+                                                                handleTriggerDelete(order.id);
+                                                            }}
+                                                        >
+                                                            <X className="w-6 h-6 text-red-500 cursor-pointer" />
+                                                        </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="top" className="text-xs px-2 py-1 rounded-sm shadow-md duration-500">
+                                                        <p>Eliminar</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
