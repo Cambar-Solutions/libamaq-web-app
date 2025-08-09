@@ -22,7 +22,13 @@ export function OrderSendGuideDialog({ open, onOpenChange, order, onSave, onCanc
 
   useEffect(() => {
     if (order) {
-      setUrl(order.raw?.shippingGuide || "");
+      const currentUrl = order.raw?.shippingGuide || "";
+      
+      // Si la URL es "PENDIENTE" o termina en "/PENDIENTE", mostrar el input vacío
+      const isPendingUrl = currentUrl.toUpperCase() === "PENDIENTE" || 
+                          currentUrl.endsWith('/PENDIENTE');
+      
+      setUrl(isPendingUrl ? "" : currentUrl);
       setShippingStatus(order.raw?.shippingStatus || "PENDING");
       setEstimatedDeliveryDate(
         order.raw?.estimatedDeliveryDate 
@@ -46,7 +52,9 @@ export function OrderSendGuideDialog({ open, onOpenChange, order, onSave, onCanc
         type: order.raw.type || "PURCHASE",
         status: order.raw.status || "ACTIVE",
         paymentMethod: order.raw.paymentMethod,
-        shippingGuide: url.trim() || null, // Si está vacío, enviar null
+        shippingGuide: (url.trim() && 
+                       url.trim().toUpperCase() !== "PENDIENTE" && 
+                       !url.trim().endsWith('/PENDIENTE')) ? url.trim() : null,
         shippingStatus: shippingStatus,
         estimatedDeliveryDate: estimatedDeliveryDate 
           ? `${estimatedDeliveryDate}T00:00:00.000Z` // Agregar tiempo para evitar problemas de zona horaria
@@ -73,7 +81,10 @@ export function OrderSendGuideDialog({ open, onOpenChange, order, onSave, onCanc
   };
 
   const isLoading = updateOrderMutation.isPending;
-  const hasExistingUrl = order?.raw?.shippingGuide && order.raw.shippingGuide.trim() !== "";
+  const hasExistingUrl = order?.raw?.shippingGuide && 
+                        order.raw.shippingGuide.trim() !== "" &&
+                        order.raw.shippingGuide.toUpperCase() !== "PENDIENTE" &&
+                        !order.raw.shippingGuide.endsWith('/PENDIENTE');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -112,6 +123,15 @@ export function OrderSendGuideDialog({ open, onOpenChange, order, onSave, onCanc
                 </a>
                 <ExternalLink className="h-3 w-3 text-gray-400" />
               </div>
+            ) : order?.raw?.shippingGuide && 
+                  (order.raw.shippingGuide.toUpperCase() === "PENDIENTE" || 
+                   order.raw.shippingGuide.endsWith('/PENDIENTE')) ? (
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-amber-500" />
+                <span className="text-sm text-amber-600 italic">
+                  Pendiente - Sin URL de seguimiento asignada
+                </span>
+              </div>
             ) : (
               <div className="text-sm text-gray-500 italic">
                 Por el momento no has asignado ninguna guía de envío
@@ -126,13 +146,13 @@ export function OrderSendGuideDialog({ open, onOpenChange, order, onSave, onCanc
             <input
               type="url"
               className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="https://www.fedex.com/tracking?trknbr=123456789"
+              placeholder="Ingresa la URL de seguimiento (ej: https://www.fedex.com/tracking?trknbr=123456789)"
               value={url}
               onChange={e => setUrl(e.target.value)}
               autoFocus
             />
             <p className="text-xs text-gray-500 mt-1">
-              Deja vacío para mantener sin URL de seguimiento
+              Deja vacío para mantener sin URL de seguimiento. Ingresa una URL válida de seguimiento.
             </p>
           </div>
           

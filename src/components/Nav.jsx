@@ -27,47 +27,59 @@ export default function Nav() {
         </button>
       </div>
 
-      {/* Mobile menu drawer */}
-      {menuOpen && (
-        <div className="md:hidden fixed top-0 right-0 h-full w-64 bg-white shadow-lg p-6 z-30">
+      {/* Mobile menu drawer - expandiendo de arriba hacia abajo */}
+      <div
+        className={`md:hidden fixed top-0 left-0 w-full h-screen bg-white shadow-lg p-6 z-30 transform transition-all duration-300 ease-in-out ${
+          menuOpen ? "translate-y-0" : "-translate-y-full"
+        }`}
+      >
+        <div className="flex items-center justify-between mb-8">
+          <Link to="/">
+            <img
+              src="/Tipografia_LIBAMAQ_legulab_color_hor.png"
+              alt="logo"
+              className="h-8"
+            />
+          </Link>
           <button
             onClick={toggleMenu}
-            className="absolute top-4 right-4 text-gray-600"
+            className="text-gray-600"
           >
-            <FaTimes size={20} />
+            <FaTimes size={24} />
           </button>
-          <nav className="mt-12 flex flex-col space-y-6">
-            <Link
-              to="/location"
-              className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
-              onClick={toggleMenu}
-            >
-              <GrMapLocation size={20} />
-              Ubicaciones
-            </Link>
-            <Link
-              to="/tienda"
-              className="flex items-center gap-2 text-gray-800 hover:text-blue-600"
-              onClick={toggleMenu}
-            >
-              <FaStore size={20} />
-              Tienda
-            </Link>
-            <div>
-              <Button asChild className="w-full">
-                <Link to="/login">Iniciar sesión</Link>
-              </Button>
-
-              <Button
-                asChild
-                className="w-full mt-3 bg-transparent border border-blue-700 text-blue-700 hover:bg-blue-50 transition-all duration-600"
-              >
-                <Link to="/register">Crear tu cuenta</Link>
-              </Button>
-            </div>
-          </nav>
         </div>
-      )}
+        
+        <nav className="flex flex-col space-y-6">
+          <Link
+            to="/location"
+            className="flex items-center gap-2 text-gray-800 hover:text-blue-600 text-lg py-2"
+            onClick={toggleMenu}
+          >
+            <GrMapLocation size={20} />
+            Ubicaciones
+          </Link>
+          <Link
+            to="/tienda"
+            className="flex items-center gap-2 text-gray-800 hover:text-blue-600 text-lg py-2"
+            onClick={toggleMenu}
+          >
+            <FaStore size={20} />
+            Tienda
+          </Link>
+          <div className="pt-4">
+            <Button asChild className="w-full mb-3">
+              <Link to="/login">Iniciar sesión</Link>
+            </Button>
+
+            <Button
+              asChild
+              className="w-full bg-transparent border border-blue-700 text-blue-700 hover:bg-blue-50 transition-all duration-600"
+            >
+              <Link to="/register">Crear tu cuenta</Link>
+            </Button>
+          </div>
+        </nav>
+      </div>
 
       {/* Desktop nav */}
       <nav className="hidden md:flex items-center justify-between py-4 px-12 shadow-lg">

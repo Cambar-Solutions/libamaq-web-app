@@ -55,11 +55,16 @@ export const OrdersTable = ({ orders, onOrderClick, onSendGuide }) => {
 
   // Función para renderizar la guía de envío
   const renderShippingGuide = (guia) => {
-    if (guia === 'Pendiente') {
+    // Verificar si es pendiente (texto "Pendiente" o URL que termine en /PENDIENTE)
+    const isPending = guia === 'Pendiente' || 
+                     (typeof guia === 'string' && 
+                      (guia.toUpperCase() === 'PENDIENTE' || guia.endsWith('/PENDIENTE')));
+    
+    if (isPending) {
       return (
         <div className="flex items-center justify-center gap-1">
-          <Package className="h-4 w-4 text-gray-400" />
-          <span className="text-gray-500 italic text-sm">{guia}</span>
+          <Package className="h-4 w-4 text-amber-500" />
+          <span className="text-amber-600 italic text-sm">Pendiente</span>
         </div>
       );
     } else {

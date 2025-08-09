@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import { getAllBrandsWithCategories } from "@/services/public/brandService";
 import { toast } from "sonner";
+import CategoryImageWithFallback from "./CategoryImageWithFallback";
 
 // Los brands ahora se cargarán desde la API
 
@@ -70,7 +71,23 @@ const DrawerCategories = forwardRef((props, ref) => {
   }, []);
 
   const handleBrandClick = (brand) => {
-    setSelectedBrand(brand);
+    console.log("🔵 handleBrandClick called with brand:", brand);
+    console.log("🔵 Brand categories:", brand.categories);
+    console.log("🔵 Brand brandCategories:", brand.brandCategories);
+    
+    // Si no tiene categories procesadas, procesarlas aquí como fallback
+    let processedBrand = { ...brand };
+    if (!brand.categories && brand.brandCategories) {
+      console.log("🟣 Processing categories in handleBrandClick as fallback");
+      const activeCategories = (brand.brandCategories || [])
+        .filter(bc => bc.category?.status === "ACTIVE")
+        .map(bc => bc.category);
+      
+      processedBrand.categories = activeCategories;
+      console.log("🟣 Processed categories:", activeCategories);
+    }
+    
+    setSelectedBrand(processedBrand);
     setOpen(true);
   };
 
@@ -128,7 +145,11 @@ const DrawerCategories = forwardRef((props, ref) => {
                     >
                       <NavigationMenuLink asChild>
                         <button
-                          onClick={() => handleBrandClick(brand)}
+                          onClick={() => {
+                            console.log("🔴 Desktop NavigationMenu - Brand clicked:", brand);
+                            console.log("🔴 Desktop NavigationMenu - Brand categories:", brand.categories);
+                            handleBrandClick(brand);
+                          }}
                           className="group flex justify-center items-center rounded-md p-2 no-underline outline-none transition hover:bg-slate-300 focus:bg-slate-300 w-full h-full cursor-pointer"
                           style={{ backgroundColor: brand.color + '10' }} // Color de la marca con baja opacidad
                         >
@@ -163,6 +184,9 @@ const DrawerCategories = forwardRef((props, ref) => {
               <div className="p-2 w-full mx-auto">
                 {(() => {
                   const categories = selectedBrand.categories || [];
+                  console.log("🟡 Rendering categories for brand:", selectedBrand.name);
+                  console.log("🟡 Categories array:", categories);
+                  console.log("🟡 Categories length:", categories.length);
 
                   // Calcular el ancho de cada tarjeta según el tamaño de pantalla
                   const cardWidth =
@@ -253,15 +277,13 @@ const DrawerCategories = forwardRef((props, ref) => {
                             >
                               <div className="w-full aspect-square flex items-center justify-center mb-4 h-[120px] sm:h-[140px] md:h-[160px] lg:h-[180px] overflow-hidden">
                                 <div className="relative w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] md:w-[140px] md:h-[140px] lg:w-[160px] lg:h-[160px] flex items-center justify-center">
-                                  <img
-                                    src={category.url || `/placeholder-category.png`}
+                                  <CategoryImageWithFallback
+                                    src={category.url}
                                     alt={category.name}
                                     className="absolute max-h-[100px] max-w-[100px] sm:max-h-[120px] sm:max-w-[120px] md:max-h-[140px] md:max-w-[140px] lg:max-h-[160px] lg:max-w-[160px] w-auto h-auto object-contain"
-                                    onError={(e) => {
-                                      e.target.onerror = null;
-                                      e.target.src = '/placeholder-category.png';
-                                    }}
                                     style={{ objectFit: 'contain' }}
+                                    brandColor={selectedBrand.color}
+                                    iconSize={40}
                                   />
                                 </div>
                               </div>

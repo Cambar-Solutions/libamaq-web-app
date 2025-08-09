@@ -89,7 +89,28 @@ export function NavCustomer({ onViewChange }) {
                 console.log("Respuesta de marcas:", data);
                 // Soporta array directo o { data: [...] }
                 let brandsArray = Array.isArray(data) ? data : (data?.data || []);
-                setBrands(brandsArray.filter(b => b.status === "ACTIVE"));
+                
+                // Transformar los datos igual que en DrawerCategories para consistencia
+                const transformedBrands = brandsArray
+                    .filter(brand => brand.status === "ACTIVE")
+                    .map(brand => {
+                        // Filtrar solo categorías activas
+                        const activeCategories = (brand.brandCategories || [])
+                            .filter(bc => bc.category?.status === "ACTIVE")
+                            .map(bc => bc.category);
+
+                        console.log(`🟠 NavCustomer - Processing brand: ${brand.name}`);
+                        console.log(`🟠 NavCustomer - Original brandCategories:`, brand.brandCategories);
+                        console.log(`🟠 NavCustomer - Processed activeCategories:`, activeCategories);
+
+                        return {
+                            ...brand, // Mantener todas las propiedades originales
+                            categories: activeCategories // Agregar categorías procesadas
+                        };
+                    });
+                
+                console.log("🟠 NavCustomer - Final transformed brands:", transformedBrands);
+                setBrands(transformedBrands);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -102,6 +123,9 @@ export function NavCustomer({ onViewChange }) {
         setSelectedBrandId(brandId);
         if (brandId && drawerRef.current) {
             const selectedBrand = brands.find(b => b.id.toString() === brandId);
+            console.log("🟢 NavCustomer - Selected brand:", selectedBrand);
+            console.log("🟢 NavCustomer - Brand categories:", selectedBrand?.categories);
+            console.log("🟢 NavCustomer - Brand brandCategories:", selectedBrand?.brandCategories);
             if (selectedBrand) {
                 setMenuOpen(false);
                 setTimeout(() => {
