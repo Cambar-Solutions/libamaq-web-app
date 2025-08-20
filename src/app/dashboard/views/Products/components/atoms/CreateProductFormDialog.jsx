@@ -46,9 +46,10 @@ export default function CreateProductFormDialog({
             brandId: '',
             categoryId: '',
             price: '',
+            minimumPrice: '',
+            ecommercePrice: '',
             cost: '',
             discount: 0,
-            publicMarginPercent: 20, // Porcentaje de ganancia para público general
             stock: 0,
             garanty: 12,
             color: '',
@@ -90,9 +91,10 @@ export default function CreateProductFormDialog({
                 brandId: '',
                 categoryId: '',
                 price: '',
+                minimumPrice: '',
+                ecommercePrice: '',
                 cost: '',
                 discount: 0,
-                publicMarginPercent: 20,
                 stock: 0,
                 garanty: 12,
                 color: '',
@@ -233,108 +235,25 @@ export default function CreateProductFormDialog({
         setValue('downloads', currentDownloads);
     };
 
-    const calcularPrecioConIVA = (precio) => {
-        const precioNum = parseFloat(precio);
-        if (isNaN(precioNum)) return 0;
-        return precioNum * 1.16;
+    // Funciones de manejo de cambios simplificadas
+    const handleCostChange = (e) => {
+        setValue('cost', e.target.value);
     };
-
-    const calcularPrecioPublico = (costo, margenPorcentaje) => {
-        if (!costo || !margenPorcentaje) return 0;
-        const costoNum = parseFloat(costo);
-        const margenNum = parseFloat(margenPorcentaje);
-        if (isNaN(costoNum) || isNaN(margenNum)) return 0;
-        
-        // Calcular ganancia
-        const ganancia = costoNum * (margenNum / 100);
-        // Precio base = costo + ganancia
-        const precioBase = costoNum + ganancia;
-        // Aplicar IVA
-        return precioBase * 1.16;
-    };
-
-
-
-    const calcularPrecioFrecuente = (precioPublico, descuentoPorcentaje) => {
-        if (!precioPublico || !descuentoPorcentaje) return 0;
-        const precio = parseFloat(precioPublico);
-        const descuento = parseFloat(descuentoPorcentaje);
-        if (isNaN(precio) || isNaN(descuento)) return 0;
-        return precio * (1 - descuento / 100);
-    };
-
-
-
-    // Nueva función para calcular el margen basado en precio y costo
-    const calcularMargenDesdePrecio = (precio, costo) => {
-        if (!precio || !costo) return 20; // valor por defecto
-        const precioSinIVA = parseFloat(precio) / 1.16;
-        const costoNum = parseFloat(costo);
-        if (isNaN(precioSinIVA) || isNaN(costoNum)) return 20;
-        
-        // Precio base = precio sin IVA
-        // Ganancia = precio base - costo
-        const ganancia = precioSinIVA - costoNum;
-        // Margen = (ganancia / costo) * 100
-        const margen = (ganancia / costoNum) * 100;
-        return Math.max(0, Math.min(100, margen)); // Limitar entre 0 y 100
-    };
-
-    const handleCostoChange = (e) => {
-        const costo = e.target.value;
-        setValue('cost', costo);
-        
-        const publicMargin = watch('publicMarginPercent') || 20;
-        
-        if (costo && parseFloat(costo) > 0) {
-            // Calcular y establecer el precio público general
-            const precioPublico = calcularPrecioPublico(costo, publicMargin);
-            setValue('price', precioPublico.toFixed(2));
-            
-            // Por ahora, mantener el descuento en 0 o el valor actual
-            // El descuento se puede ajustar manualmente
-        } else {
-            // Limpiar los campos si el costo es 0 o vacío
-            setValue('price', '');
-            setValue('discount', 0);
-        }
-    };
-
-    const handleMarginChange = (e) => {
-        const margin = e.target.value;
-        setValue('publicMarginPercent', parseFloat(margin) || 0);
-        
-        const costo = watch('cost');
-        if (costo && parseFloat(costo) > 0) {
-            const publicMargin = parseFloat(margin) || 0;
-            
-            // Recalcular precio público
-            const precioPublico = calcularPrecioPublico(costo, publicMargin);
-            setValue('price', precioPublico.toFixed(2));
-        }
-    };
-
-
 
     const handlePriceChange = (e) => {
-        const precio = e.target.value;
-        setValue('price', precio);
-        
-        const costo = watch('cost');
-        
-        if (precio && parseFloat(precio) > 0 && costo && parseFloat(costo) > 0) {
-            // Recalcular margen basado en el nuevo precio
-            const nuevoMargen = calcularMargenDesdePrecio(precio, costo);
-            setValue('publicMarginPercent', parseFloat(nuevoMargen.toFixed(2)));
-        }
+        setValue('price', e.target.value);
+    };
+
+    const handleMinimumPriceChange = (e) => {
+        setValue('minimumPrice', e.target.value);
+    };
+
+    const handleEcommercePriceChange = (e) => {
+        setValue('ecommercePrice', e.target.value);
     };
 
     const handleDiscountChange = (e) => {
-        const descuento = e.target.value;
-        setValue('discount', descuento);
-        
-        // El descuento se puede ajustar manualmente
-        // No necesitamos recalcular nada más
+        setValue('discount', e.target.value);
     };
 
     const onSubmit = async (data) => {
@@ -357,9 +276,11 @@ export default function CreateProductFormDialog({
                 ...data,
                 brandId: String(data.brandId),
                 categoryId: String(data.categoryId),
-                price: parseFloat(data.price),
-                cost: data.cost ? parseFloat(data.cost) : undefined,
-                discount: data.discount ? parseFloat(data.discount) : 0,
+                price: parseFloat(data.price) || 0,
+                minimumPrice: parseFloat(data.minimumPrice) || 0,
+                ecommercePrice: parseFloat(data.ecommercePrice) || 0,
+                cost: parseFloat(data.cost) || 0,
+                discount: parseFloat(data.discount) || 0,
                 stock: parseInt(data.stock, 10),
                 garanty: parseInt(data.garanty, 10) || 0,
                 functionalities: data.functionalities.filter(f => f && f.trim() !== ''),
@@ -829,58 +750,10 @@ export default function CreateProductFormDialog({
                             </div>
                         </div>
                         <div className="md:col-span-2 bg-gray-50 p-4 rounded-lg border">
-                            <h3 className="text-md font-semibold mb-4 text-gray-700">Cálculo de Precios</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+                            <h3 className="text-md font-semibold mb-4 text-gray-700">Precios del Producto</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-start">
                                 <div className="space-y-2">
-                                    <Label htmlFor="cost">Costo (sin IVA) *</Label>
-                                    <div className="relative">
-                                        <Input
-                                            id="cost"
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            {...register('cost', {
-                                                required: 'El costo es requerido',
-                                                min: { value: 0, message: 'El costo no puede ser negativo' }
-                                            })}
-                                            onChange={handleCostoChange}
-                                            disabled={isCreating}
-                                            className="pl-3"
-                                        />
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
-                                            MXN
-                                        </span>
-                                    </div>
-                                    {errors.cost && (
-                                        <span className="text-sm text-red-500">
-                                            {errors.cost.message}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="publicMarginPercent">Porcentaje de ganancia</Label>
-                                    <div className="relative">
-                                        <Input
-                                            id="publicMarginPercent"
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            max="100"
-                                            {...register('publicMarginPercent')}
-                                            onChange={handleMarginChange}
-                                            disabled={isCreating}
-                                            className="pl-3"
-                                        />
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
-                                            %
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-gray-500">
-                                        Ganancia sobre el costo
-                                    </p>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="price">Precio Público (con IVA) *</Label>
+                                    <Label htmlFor="price">Precio *</Label>
                                     <div className="relative">
                                         <Input
                                             id="price"
@@ -899,32 +772,105 @@ export default function CreateProductFormDialog({
                                             MXN
                                         </span>
                                     </div>
-                                    <p className="text-xs text-gray-500">
-                                        Precio final con 16% IVA. Editable.
-                                    </p>
+                                    {errors.price && (
+                                        <span className="text-sm text-red-500">
+                                            {errors.price.message}
+                                        </span>
+                                    )}
                                 </div>
+                                
                                 <div className="space-y-2">
-                                    <div className="flex justify-between items-center">
-                                        <Label htmlFor="discount">Descuento</Label>
-                                        <span className="text-sm text-gray-500">
-                                            ${(() => {
-                                                const precio = parseFloat(watch('price')) || 0;
-                                                const descuento = parseFloat(watch('discount')) || 0;
-                                                const precioFrecuente = precio * (1 - descuento / 100);
-                                                return isNaN(precioFrecuente) ? '0.00' : precioFrecuente.toFixed(2);
-                                            })()}
+                                    <Label htmlFor="minimumPrice">Precio Mínimo *</Label>
+                                    <div className="relative">
+                                        <Input
+                                            id="minimumPrice"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            {...register('minimumPrice', {
+                                                required: 'El precio mínimo es requerido',
+                                                min: { value: 0, message: 'El precio mínimo no puede ser negativo' }
+                                            })}
+                                            onChange={handleMinimumPriceChange}
+                                            disabled={isCreating}
+                                            className="pl-3"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                                            MXN
                                         </span>
                                     </div>
+                                    {errors.minimumPrice && (
+                                        <span className="text-sm text-red-500">
+                                            {errors.minimumPrice.message}
+                                        </span>
+                                    )}
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <Label htmlFor="ecommercePrice">Precio E-commerce *</Label>
+                                    <div className="relative">
+                                        <Input
+                                            id="ecommercePrice"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            {...register('ecommercePrice', {
+                                                required: 'El precio e-commerce es requerido',
+                                                min: { value: 0, message: 'El precio e-commerce no puede ser negativo' }
+                                            })}
+                                            onChange={handleEcommercePriceChange}
+                                            disabled={isCreating}
+                                            className="pl-3"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                                            MXN
+                                        </span>
+                                    </div>
+                                    {errors.ecommercePrice && (
+                                        <span className="text-sm text-red-500">
+                                            {errors.ecommercePrice.message}
+                                        </span>
+                                    )}
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <Label htmlFor="cost">Costo *</Label>
+                                    <div className="relative">
+                                        <Input
+                                            id="cost"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            {...register('cost', {
+                                                required: 'El costo es requerido',
+                                                min: { value: 0, message: 'El costo no puede ser negativo' }
+                                            })}
+                                            onChange={handleCostChange}
+                                            disabled={isCreating}
+                                            className="pl-3"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                                            MXN
+                                        </span>
+                                    </div>
+                                    {errors.cost && (
+                                        <span className="text-sm text-red-500">
+                                            {errors.cost.message}
+                                        </span>
+                                    )}
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <Label htmlFor="discount">Descuento *</Label>
                                     <div className="relative">
                                         <Input
                                             id="discount"
                                             type="number"
                                             step="0.01"
                                             min="0"
-                                            max="100"
                                             {...register('discount', {
-                                                min: { value: 0, message: 'El descuento no puede ser negativo' },
-                                                max: { value: 100, message: 'El descuento no puede ser mayor a 100%' }
+                                                required: 'El descuento es requerido',
+                                                min: { value: 0, message: 'El descuento no puede ser negativo' }
                                             })}
                                             onChange={handleDiscountChange}
                                             disabled={isCreating}
@@ -934,9 +880,6 @@ export default function CreateProductFormDialog({
                                             %
                                         </span>
                                     </div>
-                                    <p className="text-xs text-gray-500">
-                                        Descuento sobre precio público
-                                    </p>
                                     {errors.discount && (
                                         <span className="text-sm text-red-500">
                                             {errors.discount.message}

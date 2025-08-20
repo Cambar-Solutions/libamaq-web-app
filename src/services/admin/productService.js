@@ -362,6 +362,8 @@ export const updateProduct = async (productData) => {
       })),
       
       price: Number(productData.price || 0),
+      minimumPrice: Number(productData.minimumPrice || 0),
+      ecommercePrice: Number(productData.ecommercePrice || 0),
       cost: Number(productData.cost || 0),
       discount: Number(productData.discount || 0),
       stock: Number(productData.stock || 0),
@@ -439,6 +441,8 @@ export const createProduct = async (productData) => {
       type: productData.type || 'PRODUCT',
       productUsage: productData.productUsage || 'GENERAL',
       price: Number(productData.price || 0),
+      minimumPrice: Number(productData.minimumPrice || 0),
+      ecommercePrice: Number(productData.ecommercePrice || 0),
       cost: Number(productData.cost || 0),
       discount: Number(productData.discount || 0),
       stock: Number(productData.stock || 0),
