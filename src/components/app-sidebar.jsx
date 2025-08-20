@@ -47,6 +47,11 @@ const data = {
       icon: Tag,
     },
     {
+      name: "Categorías",
+      id: "categorias",
+      icon: Layers,
+    },
+    {
       name: "Pedidos",
       id: "pedidos",
       icon: ShoppingCart,

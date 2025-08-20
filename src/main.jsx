@@ -29,6 +29,7 @@ const UserHome = lazy(() => import('./app/user/UserHome'));
 const Account = lazy(() => import('./app/user/components/pages/Account')); 
 const PaymentMethod = lazy(() => import('./app/e-commerce/PaymentMethod'));
 const LocationLibamaq = lazy(() => import('./components/LocationLibamaq'));
+const PoliticaPrivacidad = lazy(() => import('./pages/PoliticaPrivacidad'));
 
 // Componente de layout que envuelve todas las rutas con Suspense
 const AppLayout = ({ children }) => (
@@ -69,6 +70,11 @@ createRoot(document.getElementById('root')).render(
             <Route path="/location" element={
               <AppLayout>
                 <LocationLibamaq />
+              </AppLayout>
+            } />
+            <Route path="/politica" element={
+              <AppLayout>
+                <PoliticaPrivacidad />
               </AppLayout>
             } />
 

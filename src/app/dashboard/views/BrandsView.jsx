@@ -9,9 +9,9 @@ import {
   useUpdateBrand,
   useChangeBrandStatus
 } from "@/hooks/useBrands";
-import { getAllCategories, createCategory } from "@/services/admin/categoryService";
+import { getAllCategories } from "@/services/admin/categoryService";
 import { deleteBrand } from "@/services/admin/brandService";
-import CategoryManager from "@/components/admin/CategoryManager";
+import CategoryAssignmentManager from "@/components/admin/CategoryAssignmentManager";
 import CategoryBadge from '@/components/admin/CategoryBadge';
 import {
   Card,
@@ -139,19 +139,16 @@ export function BrandsView() {
   // Cliente de consulta para invalidar consultas y forzar recargas
   const queryClient = useQueryClient();
 
-  // Obtener todas las categorías (no solo activas)
+  // Obtener todas las categorías para asignación
   const fetchCategories = async () => {
     try {
-      console.log('Obteniendo todas las categorías...');
       const response = await getAllCategories();
-      console.log('Respuesta de categorías:', response);
-
-      // Extraer los datos de la respuesta según su estructura
+      
+      // Extraer los datos de la respuesta
       const cats = Array.isArray(response)
         ? response
-        : (response.data || response.result || []);
+        : (response.data || []);
 
-      console.log('Categorías procesadas:', cats);
       setCategories(cats);
     } catch (error) {
       console.error('Error al cargar categorías:', error);
@@ -340,29 +337,6 @@ export function BrandsView() {
     }
   };
 
-  // Función para manejar la actualización de una categoría
-  const handleCategoryUpdate = (updatedCategory) => {
-    setCategories(prevCategories =>
-      prevCategories.map(cat =>
-        cat.id === updatedCategory.id ? updatedCategory : cat
-      )
-    );
-  };
-
-  // Función para manejar la eliminación de una categoría
-  const handleCategoryDelete = (deletedCategoryId) => {
-    setCategories(prevCategories =>
-      prevCategories.filter(cat => cat.id !== deletedCategoryId)
-    );
-
-    // Si la categoría eliminada estaba asignada a la marca actual, la quitamos
-    if (formData.categories?.includes(Number(deletedCategoryId))) {
-      setFormData(prev => ({
-        ...prev,
-        categories: prev.categories.filter(id => id !== Number(deletedCategoryId))
-      }));
-    }
-  };
 
   // Eliminar una marca
   const handleDeleteBrand = async () => {
@@ -819,12 +793,13 @@ export function BrandsView() {
               <div className="col-span-4 mt-6 border-t pt-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium">Categorías para esta marca</h3>
+                  <p className="text-sm text-gray-500">
+                    Asigna categorías existentes a esta marca
+                  </p>
                 </div>
 
-                {/* El componente CategoryManager ahora maneja la creación y gestión de categorías */}
-
-                {/* Componente CategoryManager para gestionar categorías */}
-                <CategoryManager
+                {/* Componente simplificado solo para asignación de categorías */}
+                <CategoryAssignmentManager
                   categories={categories}
                   selectedCategories={Array.isArray(formData.categories) ? formData.categories.map(id => String(id)) : []}
                   onCategoriesChange={newSelectedIds => {
@@ -833,7 +808,6 @@ export function BrandsView() {
                       categories: newSelectedIds.map(id => Number(id))
                     }));
                   }}
-                  onCategoriesListChange={setCategories}
                 />
               </div>
             </div>

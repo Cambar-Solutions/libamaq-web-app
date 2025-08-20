@@ -71,7 +71,7 @@ export default function Footer() {
               <Link to="/contact" className="text-gray-600 hover:text-blue-600 hover:font-medium transition-colors">
                 Contacto
               </Link>
-              <Link to="/privacy" className="text-gray-600 hover:text-blue-600 hover:font-medium transition-colors">
+              <Link to="/politica" className="text-gray-600 hover:text-blue-600 hover:font-medium transition-colors">
                 Política de Privacidad
               </Link>
             </div>
