@@ -102,7 +102,7 @@ export const SparePartsCardView = ({
               {sparePart.description}
             </p>
             
-            <div className="flex items-center justify-between mt-3 pt-3 border-t mt-auto">
+            <div className="flex items-center justify-between pt-3 border-t mt-auto">
               <div className="flex items-center justify-between mt-2">
                 <div className="text-sm text-muted-foreground">Stock:</div>
                 <Badge 
