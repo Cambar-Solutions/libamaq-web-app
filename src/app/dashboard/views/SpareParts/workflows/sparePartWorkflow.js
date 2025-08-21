@@ -112,6 +112,7 @@ const sparePartWorkflow = {
       const { files, mediaToDelete: _, ...cleanPayload } = updatedSparePart;
 
       console.log('Actualizando repuesto con datos:', cleanPayload);
+      console.log('Ranking en workflow:', cleanPayload.ranking, 'Type:', typeof cleanPayload.ranking);
       const response = await updateSparePartService(id, cleanPayload);
       toast.success('Repuesto actualizado exitosamente');
       return response;

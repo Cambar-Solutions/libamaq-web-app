@@ -92,6 +92,7 @@ const updateSparePart = async (id, updateData) => {
   };
 
   console.log('Enviando actualización de repuesto:', payload);
+  console.log('Ranking value:', payload.ranking, 'Type:', typeof payload.ranking);
   const { data } = await apiClient.put('/l/spare-parts', payload);
   return data;
 };

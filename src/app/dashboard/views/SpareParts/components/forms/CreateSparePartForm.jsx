@@ -124,7 +124,8 @@ export const CreateSparePartForm = ({
         ...data,
         price: parseFloat(data.price) || 0,
         stock: parseInt(data.stock, 10) || 0,
-        rentable: Boolean(data.rentable)
+        rentable: Boolean(data.rentable),
+        ranking: data.ranking === 0 ? null : data.ranking
       };
       await onSave(formData, selectedFiles);
     } catch (err) {
@@ -149,7 +150,7 @@ export const CreateSparePartForm = ({
       <div className="border-b pb-4">
         <div className="flex items-center space-x-3">
           <FileText className="h-6 w-6 text-blue-600" />
-          <h2 className="text-xl font-semibold text-gray-900">Nuevo Repuesto</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Datos de la refaccion</h2>
         </div>
         <p className="mt-1 text-sm text-gray-500">
           Completa la información del repuesto. Los campos marcados con * son obligatorios.

@@ -132,8 +132,8 @@ export default function SparePartsView() {
       <SparePartDialog
         isOpen={isCreateDialogOpen}
         onClose={handleCloseCreateDialog}
-        title="Nuevo Repuesto"
-      >
+        title="Nueva Refaccion"
+      >-
         <CreateSparePartForm
           onSave={handleSaveSparePart}
           onCancel={handleCloseCreateDialog}

@@ -136,10 +136,10 @@ export const SparePartsList = ({
     <div className="space-y-4">
       {/* Primera fila: Botón de agregar */}
       <div className="flex justify-between items-center mt-3">
-        <h2 className="text-2xl font-bold tracking-tight">Gestión de Repuestos</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Gestión de Refacciones</h2>
         <Button onClick={onAddNew} className="h-9">
           <Plus className="mr-2 h-4 w-4" />
-          <span>Agregar repuesto</span>
+          <span>Agregar refaccion</span>
         </Button>
       </div>
 

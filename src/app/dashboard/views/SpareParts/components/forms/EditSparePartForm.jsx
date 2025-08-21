@@ -74,7 +74,7 @@ export const EditSparePartForm = ({ sparePart, onSave, onCancel, isSaving }) => 
       externalId: sparePart?.externalId || '',
       material: sparePart?.material || '',
       status: sparePart?.status || 'ACTIVE',
-      ranking: sparePart?.ranking || 0,
+              ranking: sparePart?.ranking || null,
     }
   });
 
@@ -91,7 +91,7 @@ export const EditSparePartForm = ({ sparePart, onSave, onCancel, isSaving }) => 
         externalId: sparePart.externalId || '',
         material: sparePart.material || '',
         status: sparePart.status || 'ACTIVE',
-        ranking: sparePart.ranking || 0,
+        ranking: sparePart.ranking || null,
       });
       setSelectedFiles([]);
       setMediaToDelete([]);
@@ -108,7 +108,7 @@ export const EditSparePartForm = ({ sparePart, onSave, onCancel, isSaving }) => 
       price: parseFloat(data.price) || 0,
       stock: parseInt(data.stock, 10) || 0,
       rentable: Boolean(data.rentable),
-      ranking: data.ranking === null ? 0 : data.ranking,
+      ranking: data.ranking === 0 ? null : data.ranking,
       media: filteredMedia.map(media => ({
         id: Number(media.id),
         url: media.url,
@@ -117,6 +117,8 @@ export const EditSparePartForm = ({ sparePart, onSave, onCancel, isSaving }) => 
         displayOrder: Number(media.displayOrder) || 0
       }))
     };
+    console.log('Form data antes de enviar:', formData);
+    console.log('Ranking en form:', formData.ranking, 'Type:', typeof formData.ranking);
     onSave(formData, selectedFiles, mediaToDelete);
   };
 

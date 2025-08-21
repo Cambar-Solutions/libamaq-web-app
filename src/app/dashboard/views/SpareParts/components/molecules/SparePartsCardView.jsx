@@ -72,14 +72,14 @@ export const SparePartsCardView = ({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
       {spareParts.map((sparePart) => (
         <div key={sparePart.id} className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col h-full min-h-[350px]">
           {/* Contenedor de imagen del repuesto */}
           <div className="relative h-48 bg-gray-100">
             {sparePart.media?.[0]?.url ? (
               <div 
-                className="w-full h-full bg-cover bg-center" 
+                className="w-full h-full bg-contain bg-center bg-no-repeat" 
                 style={{ backgroundImage: `url(${sparePart.media[0].url})` }}
               />
             ) : (
