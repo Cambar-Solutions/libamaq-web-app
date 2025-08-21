@@ -83,7 +83,7 @@ export const SparePartsCardView = ({
                 style={{ backgroundImage: `url(${sparePart.media[0].url})` }}
               />
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 text-gray-400">
+              <div className="w-full h-full flex flex-col items-center justify-center bg-white text-gray-400">
                 <ImageIcon className="h-12 w-12 mb-2" />
                 <span>Sin imagen</span>
               </div>
