@@ -102,3 +102,33 @@ export const getProductsByCategoryAndBrand = async (categoryId, brandId) => {
     throw error.response?.data || error.message;
   }
 };
+
+// Obtener productos por categoría
+export const getProductsByCategory = async (categoryId) => {
+  try {
+    console.log(`Obteniendo productos por categoría ${categoryId}...`);
+    const response = await apiClient.get(`/l/products/category/${categoryId}`);
+    console.log(`Respuesta de productos por categoría ${categoryId}:`, response.data);
+    
+    // Verificar el formato de la respuesta
+    if (!response.data) {
+      throw new Error(`No se recibieron datos de productos para la categoría ${categoryId}`);
+    }
+    
+    // La nueva estructura de respuesta es { data: [...], status: 200, message: 'success' }
+    // Verificar si estamos recibiendo la nueva estructura o la antigua
+    if (response.data.data && response.data.status && response.data.message) {
+      console.log(`Detectado nuevo formato de API en getProductsByCategory para categoría ${categoryId}`);
+      // Devolver la estructura completa para mantener consistencia
+      return response.data;
+    } else {
+      // Formato anterior donde la respuesta es directamente el array de productos
+      console.log(`Detectado formato anterior en getProductsByCategory para categoría ${categoryId}`);
+      // Devolver la respuesta tal cual para mantener compatibilidad
+      return response.data;
+    }
+  } catch (error) {
+    console.error(`Error fetching products for category ${categoryId}:`, error);
+    throw error.response?.data || error.message;
+  }
+};

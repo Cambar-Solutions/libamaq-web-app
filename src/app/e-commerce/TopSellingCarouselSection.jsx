@@ -118,7 +118,7 @@ export default function TopSellingCarouselSection({
                         )}%`
                       }}
                     >
-                      <Link to={`/producto/${topSellingItem.product_id}`} className="w-full max-w-[200px] mx-auto cursor-default">
+                      <Link to={`/producto/${topSellingItem.product_id}`} className="w-full max-w-[200px] mx-auto cursor-pointer">
                         <motion.div
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
@@ -215,4 +215,4 @@ export default function TopSellingCarouselSection({
       </div>
     </div>
   );
-} 
+}

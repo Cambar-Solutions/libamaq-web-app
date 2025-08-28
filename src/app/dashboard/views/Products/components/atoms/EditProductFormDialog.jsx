@@ -29,7 +29,8 @@ import { Drill, Plus, X, Loader2, FileText, Download, Settings, Edit } from 'luc
 
 // Services
 import { generateDescriptionIA } from '@/services/admin/AIService';
-import { getCategoriesByBrand, getCategoryById } from '@/services/admin/categoryService';
+import { getCategoriesByBrand } from '@/services/admin/brandService';
+import { getCategoryById } from '@/services/admin/categoryService';
 import { getProductById } from '@/services/admin/productService';
 import mediaService from '@/services/admin/mediaService';
 
@@ -271,6 +272,8 @@ const EditProductFormDialog = ({
                 try {
                     const response = await getCategoriesByBrand(fullProduct.brandId);
                     let categories = response.data || [];
+                    // Filtrar categorías nulas o con nombres vacíos
+                    categories = categories.filter(cat => cat && cat.name && cat.name.trim() !== '');
                     // Si la categoría original no está en la lista, hacer fetch y agregarla
                     const currentCategoryId = fullProduct.categoryId;
                     if (
@@ -280,7 +283,7 @@ const EditProductFormDialog = ({
                         try {
                             const catResp = await getCategoryById(currentCategoryId);
                             const originalCategory = catResp?.data || catResp;
-                            if (originalCategory && originalCategory.id) {
+                            if (originalCategory && originalCategory.id && originalCategory.name && originalCategory.name.trim() !== '') {
                                 categories = [originalCategory, ...categories];
                             }
                         } catch (catErr) {
@@ -305,6 +308,8 @@ const EditProductFormDialog = ({
                 try {
                     const response = await getCategoriesByBrand(parseInt(watch('brandId'), 10));
                     let categories = response.data || [];
+                    // Filtrar categorías nulas o con nombres vacíos
+                    categories = categories.filter(cat => cat && cat.name && cat.name.trim() !== '');
                     // Si la categoría seleccionada no está en la nueva lista
                     const currentCategoryId = watch('categoryId');
                     // fullProduct?.categoryId es la original
@@ -316,7 +321,7 @@ const EditProductFormDialog = ({
                         try {
                             const catResp = await getCategoryById(fullProduct.categoryId);
                             const originalCategory = catResp?.data || catResp;
-                            if (originalCategory && originalCategory.id) {
+                            if (originalCategory && originalCategory.id && originalCategory.name && originalCategory.name.trim() !== '') {
                                 categories = [originalCategory, ...categories];
                             }
                         } catch (catErr) {
@@ -351,7 +356,7 @@ const EditProductFormDialog = ({
             }
         };
         fetchCategories();
-    }, [watch('brandId'), setValue, watch, fullProduct]);
+    }, [watchedBrandId, fullProduct, setValue, watch]);
 
 
     // Funciones de manejo de cambios simplificadas - solo actualizan valores

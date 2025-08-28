@@ -40,6 +40,25 @@ export default function SearchBar({
 
   // Navegación y filtros
   const handleCategoryChange = (newCategory) => {
+    if (brand) {
+      // Encontrar el objeto de marca para obtener su ID
+      const brandObject = allBrands.find(b => b.name?.toLowerCase() === brand.toLowerCase());
+      if (brandObject && newCategory) {
+        // Encontrar el objeto de categoría para obtener su ID
+        const categoryObject = brandObject.categories?.find(cat => cat.name === newCategory);
+        if (categoryObject) {
+          navigate(`/productos/${brandObject.id}/${categoryObject.id}`);
+        } else {
+          navigate(`/productos/${brandObject.id}`);
+        }
+      } else if (brandObject) {
+        navigate(`/productos/${brandObject.id}`);
+      }
+    } else if (newCategory) {
+      // Si solo hay categoría, necesitarías implementar una ruta para categoría sola
+      // o redirigir a la tienda general
+      navigate('/tienda');
+    }
     setSelectedCategory(newCategory);
     // Navega a la URL correcta, dependiendo de si hay una marca en la URL o no.
     if (brand) {

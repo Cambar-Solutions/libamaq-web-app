@@ -104,7 +104,12 @@ createRoot(document.getElementById('root')).render(
                 <ProductList />
               </AppLayout>
             } />
-            <Route path="/productos/:brand/:category" element={
+            <Route path="/productos/:brandId/:categoryId" element={
+              <AppLayout>
+                <CategoryPage />
+              </AppLayout>
+            } />
+            <Route path="/productos/:brandId" element={
               <AppLayout>
                 <CategoryPage />
               </AppLayout>

@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import ImageUploader from '../../../SpareParts/components/molecules/ImageUploader';
 import PdfUploader from './PdfUploader';
 import { generateDescriptionIA } from '@/services/admin/AIService';
+import { getCategoriesByBrand } from '@/services/admin/brandService';
 import mediaService from '@/services/admin/mediaService';
 import toast from 'react-hot-toast';
 
@@ -109,35 +110,32 @@ export default function CreateProductFormDialog({
         }
     }, [isCreateDialogOpen, reset, categories]);
 
-    const handleBrandChange = (brandId) => {
+    const handleBrandChange = async (brandId) => {
         // Si no hay marca seleccionada, mostrar todas las categorías
         if (!brandId) {
             setFilteredCategories(categories);
             return;
         }
 
-        // Encontrar la marca seleccionada
-        const selectedBrand = brands.find(brand => brand.id === brandId);
-        
-        // Si la marca tiene categorías asociadas, filtrar por ellas
-        if (selectedBrand) {
-            // Si la marca tiene categorías, filtrarlas
-            if (selectedBrand.brandCategories && selectedBrand.brandCategories.length > 0) {
-                const brandCategoryIds = selectedBrand.brandCategories.map(bc => bc.category.id);
-                const filtered = categories.filter(cat => 
-                    brandCategoryIds.includes(cat.id)
-                );
-                setFilteredCategories(filtered);
-            } else {
-                setFilteredCategories([]);
-            }
+        try {
+            // Usar el endpoint correcto para obtener categorías por marca
+            const response = await getCategoriesByBrand(brandId);
+            let brandCategories = response.data || [];
             
-            // Establecer el color de la marca si tiene uno definido
-            if (selectedBrand.color) {
+            // Filtrar categorías nulas o con nombres vacíos
+            brandCategories = brandCategories.filter(cat => cat && cat.name && cat.name.trim() !== '');
+            
+            setFilteredCategories(brandCategories);
+            
+            // Encontrar la marca seleccionada para establecer el color
+            const selectedBrand = brands.find(brand => brand.id === brandId);
+            if (selectedBrand?.color) {
                 setValue('color', selectedBrand.color, { shouldDirty: true });
             }
-        } else {
-            setFilteredCategories(categories);
+        } catch (error) {
+            console.error('Error al obtener categorías por marca:', error);
+            setFilteredCategories([]);
+            toast.error('Error al cargar las categorías de la marca');
         }
         
         // Resetear la categoría seleccionada

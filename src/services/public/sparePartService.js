@@ -1,17 +1,15 @@
 import apiClient from "../apiClient";
 
 /**
- * Obtiene todos los repuestos activos
+ * Obtiene todas las refacciones activas
  * @returns {Promise<Object>} Objeto con la respuesta de la API
  */
 export const getAllActiveSpareParts = async () => {
   try {
-    console.log('Obteniendo repuestos activos...');
     const { data } = await apiClient.get("/l/spare-parts/active");
-    console.log('Respuesta de repuestos activos:', data);
     return data;
   } catch (error) {
-    console.error('Error al obtener repuestos activos:', error);
+    console.error('Error fetching spare parts:', error);
     throw error.response?.data || error.message;
   }
 };

@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 export default function AllProductCardSection({ product }) {
   return (
-    <Link to={`/producto/${product.id}`} className="w-full mx-auto cursor-default">
+    <Link to={`/producto/${product.id}`} className="cursor-pointer">
       <Card className="h-[22em] flex flex-col bg-white rounded-2xl shadow-none lg:shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 overflow-hidden mx-auto w-full group border border-gray-200">
         <CardHeader className="flex items-center justify-between p-0 h-[10em] overflow-hidden relative">
           <img
@@ -110,4 +110,4 @@ export default function AllProductCardSection({ product }) {
       </Card>
     </Link>
   );
-} 
+}

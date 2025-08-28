@@ -8,11 +8,13 @@ import "@/styles/carousel-vanilla.css";
 import { Link } from "react-router-dom";
 import { getTopSellingProductss, getActiveProductPreviews, getProductsByCategoryAndBrand, getProductsByBrand } from "@/services/public/productService";
 import { getAllBrandsWithCategories } from "@/services/public/brandService";
+import { getCategoryById } from "@/services/public/categoryService";
 import ProductImageWithFallback from "./ProductImageWithFallback";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { NavCustomer } from "../user/components/molecules/NavCustomer";
 import AllProductCardSection from "./AllProductCardSection";
 import TopSellingCarouselSection from "./TopSellingCarouselSection";
+import { getAllActiveSpareParts } from "@/services/public/sparePartService";
 
 const getTopSellingProducts = () => {
   const topSelling = [];
@@ -42,9 +44,10 @@ export default function CategoryPage() {
   const [topSellingItems, setTopSellingItems] = useState([]);
   const [activeItems, setActiveItems] = useState([]);
 
-  const { brand, category } = useParams();
+  const { brandId, categoryId } = useParams(); // Cambiar de brand/category a brandId/categoryId
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedBrand, setSelectedBrand] = useState(null);
+  const [categoryName, setCategoryName] = useState(null); // Nuevo estado para el nombre de la categoría
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [allCategories, setAllCategories] = useState([]);
@@ -54,6 +57,9 @@ export default function CategoryPage() {
 
   // --- NUEVO ESTADO PARA LA SESIÓN ---
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
+  
+  // --- NUEVO ESTADO PARA FILTRO DE TIPO DE PRODUCTO ---
+  const [productType, setProductType] = useState('productos'); // Cambiar de 'todos' a 'productos'
 
   const sectionRef = useRef(null);
   const carouselRef = useRef(null);
@@ -153,48 +159,37 @@ export default function CategoryPage() {
     fetchProducts();
   }, []);
 
-  useEffect(() => {
-    const fetchFilteredProducts = async () => {
-      setLoadingFilteredProducts(true); // Activar carga antes de la petición
-      try {
-        let fetchedData = [];
-        // Lógica de filtrado:
-        // Si tienes tanto marca como categoría seleccionadas
-        if (selectedBrand && selectedCategory) {
-          const response = await getProductsByBrandAndCategory(selectedBrand, selectedCategory);
-          fetchedData = response.data;
-        }
-        // Si solo tienes marca seleccionada (y quieres mostrar todos de esa marca, ignorando la categoría)
-        else if (selectedBrand) {
-          const response = await getProductsByBrand(selectedBrand);
-          fetchedData = response.data;
-        }
-        // Si solo tienes categoría seleccionada (y quieres mostrar todos de esa categoría, ignorando la marca)
-        else if (selectedCategory) {
-          const response = await getProductsByCategory(selectedCategory);
-          fetchedData = response.data;
-        }
-        // Si no hay marca ni categoría seleccionadas (este es el caso de la carga inicial si no quieres mostrar nada)
-        else {
-          // Puedes optar por no cargar nada, o cargar un conjunto predeterminado
-          // fetchedData = []; // No muestra nada hasta que se filtre
-          // O: Puedes cargar todos los productos activos aquí si quieres que sean el valor por defecto
-          // const data = await getActiveProductPreviews();
-          // fetchedData = Array.isArray(data.data) ? data.data : [];
-        }
-
-        setFilteredProducts(fetchedData); // Actualiza el estado con los productos filtrados
-      } catch (error) {
-        console.error("Error al obtener productos filtrados:", error);
-        setFilteredProducts([]); // Limpia los productos en caso de error
-      } finally {
-        setLoadingFilteredProducts(false); // Desactivar carga después de la petición
-      }
-    };
-
-    fetchFilteredProducts();
-  }, [selectedBrand, selectedCategory]); // Este useEffect se ejecuta cada vez que selectedBrand o selectedCategory cambian
-
+  // ELIMINAR TODO ESTE useEffect COMPLETO:
+  // useEffect(() => {
+  //   const fetchFilteredProducts = async () => {
+  //     setLoadingFilteredProducts(true);
+  //     try {
+  //       let fetchedData = [];
+  //       if (selectedBrand && selectedCategory) {
+  //         const response = await getProductsByBrandAndCategory(selectedBrand, selectedCategory);
+  //         fetchedData = response.data;
+  //       }
+  //       else if (selectedBrand) {
+  //         const response = await getProductsByBrand(selectedBrand);
+  //         fetchedData = response.data;
+  //       }
+  //       else if (selectedCategory) {
+  //         const response = await getProductsByCategory(selectedCategory);
+  //         fetchedData = response.data;
+  //       }
+  //       else {
+  //         // código comentado...
+  //       }
+  //       setFilteredProducts(fetchedData);
+  //     } catch (error) {
+  //       console.error("Error al obtener productos filtrados:", error);
+  //       setFilteredProducts([]);
+  //     } finally {
+  //       setLoadingFilteredProducts(false);
+  //     }
+  //   };
+  //   fetchFilteredProducts();
+  // }, [selectedBrand, selectedCategory]);
 
   // Configurar autoplay
   useEffect(() => {
@@ -406,111 +401,121 @@ export default function CategoryPage() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
 
-    // Cuando 'brand' de la URL cambia o 'allBrands' se carga/actualiza
-    if (brand && allBrands.length > 0) {
-      const selectedBrand = allBrands.find(b =>
-        b.name?.toLowerCase() === brand.toLowerCase()
-      );
+    // Cuando 'brandId' de la URL cambia o 'allBrands' se carga/actualiza
+    if (brandId && allBrands.length > 0) {
+      const selectedBrandObject = allBrands.find(b => {
+        return b.id.toString() === brandId;
+      });
+      setSelectedBrand(selectedBrandObject);
 
-      if (selectedBrand?.categories?.length > 0) {
+      if (selectedBrandObject?.brandCategories?.length > 0) {
         // Obtener categorías activas de la marca seleccionada
-        const brandCategories = selectedBrand.categories
-          .filter(cat => cat.status === "ACTIVE")
-          .map(cat => cat.name);
+        const brandCategories = selectedBrandObject.brandCategories
+          .filter(item => item.category && item.category.status === "ACTIVE")
+          .map(item => item.category.name);
         setAllCategories(brandCategories);
       } else {
         setAllCategories([]);
       }
-    } else if (!brand) {
-      // Si no hay marca en la URL, mostrar todas las categorías disponibles globalmente
-      // Esto ya se hace en el primer useEffect que carga allBrands y todas las categorías únicas
+    } else if (!brandId) {
+      setSelectedBrand(null);
     }
-  }, [brand, allBrands]);
+  }, [brandId, allBrands]);
 
   // Establecer la categoría seleccionada si viene de la URL
   useEffect(() => {
-    if (category) {
-      setSelectedCategory(decodeURIComponent(category));
+    const fetchCategoryName = async () => {
+      if (categoryId) {
+        try {
+          const response = await getCategoryById(categoryId);
+          const category = response.data;
+          setCategoryName(category?.name || null);
+        } catch (error) {
+          console.error('Error fetching category:', error);
+          setCategoryName(null);
+        }
+      } else {
+        setCategoryName(null);
+      }
+    };
+
+    fetchCategoryName();
+  }, [categoryId]);
+
+  // useEffect para manejar selectedCategory basado en selectedBrand
+  useEffect(() => {
+    if (categoryId && allBrands.length > 0 && selectedBrand) {
+      const categoryItem = selectedBrand.brandCategories?.find(item => 
+        item.category && item.category.id.toString() === categoryId
+      );
+      const categoryObject = categoryItem?.category;
+      setSelectedCategory(categoryObject?.name || null);
     } else {
-      setSelectedCategory(null); // Limpiar si no hay categoría en la URL
+      setSelectedCategory(null);
     }
-  }, [category]);
+  }, [categoryId, allBrands, selectedBrand]);
 
   // Cargar productos según los filtros seleccionados (marca, categoría y término de búsqueda)
   useEffect(() => {
     const loadFilteredProducts = async () => {
+      console.log('=== INICIO loadFilteredProducts ===');
+      console.log('Parámetros:', { brandId, categoryId, searchTerm });
+      
       setLoadingFilteredProducts(true);
       try {
-        let productsFromApi = []; // Usaremos este array para guardar los resultados de la API
-
-        // 1. Lógica para obtener productos de la API según marca y categoría
-        if (brand || selectedCategory) { // Si hay marca O categoría en la URL
-          // Buscar la marca seleccionada
-          const selectedBrandObject = allBrands.find(b =>
-            b.name?.toLowerCase() === brand?.toLowerCase()
-          );
-          const brandId = selectedBrandObject?.id;
-
-          // Lógica para determinar qué API llamar
-          if (brandId && selectedCategory) {
-            const categoryObj = selectedBrandObject?.categories?.find(
-              cat => cat.name.toLowerCase() === selectedCategory.toLowerCase()
-            );
-            if (categoryObj?.id) {
-              const response = await getProductsByCategoryAndBrand(categoryObj.id, brandId);
-              productsFromApi = response.data || [];
-            } else {
-              console.log('Categoría no encontrada en la marca, buscando solo por marca');
-              const response = await getProductsByBrand(brandId);
-              productsFromApi = response.data || [];
-            }
-          } else if (brandId) {
-            const response = await getProductsByBrand(brandId);
-            productsFromApi = response.data || [];
-          } else if (selectedCategory) {
-            // Si hay categoría pero no marca, necesitas un servicio para solo categoría
-            // O puedes decidir que siempre necesitas marca para filtrar por categoría
-            // Por ahora, si no tienes ese servicio, podría caer a destacados o a la lista completa
-            // Si tienes un getProductsByCategory:
-            // const response = await getProductsByCategory(selectedCategory);
-            // productsFromApi = response.data || [];
-            console.warn('Solo categoría seleccionada sin marca, esto puede no estar cubierto por la API actual.');
-            // Fallback a todos los productos activos si no hay un endpoint de solo categoría
-            const response = await getActiveProductPreviews();
-            productsFromApi = response.data || [];
-          }
+        let productsFromApi = [];
+  
+        if (brandId && categoryId) {
+          console.log(`🔍 Cargando productos: categoría ${categoryId}, marca ${brandId}`);
+          const response = await getProductsByCategoryAndBrand(categoryId, brandId);
+          productsFromApi = response.data || [];
+          console.log(`✅ ${productsFromApi.length} productos cargados`);
+        } else if (brandId) {
+          console.log(`🔍 Cargando productos por marca: ${brandId}`);
+          const response = await getProductsByBrand(brandId);
+          productsFromApi = response.data || [];
+          console.log(`✅ ${productsFromApi.length} productos cargados`);
         } else {
-          // Si no hay filtros de marca/categoría en la URL, se cargan los productos activos por defecto
           const response = await getActiveProductPreviews();
           productsFromApi = response.data || [];
         }
-
-        // 2. APLICAR EL FILTRO POR TÉRMINO DE BÚSQUEDA A LOS productosFromApi
+        
+        // Aplicar filtros adicionales (searchTerm y productType)
         let finalFilteredProducts = productsFromApi;
         if (searchTerm) {
           finalFilteredProducts = productsFromApi.filter(
             item =>
               item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
               item.shortDescription?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              item.description?.toLowerCase().includes(searchTerm.toLowerCase()) // Añadí también descripción si existe
+              item.description?.toLowerCase().includes(searchTerm.toLowerCase())
           );
         }
-
-        // 3. Actualizar el estado con los productos finalmentes filtrados
+  
+        if (productType === 'productos') {
+          finalFilteredProducts = finalFilteredProducts.filter(item => {
+            const itemText = `${item.name || ''} ${item.shortDescription || ''} ${item.description || ''} ${item.category?.name || ''}`.toLowerCase();
+            return !itemText.includes('refaccion') && !itemText.includes('refacción');
+          });
+        } else if (productType === 'refacciones') {
+          finalFilteredProducts = finalFilteredProducts.filter(item => {
+            const itemText = `${item.name || ''} ${item.shortDescription || ''} ${item.description || ''} ${item.category?.name || ''}`.toLowerCase();
+            return itemText.includes('refaccion') || itemText.includes('refacción');
+          });
+        }
+  
+        console.log('Productos finales filtrados:', finalFilteredProducts.length);
         setFilteredProducts(finalFilteredProducts);
-
       } catch (error) {
-        console.error('Error al cargar productos filtrados:', error);
-        // En caso de error, muestra los productos activos como fallback
-        const featured = await getActiveProductPreviews();
-        setFilteredProducts(featured.data || []);
+        console.error('❌ Error al cargar productos filtrados:', error);
+        setFilteredProducts([]);
       } finally {
         setLoadingFilteredProducts(false);
       }
     };
 
+    // Ejecutar directamente sin validaciones complejas
     loadFilteredProducts();
-  }, [brand, selectedCategory, searchTerm, allBrands]); // Asegúrate de incluir 'searchTerm' en las dependencias
+  }, [brandId, categoryId, searchTerm, productType]);
 
   // Cargar productos más vendidos (siempre se muestran independientemente de filtros)
   useEffect(() => {
@@ -534,9 +539,17 @@ export default function CategoryPage() {
 
     // Construye la URL de navegación
     if (brand) {
-      navigate(`/productos/${brand}/${encodeURIComponent(categoryToNavigate)}`);
+      navigate(`/productos/${brandId}/${encodeURIComponent(categoryToNavigate)}`);
     } else {
       navigate(`/productos/categoria/${encodeURIComponent(categoryToNavigate)}`);
+    }
+  };
+  
+  // --- NUEVA FUNCIÓN PARA MANEJAR CAMBIO DE TIPO DE PRODUCTO ---
+  const handleProductTypeChange = (type) => {
+    setProductType(type);
+    if (type === 'refacciones') {
+      loadSpareParts();
     }
   };
 
@@ -599,10 +612,14 @@ export default function CategoryPage() {
 
         <div className="min-h-screen bg-gray-50 flex flex-col pt-20 w-full">
           <div className="max-w-7xl w-full mx-auto px-4">
-            {/* Barra de búsqueda y filtros (tu código actual, se mantiene) */}
-            <div className="lg:mt-4 mt-2 mx-auto px-2 sticky lg:top-20 top-19 z-20 bg-white shadow-md rounded-full mb-6 p-2">
-              <div className="flex flex-row items-center gap-2">
-                <div className="relative w-full">
+            
+            {/* CONTENEDOR UNIFICADO - FILTROS Y BARRA DE BÚSQUEDA */}
+            <div className="lg:mt-4 mt-2 mx-auto px-2 sticky lg:top-20 top-19 z-20 bg-white shadow-md rounded-2xl mb-6 p-4">
+              
+              {/* BARRA DE BÚSQUEDA Y FILTROS EN LA MISMA LÍNEA - 80% DEL ANCHO */}
+              <div className="flex flex-row items-center gap-4 w-4/5 mx-auto">
+                {/* BARRA DE BÚSQUEDA */}
+                <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                   <input
                     type="text"
@@ -612,63 +629,78 @@ export default function CategoryPage() {
                     className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                {/* <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className="flex items-center justify-center w-1/5 gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-full transition-colors"
-                >
-                  <Filter size={18} />
-                  <span className="hidden sm:inline">Filtros</span>
-                </button> */}
-                {/* Asegúrate de que 'brand' aquí se refiera a tu 'selectedBrand' si es lo que usas para filtrar */}
-                {(brand || selectedCategory) && ( // Muestra el botón de regresar si hay alguna selección
+                
+                {/* FILTROS DE PRODUCTOS Y REFACCIONES - DESKTOP */}
+                <div className="hidden md:flex items-center gap-2">
                   <button
-                    onClick={handleBack} // Esta función debería limpiar selectedBrand y selectedCategory
-                    className="flex items-center justify-center md:justify-start gap-2 text-blue-600 py-2 px-4 rounded-full hover:bg-blue-50 transition-colors"
+                    onClick={() => handleProductTypeChange('productos')}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                      productType === 'productos'
+                        ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700 focus:bg-blue-700 focus:ring-2 focus:ring-blue-300'
+                        : 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 focus:bg-blue-100 focus:border-blue-300 focus:ring-2 focus:ring-blue-200'
+                    }`}
+                  >
+                    Productos
+                  </button>
+                  <button
+                    onClick={() => handleProductTypeChange('refacciones')}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                      productType === 'refacciones'
+                        ? 'bg-blue-600 text-white shadow-md hover:bg-blue-700 focus:bg-blue-700 focus:ring-2 focus:ring-blue-300'
+                        : 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 focus:bg-blue-100 focus:border-blue-300 focus:ring-2 focus:ring-blue-200'
+                    }`}
+                  >
+                    Refacciones
+                  </button>
+                </div>
+                
+                {/* SELECT PARA MOBILE - FILTROS DE TIPO DE PRODUCTO */}
+                <div className="md:hidden">
+                  <select
+                    value={productType}
+                    onChange={(e) => handleProductTypeChange(e.target.value)}
+                    className="px-3 py-2 rounded-full border border-gray-300 bg-white text-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[100px]"
+                  >
+                    <option value="productos">Productos</option>
+                    <option value="refacciones">Refacciones</option>
+                  </select>
+                </div>
+                
+                {(brandId || selectedCategory) && (
+                  <button
+                    onClick={handleBack}
+                    className="flex items-center justify-center gap-2 text-blue-600 py-2 px-4 rounded-full hover:bg-blue-50 transition-colors whitespace-nowrap"
                   >
                     <ArrowLeft size={18} />
-                    <span>Regresar</span>
+                    <span className="hidden lg:inline">Regresar</span>
                   </button>
                 )}
               </div>
-              {showFilters && (
-                <div className="mt-3 p-3 border-t border-gray-200">
-                  <h3 className="font-medium mb-2">Categorías</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {allCategories.map(cat => (
-                      <button
-                        key={cat}
-                        onClick={() => handleCategoryChange(cat)} // Esta función DEBE actualizar `selectedCategory`
-                        className={`px-3 py-1 rounded-full text-sm ${selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                      >
-                        {cat.replace(/-/g, ' ')}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Título de la sección de productos */}
-            <div className="mb-6 mt-8 w-full">
-              <h1 className="text-xl md:text-2xl font-bold text-gray-500">
-                {/* Aquí la lógica de título debe reflejar los productos que se están mostrando */}
-                {/* Asumiendo que 'brand' y 'selectedCategory' son tus estados de filtro */}
-                {brand && selectedCategory
-                  ? `${brand.charAt(0).toUpperCase() + brand.slice(1)} - ${selectedCategory.replace(/-/g, ' ')}`
-                  : brand
-                    ? `Productos ${brand.charAt(0).toUpperCase() + brand.slice(1)}`
-                    : selectedCategory
-                      ? `Productos de la categoría ${selectedCategory.replace(/-/g, ' ')}`
-                      : searchTerm // Si hay un término de búsqueda, muestra ese título
-                        ? `Resultados para "${searchTerm}"`
-                        : ''} {/* Título por defecto si no hay filtros ni búsqueda */}
-              </h1>
             </div>
 
             <div className="w-full">
-              {(brand || selectedCategory || searchTerm) ? (
+              {(brandId || selectedCategory || searchTerm) ? (
                 // --- MUESTRA LOS PRODUCTOS FILTRADOS/BUSCADOS ---
                 <div className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full flex-grow">
+                  {/* TÍTULO DINÁMICO SIMPLIFICADO */}
+                  <div className="mb-6">
+                    <h1 className="text-xl md:text-2xl font-bold text-gray-800">
+                        {(() => {
+                          if (selectedBrand && categoryName) {
+                            return `${categoryName} ${selectedBrand.name}`;
+                          } else if (selectedBrand) {
+                            return `Productos ${selectedBrand.name}`;
+                          } else if (categoryName) {
+                            return `${categoryName}`;
+                          } else if (searchTerm) {
+                            return `Resultados para "${searchTerm}"`;
+                          } else {
+                            return "Productos";
+                          }
+                        })()} 
+                    </h1>
+                </div>
+                  
                   {loadingFilteredProducts ? (
                     <div className="text-center py-10">
                       <p className="text-gray-500">Cargando productos...</p>
@@ -702,16 +734,47 @@ export default function CategoryPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-10 bg-white rounded-lg shadow-sm">
-                        <p className="text-gray-500">No se encontraron productos que coincidan con tu selección.</p>
-                        {/* Puedes ofrecer opciones para limpiar filtros aquí */}
-                        <button onClick={() => { setBrand(null); setSelectedCategory(null); setSearchTerm(''); }} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Limpiar filtros</button>
+                      <div className="text-center py-16 bg-white rounded-lg shadow-sm">
+                        <div className="max-w-md mx-auto">
+                          <div className="mb-4">
+                            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8l-4 4m0 0l-4-4m4 4V3" />
+                            </svg>
+                          </div>
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">
+                            {selectedCategory 
+                              ? `No hay productos en la categoría "${selectedCategory.replace(/-/g, ' ')}" todavía`
+                              : brandId
+                                ? `No hay productos de la marca "${brandId}" todavía`
+                                : searchTerm
+                                  ? `No se encontraron productos para "${searchTerm}"`
+                                  : 'No hay productos con esta selección todavía'
+                            }
+                          </h3>
+                          <p className="text-gray-500 mb-6">
+                            {selectedCategory || brandId 
+                              ? 'Estamos trabajando para agregar más productos pronto.'
+                              : 'Intenta con otros términos de búsqueda o revisa nuestros productos destacados.'
+                            }
+                          </p>
+                          <button 
+                            onClick={() => { 
+                              setSelectedBrand(null); 
+                              setSelectedCategory(null); 
+                              setSearchTerm(''); 
+                              navigate('/tienda');
+                            }} 
+                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                          >
+                            Ver todos los productos
+                          </button>
+                        </div>
                       </div>
                     )
                   )}
                 </div>
               ) : (
-                // --- MUESTRA LAS SECCIONES PREDETERMINADAS (más vendidos y activos) ---
+                // --- MUESTRA LAS SECCIONES PREDETERMINADAS (más vendidos y activos) SOLO CUANDO NO HAY FILTROS ---
                 <>
                   <TopSellingCarouselSection
                     topSellingItems={topSellingItems}
@@ -724,18 +787,10 @@ export default function CategoryPage() {
                     setSearchTerm={setSearchTerm}
                     scrollToSection={scrollToSection}
                   />
-
-                  {/* Sección "Todos los productos" / Productos Activos */}
-                  <div ref={sectionRef} className="flex items-center justify-between mb-0 mt-14 lg:mt-0">
-                    <h2 className="text-xl font-bold text-gray-500">Todos los productos</h2>
-                  </div>
-                  <div  className="sm:bg-gray-100 sm:max-w-7xl sm:rounded-t-[3rem] sm:shadow-inner px-0 sm:px-6 py-0 sm:py-10 mt-6 w-full flex-grow">
+                  <div className="bg-gray-100 max-w-7xl rounded-t-[3rem] shadow-inner px-6 py-10 mt-6 w-full flex-grow">
                     <div className="w-full">
                       {activeItems.length > 0 ? (
                         <div className="mb-10">
-                          {/* <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-bold text-gray-500">Todos los productos</h2>
-                          </div> */}
                           <div className="mb-10">
                             {/* Reemplaza el carrusel de activeItems por un grid de ProductCard */}
                             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 lg:gap-x-6 sm:gap-x-2 gap-x-2 lg:gap-y-8 sm:gap-y-2 gap-y-2 mb-8">
@@ -760,4 +815,18 @@ export default function CategoryPage() {
       </SidebarProvider>
     </>
   );
+
+  // Función para cargar refacciones - MOVER ESTA FUNCIÓN DENTRO DEL COMPONENTE
+  const loadSpareParts = async () => {
+    setLoadingSpareParts(true);
+    try {
+      const response = await getAllActiveSpareParts();
+      setSpareParts(response.data || []);
+    } catch (error) {
+      console.error('Error loading spare parts:', error);
+      setSpareParts([]);
+    } finally {
+      setLoadingSpareParts(false);
+    }
+  };
 }

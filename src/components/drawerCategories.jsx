@@ -103,10 +103,14 @@ const DrawerCategories = forwardRef((props, ref) => {
   const goToCategoryPage = (brand, category) => {
     setOpen(false);
     setTimeout(() => {
-      // Codificar los nombres para URLs amigables
-      const encodedBrand = encodeURIComponent(brand.name.toLowerCase());
-      const encodedCategory = encodeURIComponent(category.name.toLowerCase());
-      navigate(`/productos/${encodedBrand}/${encodedCategory}`);
+      // Usar IDs numéricos en lugar de nombres
+      if (!category.id || category.id === '') {
+        // Solo navegar con la marca si no hay categoría válida
+        navigate(`/productos/${brand.id}`);
+      } else {
+        // Navegar con marca y categoría usando IDs
+        navigate(`/productos/${brand.id}/${category.id}`);
+      }
     }, 100);
   };
 
